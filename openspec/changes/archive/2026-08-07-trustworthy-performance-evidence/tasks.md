@@ -76,5 +76,5 @@
 - [x] 7.2 Run the full gate set — `make check`, corpus, `make g2`, `make bench`, `make ab`,
       token gate — and record the results in `LAST-MILE.md`.
 - [x] 7.3 Update the queue in `LAST-MILE.md` and the next action in `HANDOFF.md`.
-- [ ] 7.4 Sync the delta spec into `openspec/specs/distribution-quality/` and archive the
+- [x] 7.4 Sync the delta spec into `openspec/specs/distribution-quality/` and archive the
       change.
