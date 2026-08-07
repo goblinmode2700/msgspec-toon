@@ -1,9 +1,10 @@
 //! Zero-copy incremental line scanner.
 //!
 //! Borrows slices of the input buffer; never builds a second copy of the
-//! document. Skips blank lines and whole-line `#` comments, strips a UTF-8
-//! BOM on the first line and a trailing `\r` per line, and converts leading
-//! spaces into a depth in indent units.
+//! document. Skips blank lines and whole-line `#` comments (recording that a
+//! blank was skipped — strict array bodies must reject blank lines), strips
+//! a UTF-8 BOM on the first line and a trailing `\r` per line, and converts
+//! leading spaces into a depth in indent units.
 
 use memchr::memchr;
 
@@ -20,6 +21,9 @@ pub struct Line<'a> {
     pub content: &'a [u8],
     pub depth: usize,
     pub position: Position,
+    /// One or more blank (or whitespace-only) lines were skipped between the
+    /// previous content line and this one. Comment lines do not set this.
+    pub blank_before: bool,
 }
 
 pub struct Scanner<'a> {
@@ -31,15 +35,11 @@ pub struct Scanner<'a> {
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self {
-            input,
-            offset: 0,
-            line: 0,
-            strict,
-        }
+        Self { input, offset: 0, line: 0, strict }
     }
 
     pub fn next_line(&mut self) -> Result<Option<Line<'a>>, Fault> {
+        let mut blank_before = false;
         loop {
             if self.offset >= self.input.len() {
                 return Ok(None);
@@ -58,12 +58,20 @@ impl<'a> Scanner<'a> {
                 raw = &raw[..raw.len() - 1];
             }
 
+            // Blank and whitespace-only lines are skipped before any
+            // indentation validation: a line with no content has no depth.
+            if raw.iter().all(|&byte| byte == b' ' || byte == b'\t') {
+                blank_before = true;
+                continue;
+            }
+
             let mut indent = 0usize;
             while indent < raw.len() && raw[indent] == b' ' {
                 indent += 1;
             }
 
-            if indent < raw.len() && raw[indent] == b'\t' {
+            let mut tab_in_indent = false;
+            if raw[indent] == b'\t' {
                 if self.strict {
                     return Err(Fault::syntax(
                         FaultCode::TabIndent,
@@ -71,13 +79,36 @@ impl<'a> Scanner<'a> {
                         Some((indent + 1) as u32),
                     ));
                 }
-                while indent < raw.len() && (raw[indent] == b'\t' || raw[indent] == b' ') {
-                    indent += 1;
+                // Non-strict leniency: a tab counts as one indent level.
+                tab_in_indent = true;
+                let mut levels = indent / INDENT_SIZE;
+                let mut cursor = indent;
+                while cursor < raw.len() && (raw[cursor] == b'\t' || raw[cursor] == b' ') {
+                    levels += usize::from(raw[cursor] == b'\t');
+                    cursor += 1;
                 }
+                indent = cursor;
+                // Rewrite the effective depth below via `tab_levels`.
+                let mut end = raw.len();
+                while end > indent && raw[end - 1] == b' ' {
+                    end -= 1;
+                }
+                let content = &raw[indent..end];
+                if content.is_empty() {
+                    blank_before = true;
+                    continue;
+                }
+                if levels > MAX_DEPTH {
+                    return Err(Fault::syntax(FaultCode::DepthLimit, self.line, Some(1)));
+                }
+                return Ok(Some(Line {
+                    content,
+                    depth: levels,
+                    position: Position { line: self.line, column: (indent + 1) as u32 },
+                    blank_before,
+                }));
             }
-            if self.strict && !indent.is_multiple_of(INDENT_SIZE) {
-                return Err(Fault::syntax(FaultCode::InvalidIndent, self.line, Some(1)));
-            }
+            let _ = tab_in_indent;
 
             let mut end = raw.len();
             while end > indent && raw[end - 1] == b' ' {
@@ -85,8 +116,16 @@ impl<'a> Scanner<'a> {
             }
             let content = &raw[indent..end];
 
-            if content.is_empty() || content.starts_with(b"#") {
+            // Whole-line comments require space-only indentation; a line
+            // whose indentation held a tab is handled above (non-strict) and
+            // is data, not a comment. Comments are stripped before indent
+            // validation — a comment has no depth of its own.
+            if content.starts_with(b"#") {
                 continue;
+            }
+
+            if self.strict && !indent.is_multiple_of(INDENT_SIZE) {
+                return Err(Fault::syntax(FaultCode::InvalidIndent, self.line, Some(1)));
             }
 
             if indent / INDENT_SIZE > MAX_DEPTH {
@@ -96,10 +135,8 @@ impl<'a> Scanner<'a> {
             return Ok(Some(Line {
                 content,
                 depth: indent / INDENT_SIZE,
-                position: Position {
-                    line: self.line,
-                    column: (indent + 1) as u32,
-                },
+                position: Position { line: self.line, column: (indent + 1) as u32 },
+                blank_before,
             }));
         }
     }
@@ -113,10 +150,7 @@ pub struct Lines<'a> {
 
 impl<'a> Lines<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self {
-            scanner: Scanner::new(input, strict),
-            peeked: None,
-        }
+        Self { scanner: Scanner::new(input, strict), peeked: None }
     }
 
     pub fn peek(&mut self) -> Result<Option<Line<'a>>, Fault> {
@@ -148,12 +182,14 @@ mod tests {
         let first = scanner.next_line().unwrap().unwrap();
         assert_eq!(first.content, b"a: 1");
         assert_eq!(first.depth, 0);
+        assert!(!first.blank_before);
         let second = scanner.next_line().unwrap().unwrap();
         assert_eq!(second.content, b"b: 2");
         assert_eq!(second.depth, 1);
         let third = scanner.next_line().unwrap().unwrap();
         assert_eq!(third.content, b"c: 3");
         assert_eq!(third.position.line, 5);
+        assert!(third.blank_before);
         assert!(scanner.next_line().unwrap().is_none());
     }
 
@@ -175,9 +211,27 @@ mod tests {
     }
 
     #[test]
+    fn whitespace_only_line_is_blank_even_at_odd_indent() {
+        let mut scanner = Scanner::new(b"a: 1\n   \nb: 2", true);
+        scanner.next_line().unwrap();
+        let next = scanner.next_line().unwrap().unwrap();
+        assert_eq!(next.content, b"b: 2");
+        assert!(next.blank_before);
+    }
+
+    #[test]
     fn strips_bom_and_carriage_returns() {
         let mut scanner = Scanner::new(b"\xEF\xBB\xBFa: 1\r\nb: 2\r", true);
         assert_eq!(scanner.next_line().unwrap().unwrap().content, b"a: 1");
         assert_eq!(scanner.next_line().unwrap().unwrap().content, b"b: 2");
+    }
+
+    #[test]
+    fn non_strict_tab_indent_counts_as_level() {
+        let mut scanner = Scanner::new(b"a:\n\t#x", false);
+        scanner.next_line().unwrap();
+        let line = scanner.next_line().unwrap().unwrap();
+        assert_eq!(line.content, b"#x");
+        assert_eq!(line.depth, 1);
     }
 }

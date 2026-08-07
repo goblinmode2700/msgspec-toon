@@ -1,8 +1,9 @@
 {
-  "spec_version": "4.1",
+  "spec_version": "4.1.1",
   "repository": "toon-format/spec",
-  "commit": "UNPINNED_PHASE_0_INCOMPLETE",
-  "fixture_root": "tests/fixtures",
-  "tree_sha256": "UNPINNED_PHASE_0_INCOMPLETE",
-  "note": "The official TOON 4.1 fixture corpus has not been fetched and pinned yet. No conformance claim is made until this lock names a real commit and the runner passes against it (openspec: toon-parsing / toon-encoding conformance requirements)."
+  "tag": "v4.1.1",
+  "commit": "62f16b369408180f1faf1cba7da1b46d1f336f12",
+  "fixture_root": "conformance/fixtures",
+  "tree_sha256": "fab1b09695cea627bb6f2f5791dd930023fb65c1d5ddae268dd006506f612c81",
+  "note": "Fixtures vendored from tests/fixtures at the pinned commit. conformance/run.py refuses to execute if the vendored tree does not match tree_sha256; conformance/fetch.py re-downloads and verifies."
 }

@@ -31,6 +31,8 @@ pub enum FaultCode {
     ExpectedKey,
     InvalidRoot,
     DepthLimit,
+    BlankLineInArray,
+    MalformedHeader,
     Internal,
 }
 
@@ -62,6 +64,8 @@ impl FaultCode {
             Self::ExpectedKey => "expected_key",
             Self::InvalidRoot => "invalid_root",
             Self::DepthLimit => "depth_limit",
+            Self::BlankLineInArray => "blank_line_in_array",
+            Self::MalformedHeader => "malformed_header",
             Self::Internal => "internal",
         }
     }
@@ -93,6 +97,8 @@ impl FaultCode {
             Self::ExpectedKey => "expected a key",
             Self::InvalidRoot => "invalid document root",
             Self::DepthLimit => "nesting depth limit exceeded",
+            Self::BlankLineInArray => "blank line inside an array",
+            Self::MalformedHeader => "malformed array header",
             Self::Internal => "internal error",
         }
     }

@@ -79,30 +79,48 @@ pub fn scan_quoted(content: &[u8], start: usize, at: Position) -> Result<(usize,
                 escaped = true;
                 let escape_column = at.column + index as u32;
                 index += 1;
+                let invalid =
+                    || Fault::syntax(FaultCode::InvalidEscape, at.line, Some(escape_column));
                 match content.get(index) {
                     Some(b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't') => index += 1,
                     Some(b'u') => {
-                        let hex = content.get(index + 1..index + 5).ok_or(Fault::syntax(
-                            FaultCode::InvalidEscape,
-                            at.line,
-                            Some(escape_column),
-                        ))?;
+                        let hex = content.get(index + 1..index + 5).ok_or_else(invalid)?;
                         if !hex.iter().all(u8::is_ascii_hexdigit) {
-                            return Err(Fault::syntax(
-                                FaultCode::InvalidEscape,
-                                at.line,
-                                Some(escape_column),
-                            ));
+                            return Err(invalid());
                         }
+                        let code = u32::from_str_radix(
+                            std::str::from_utf8(hex).expect("hex digits are ASCII"),
+                            16,
+                        )
+                        .expect("validated hex");
                         index += 5;
+                        if (0xD800..0xDC00).contains(&code) {
+                            // A high surrogate must pair with an immediately
+                            // following low surrogate escape.
+                            if content.get(index) != Some(&b'\\')
+                                || content.get(index + 1) != Some(&b'u')
+                            {
+                                return Err(invalid());
+                            }
+                            let low_hex = content.get(index + 2..index + 6).ok_or_else(invalid)?;
+                            if !low_hex.iter().all(u8::is_ascii_hexdigit) {
+                                return Err(invalid());
+                            }
+                            let low = u32::from_str_radix(
+                                std::str::from_utf8(low_hex).expect("hex digits are ASCII"),
+                                16,
+                            )
+                            .expect("validated hex");
+                            if !(0xDC00..0xE000).contains(&low) {
+                                return Err(invalid());
+                            }
+                            index += 6;
+                        } else if (0xDC00..0xE000).contains(&code) {
+                            // A lone low surrogate is never valid.
+                            return Err(invalid());
+                        }
                     }
-                    _ => {
-                        return Err(Fault::syntax(
-                            FaultCode::InvalidEscape,
-                            at.line,
-                            Some(escape_column),
-                        ));
-                    }
+                    _ => return Err(invalid()),
                 }
             }
             _ => index += 1,
