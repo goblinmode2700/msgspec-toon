@@ -247,6 +247,32 @@ Exit: each adopted optimization has a frozen-baseline A/B result and all protect
 - [ ] Add CI checks for wheels, syscall restrictions, conformance, and smoke benchmarks.
 - [ ] Archive completed OpenSpec changes after their deferred tasks close.
 
+## Efficiency lock: how to update it
+
+`conformance/efficiency.lock.json` records what this codec's output costs — bytes and
+tokens, for canonical output and its two delimiter variants, plus compact JSON as the
+denominator. `tests/test_efficiency_lock.py` fails on **any** difference, in either
+direction: an unexplained improvement means the output changed too, and canonical bytes
+are a conformance surface.
+
+When the counts move for a reason:
+
+```bash
+uv run python scripts/efficiency-lock.py            # show the drift
+uv run python scripts/efficiency-lock.py --write    # accept it
+```
+
+The commit that carries a new lock must say **why the counts moved**. A lock updated
+without that sentence is indistinguishable from a silent regression, which is the thing
+the lock exists to prevent.
+
+Coverage note, learned the hard way: the locked payloads must include a shape the encoder
+cannot make tabular. Uniform record arrays become tabular blocks and uniform
+object-of-objects become *keyed* tabular blocks; neither reaches the `key: value` entry
+writer. Perturbing the key separator moved no locked byte count until `irregular` was
+added to the payload matrix. If you add an encoder path, ask which locked payload
+exercises it.
+
 ## Stop conditions
 
 Stop the loop and write the exact blocker when any condition occurs:
@@ -482,3 +508,73 @@ matrix                      11 supported, 2 parity-rejects, 13 unsupported, 1 in
 ```
 
 No Rust changed, so no A/B was required or cited.
+
+#### Checkpoint 9 — trustworthy-performance-evidence (openspec change)
+
+Planned and applied as an openspec change; artifacts in
+`openspec/changes/trustworthy-performance-evidence/`. Two things this round changed, and
+three things it discovered by testing rather than by reasoning.
+
+**The estimator.** `_timing.py` reported the minimum of seven batches in one process,
+which rewards whichever batch dodged the scheduler and has no central-limit behavior to
+converge on. It now reports the **mean across 10 independent worker processes**, each
+discarding its own first sample, with the loop count calibrated once and handed to every
+worker so they all measure the same work. Every absolute figure moved a few percent; the
+historical ledger entries are labelled `estimator: min-of-batches` rather than restated.
+The worker count was chosen by measurement, not by copying pyperf's 20: per-worker CV is
+0.8-1.4% on a quiet machine, so 10 workers put the standard error at 0.25-0.45% and 25
+would buy 0.15pp for 2.5x the runtime.
+
+**The A/B design.** One block now measures one metric at one size, so an alternating pair
+straddles seconds instead of minutes. A two-sample t-test at alpha 0.95 replaced the
+median-versus-spread heuristic, and every row publishes its minimum detectable effect so
+a null result means something. Both encode rows F-12 could not resolve now resolve:
+typed encode@16 at -6.4% (MDE 6.2%) and @64 at -6.7% (MDE 1.5%).
+
+**Two gates that did not exist.** `conformance/efficiency.lock.json` pins byte and token
+counts for this codec's output; any drift in either direction fails. `make ab` exits
+non-zero on a slowdown that reproduces.
+
+Three discoveries, each from a task that refused to accept inspection as proof:
+
+1. **The token gate did not fire when first tested.** Every locked payload was a uniform
+   record array, which the encoder emits as a tabular block — and a uniform
+   object-of-objects becomes a *keyed* tabular block. Neither ever reaches the
+   `key: value` entry writer, so perturbing the key separator moved no locked byte count.
+   Fixed by adding an `irregular` shape that defeats both forms; the perturbation now
+   fails with `irregular@16/toon_comma: locked 727 bytes, measured 771`.
+2. **The speed gate could not fire at all.** Against the frozen `v0.1.0-conformant`
+   baseline, a real 24% slowdown (typed decode 139 -> 172 us) read as **+2.2%, "no
+   significant difference"** — the current build led that baseline by 15-20%, so a
+   catastrophic regression merely erased the lead. Resolved by splitting the roles:
+   `.venv-baseline` is the **story** (what the optimization round bought; reported, never
+   gated) and `.venv-guard`, built from the latest release, is the **gate**. The same 24%
+   slowdown against the guard reads +24.4%, reproduces, and exits 1.
+   *The guard must be re-cut at every release or it decays into the same blind spot.*
+3. **A same-power confirmation run is not enough.** The first confirmation design re-ran
+   at the same block count; `typed encode@4096` flagged at +2.5% and reproduced, then read
+   +2.1% with a 2.6% MDE at three rounds. Confirmation now runs at **double** the blocks,
+   and it immediately caught a live false positive: `untyped encode@64` flagged at +1.5%
+   and did not reproduce.
+
+Also of note: a first attempt at proving the speed gate used `black_box` over 40
+additions, which compiled to nothing (137.67 vs 139.03 clean) — the gate was right to stay
+quiet, and the lesson is that a "deliberate slowdown" must be verified to be one.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 88 Python tests, clean
+make g2                     G2 zero builtin containers
+make efficiency             lock matches
+make ab (gate vs v0.2.0)    16/16 no significant difference, exit 0
+make ab-story (vs v0.1.0)   16/16 resolved faster: typed decode -14.3/-17.0/-16.9/-18.1%,
+                            untyped decode -11.8/-15.5/-18.2/-17.6%,
+                            typed encode -6.4/-6.7/-6.2/-3.4%,
+                            untyped encode -8.6/-6.6/-7.2/-6.3%
+```
+
+Left open, honestly: a possible ~2% typed-encode regression at 4096 against v0.2.0. It
+flagged once, failed to resolve at higher power twice, and is recorded in the ledger as
+unresolved — neither claimed nor dismissed.

@@ -26,21 +26,11 @@ import msgspec_toon
 import tiktoken
 import toon as python_toon
 import toons as toons_rust
-from payloads import document, numeric_heavy_tree, string_heavy_tree
+from payloads import token_payload_matrix
 
 LADDER = (16, 64, 512, 4096)
 PRIMARY = "o200k_base"
 SECONDARY = "cl100k_base"
-
-
-def payload_matrix() -> list[tuple[str, int, Any]]:
-    cases: list[tuple[str, int, Any]] = []
-    for records in LADDER:
-        cases.append(("uniform-records", records, msgspec.to_builtins(document(records))))
-    for records in (16, 512):
-        cases.append(("string-heavy", records, string_heavy_tree(records)))
-        cases.append(("numeric-heavy", records, numeric_heavy_tree(records)))
-    return cases
 
 
 def format_texts(tree: Any) -> dict[str, str]:
@@ -57,7 +47,7 @@ def format_texts(tree: Any) -> dict[str, str]:
 def run() -> dict[str, Any]:
     encoders = {name: tiktoken.get_encoding(name) for name in (PRIMARY, SECONDARY)}
     rows = []
-    for shape, records, tree in payload_matrix():
+    for shape, records, tree in token_payload_matrix():
         texts = format_texts(tree)
         # Sanity: our option outputs still decode to the same value.
         assert msgspec_toon.decode(texts["toon_tab"].encode()) == tree

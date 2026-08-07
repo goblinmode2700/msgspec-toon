@@ -2,7 +2,12 @@
   "baseline": {
     "tag": "v0.1.0-conformant",
     "harness": "benches/ab.py \u2014 alternating B C C B blocks in one session on one machine; the reported delta is the median of the paired ratios, and the noise floor is the spread among repeated blocks of the SAME build. Figures before F-12 came from a single B-then-C run, which could not separate a small delta from run-order drift",
-    "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them"
+    "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them",
+    "estimator_note": "Every figure recorded before the trustworthy-performance-evidence change was produced by the min-of-batches estimator: the minimum per-call time across 7 autoranged batches in one process. That estimator rewards whichever batch dodged the scheduler and has no central-limit behavior to converge on. Figures under it and under the mean-across-workers estimator that replaced it are NOT comparable, and no historical figure is restated under the new estimator without re-measurement.",
+    "roles": {
+      "story": "v0.1.0-conformant (.venv-baseline) \u2014 what the optimization round bought. Reported, never gated: every figure in `candidates` below is measured against it",
+      "guard": "v0.2.0 (.venv-guard) \u2014 the latest release, and the only thing `make ab` gates against. Re-cut it at every release or it decays into the same blind spot"
+    }
   },
   "candidates": [
     {
@@ -26,7 +31,8 @@
         ]
       },
       "note": "measured together with E2; also recovered the +14-15% typed-encode regression that the wire-options plumbing introduced (caught by the A/B harness on its first run)",
-      "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
+      "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win",
+      "estimator": "min-of-batches"
     },
     {
       "id": "E2",
@@ -37,7 +43,8 @@
       "ab_delta": {
         "combined_with": "E1"
       },
-      "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
+      "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win",
+      "estimator": "min-of-batches"
     },
     {
       "id": "P1",
@@ -47,7 +54,8 @@
       "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
       "ab_delta": {
         "combined_with": "D1+D2+D3, see D1 row"
-      }
+      },
+      "estimator": "min-of-batches"
     },
     {
       "id": "D2",
@@ -57,7 +65,8 @@
       "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
       "ab_delta": {
         "combined_with": "D1+P1+D3, see D1 row"
-      }
+      },
+      "estimator": "min-of-batches"
     },
     {
       "id": "D3",
@@ -73,7 +82,8 @@
           "-18.4% @4096"
         ]
       },
-      "note": "this also sped up the G3 wrapper baseline (which uses our untyped decoder), thinning typed decode's margin at 64 records to noise level in one run \u2014 resolved by implementing D1's typed-side memo rather than rejecting a genuine improvement; G3 re-verified passing at every size afterwards"
+      "note": "this also sped up the G3 wrapper baseline (which uses our untyped decoder), thinning typed decode's margin at 64 records to noise level in one run \u2014 resolved by implementing D1's typed-side memo rather than rejecting a genuine improvement; G3 re-verified passing at every size afterwards",
+      "estimator": "min-of-batches"
     },
     {
       "id": "D1",
@@ -88,7 +98,8 @@
           "-17.3% @512",
           "-23.6% @4096"
         ]
-      }
+      },
+      "estimator": "min-of-batches"
     },
     {
       "id": "D4",
@@ -132,6 +143,42 @@
       "result": "same-build blocks disagree by 1.7-8.8 percentage points depending on metric and size; an earlier single-order run put whichever side ran second 0.4-3.6% slower on every row",
       "consequence": "decode deltas (-13 to -20%) sit well above the floor and are resolved; typed-encode at 16 and 64 records (-5.4%, -4.2%) sits BELOW it and is not a result on this machine",
       "action": "ab.py now labels below-noise rows explicitly and keeps every block in benches/ab-latest.json"
+    },
+    "worker_count_choice": {
+      "question": "how many worker processes does the mean-across-workers estimator need?",
+      "method": "bench_typed at 16 records with 8 workers; read the per-worker coefficient of variation, then compute the standard error of the published mean as CV/sqrt(workers)",
+      "result": "per-worker CV on a quiet machine: typed decode 0.80%, typed encode 1.43%, to_builtins 1.13%, wrapper decode 1.18%. Standard error at 10 workers: 0.25-0.45%",
+      "choice": "10 workers. The smallest count whose standard error sits well under the >=4% effects this project reports; 25 workers would buy about 0.15 percentage points for 2.5x the runtime",
+      "caveat": "per-worker CV is a property of machine load, not of the codec: the same metric measured 7.84% CV during a heavily loaded moment in the same session. The standard error above is a quiet-machine figure",
+      "estimator": "mean-across-workers"
+    },
+    "ab_false_positive_check": {
+      "question": "does the significance gate stay quiet when nothing changed?",
+      "method": "benches/ab.py --baseline-venv .venv \u2014 the current build against itself, 8 metrics",
+      "result": "first pass: 7 of 8 quiet, and typed encode@512 reported +1.6% SLOWER with a 1.4% minimum detectable effect \u2014 a false positive, as expected from 8 tests at alpha 0.95",
+      "consequence": "a slowdown now triggers an independent confirmation run and only a reproduced slowdown fails the gate; re-run returned 8 of 8 no-significant-difference and exit 0",
+      "estimator": "mean-across-workers"
+    },
+    "gate_reference_point": {
+      "question": "can the speed gate detect a regression at all?",
+      "method": "inject a heap allocation per placed value into the typed decode path (139 -> 172 us, a 24% slowdown), then run the gate",
+      "result": "against the STORY baseline the same 24% regression read as +2.2%, verdict 'no significant difference', exit 0 \u2014 the current build led that baseline by 15-20%, so the regression only erased the lead. Against the GUARD baseline it read +24.4%, reproduced on the confirmation run, exit 1",
+      "consequence": "the gate measures against the latest release; the frozen tag stays as the reported story. A first attempt at a slowdown (black_box over 40 additions) compiled away to 137.67 us vs 139.03 clean, and the gate correctly stayed quiet",
+      "estimator": "mean-across-workers"
+    },
+    "open_question_encode_4096": {
+      "question": "is there a small typed-encode regression at 4096 records against v0.2.0?",
+      "observed": "+2.5% flagged and reproduced at 2 rounds; +2.1% not significant at 3 rounds (MDE 2.6%); +2.7% not significant at 2 rounds with a 2x confirmation (MDE 3.2%)",
+      "status": "UNRESOLVED \u2014 this harness cannot settle a ~2% question at 4096 in this session. It is not claimed as a regression and not dismissed as noise",
+      "candidates_if_real": "the encoder changes since v0.2.0 are the build_shape depth guard (one comparison per shape node, not per row) and the capped writer reservation; neither is obviously worth 2%",
+      "next": "re-run the gate on a quiet machine; if it resolves, bisect the two encoder changes",
+      "estimator": "mean-across-workers"
+    },
+    "confirmation_power": {
+      "question": "is a same-power confirmation run enough to reject a false positive?",
+      "result": "no. typed encode@4096 flagged at +2.5% and its same-power confirmation reproduced it; a 3-round run then read +2.1% with a 2.6% MDE, i.e. not significant",
+      "consequence": "confirmation now runs at double the block count, so it has more power than the test that raised the flag rather than the same",
+      "estimator": "mean-across-workers"
     }
   }
 }

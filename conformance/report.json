@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T04:40:39.075002+00:00",
+  "generated_at": "2026-08-07T07:02:48.399091+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -14,7 +14,18 @@
     "toons": "0.7.0",
     "python": "3.13.1"
   },
-  "timing_methodology": "minimum per-call time across 7 autoranged batches; batch size grows until one batch takes >= 0.05s; callable warmed once before measurement",
+  "timing_methodology": "estimator: mean-across-workers \u2014 the loop count is calibrated once, then 10 independent worker processes each discard their first sample as a warmup and report the mean of 3 samples; the published figure is the mean across workers, with the standard deviation across workers alongside it. The minimum is deliberately not used: it reports the best case the machine ever reached, not what a caller sees",
+  "evidence_methodology": {
+    "estimator": "mean-across-workers",
+    "workers": 10,
+    "samples_per_worker": 3,
+    "warmup": "each worker discards its own first sample; the calibration worker's samples are discarded entirely",
+    "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
+    "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
+    "minimum_detectable_effect": "published per metric in speed_ab; a change smaller than it is reported as no significant difference, never as a small win",
+    "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
+    "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py"
+  },
   "conformance": {
     "spec_version_target": "4.1.1",
     "fixture_commit": "62f16b369408180f1faf1cba7da1b46d1f336f12",
@@ -341,27 +352,39 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.01,
-        "untyped_tree": 4.15,
-        "convert_only": 1.35,
-        "wrapper_tree_plus_convert": 5.7,
-        "incumbent_pipeline_python_toon_plus_convert": 106.42,
-        "msgspec_json_native": 2.18
+        "typed_direct": 5.25,
+        "untyped_tree": 4.46,
+        "convert_only": 1.4,
+        "wrapper_tree_plus_convert": 5.94,
+        "incumbent_pipeline_python_toon_plus_convert": 112.74,
+        "msgspec_json_native": 2.23
       },
       "encode_us": {
-        "typed_direct_whole": 2.26,
-        "to_builtins_alone": 1.05,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 91.71,
-        "msgspec_json_native": 1.02
+        "typed_direct_whole": 2.36,
+        "to_builtins_alone": 1.08,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 97.5,
+        "msgspec_json_native": 1.03
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 0.64,
+        "decode_us.untyped_tree": 1.19,
+        "decode_us.convert_only": 0.6,
+        "decode_us.wrapper_tree_plus_convert": 0.96,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.91,
+        "decode_us.msgspec_json_native": 1.1,
+        "encode_us.typed_direct_whole": 0.85,
+        "encode_us.to_builtins_alone": 1.38,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 4.69,
+        "encode_us.msgspec_json_native": 2.24
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
         "G4_whole_encode_beats_to_builtins_alone": false,
         "typed_beats_incumbent_pipeline_decode": true,
         "typed_beats_incumbent_pipeline_encode": true
-      },
-      "notes": {
-        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
@@ -370,27 +393,39 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.96,
-        "untyped_tree": 15.15,
-        "convert_only": 5.12,
-        "wrapper_tree_plus_convert": 20.76,
-        "incumbent_pipeline_python_toon_plus_convert": 428.01,
-        "msgspec_json_native": 8.14
+        "typed_direct": 18.33,
+        "untyped_tree": 15.98,
+        "convert_only": 5.35,
+        "wrapper_tree_plus_convert": 21.51,
+        "incumbent_pipeline_python_toon_plus_convert": 454.76,
+        "msgspec_json_native": 8.52
       },
       "encode_us": {
-        "typed_direct_whole": 7.63,
-        "to_builtins_alone": 4.39,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 357.53,
-        "msgspec_json_native": 3.01
+        "typed_direct_whole": 8.07,
+        "to_builtins_alone": 4.45,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 375.42,
+        "msgspec_json_native": 3.13
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 4.82,
+        "decode_us.untyped_tree": 2.37,
+        "decode_us.convert_only": 0.85,
+        "decode_us.wrapper_tree_plus_convert": 2.11,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.63,
+        "decode_us.msgspec_json_native": 0.95,
+        "encode_us.typed_direct_whole": 2.03,
+        "encode_us.to_builtins_alone": 1.0,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.6,
+        "encode_us.msgspec_json_native": 1.76
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
         "G4_whole_encode_beats_to_builtins_alone": false,
         "typed_beats_incumbent_pipeline_decode": true,
         "typed_beats_incumbent_pipeline_encode": true
-      },
-      "notes": {
-        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
@@ -399,27 +434,39 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 135.65,
-        "untyped_tree": 123.73,
-        "convert_only": 41.58,
-        "wrapper_tree_plus_convert": 166.52,
-        "incumbent_pipeline_python_toon_plus_convert": 3557.96,
-        "msgspec_json_native": 66.85
+        "typed_direct": 139.94,
+        "untyped_tree": 132.06,
+        "convert_only": 42.61,
+        "wrapper_tree_plus_convert": 175.3,
+        "incumbent_pipeline_python_toon_plus_convert": 3696.66,
+        "msgspec_json_native": 67.98
       },
       "encode_us": {
-        "typed_direct_whole": 59.81,
-        "to_builtins_alone": 43.79,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2917.48,
-        "msgspec_json_native": 22.99
+        "typed_direct_whole": 62.3,
+        "to_builtins_alone": 43.08,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2982.82,
+        "msgspec_json_native": 22.89
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 0.49,
+        "decode_us.untyped_tree": 1.36,
+        "decode_us.convert_only": 1.11,
+        "decode_us.wrapper_tree_plus_convert": 1.06,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.34,
+        "decode_us.msgspec_json_native": 2.62,
+        "encode_us.typed_direct_whole": 1.13,
+        "encode_us.to_builtins_alone": 0.81,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.59,
+        "encode_us.msgspec_json_native": 2.92
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
         "G4_whole_encode_beats_to_builtins_alone": false,
         "typed_beats_incumbent_pipeline_decode": true,
         "typed_beats_incumbent_pipeline_encode": true
-      },
-      "notes": {
-        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
@@ -428,27 +475,39 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1195.48,
-        "untyped_tree": 1102.75,
-        "convert_only": 426.7,
-        "wrapper_tree_plus_convert": 1479.37,
-        "incumbent_pipeline_python_toon_plus_convert": 29365.44,
-        "msgspec_json_native": 634.61
+        "typed_direct": 1228.4,
+        "untyped_tree": 1153.48,
+        "convert_only": 454.44,
+        "wrapper_tree_plus_convert": 1549.1,
+        "incumbent_pipeline_python_toon_plus_convert": 30996.02,
+        "msgspec_json_native": 654.01
       },
       "encode_us": {
-        "typed_direct_whole": 467.92,
-        "to_builtins_alone": 440.0,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23104.55,
-        "msgspec_json_native": 171.83
+        "typed_direct_whole": 505.19,
+        "to_builtins_alone": 451.0,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24228.8,
+        "msgspec_json_native": 172.35
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 0.65,
+        "decode_us.untyped_tree": 0.41,
+        "decode_us.convert_only": 1.22,
+        "decode_us.wrapper_tree_plus_convert": 0.58,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.89,
+        "decode_us.msgspec_json_native": 1.4,
+        "encode_us.typed_direct_whole": 1.27,
+        "encode_us.to_builtins_alone": 1.12,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.54,
+        "encode_us.msgspec_json_native": 0.92
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
         "G4_whole_encode_beats_to_builtins_alone": false,
         "typed_beats_incumbent_pipeline_decode": true,
         "typed_beats_incumbent_pipeline_encode": true
-      },
-      "notes": {
-        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     }
   ],
@@ -462,16 +521,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.47,
-        "toons_rust": 25.77,
-        "python_toon": 92.23,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.7,
+        "toons_rust": 27.44,
+        "python_toon": 94.91,
+        "msgspec_json_context": 1.2
       },
       "decode_us": {
-        "msgspec_toon": 4.2,
-        "toons_rust": 10.81,
-        "python_toon": 106.81,
-        "msgspec_json_context": 2.31
+        "msgspec_toon": 4.51,
+        "toons_rust": 11.68,
+        "python_toon": 111.63,
+        "msgspec_json_context": 2.36
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 1.38,
+        "encode_us.toons_rust": 1.43,
+        "encode_us.python_toon": 1.5,
+        "encode_us.msgspec_json_context": 0.73,
+        "decode_us.msgspec_toon": 3.83,
+        "decode_us.toons_rust": 3.14,
+        "decode_us.python_toon": 2.45,
+        "decode_us.msgspec_json_context": 1.18
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -487,16 +556,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.58,
-        "toons_rust": 98.98,
-        "python_toon": 357.8,
-        "msgspec_json_context": 3.72
+        "msgspec_toon": 16.43,
+        "toons_rust": 105.98,
+        "python_toon": 370.48,
+        "msgspec_json_context": 3.74
       },
       "decode_us": {
-        "msgspec_toon": 14.99,
-        "toons_rust": 43.29,
-        "python_toon": 428.36,
-        "msgspec_json_context": 9.44
+        "msgspec_toon": 15.99,
+        "toons_rust": 45.57,
+        "python_toon": 447.69,
+        "msgspec_json_context": 9.61
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 1.07,
+        "encode_us.toons_rust": 1.28,
+        "encode_us.python_toon": 0.91,
+        "encode_us.msgspec_json_context": 1.26,
+        "decode_us.msgspec_toon": 1.2,
+        "decode_us.toons_rust": 1.28,
+        "decode_us.python_toon": 0.65,
+        "decode_us.msgspec_json_context": 1.63
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -512,16 +591,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 118.9,
-        "toons_rust": 789.16,
-        "python_toon": 2872.89,
-        "msgspec_json_context": 28.89
+        "msgspec_toon": 125.08,
+        "toons_rust": 825.61,
+        "python_toon": 2938.4,
+        "msgspec_json_context": 27.7
       },
       "decode_us": {
-        "msgspec_toon": 123.62,
-        "toons_rust": 359.66,
-        "python_toon": 3503.84,
-        "msgspec_json_context": 82.16
+        "msgspec_toon": 131.52,
+        "toons_rust": 376.66,
+        "python_toon": 3634.78,
+        "msgspec_json_context": 85.55
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 1.85,
+        "encode_us.toons_rust": 1.43,
+        "encode_us.python_toon": 0.54,
+        "encode_us.msgspec_json_context": 2.14,
+        "decode_us.msgspec_toon": 1.3,
+        "decode_us.toons_rust": 0.91,
+        "decode_us.python_toon": 0.6,
+        "decode_us.msgspec_json_context": 1.31
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -537,16 +626,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 953.31,
-        "toons_rust": 6258.36,
-        "python_toon": 23038.18,
-        "msgspec_json_context": 210.8
+        "msgspec_toon": 991.47,
+        "toons_rust": 6662.13,
+        "python_toon": 23845.04,
+        "msgspec_json_context": 211.79
       },
       "decode_us": {
-        "msgspec_toon": 1109.27,
-        "toons_rust": 2975.02,
-        "python_toon": 29143.17,
-        "msgspec_json_context": 807.6
+        "msgspec_toon": 1171.53,
+        "toons_rust": 3159.94,
+        "python_toon": 30385.97,
+        "msgspec_json_context": 823.44
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 2.01,
+        "encode_us.toons_rust": 1.61,
+        "encode_us.python_toon": 1.07,
+        "encode_us.msgspec_json_context": 0.92,
+        "decode_us.msgspec_toon": 1.14,
+        "decode_us.toons_rust": 0.82,
+        "decode_us.python_toon": 0.59,
+        "decode_us.msgspec_json_context": 0.94
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -922,6 +1021,66 @@
         }
       },
       {
+        "shape": "irregular",
+        "records": 16,
+        "formats": {
+          "json_compact": {
+            "bytes": 791,
+            "tokens": {
+              "o200k_base": 310,
+              "cl100k_base": 293
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 39.19
+          },
+          "toon_comma": {
+            "bytes": 727,
+            "tokens": {
+              "o200k_base": 359,
+              "cl100k_base": 359
+            },
+            "tokens_vs_json": 1.158,
+            "tokens_per_100_bytes": 49.38
+          },
+          "toon_tab": {
+            "bytes": 728,
+            "tokens": {
+              "o200k_base": 353,
+              "cl100k_base": 353
+            },
+            "tokens_vs_json": 1.139,
+            "tokens_per_100_bytes": 48.49
+          },
+          "toon_pipe": {
+            "bytes": 728,
+            "tokens": {
+              "o200k_base": 360,
+              "cl100k_base": 360
+            },
+            "tokens_vs_json": 1.161,
+            "tokens_per_100_bytes": 49.45
+          },
+          "toons_rust": {
+            "bytes": 711,
+            "tokens": {
+              "o200k_base": 351,
+              "cl100k_base": 351
+            },
+            "tokens_vs_json": 1.132,
+            "tokens_per_100_bytes": 49.37
+          },
+          "python_toon": {
+            "bytes": 711,
+            "tokens": {
+              "o200k_base": 351,
+              "cl100k_base": 351
+            },
+            "tokens_vs_json": 1.132,
+            "tokens_per_100_bytes": 49.37
+          }
+        }
+      },
+      {
         "shape": "string-heavy",
         "records": 512,
         "formats": {
@@ -1040,6 +1199,66 @@
             "tokens_per_100_bytes": 61.75
           }
         }
+      },
+      {
+        "shape": "irregular",
+        "records": 512,
+        "formats": {
+          "json_compact": {
+            "bytes": 23387,
+            "tokens": {
+              "o200k_base": 8252,
+              "cl100k_base": 7739
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 35.28
+          },
+          "toon_comma": {
+            "bytes": 22083,
+            "tokens": {
+              "o200k_base": 9789,
+              "cl100k_base": 9789
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.33
+          },
+          "toon_tab": {
+            "bytes": 22084,
+            "tokens": {
+              "o200k_base": 9783,
+              "cl100k_base": 9783
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.3
+          },
+          "toon_pipe": {
+            "bytes": 22084,
+            "tokens": {
+              "o200k_base": 9790,
+              "cl100k_base": 9790
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.33
+          },
+          "toons_rust": {
+            "bytes": 21571,
+            "tokens": {
+              "o200k_base": 9533,
+              "cl100k_base": 9533
+            },
+            "tokens_vs_json": 1.155,
+            "tokens_per_100_bytes": 44.19
+          },
+          "python_toon": {
+            "bytes": 21571,
+            "tokens": {
+              "o200k_base": 9533,
+              "cl100k_base": 9533
+            },
+            "tokens_vs_json": 1.155,
+            "tokens_per_100_bytes": 44.19
+          }
+        }
       }
     ],
     "gates": {
@@ -1059,335 +1278,1020 @@
       "note": "The tab-saves-tokens folklore does not hold under o200k_base on these shapes: differences are within a few tokens per ten thousand in either direction (tab wins marginally on numeric-heavy payloads, loses by one header token elsewhere)."
     }
   },
-  "speed_ab_latest": {
-    "records": [
-      16,
-      64,
-      512,
-      4096
-    ],
-    "baseline_venv": ".venv-baseline",
-    "block_sequence": [
-      "baseline",
-      "current",
-      "current",
-      "baseline"
-    ],
-    "baseline_instrumented": true,
-    "current_instrumented": false,
-    "method": "alternating B C C B blocks; reported delta is the median of the paired ratios, pair_spread_pp is their range, and noise_floor_pp is the spread among repeated blocks of the SAME build \u2014 the smallest delta this session can distinguish from nothing",
-    "results": [
-      {
-        "baseline_us": [
-          5.71,
-          5.91
-        ],
-        "current_us": [
-          5.05,
-          5.14
-        ],
-        "paired_ratios": [
-          0.88441,
-          0.86971
-        ],
-        "median_ratio": 0.8770628309641706,
-        "pair_spread_pp": 1.4700958036632406,
-        "noise_floor_pp": 3.5026269702276736,
-        "metric": "typed.decode_us.typed_direct@16",
-        "verdict": "resolved"
+  "efficiency_lock": {
+    "versions": {
+      "tiktoken": "0.13.0",
+      "msgspec": "0.21.1",
+      "encodings": "o200k_base,cl100k_base"
+    },
+    "payloads": {
+      "uniform-records@16": {
+        "json_compact": {
+          "bytes": 1339,
+          "tokens": {
+            "o200k_base": 372,
+            "cl100k_base": 371
+          }
+        },
+        "toon_comma": {
+          "bytes": 527,
+          "tokens": {
+            "o200k_base": 238,
+            "cl100k_base": 238
+          }
+        },
+        "toon_tab": {
+          "bytes": 528,
+          "tokens": {
+            "o200k_base": 239,
+            "cl100k_base": 239
+          }
+        },
+        "toon_pipe": {
+          "bytes": 528,
+          "tokens": {
+            "o200k_base": 239,
+            "cl100k_base": 239
+          }
+        }
       },
-      {
-        "baseline_us": [
-          21.3,
-          21.82
-        ],
-        "current_us": [
-          17.54,
-          18.31
-        ],
-        "paired_ratios": [
-          0.82347,
-          0.83914
-        ],
-        "median_ratio": 0.8313062917683307,
-        "pair_spread_pp": 1.5664226729149688,
-        "noise_floor_pp": 4.3899657924743485,
-        "metric": "typed.decode_us.typed_direct@64",
-        "verdict": "resolved"
+      "uniform-records@64": {
+        "json_compact": {
+          "bytes": 5347,
+          "tokens": {
+            "o200k_base": 1476,
+            "cl100k_base": 1475
+          }
+        },
+        "toon_comma": {
+          "bytes": 1991,
+          "tokens": {
+            "o200k_base": 910,
+            "cl100k_base": 910
+          }
+        },
+        "toon_tab": {
+          "bytes": 1992,
+          "tokens": {
+            "o200k_base": 911,
+            "cl100k_base": 911
+          }
+        },
+        "toon_pipe": {
+          "bytes": 1992,
+          "tokens": {
+            "o200k_base": 911,
+            "cl100k_base": 911
+          }
+        }
       },
-      {
-        "baseline_us": [
-          167.19,
-          163.64
-        ],
-        "current_us": [
-          133.04,
-          137.62
-        ],
-        "paired_ratios": [
-          0.79574,
-          0.84099
-        ],
-        "median_ratio": 0.8183668972411229,
-        "pair_spread_pp": 4.525105029898146,
-        "noise_floor_pp": 3.442573662056536,
-        "metric": "typed.decode_us.typed_direct@512",
-        "verdict": "resolved"
+      "uniform-records@512": {
+        "json_compact": {
+          "bytes": 43167,
+          "tokens": {
+            "o200k_base": 11780,
+            "cl100k_base": 11779
+          }
+        },
+        "toon_comma": {
+          "bytes": 16068,
+          "tokens": {
+            "o200k_base": 7182,
+            "cl100k_base": 7182
+          }
+        },
+        "toon_tab": {
+          "bytes": 16069,
+          "tokens": {
+            "o200k_base": 7183,
+            "cl100k_base": 7183
+          }
+        },
+        "toon_pipe": {
+          "bytes": 16069,
+          "tokens": {
+            "o200k_base": 7183,
+            "cl100k_base": 7183
+          }
+        }
       },
-      {
-        "baseline_us": [
-          1468.06,
-          1509.58
-        ],
-        "current_us": [
-          1189.01,
-          1223.24
-        ],
-        "paired_ratios": [
-          0.80992,
-          0.81032
-        ],
-        "median_ratio": 0.8101186574174195,
-        "pair_spread_pp": 0.03988886124774993,
-        "noise_floor_pp": 2.878865610886372,
-        "metric": "typed.decode_us.typed_direct@4096",
-        "verdict": "resolved"
+      "uniform-records@4096": {
+        "json_compact": {
+          "bytes": 349111,
+          "tokens": {
+            "o200k_base": 97308,
+            "cl100k_base": 97307
+          }
+        },
+        "toon_comma": {
+          "bytes": 132061,
+          "tokens": {
+            "o200k_base": 60455,
+            "cl100k_base": 60455
+          }
+        },
+        "toon_tab": {
+          "bytes": 132062,
+          "tokens": {
+            "o200k_base": 60456,
+            "cl100k_base": 60456
+          }
+        },
+        "toon_pipe": {
+          "bytes": 132062,
+          "tokens": {
+            "o200k_base": 60456,
+            "cl100k_base": 60456
+          }
+        }
       },
-      {
-        "baseline_us": [
-          2.42,
-          2.46
-        ],
-        "current_us": [
-          2.29,
-          2.3
-        ],
-        "paired_ratios": [
-          0.94628,
-          0.93496
-        ],
-        "median_ratio": 0.9406201706645165,
-        "pair_spread_pp": 1.1321642142041344,
-        "noise_floor_pp": 1.6528925619834656,
-        "metric": "typed.encode_us.typed_direct_whole@16",
-        "verdict": "resolved"
+      "string-heavy@16": {
+        "json_compact": {
+          "bytes": 4368,
+          "tokens": {
+            "o200k_base": 804,
+            "cl100k_base": 803
+          }
+        },
+        "toon_comma": {
+          "bytes": 3584,
+          "tokens": {
+            "o200k_base": 653,
+            "cl100k_base": 653
+          }
+        },
+        "toon_tab": {
+          "bytes": 3585,
+          "tokens": {
+            "o200k_base": 654,
+            "cl100k_base": 654
+          }
+        },
+        "toon_pipe": {
+          "bytes": 3585,
+          "tokens": {
+            "o200k_base": 654,
+            "cl100k_base": 654
+          }
+        }
       },
-      {
-        "baseline_us": [
-          8.01,
-          8.36
-        ],
-        "current_us": [
-          7.82,
-          7.82
-        ],
-        "paired_ratios": [
-          0.97628,
-          0.93541
-        ],
-        "median_ratio": 0.9558431745007736,
-        "pair_spread_pp": 4.087295187236051,
-        "noise_floor_pp": 4.369538077403234,
-        "metric": "typed.encode_us.typed_direct_whole@64",
-        "verdict": "resolved"
+      "numeric-heavy@16": {
+        "json_compact": {
+          "bytes": 1079,
+          "tokens": {
+            "o200k_base": 485,
+            "cl100k_base": 484
+          }
+        },
+        "toon_comma": {
+          "bytes": 525,
+          "tokens": {
+            "o200k_base": 319,
+            "cl100k_base": 318
+          }
+        },
+        "toon_tab": {
+          "bytes": 526,
+          "tokens": {
+            "o200k_base": 317,
+            "cl100k_base": 316
+          }
+        },
+        "toon_pipe": {
+          "bytes": 526,
+          "tokens": {
+            "o200k_base": 337,
+            "cl100k_base": 337
+          }
+        }
       },
-      {
-        "baseline_us": [
-          61.83,
-          63.06
-        ],
-        "current_us": [
-          60.3,
-          60.25
-        ],
-        "paired_ratios": [
-          0.97525,
-          0.95544
-        ],
-        "median_ratio": 0.9653469974530391,
-        "pair_spread_pp": 1.9815466520413771,
-        "noise_floor_pp": 1.9893255701115997,
-        "metric": "typed.encode_us.typed_direct_whole@512",
-        "verdict": "resolved"
+      "irregular@16": {
+        "json_compact": {
+          "bytes": 791,
+          "tokens": {
+            "o200k_base": 310,
+            "cl100k_base": 293
+          }
+        },
+        "toon_comma": {
+          "bytes": 727,
+          "tokens": {
+            "o200k_base": 359,
+            "cl100k_base": 359
+          }
+        },
+        "toon_tab": {
+          "bytes": 728,
+          "tokens": {
+            "o200k_base": 353,
+            "cl100k_base": 353
+          }
+        },
+        "toon_pipe": {
+          "bytes": 728,
+          "tokens": {
+            "o200k_base": 360,
+            "cl100k_base": 360
+          }
+        }
       },
-      {
-        "baseline_us": [
-          497.96,
-          511.21
-        ],
-        "current_us": [
-          491.24,
-          487.37
-        ],
-        "paired_ratios": [
-          0.9865,
-          0.95337
-        ],
-        "median_ratio": 0.9699352423241573,
-        "pair_spread_pp": 3.313939566335722,
-        "noise_floor_pp": 2.6608562936782043,
-        "metric": "typed.encode_us.typed_direct_whole@4096",
-        "verdict": "resolved"
+      "string-heavy@512": {
+        "json_compact": {
+          "bytes": 141508,
+          "tokens": {
+            "o200k_base": 25604,
+            "cl100k_base": 25603
+          }
+        },
+        "toon_comma": {
+          "bytes": 115429,
+          "tokens": {
+            "o200k_base": 20493,
+            "cl100k_base": 20493
+          }
+        },
+        "toon_tab": {
+          "bytes": 115430,
+          "tokens": {
+            "o200k_base": 20494,
+            "cl100k_base": 20494
+          }
+        },
+        "toon_pipe": {
+          "bytes": 115430,
+          "tokens": {
+            "o200k_base": 20494,
+            "cl100k_base": 20494
+          }
+        }
       },
-      {
-        "baseline_us": [
-          4.84,
-          4.94
-        ],
-        "current_us": [
-          4.49,
-          4.65
-        ],
-        "paired_ratios": [
-          0.92769,
-          0.9413
-        ],
-        "median_ratio": 0.9344907484859638,
-        "pair_spread_pp": 1.3609596145481184,
-        "noise_floor_pp": 3.563474387527843,
-        "metric": "codecs.encode_us.msgspec_toon@16",
-        "verdict": "resolved"
+      "numeric-heavy@512": {
+        "json_compact": {
+          "bytes": 35010,
+          "tokens": {
+            "o200k_base": 15873,
+            "cl100k_base": 15872
+          }
+        },
+        "toon_comma": {
+          "bytes": 16601,
+          "tokens": {
+            "o200k_base": 10251,
+            "cl100k_base": 10250
+          }
+        },
+        "toon_tab": {
+          "bytes": 16602,
+          "tokens": {
+            "o200k_base": 10249,
+            "cl100k_base": 10248
+          }
+        },
+        "toon_pipe": {
+          "bytes": 16602,
+          "tokens": {
+            "o200k_base": 10765,
+            "cl100k_base": 10765
+          }
+        }
       },
-      {
-        "baseline_us": [
-          16.85,
-          17.53
-        ],
-        "current_us": [
-          16.04,
-          15.91
-        ],
-        "paired_ratios": [
-          0.95193,
-          0.90759
-        ],
-        "median_ratio": 0.929757888553916,
-        "pair_spread_pp": 4.434178965774649,
-        "noise_floor_pp": 4.035608308605343,
-        "metric": "codecs.encode_us.msgspec_toon@64",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          130.85,
-          130.98
-        ],
-        "current_us": [
-          119.73,
-          122.34
-        ],
-        "paired_ratios": [
-          0.91502,
-          0.93404
-        ],
-        "median_ratio": 0.9245264629538252,
-        "pair_spread_pp": 1.9018535384150104,
-        "noise_floor_pp": 2.179904785767972,
-        "metric": "codecs.encode_us.msgspec_toon@512",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          1012.46,
-          1031.45
-        ],
-        "current_us": [
-          957.81,
-          961.6
-        ],
-        "paired_ratios": [
-          0.94602,
-          0.93228
-        ],
-        "median_ratio": 0.9391511795985326,
-        "pair_spread_pp": 1.3742758634750163,
-        "noise_floor_pp": 1.8756296545048734,
-        "metric": "codecs.encode_us.msgspec_toon@4096",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          4.86,
-          4.9
-        ],
-        "current_us": [
-          4.38,
-          4.35
-        ],
-        "paired_ratios": [
-          0.90123,
-          0.88776
-        ],
-        "median_ratio": 0.8944948349710253,
-        "pair_spread_pp": 1.347946586041826,
-        "noise_floor_pp": 0.8230452674897082,
-        "metric": "codecs.decode_us.msgspec_toon@16",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          18.29,
-          18.36
-        ],
-        "current_us": [
-          15.63,
-          15.44
-        ],
-        "paired_ratios": [
-          0.85457,
-          0.84096
-        ],
-        "median_ratio": 0.8477619709569023,
-        "pair_spread_pp": 1.3606730584828641,
-        "noise_floor_pp": 1.2305699481865329,
-        "metric": "codecs.decode_us.msgspec_toon@64",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          156.75,
-          154.74
-        ],
-        "current_us": [
-          124.08,
-          125.23
-        ],
-        "paired_ratios": [
-          0.79158,
-          0.80929
-        ],
-        "median_ratio": 0.8004359774970579,
-        "pair_spread_pp": 1.7714060257273623,
-        "noise_floor_pp": 1.2989530825901374,
-        "metric": "codecs.decode_us.msgspec_toon@512",
-        "verdict": "resolved"
-      },
-      {
-        "baseline_us": [
-          1402.11,
-          1418.35
-        ],
-        "current_us": [
-          1129.64,
-          1139.52
-        ],
-        "paired_ratios": [
-          0.80567,
-          0.80341
-        ],
-        "median_ratio": 0.8045419340732307,
-        "pair_spread_pp": 0.22590364758581227,
-        "noise_floor_pp": 1.15825434523682,
-        "metric": "codecs.decode_us.msgspec_toon@4096",
-        "verdict": "resolved"
+      "irregular@512": {
+        "json_compact": {
+          "bytes": 23387,
+          "tokens": {
+            "o200k_base": 8252,
+            "cl100k_base": 7739
+          }
+        },
+        "toon_comma": {
+          "bytes": 22083,
+          "tokens": {
+            "o200k_base": 9789,
+            "cl100k_base": 9789
+          }
+        },
+        "toon_tab": {
+          "bytes": 22084,
+          "tokens": {
+            "o200k_base": 9783,
+            "cl100k_base": 9783
+          }
+        },
+        "toon_pipe": {
+          "bytes": 22084,
+          "tokens": {
+            "o200k_base": 9790,
+            "cl100k_base": 9790
+          }
+        }
       }
-    ]
+    },
+    "gate": "tests/test_efficiency_lock.py fails on any difference, in either direction"
+  },
+  "speed_ab": {
+    "guard": {
+      "records": [
+        16,
+        64,
+        512,
+        4096
+      ],
+      "baseline_venv": ".venv-guard",
+      "gated": true,
+      "block_sequence": [
+        "baseline",
+        "current",
+        "current",
+        "baseline",
+        "baseline",
+        "current",
+        "current",
+        "baseline"
+      ],
+      "baseline_instrumented": true,
+      "method": "one metric at one size per block, alternating B C C B; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent confirmation run at double the block count to fail the gate, because one test in twenty is wrong, this runs sixteen, and a same-power confirmation can reproduce a borderline effect twice by chance",
+      "results": [
+        {
+          "metric": "typed decode@16",
+          "baseline_us": [
+            5.25,
+            5.21,
+            5.41,
+            5.3
+          ],
+          "current_us": [
+            5.28,
+            5.28,
+            5.21,
+            5.23
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -0.8030231459612739,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.163484768441112
+        },
+        {
+          "metric": "typed decode@64",
+          "baseline_us": [
+            18.23,
+            18.08,
+            18.27,
+            18.26
+          ],
+          "current_us": [
+            18.14,
+            17.72,
+            18.09,
+            17.91
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -1.3454146073585995,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.4130868729082253
+        },
+        {
+          "metric": "typed decode@512",
+          "baseline_us": [
+            138.44,
+            141.37,
+            147.0,
+            138.02
+          ],
+          "current_us": [
+            137.17,
+            143.21,
+            137.65,
+            140.51
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -1.1136094045996277,
+          "significant": false,
+          "minimum_detectable_effect_pct": 4.331161263306493
+        },
+        {
+          "metric": "typed decode@4096",
+          "baseline_us": [
+            1224.59,
+            1216.32,
+            1211.25,
+            1221.82
+          ],
+          "current_us": [
+            1233.14,
+            1213.45,
+            1225.13,
+            1230.15
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 0.5722222906126254,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.0543170064741827
+        },
+        {
+          "metric": "typed encode@16",
+          "baseline_us": [
+            2.32,
+            2.37,
+            2.37,
+            2.45
+          ],
+          "current_us": [
+            2.32,
+            2.38,
+            2.33,
+            2.33
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -1.5772870662460605,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.0983997827870446
+        },
+        {
+          "metric": "typed encode@64",
+          "baseline_us": [
+            8.02,
+            7.92,
+            8.04,
+            7.97
+          ],
+          "current_us": [
+            8.1,
+            8.13,
+            7.93,
+            8.86
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 3.3489827856024936,
+          "significant": false,
+          "minimum_detectable_effect_pct": 6.3771070437862205
+        },
+        {
+          "metric": "typed encode@512",
+          "baseline_us": [
+            61.82,
+            64.69,
+            61.55,
+            64.45
+          ],
+          "current_us": [
+            61.26,
+            64.22,
+            61.24,
+            63.98
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -0.716803294919014,
+          "significant": false,
+          "minimum_detectable_effect_pct": 4.550846428194921
+        },
+        {
+          "metric": "typed encode@4096",
+          "baseline_us": [
+            499.21,
+            493.66,
+            494.98,
+            505.89
+          ],
+          "current_us": [
+            495.37,
+            505.44,
+            503.44,
+            493.36
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 0.19410755665232768,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.9863275034224577
+        },
+        {
+          "metric": "untyped decode@16",
+          "baseline_us": [
+            4.49,
+            4.48,
+            4.35,
+            4.42
+          ],
+          "current_us": [
+            4.44,
+            4.4,
+            4.44,
+            4.45
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -0.05636978579482278,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.8828929547706839
+        },
+        {
+          "metric": "untyped decode@64",
+          "baseline_us": [
+            16.09,
+            15.67,
+            16.49,
+            15.87
+          ],
+          "current_us": [
+            15.69,
+            16.02,
+            15.81,
+            15.62
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -1.5283842794759888,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.9968547376831642
+        },
+        {
+          "metric": "untyped decode@512",
+          "baseline_us": [
+            128.89,
+            132.72,
+            130.84,
+            127.97
+          ],
+          "current_us": [
+            133.41,
+            129.25,
+            131.81,
+            132.23
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 1.2067176511279518,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.5828051058178776
+        },
+        {
+          "metric": "untyped decode@4096",
+          "baseline_us": [
+            1163.38,
+            1169.87,
+            1188.04,
+            1181.47
+          ],
+          "current_us": [
+            1160.8,
+            1196.95,
+            1156.65,
+            1171.31
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -0.36255305395130055,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.210909653655996
+        },
+        {
+          "metric": "untyped encode@16",
+          "baseline_us": [
+            4.75,
+            4.64,
+            4.72,
+            4.65
+          ],
+          "current_us": [
+            4.74,
+            4.71,
+            4.63,
+            4.77
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 0.4797441364605726,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.1018863837256667
+        },
+        {
+          "metric": "untyped encode@64",
+          "baseline_us": [
+            16.23,
+            16.32,
+            16.26,
+            16.27
+          ],
+          "current_us": [
+            16.47,
+            16.39,
+            16.67,
+            16.5
+          ],
+          "verdict": "slowdown did not reproduce",
+          "confirmation": {
+            "change_pct": 2.135368485969789,
+            "significant": false,
+            "minimum_detectable_effect_pct": 2.379479373304453
+          },
+          "change_pct": 1.4597418561770172,
+          "significant": true,
+          "minimum_detectable_effect_pct": 0.9299162394671578
+        },
+        {
+          "metric": "untyped encode@512",
+          "baseline_us": [
+            126.19,
+            126.28,
+            127.53,
+            124.74
+          ],
+          "current_us": [
+            128.04,
+            123.63,
+            127.07,
+            124.66
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": -0.2654832190830986,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.2763499443706627
+        },
+        {
+          "metric": "untyped encode@4096",
+          "baseline_us": [
+            1026.34,
+            986.02,
+            969.48,
+            973.69
+          ],
+          "current_us": [
+            1004.71,
+            1000.92,
+            980.05,
+            1001.23
+          ],
+          "verdict": "no significant difference",
+          "confirmation": null,
+          "change_pct": 0.7933197321218676,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.4981999359596903
+        }
+      ]
+    },
+    "baseline": {
+      "records": [
+        16,
+        64,
+        512,
+        4096
+      ],
+      "baseline_venv": ".venv-baseline",
+      "gated": false,
+      "block_sequence": [
+        "baseline",
+        "current",
+        "current",
+        "baseline",
+        "baseline",
+        "current",
+        "current",
+        "baseline"
+      ],
+      "baseline_instrumented": true,
+      "method": "one metric at one size per block, alternating B C C B; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent confirmation run at double the block count to fail the gate, because one test in twenty is wrong, this runs sixteen, and a same-power confirmation can reproduce a borderline effect twice by chance",
+      "results": [
+        {
+          "metric": "typed decode@16",
+          "baseline_us": [
+            6.11,
+            6.07,
+            5.97,
+            6.06
+          ],
+          "current_us": [
+            5.2,
+            5.16,
+            5.25,
+            5.13
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -14.332920280875665,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.5906438820693531
+        },
+        {
+          "metric": "typed decode@64",
+          "baseline_us": [
+            21.68,
+            21.64,
+            21.64,
+            21.93
+          ],
+          "current_us": [
+            18.02,
+            18.05,
+            17.8,
+            18.23
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -17.021521463919907,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.2668746941972564
+        },
+        {
+          "metric": "typed decode@512",
+          "baseline_us": [
+            167.68,
+            164.81,
+            168.41,
+            165.93
+          ],
+          "current_us": [
+            139.35,
+            138.65,
+            135.66,
+            140.56
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -16.88736259616394,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.945990224517195
+        },
+        {
+          "metric": "typed decode@4096",
+          "baseline_us": [
+            1455.75,
+            1458.25,
+            1467.47,
+            1604.32
+          ],
+          "current_us": [
+            1240.36,
+            1235.01,
+            1216.93,
+            1209.74
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -18.105379573957656,
+          "significant": true,
+          "minimum_detectable_effect_pct": 6.01268863072018
+        },
+        {
+          "metric": "typed encode@16",
+          "baseline_us": [
+            2.53,
+            2.55,
+            2.53,
+            2.6
+          ],
+          "current_us": [
+            2.3,
+            2.57,
+            2.31,
+            2.38
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -6.366307541625861,
+          "significant": true,
+          "minimum_detectable_effect_pct": 6.205169300644401
+        },
+        {
+          "metric": "typed encode@64",
+          "baseline_us": [
+            8.59,
+            8.56,
+            8.67,
+            8.5
+          ],
+          "current_us": [
+            7.93,
+            7.96,
+            8.11,
+            8.03
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -6.67249417249417,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.524209942446937
+        },
+        {
+          "metric": "typed encode@512",
+          "baseline_us": [
+            65.7,
+            66.7,
+            65.2,
+            64.67
+          ],
+          "current_us": [
+            61.17,
+            61.16,
+            62.46,
+            61.09
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -6.249285087886525,
+          "significant": true,
+          "minimum_detectable_effect_pct": 2.030237631726236
+        },
+        {
+          "metric": "typed encode@4096",
+          "baseline_us": [
+            528.03,
+            514.61,
+            514.65,
+            523.15
+          ],
+          "current_us": [
+            496.44,
+            514.62,
+            495.83,
+            502.75
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -3.4031262617523304,
+          "significant": true,
+          "minimum_detectable_effect_pct": 2.5775070419185058
+        },
+        {
+          "metric": "untyped decode@16",
+          "baseline_us": [
+            5.12,
+            4.96,
+            5.07,
+            5.02
+          ],
+          "current_us": [
+            4.37,
+            4.53,
+            4.44,
+            4.45
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -11.799702528507696,
+          "significant": true,
+          "minimum_detectable_effect_pct": 2.2997298600728735
+        },
+        {
+          "metric": "untyped decode@64",
+          "baseline_us": [
+            18.86,
+            18.41,
+            19.16,
+            19.11
+          ],
+          "current_us": [
+            15.84,
+            16.02,
+            15.93,
+            16.06
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -15.475244903362457,
+          "significant": true,
+          "minimum_detectable_effect_pct": 2.3099494043557995
+        },
+        {
+          "metric": "untyped decode@512",
+          "baseline_us": [
+            160.74,
+            156.18,
+            159.78,
+            162.58
+          ],
+          "current_us": [
+            128.03,
+            133.49,
+            132.3,
+            128.92
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -18.229883619071447,
+          "significant": true,
+          "minimum_detectable_effect_pct": 2.8765249930038714
+        },
+        {
+          "metric": "untyped decode@4096",
+          "baseline_us": [
+            1414.42,
+            1436.82,
+            1441.31,
+            1439.14
+          ],
+          "current_us": [
+            1155.27,
+            1165.68,
+            1243.25,
+            1158.81
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -17.59829997784249,
+          "significant": true,
+          "minimum_detectable_effect_pct": 3.7317840065914787
+        },
+        {
+          "metric": "untyped encode@16",
+          "baseline_us": [
+            4.94,
+            5.27,
+            5.17,
+            5.11
+          ],
+          "current_us": [
+            4.66,
+            4.72,
+            4.68,
+            4.66
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -8.638360175695475,
+          "significant": true,
+          "minimum_detectable_effect_pct": 3.3743035004769535
+        },
+        {
+          "metric": "untyped encode@64",
+          "baseline_us": [
+            17.63,
+            17.72,
+            17.35,
+            17.47
+          ],
+          "current_us": [
+            16.42,
+            16.32,
+            16.41,
+            16.4
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -6.5840102607952184,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.1928214045393655
+        },
+        {
+          "metric": "untyped encode@512",
+          "baseline_us": [
+            134.46,
+            135.55,
+            132.4,
+            133.56
+          ],
+          "current_us": [
+            124.03,
+            125.06,
+            125.43,
+            122.71
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -7.228016493460457,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.6522638523546556
+        },
+        {
+          "metric": "untyped encode@4096",
+          "baseline_us": [
+            1051.06,
+            1061.47,
+            1059.81,
+            1048.83
+          ],
+          "current_us": [
+            971.6,
+            996.28,
+            998.45,
+            988.08
+          ],
+          "verdict": "faster",
+          "confirmation": null,
+          "change_pct": -6.31957490458807,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.5890082223728648
+        }
+      ]
+    }
   },
   "optimization_ledger": {
     "baseline": {
       "tag": "v0.1.0-conformant",
       "harness": "benches/ab.py \u2014 alternating B C C B blocks in one session on one machine; the reported delta is the median of the paired ratios, and the noise floor is the spread among repeated blocks of the SAME build. Figures before F-12 came from a single B-then-C run, which could not separate a small delta from run-order drift",
-      "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them"
+      "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them",
+      "estimator_note": "Every figure recorded before the trustworthy-performance-evidence change was produced by the min-of-batches estimator: the minimum per-call time across 7 autoranged batches in one process. That estimator rewards whichever batch dodged the scheduler and has no central-limit behavior to converge on. Figures under it and under the mean-across-workers estimator that replaced it are NOT comparable, and no historical figure is restated under the new estimator without re-measurement.",
+      "roles": {
+        "story": "v0.1.0-conformant (.venv-baseline) \u2014 what the optimization round bought. Reported, never gated: every figure in `candidates` below is measured against it",
+        "guard": "v0.2.0 (.venv-guard) \u2014 the latest release, and the only thing `make ab` gates against. Re-cut it at every release or it decays into the same blind spot"
+      }
     },
     "candidates": [
       {
@@ -1411,7 +2315,8 @@
           ]
         },
         "note": "measured together with E2; also recovered the +14-15% typed-encode regression that the wire-options plumbing introduced (caught by the A/B harness on its first run)",
-        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
+        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win",
+        "estimator": "min-of-batches"
       },
       {
         "id": "E2",
@@ -1422,7 +2327,8 @@
         "ab_delta": {
           "combined_with": "E1"
         },
-        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
+        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win",
+        "estimator": "min-of-batches"
       },
       {
         "id": "P1",
@@ -1432,7 +2338,8 @@
         "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
         "ab_delta": {
           "combined_with": "D1+D2+D3, see D1 row"
-        }
+        },
+        "estimator": "min-of-batches"
       },
       {
         "id": "D2",
@@ -1442,7 +2349,8 @@
         "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
         "ab_delta": {
           "combined_with": "D1+P1+D3, see D1 row"
-        }
+        },
+        "estimator": "min-of-batches"
       },
       {
         "id": "D3",
@@ -1458,7 +2366,8 @@
             "-18.4% @4096"
           ]
         },
-        "note": "this also sped up the G3 wrapper baseline (which uses our untyped decoder), thinning typed decode's margin at 64 records to noise level in one run \u2014 resolved by implementing D1's typed-side memo rather than rejecting a genuine improvement; G3 re-verified passing at every size afterwards"
+        "note": "this also sped up the G3 wrapper baseline (which uses our untyped decoder), thinning typed decode's margin at 64 records to noise level in one run \u2014 resolved by implementing D1's typed-side memo rather than rejecting a genuine improvement; G3 re-verified passing at every size afterwards",
+        "estimator": "min-of-batches"
       },
       {
         "id": "D1",
@@ -1473,7 +2382,8 @@
             "-17.3% @512",
             "-23.6% @4096"
           ]
-        }
+        },
+        "estimator": "min-of-batches"
       },
       {
         "id": "D4",
@@ -1517,6 +2427,42 @@
         "result": "same-build blocks disagree by 1.7-8.8 percentage points depending on metric and size; an earlier single-order run put whichever side ran second 0.4-3.6% slower on every row",
         "consequence": "decode deltas (-13 to -20%) sit well above the floor and are resolved; typed-encode at 16 and 64 records (-5.4%, -4.2%) sits BELOW it and is not a result on this machine",
         "action": "ab.py now labels below-noise rows explicitly and keeps every block in benches/ab-latest.json"
+      },
+      "worker_count_choice": {
+        "question": "how many worker processes does the mean-across-workers estimator need?",
+        "method": "bench_typed at 16 records with 8 workers; read the per-worker coefficient of variation, then compute the standard error of the published mean as CV/sqrt(workers)",
+        "result": "per-worker CV on a quiet machine: typed decode 0.80%, typed encode 1.43%, to_builtins 1.13%, wrapper decode 1.18%. Standard error at 10 workers: 0.25-0.45%",
+        "choice": "10 workers. The smallest count whose standard error sits well under the >=4% effects this project reports; 25 workers would buy about 0.15 percentage points for 2.5x the runtime",
+        "caveat": "per-worker CV is a property of machine load, not of the codec: the same metric measured 7.84% CV during a heavily loaded moment in the same session. The standard error above is a quiet-machine figure",
+        "estimator": "mean-across-workers"
+      },
+      "ab_false_positive_check": {
+        "question": "does the significance gate stay quiet when nothing changed?",
+        "method": "benches/ab.py --baseline-venv .venv \u2014 the current build against itself, 8 metrics",
+        "result": "first pass: 7 of 8 quiet, and typed encode@512 reported +1.6% SLOWER with a 1.4% minimum detectable effect \u2014 a false positive, as expected from 8 tests at alpha 0.95",
+        "consequence": "a slowdown now triggers an independent confirmation run and only a reproduced slowdown fails the gate; re-run returned 8 of 8 no-significant-difference and exit 0",
+        "estimator": "mean-across-workers"
+      },
+      "gate_reference_point": {
+        "question": "can the speed gate detect a regression at all?",
+        "method": "inject a heap allocation per placed value into the typed decode path (139 -> 172 us, a 24% slowdown), then run the gate",
+        "result": "against the STORY baseline the same 24% regression read as +2.2%, verdict 'no significant difference', exit 0 \u2014 the current build led that baseline by 15-20%, so the regression only erased the lead. Against the GUARD baseline it read +24.4%, reproduced on the confirmation run, exit 1",
+        "consequence": "the gate measures against the latest release; the frozen tag stays as the reported story. A first attempt at a slowdown (black_box over 40 additions) compiled away to 137.67 us vs 139.03 clean, and the gate correctly stayed quiet",
+        "estimator": "mean-across-workers"
+      },
+      "open_question_encode_4096": {
+        "question": "is there a small typed-encode regression at 4096 records against v0.2.0?",
+        "observed": "+2.5% flagged and reproduced at 2 rounds; +2.1% not significant at 3 rounds (MDE 2.6%); +2.7% not significant at 2 rounds with a 2x confirmation (MDE 3.2%)",
+        "status": "UNRESOLVED \u2014 this harness cannot settle a ~2% question at 4096 in this session. It is not claimed as a regression and not dismissed as noise",
+        "candidates_if_real": "the encoder changes since v0.2.0 are the build_shape depth guard (one comparison per shape node, not per row) and the capped writer reservation; neither is obviously worth 2%",
+        "next": "re-run the gate on a quiet machine; if it resolves, bisect the two encoder changes",
+        "estimator": "mean-across-workers"
+      },
+      "confirmation_power": {
+        "question": "is a same-power confirmation run enough to reject a false positive?",
+        "result": "no. typed encode@4096 flagged at +2.5% and its same-power confirmation reproduced it; a 3-round run then read +2.1% with a 2.6% MDE, i.e. not significant",
+        "consequence": "confirmation now runs at double the block count, so it has more power than the test that raised the flag rather than the same",
+        "estimator": "mean-across-workers"
       }
     }
   },

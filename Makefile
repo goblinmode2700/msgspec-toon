@@ -7,9 +7,17 @@ export PYO3_PYTHON
 
 COOLDOWN_DAYS := 14
 
+# Two baselines, two jobs. STORY is what the optimization round bought — it is
+# reported and never gated, so the ledger keeps its reference point. GUARD is
+# the latest release; it is the only thing the gate compares against, because a
+# distant baseline cannot detect a regression: measured, a 24% slowdown against
+# STORY read as "+2.2%, no significant difference", since the current build led
+# that baseline by 15-20%. Re-cut GUARD at every release or it decays into the
+# same blind spot.
 BASELINE_TAG := v0.1.0-conformant
+GUARD_TAG := v0.2.0
 
-.PHONY: lint typecheck test check build bench report audit relock baseline ab g2
+.PHONY: lint typecheck test check build bench report audit relock baseline guard ab ab-story g2 efficiency
 
 lint:
 	uv run --no-sync ruff check .
@@ -59,8 +67,34 @@ baseline:
 		python-toon==0.1.3 toons pytest
 	git worktree remove --force .baseline-src
 
+# Build the guard wheel ($(GUARD_TAG)) into .venv-guard. This is what the gate
+# measures against, so it must track the latest release.
+guard:
+	git worktree remove --force .guard-src 2>/dev/null || true
+	rm -rf .guard-src .venv-guard target/guard-wheels
+	git worktree add --detach .guard-src $(GUARD_TAG)
+	uv venv .venv-guard --python 3.13
+	uv run --no-sync maturin build --release \
+		-m .guard-src/Cargo.toml -o target/guard-wheels
+	uv pip install --python .venv-guard/bin/python target/guard-wheels/*.whl \
+		python-toon==0.1.3 toons pytest
+	git worktree remove --force .guard-src
+
+# The gate: exits non-zero when a metric is significantly slower than the
+# latest release and the slowdown reproduces. Needs .venv-guard and takes
+# minutes, which is why it is not part of `check`.
 ab:
 	uv run --no-sync python benches/ab.py
+
+# The story: what the optimization round bought, measured against the frozen
+# tag. Reported, never gated — a distant baseline cannot police a regression.
+ab-story:
+	uv run --no-sync python benches/ab.py --baseline-venv .venv-baseline --no-gate
+
+# The efficiency lock: what canonical output costs. Deterministic and offline,
+# so it also runs inside `make check` as an ordinary test.
+efficiency:
+	uv run --no-sync python scripts/efficiency-lock.py
 
 # The G2 proof runs against an instrumented wheel in its own environment, so
 # the release wheel every benchmark measures stays free of counters. Same

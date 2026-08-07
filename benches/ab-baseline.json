@@ -1,0 +1,344 @@
+{
+  "records": [
+    16,
+    64,
+    512,
+    4096
+  ],
+  "baseline_venv": ".venv-baseline",
+  "gated": false,
+  "block_sequence": [
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline"
+  ],
+  "baseline_instrumented": true,
+  "method": "one metric at one size per block, alternating B C C B; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent confirmation run at double the block count to fail the gate, because one test in twenty is wrong, this runs sixteen, and a same-power confirmation can reproduce a borderline effect twice by chance",
+  "results": [
+    {
+      "metric": "typed decode@16",
+      "baseline_us": [
+        6.11,
+        6.07,
+        5.97,
+        6.06
+      ],
+      "current_us": [
+        5.2,
+        5.16,
+        5.25,
+        5.13
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -14.332920280875665,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.5906438820693531
+    },
+    {
+      "metric": "typed decode@64",
+      "baseline_us": [
+        21.68,
+        21.64,
+        21.64,
+        21.93
+      ],
+      "current_us": [
+        18.02,
+        18.05,
+        17.8,
+        18.23
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -17.021521463919907,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.2668746941972564
+    },
+    {
+      "metric": "typed decode@512",
+      "baseline_us": [
+        167.68,
+        164.81,
+        168.41,
+        165.93
+      ],
+      "current_us": [
+        139.35,
+        138.65,
+        135.66,
+        140.56
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -16.88736259616394,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.945990224517195
+    },
+    {
+      "metric": "typed decode@4096",
+      "baseline_us": [
+        1455.75,
+        1458.25,
+        1467.47,
+        1604.32
+      ],
+      "current_us": [
+        1240.36,
+        1235.01,
+        1216.93,
+        1209.74
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -18.105379573957656,
+      "significant": true,
+      "minimum_detectable_effect_pct": 6.01268863072018
+    },
+    {
+      "metric": "typed encode@16",
+      "baseline_us": [
+        2.53,
+        2.55,
+        2.53,
+        2.6
+      ],
+      "current_us": [
+        2.3,
+        2.57,
+        2.31,
+        2.38
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -6.366307541625861,
+      "significant": true,
+      "minimum_detectable_effect_pct": 6.205169300644401
+    },
+    {
+      "metric": "typed encode@64",
+      "baseline_us": [
+        8.59,
+        8.56,
+        8.67,
+        8.5
+      ],
+      "current_us": [
+        7.93,
+        7.96,
+        8.11,
+        8.03
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -6.67249417249417,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.524209942446937
+    },
+    {
+      "metric": "typed encode@512",
+      "baseline_us": [
+        65.7,
+        66.7,
+        65.2,
+        64.67
+      ],
+      "current_us": [
+        61.17,
+        61.16,
+        62.46,
+        61.09
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -6.249285087886525,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.030237631726236
+    },
+    {
+      "metric": "typed encode@4096",
+      "baseline_us": [
+        528.03,
+        514.61,
+        514.65,
+        523.15
+      ],
+      "current_us": [
+        496.44,
+        514.62,
+        495.83,
+        502.75
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -3.4031262617523304,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.5775070419185058
+    },
+    {
+      "metric": "untyped decode@16",
+      "baseline_us": [
+        5.12,
+        4.96,
+        5.07,
+        5.02
+      ],
+      "current_us": [
+        4.37,
+        4.53,
+        4.44,
+        4.45
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -11.799702528507696,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.2997298600728735
+    },
+    {
+      "metric": "untyped decode@64",
+      "baseline_us": [
+        18.86,
+        18.41,
+        19.16,
+        19.11
+      ],
+      "current_us": [
+        15.84,
+        16.02,
+        15.93,
+        16.06
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -15.475244903362457,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.3099494043557995
+    },
+    {
+      "metric": "untyped decode@512",
+      "baseline_us": [
+        160.74,
+        156.18,
+        159.78,
+        162.58
+      ],
+      "current_us": [
+        128.03,
+        133.49,
+        132.3,
+        128.92
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -18.229883619071447,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.8765249930038714
+    },
+    {
+      "metric": "untyped decode@4096",
+      "baseline_us": [
+        1414.42,
+        1436.82,
+        1441.31,
+        1439.14
+      ],
+      "current_us": [
+        1155.27,
+        1165.68,
+        1243.25,
+        1158.81
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -17.59829997784249,
+      "significant": true,
+      "minimum_detectable_effect_pct": 3.7317840065914787
+    },
+    {
+      "metric": "untyped encode@16",
+      "baseline_us": [
+        4.94,
+        5.27,
+        5.17,
+        5.11
+      ],
+      "current_us": [
+        4.66,
+        4.72,
+        4.68,
+        4.66
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -8.638360175695475,
+      "significant": true,
+      "minimum_detectable_effect_pct": 3.3743035004769535
+    },
+    {
+      "metric": "untyped encode@64",
+      "baseline_us": [
+        17.63,
+        17.72,
+        17.35,
+        17.47
+      ],
+      "current_us": [
+        16.42,
+        16.32,
+        16.41,
+        16.4
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -6.5840102607952184,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.1928214045393655
+    },
+    {
+      "metric": "untyped encode@512",
+      "baseline_us": [
+        134.46,
+        135.55,
+        132.4,
+        133.56
+      ],
+      "current_us": [
+        124.03,
+        125.06,
+        125.43,
+        122.71
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -7.228016493460457,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.6522638523546556
+    },
+    {
+      "metric": "untyped encode@4096",
+      "baseline_us": [
+        1051.06,
+        1061.47,
+        1059.81,
+        1048.83
+      ],
+      "current_us": [
+        971.6,
+        996.28,
+        998.45,
+        988.08
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -6.31957490458807,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.5890082223728648
+    }
+  ]
+}

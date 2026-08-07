@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "benches"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 
+import _timing
 import bench_codecs
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
@@ -49,17 +50,47 @@ def allocation_proof() -> dict:
     return proof
 
 
-def ab_latest() -> dict:
-    """Publish the last frozen-baseline A/B with every block it measured.
+def ab_results() -> dict:
+    """Publish both A/B comparisons with every block each one measured.
 
     A single summary number hides the thing a reader most needs: whether the
-    session could resolve the delta at all. `benches/ab.py` keeps each block and
-    labels rows whose change is smaller than the same-build noise floor.
+    session could resolve the delta at all. Each row carries its minimum
+    detectable effect, and a change smaller than that is published as no
+    significant difference rather than as a small win.
+
+    The two comparisons answer different questions and are kept apart. The
+    story run says what the optimization round bought, measured against the
+    frozen tag. The guard run is the gate, measured against the latest release
+    — a baseline the current build already beats by 15-20% cannot detect a
+    regression, which was verified: a 24% slowdown reads as +2.2% against the
+    story baseline and +24.4% against the guard.
     """
-    path = Path(__file__).resolve().parent.parent / "benches" / "ab-latest.json"
+    benches = Path(__file__).resolve().parent.parent / "benches"
+    out = {}
+    for role, hint in (
+        ("guard", "make guard && make ab"),
+        ("baseline", "make baseline && make ab-story"),
+    ):
+        path = benches / f"ab-{role}.json"
+        out[role] = (
+            json.loads(path.read_text())
+            if path.exists()
+            else {"status": f"NOT RUN — execute `{hint}` first"}
+        )
+    return out
+
+
+def _efficiency_lock() -> dict:
+    """The locked cost of this codec's output, with the tokenizer that measured it."""
+    path = Path(__file__).resolve().parent.parent / "conformance" / "efficiency.lock.json"
     if not path.exists():
-        return {"status": "NOT RUN — execute `make baseline && make ab` first"}
-    return json.loads(path.read_text())
+        return {"status": "NOT RUN — execute `uv run python scripts/efficiency-lock.py --write`"}
+    locked = json.loads(path.read_text())
+    return {
+        "versions": locked["versions"],
+        "payloads": locked["payloads"],
+        "gate": "tests/test_efficiency_lock.py fails on any difference, in either direction",
+    }
 
 
 def conformance_summary(lock: dict) -> dict:
@@ -117,13 +148,25 @@ def main() -> None:
         },
         "measured_versions": bench_codecs.versions(),
         "timing_methodology": methodology(),
+        "evidence_methodology": {
+            "estimator": _timing.ESTIMATOR,
+            "workers": _timing.DEFAULT_WORKERS,
+            "samples_per_worker": _timing.SAMPLES_PER_WORKER,
+            "warmup": "each worker discards its own first sample; the calibration worker's samples are discarded entirely",
+            "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
+            "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
+            "minimum_detectable_effect": "published per metric in speed_ab; a change smaller than it is reported as no significant difference, never as a small win",
+            "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
+            "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py",
+        },
         "conformance": conformance_summary(lock),
         "allocation_proof": allocation_proof(),
         "support_matrix": support_matrix_report(),
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "token_efficiency": bench_tokens.run(),
-        "speed_ab_latest": ab_latest(),
+        "efficiency_lock": _efficiency_lock(),
+        "speed_ab": ab_results(),
         "optimization_ledger": json.loads(
             (
                 Path(__file__).resolve().parent.parent / "benches" / "optimization-ledger.json"

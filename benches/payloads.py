@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import msgspec
 
 
@@ -74,3 +76,45 @@ def numeric_heavy_tree(records: int) -> dict:
             for index in range(records)
         ]
     }
+
+
+#: The shapes and sizes the token evidence covers: the uniform-record ladder
+#: plus a string-heavy and a numeric-heavy variant, so shape-dependence stays
+#: visible instead of being averaged away. Defined here, not in a benchmark,
+#: because the efficiency lock measures exactly this set.
+TOKEN_LADDER = (16, 64, 512, 4096)
+TOKEN_VARIANT_SIZES = (16, 512)
+
+
+def irregular_tree(records: int) -> dict:
+    """A shape the encoder cannot make tabular.
+
+    Every other payload here is a uniform record array, which the encoder emits
+    as a tabular block, or a uniform object-of-objects, which it emits as a
+    *keyed* tabular block. Neither ever reaches the `key: value` entry writer.
+    That hole was found by testing rather than by reading: perturbing the key
+    separator moved no locked byte count until this shape existed.
+
+    Uniformity is broken deliberately — alternating key sets and a mix of
+    scalars, nested objects, and a short inline array — so the encoder falls
+    back to writing entries one at a time.
+    """
+    tree: dict = {"title": "config", "version": records, "enabled": True, "ratio": 0.5}
+    for index in range(records):
+        if index % 2:
+            tree[f"owner_{index}"] = {"name": f"n{index}", "email": f"e{index}"}
+        else:
+            tree[f"limits_{index}"] = {"soft": index, "hard": index * 2, "unit": "mb"}
+    tree["tags"] = [f"tag-{index}" for index in range(min(records, 8))]
+    return tree
+
+
+def token_payload_matrix() -> list[tuple[str, int, Any]]:
+    cases: list[tuple[str, int, Any]] = []
+    for records in TOKEN_LADDER:
+        cases.append(("uniform-records", records, msgspec.to_builtins(document(records))))
+    for records in TOKEN_VARIANT_SIZES:
+        cases.append(("string-heavy", records, string_heavy_tree(records)))
+        cases.append(("numeric-heavy", records, numeric_heavy_tree(records)))
+        cases.append(("irregular", records, irregular_tree(records)))
+    return cases

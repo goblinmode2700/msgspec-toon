@@ -1,0 +1,310 @@
+{
+  "note": "Locked efficiency snapshot. Any difference fails the gate in either direction: an unexplained improvement means the output changed too, and canonical bytes are a conformance surface. Update deliberately, with the reason the counts moved.",
+  "versions": {
+    "tiktoken": "0.13.0",
+    "msgspec": "0.21.1",
+    "encodings": "o200k_base,cl100k_base"
+  },
+  "payloads": {
+    "uniform-records@16": {
+      "json_compact": {
+        "bytes": 1339,
+        "tokens": {
+          "o200k_base": 372,
+          "cl100k_base": 371
+        }
+      },
+      "toon_comma": {
+        "bytes": 527,
+        "tokens": {
+          "o200k_base": 238,
+          "cl100k_base": 238
+        }
+      },
+      "toon_tab": {
+        "bytes": 528,
+        "tokens": {
+          "o200k_base": 239,
+          "cl100k_base": 239
+        }
+      },
+      "toon_pipe": {
+        "bytes": 528,
+        "tokens": {
+          "o200k_base": 239,
+          "cl100k_base": 239
+        }
+      }
+    },
+    "uniform-records@64": {
+      "json_compact": {
+        "bytes": 5347,
+        "tokens": {
+          "o200k_base": 1476,
+          "cl100k_base": 1475
+        }
+      },
+      "toon_comma": {
+        "bytes": 1991,
+        "tokens": {
+          "o200k_base": 910,
+          "cl100k_base": 910
+        }
+      },
+      "toon_tab": {
+        "bytes": 1992,
+        "tokens": {
+          "o200k_base": 911,
+          "cl100k_base": 911
+        }
+      },
+      "toon_pipe": {
+        "bytes": 1992,
+        "tokens": {
+          "o200k_base": 911,
+          "cl100k_base": 911
+        }
+      }
+    },
+    "uniform-records@512": {
+      "json_compact": {
+        "bytes": 43167,
+        "tokens": {
+          "o200k_base": 11780,
+          "cl100k_base": 11779
+        }
+      },
+      "toon_comma": {
+        "bytes": 16068,
+        "tokens": {
+          "o200k_base": 7182,
+          "cl100k_base": 7182
+        }
+      },
+      "toon_tab": {
+        "bytes": 16069,
+        "tokens": {
+          "o200k_base": 7183,
+          "cl100k_base": 7183
+        }
+      },
+      "toon_pipe": {
+        "bytes": 16069,
+        "tokens": {
+          "o200k_base": 7183,
+          "cl100k_base": 7183
+        }
+      }
+    },
+    "uniform-records@4096": {
+      "json_compact": {
+        "bytes": 349111,
+        "tokens": {
+          "o200k_base": 97308,
+          "cl100k_base": 97307
+        }
+      },
+      "toon_comma": {
+        "bytes": 132061,
+        "tokens": {
+          "o200k_base": 60455,
+          "cl100k_base": 60455
+        }
+      },
+      "toon_tab": {
+        "bytes": 132062,
+        "tokens": {
+          "o200k_base": 60456,
+          "cl100k_base": 60456
+        }
+      },
+      "toon_pipe": {
+        "bytes": 132062,
+        "tokens": {
+          "o200k_base": 60456,
+          "cl100k_base": 60456
+        }
+      }
+    },
+    "string-heavy@16": {
+      "json_compact": {
+        "bytes": 4368,
+        "tokens": {
+          "o200k_base": 804,
+          "cl100k_base": 803
+        }
+      },
+      "toon_comma": {
+        "bytes": 3584,
+        "tokens": {
+          "o200k_base": 653,
+          "cl100k_base": 653
+        }
+      },
+      "toon_tab": {
+        "bytes": 3585,
+        "tokens": {
+          "o200k_base": 654,
+          "cl100k_base": 654
+        }
+      },
+      "toon_pipe": {
+        "bytes": 3585,
+        "tokens": {
+          "o200k_base": 654,
+          "cl100k_base": 654
+        }
+      }
+    },
+    "numeric-heavy@16": {
+      "json_compact": {
+        "bytes": 1079,
+        "tokens": {
+          "o200k_base": 485,
+          "cl100k_base": 484
+        }
+      },
+      "toon_comma": {
+        "bytes": 525,
+        "tokens": {
+          "o200k_base": 319,
+          "cl100k_base": 318
+        }
+      },
+      "toon_tab": {
+        "bytes": 526,
+        "tokens": {
+          "o200k_base": 317,
+          "cl100k_base": 316
+        }
+      },
+      "toon_pipe": {
+        "bytes": 526,
+        "tokens": {
+          "o200k_base": 337,
+          "cl100k_base": 337
+        }
+      }
+    },
+    "irregular@16": {
+      "json_compact": {
+        "bytes": 791,
+        "tokens": {
+          "o200k_base": 310,
+          "cl100k_base": 293
+        }
+      },
+      "toon_comma": {
+        "bytes": 727,
+        "tokens": {
+          "o200k_base": 359,
+          "cl100k_base": 359
+        }
+      },
+      "toon_tab": {
+        "bytes": 728,
+        "tokens": {
+          "o200k_base": 353,
+          "cl100k_base": 353
+        }
+      },
+      "toon_pipe": {
+        "bytes": 728,
+        "tokens": {
+          "o200k_base": 360,
+          "cl100k_base": 360
+        }
+      }
+    },
+    "string-heavy@512": {
+      "json_compact": {
+        "bytes": 141508,
+        "tokens": {
+          "o200k_base": 25604,
+          "cl100k_base": 25603
+        }
+      },
+      "toon_comma": {
+        "bytes": 115429,
+        "tokens": {
+          "o200k_base": 20493,
+          "cl100k_base": 20493
+        }
+      },
+      "toon_tab": {
+        "bytes": 115430,
+        "tokens": {
+          "o200k_base": 20494,
+          "cl100k_base": 20494
+        }
+      },
+      "toon_pipe": {
+        "bytes": 115430,
+        "tokens": {
+          "o200k_base": 20494,
+          "cl100k_base": 20494
+        }
+      }
+    },
+    "numeric-heavy@512": {
+      "json_compact": {
+        "bytes": 35010,
+        "tokens": {
+          "o200k_base": 15873,
+          "cl100k_base": 15872
+        }
+      },
+      "toon_comma": {
+        "bytes": 16601,
+        "tokens": {
+          "o200k_base": 10251,
+          "cl100k_base": 10250
+        }
+      },
+      "toon_tab": {
+        "bytes": 16602,
+        "tokens": {
+          "o200k_base": 10249,
+          "cl100k_base": 10248
+        }
+      },
+      "toon_pipe": {
+        "bytes": 16602,
+        "tokens": {
+          "o200k_base": 10765,
+          "cl100k_base": 10765
+        }
+      }
+    },
+    "irregular@512": {
+      "json_compact": {
+        "bytes": 23387,
+        "tokens": {
+          "o200k_base": 8252,
+          "cl100k_base": 7739
+        }
+      },
+      "toon_comma": {
+        "bytes": 22083,
+        "tokens": {
+          "o200k_base": 9789,
+          "cl100k_base": 9789
+        }
+      },
+      "toon_tab": {
+        "bytes": 22084,
+        "tokens": {
+          "o200k_base": 9783,
+          "cl100k_base": 9783
+        }
+      },
+      "toon_pipe": {
+        "bytes": 22084,
+        "tokens": {
+          "o200k_base": 9790,
+          "cl100k_base": 9790
+        }
+      }
+    }
+  }
+}

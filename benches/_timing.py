@@ -1,33 +1,57 @@
 """The one timing implementation every benchmark script routes through.
 
-Methodology: warm the callable once, autorange the batch size until a batch
-takes at least `target_seconds`, then report the minimum per-call time across
-`repeats` batches. Minimum-of-batches is the standard noise-rejection choice
-for microbenchmarks: it measures the fastest the machine actually ran the
-code, which is the quantity same-run comparisons need.
+Estimator: **the mean across independent worker processes**, not the minimum
+across batches inside one. A minimum rewards whichever batch happened to dodge
+the scheduler, understates what a caller experiences, and has no central-limit
+behavior to converge on — `pyperf` argues the point at length and this project
+agrees. Measured here before the change: inside one process the encode path
+varies by 0.74-1.07%, but between processes it varies by 2.4-4.1% and drifts as
+the machine warms. Averaging over processes averages over the things that
+actually differ between runs: address layout, allocator state, CPU frequency,
+core assignment.
 
-No benchmark script hand-rolls its own loop (openspec: distribution-quality,
-"Benchmark timing is standardized").
+Three roles, selected by environment so the same script serves all three:
+
+    calibration worker   picks the loop count per named metric and reports it
+    measurement worker   measures with the given loop counts, discarding its
+                         own first sample as a warmup
+    parent               spawns the workers and averages their samples
+
+The loop count is calibrated once and handed to every worker, so all workers
+measure the same amount of work and their means are comparable.
+
+No benchmark script hand-rolls a loop (openspec: distribution-quality,
+"Benchmark timing is standardized", "The timing estimator is stated and is not
+a minimum").
 """
 
 from __future__ import annotations
 
+import json
+import os
+import statistics
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-DEFAULT_REPEATS = 7
+ESTIMATOR = "mean-across-workers"
+DEFAULT_WORKERS = 10
+SAMPLES_PER_WORKER = 3
 DEFAULT_TARGET_SECONDS = 0.05
+
+#: Loop counts chosen by the calibration worker, injected into measurement
+#: workers. Absent in the calibration worker, which is what tells it to
+#: calibrate.
+LOOPS_ENV = "MSGSPEC_TOON_LOOPS"
 
 
 @dataclass(frozen=True, slots=True)
 class Timing:
-    """A measurement plus the methodology parameters that produced it."""
+    """One worker's contribution: the mean of its post-warmup samples."""
 
     microseconds: float
-    batch_size: int
-    repeats: int
-    target_seconds: float
+    loops: int
+    samples: int
 
     @property
     def us(self) -> float:
@@ -36,41 +60,72 @@ class Timing:
 
 def methodology() -> str:
     return (
-        f"minimum per-call time across {DEFAULT_REPEATS} autoranged batches; "
-        f"batch size grows until one batch takes >= {DEFAULT_TARGET_SECONDS}s; "
-        "callable warmed once before measurement"
+        f"estimator: {ESTIMATOR} — the loop count is calibrated once, then "
+        f"{DEFAULT_WORKERS} independent worker processes each discard their first "
+        f"sample as a warmup and report the mean of {SAMPLES_PER_WORKER} samples; the "
+        "published figure is the mean across workers, with the standard deviation "
+        "across workers alongside it. The minimum is deliberately not used: it "
+        "reports the best case the machine ever reached, not what a caller sees"
     )
 
 
-def best_of(
-    fn: Callable[[], object],
-    *,
-    repeats: int = DEFAULT_REPEATS,
-    target_seconds: float = DEFAULT_TARGET_SECONDS,
-) -> Timing:
-    fn()  # warm caches, plans, and JITs of any kind
+def _injected_loops() -> dict[str, int]:
+    raw = os.environ.get(LOOPS_ENV)
+    return json.loads(raw) if raw else {}
 
-    number = 1
+
+_LOOPS: dict[str, int] = _injected_loops()
+#: Loop counts this process chose, reported back when calibrating.
+CALIBRATED: dict[str, int] = {}
+
+
+def calibrating() -> bool:
+    """True when no loop counts were injected, so this process must choose them."""
+    return not _LOOPS
+
+
+def _calibrate(fn: Callable[[], object], target_seconds: float) -> int:
+    loops = 1
     while True:
         start = time.perf_counter()
-        for _ in range(number):
+        for _ in range(loops):
             fn()
-        elapsed = time.perf_counter() - start
-        if elapsed >= target_seconds:
-            break
-        number *= 2
+        if time.perf_counter() - start >= target_seconds:
+            return loops
+        loops *= 2
 
-    best = elapsed / number
-    for _ in range(repeats - 1):
-        start = time.perf_counter()
-        for _ in range(number):
-            fn()
-        elapsed = time.perf_counter() - start
-        best = min(best, elapsed / number)
 
+def _sample(fn: Callable[[], object], loops: int) -> float:
+    start = time.perf_counter()
+    for _ in range(loops):
+        fn()
+    return (time.perf_counter() - start) / loops
+
+
+def measure(
+    name: str,
+    fn: Callable[[], object],
+    *,
+    samples: int = SAMPLES_PER_WORKER,
+    target_seconds: float = DEFAULT_TARGET_SECONDS,
+) -> Timing:
+    """Measure one named metric in this worker.
+
+    `name` is what the calibration worker keys its loop count on, so it must be
+    stable across processes — the same metric must carry the same name in every
+    worker or they will not be measuring the same amount of work.
+    """
+    fn()  # warm caches, plans, and any lazily built state
+
+    loops = _LOOPS.get(name)
+    if loops is None:
+        loops = _calibrate(fn, target_seconds)
+        CALIBRATED[name] = loops
+
+    _sample(fn, loops)  # warmup sample, discarded (pyperf's rule)
+    values = [_sample(fn, loops) for _ in range(samples)]
     return Timing(
-        microseconds=best * 1e6,
-        batch_size=number,
-        repeats=repeats,
-        target_seconds=target_seconds,
+        microseconds=statistics.fmean(values) * 1e6,
+        loops=loops,
+        samples=samples,
     )

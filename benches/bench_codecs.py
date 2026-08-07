@@ -24,7 +24,8 @@ import msgspec
 import msgspec_toon
 import toon as python_toon
 import toons as toons_rust
-from _timing import best_of, methodology
+from _timing import DEFAULT_WORKERS, measure, methodology
+from _workers import across_workers
 from payloads import document
 
 LADDER = (16, 64, 512, 4096)
@@ -34,7 +35,8 @@ def builtins_tree(records: int) -> Any:
     return msgspec.to_builtins(document(records))
 
 
-def run(records: int) -> dict[str, Any]:
+def sample_run(records: int) -> dict[str, Any]:
+    """One worker's measurements; the parent decides the gates from the mean."""
     tree = builtins_tree(records)
 
     ours_bytes = msgspec_toon.encode(tree)
@@ -50,16 +52,18 @@ def run(records: int) -> dict[str, Any]:
     ours_decoder = msgspec_toon.Decoder()
 
     encode_us = {
-        "msgspec_toon": best_of(lambda: ours_encoder.encode(tree)).us,
-        "toons_rust": best_of(lambda: toons_rust.dumps(tree)).us,
-        "python_toon": best_of(lambda: python_toon.encode(tree)).us,
-        "msgspec_json_context": best_of(lambda: msgspec.json.encode(tree)).us,
+        "msgspec_toon": measure("encode.msgspec_toon", lambda: ours_encoder.encode(tree)).us,
+        "toons_rust": measure("encode.toons_rust", lambda: toons_rust.dumps(tree)).us,
+        "python_toon": measure("encode.python_toon", lambda: python_toon.encode(tree)).us,
+        "msgspec_json_context": measure("encode.json", lambda: msgspec.json.encode(tree)).us,
     }
     decode_us = {
-        "msgspec_toon": best_of(lambda: ours_decoder.decode(ours_bytes)).us,
-        "toons_rust": best_of(lambda: toons_rust.loads(toons_text)).us,
-        "python_toon": best_of(lambda: python_toon.decode(python_toon_text)).us,
-        "msgspec_json_context": best_of(lambda: msgspec.json.decode(json_bytes)).us,
+        "msgspec_toon": measure("decode.msgspec_toon", lambda: ours_decoder.decode(ours_bytes)).us,
+        "toons_rust": measure("decode.toons_rust", lambda: toons_rust.loads(toons_text)).us,
+        "python_toon": measure(
+            "decode.python_toon", lambda: python_toon.decode(python_toon_text)
+        ).us,
+        "msgspec_json_context": measure("decode.json", lambda: msgspec.json.decode(json_bytes)).us,
     }
     output_bytes = {
         "msgspec_toon_tabular_4_1": len(ours_bytes),
@@ -73,15 +77,24 @@ def run(records: int) -> dict[str, Any]:
         "output_bytes": output_bytes,
         "encode_us": encode_us,
         "decode_us": decode_us,
-        "gates": {
-            "G5_encode_not_slower_than_toons": (
-                encode_us["msgspec_toon"] <= encode_us["toons_rust"]
-            ),
-            "G5_decode_not_slower_than_toons": (
-                decode_us["msgspec_toon"] <= decode_us["toons_rust"]
-            ),
-        },
     }
+
+
+def with_gates(result: dict[str, Any]) -> dict[str, Any]:
+    """Decide G5 from the aggregated figures, not from one worker."""
+    encode_us, decode_us = result["encode_us"], result["decode_us"]
+    result["gates"] = {
+        "G5_encode_not_slower_than_toons": encode_us["msgspec_toon"] <= encode_us["toons_rust"],
+        "G5_decode_not_slower_than_toons": decode_us["msgspec_toon"] <= decode_us["toons_rust"],
+    }
+    return result
+
+
+def run(records: int, *, workers: int = DEFAULT_WORKERS) -> dict[str, Any]:
+    """The published figure: the mean across independent worker processes."""
+    merged, spread = across_workers("bench_codecs", "sample_run", [records], workers=workers)
+    merged["worker_spread_pct"] = spread
+    return with_gates(merged)
 
 
 def versions() -> dict[str, str]:

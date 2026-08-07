@@ -10,5 +10,6 @@ dist/
 python/msgspec_toon/*.so
 .venv-baseline/
 .venv-g2/
+.venv-guard/
 .baseline-src/
 benches/ab-latest.json

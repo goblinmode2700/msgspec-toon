@@ -26,13 +26,17 @@ import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
 import msgspec_toon as toon
 import toon as python_toon
-from _timing import best_of, methodology
+from _timing import DEFAULT_WORKERS, measure, methodology
+from _workers import across_workers
 from payloads import Document, document, toon_text
 
 LADDER = (16, 64, 512, 4096)
 
 
-def run(records: int) -> dict[str, Any]:
+def sample_run(records: int) -> dict[str, Any]:
+    """One worker's measurements. Gates are computed by the parent, once, from
+    the mean across workers — a gate decided per worker would report whichever
+    process got lucky."""
     text = toon_text(records)
     doc = document(records)
     json_bytes = msgspec.json.encode(doc)
@@ -46,20 +50,24 @@ def run(records: int) -> dict[str, Any]:
     incumbent_text = python_toon.encode(msgspec.to_builtins(doc))
     assert msgspec.convert(python_toon.decode(incumbent_text), Document) == doc
 
-    typed_decode = best_of(lambda: typed_decoder.decode(text)).us
-    untyped_decode = best_of(lambda: untyped_decoder.decode(text)).us
-    wrapper_decode = best_of(lambda: msgspec.convert(untyped_decoder.decode(text), Document)).us
-    tree = untyped_decoder.decode(text)
-    convert_only = best_of(lambda: msgspec.convert(tree, Document)).us
-    incumbent_decode = best_of(
-        lambda: msgspec.convert(python_toon.decode(incumbent_text), Document)
+    typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
+    untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
+    wrapper_decode = measure(
+        "decode.wrapper", lambda: msgspec.convert(untyped_decoder.decode(text), Document)
     ).us
-    json_native_decode = best_of(lambda: json_decoder.decode(json_bytes)).us
+    tree = untyped_decoder.decode(text)
+    convert_only = measure("decode.convert_only", lambda: msgspec.convert(tree, Document)).us
+    incumbent_decode = measure(
+        "decode.incumbent", lambda: msgspec.convert(python_toon.decode(incumbent_text), Document)
+    ).us
+    json_native_decode = measure("decode.json_native", lambda: json_decoder.decode(json_bytes)).us
 
-    typed_encode = best_of(lambda: encoder.encode(doc)).us
-    to_builtins_only = best_of(lambda: msgspec.to_builtins(doc)).us
-    incumbent_encode = best_of(lambda: python_toon.encode(msgspec.to_builtins(doc))).us
-    json_native_encode = best_of(lambda: msgspec.json.encode(doc)).us
+    typed_encode = measure("encode.typed_direct", lambda: encoder.encode(doc)).us
+    to_builtins_only = measure("encode.to_builtins", lambda: msgspec.to_builtins(doc)).us
+    incumbent_encode = measure(
+        "encode.incumbent", lambda: python_toon.encode(msgspec.to_builtins(doc))
+    ).us
+    json_native_encode = measure("encode.json_native", lambda: msgspec.json.encode(doc)).us
 
     return {
         "records": records,
@@ -80,12 +88,6 @@ def run(records: int) -> dict[str, Any]:
             "incumbent_pipeline_to_builtins_plus_python_toon": incumbent_encode,
             "msgspec_json_native": json_native_encode,
         },
-        "gates": {
-            "G3_typed_decode_beats_wrapper": typed_decode < wrapper_decode,
-            "G4_whole_encode_beats_to_builtins_alone": typed_encode < to_builtins_only,
-            "typed_beats_incumbent_pipeline_decode": typed_decode < incumbent_decode,
-            "typed_beats_incumbent_pipeline_encode": typed_encode < incumbent_encode,
-        },
         "notes": {
             "incumbent_pipeline": (
                 "known-inefficient composition (to_builtins + python-toon, "
@@ -94,6 +96,33 @@ def run(records: int) -> dict[str, Any]:
             ),
         },
     }
+
+
+def with_gates(result: dict[str, Any]) -> dict[str, Any]:
+    """Decide the gates from the aggregated figures, not from one worker."""
+    decode, encode = result["decode_us"], result["encode_us"]
+    result["gates"] = {
+        "G3_typed_decode_beats_wrapper": (
+            decode["typed_direct"] < decode["wrapper_tree_plus_convert"]
+        ),
+        "G4_whole_encode_beats_to_builtins_alone": (
+            encode["typed_direct_whole"] < encode["to_builtins_alone"]
+        ),
+        "typed_beats_incumbent_pipeline_decode": (
+            decode["typed_direct"] < decode["incumbent_pipeline_python_toon_plus_convert"]
+        ),
+        "typed_beats_incumbent_pipeline_encode": (
+            encode["typed_direct_whole"] < encode["incumbent_pipeline_to_builtins_plus_python_toon"]
+        ),
+    }
+    return result
+
+
+def run(records: int, *, workers: int = DEFAULT_WORKERS) -> dict[str, Any]:
+    """The published figure: the mean across independent worker processes."""
+    merged, spread = across_workers("bench_typed", "sample_run", [records], workers=workers)
+    merged["worker_spread_pct"] = spread
+    return with_gates(merged)
 
 
 def main() -> None:

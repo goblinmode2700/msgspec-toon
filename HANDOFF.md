@@ -36,7 +36,8 @@ evidence in `conformance/report.json` — never as assertions.
 | Type-support boundaries | **generated, not asserted**: 11 supported, 2 parity-rejects, 13 unsupported, 1 inert, 0 silently wrong. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
 | G4 encode vs `to_builtins` alone | **fail, honestly reported**: 2.2× at 16 records, ~10% at 4096. Stable-ABI `getattr` vs msgspec's private C slot reads (canvas risk R-02) | report `known_divergences_and_gaps` |
 | Optimizations | 6 adopted, re-qualified under the F-12 harness: typed decode −13→−20%, untyped decode −10→−20%, codec encode −6→−8% — all above the session noise floor. Typed encode at 16/64 records is **below noise and reported as unresolved** | `benches/optimization-ledger.json`, report `speed_ab_latest` |
-| A/B rigor | **alternating `B C C B` blocks**; every block published, and rows whose change is under the same-build noise floor (1.7–8.8 pp) are labelled not-a-result | `benches/ab.py`, `benches/ab-latest.json` |
+| A/B rigor | **mean across 10 worker processes** (never a minimum); one metric per block, alternating `B C C B`, t-test at alpha 0.95, per-row minimum detectable effect; a slowdown must reproduce at double power to fail | `benches/ab.py`, `benches/ab-guard.json`, `benches/ab-baseline.json` |
+| Regression gates | **token/byte lock** (any drift fails) and **speed gate vs the latest release** (a reproduced slowdown exits non-zero). Both proven to fire by deliberate perturbation | `conformance/efficiency.lock.json`, `make ab` |
 
 Wire options: `delimiter` (`","`/`"\t"`/`"|"`), `indent`, `indent_size` — exactly TOON
 4.1's own option domain, spelled in the wire, defaults byte-identical to canonical.
@@ -121,10 +122,19 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
   `python/msgspec_toon/_plan.py`.
 - **14-day dependency cooldown**: uv enforces natively (`tool.uv.exclude-newer`);
   Rust via pin + `make audit`. Overrides need a commit-message justification.
-- **Every perf claim is same-session A/B** vs the frozen baseline, on a build
-  `benches/build_freshness.py` has verified is current and uninstrumented, with
-  alternating blocks and a published noise floor; a delta under that floor is reported as
-  unresolved, never as a win. Every corpus claim is a fresh `conformance/run.py` run. After ANY change: corpus zero failures,
+- **Every perf claim is same-session A/B** on a build `benches/build_freshness.py` has
+  verified is current and uninstrumented, using the mean across worker processes (never a
+  minimum), alternating blocks, and a two-sample t-test at alpha 0.95. A change smaller
+  than its published minimum detectable effect is reported as no significant difference,
+  never as a win. Every corpus claim is a fresh `conformance/run.py` run.
+- **Two baselines, two jobs.** `.venv-baseline` (`v0.1.0-conformant`) is the *story*: what
+  the optimization round bought, reported and never gated. `.venv-guard` (latest release)
+  is the *gate*: `make ab` exits non-zero on a slowdown that reproduces. A distant baseline
+  cannot police a regression — measured, a 24% slowdown reads as +2.2% against the story
+  baseline. Re-cut the guard at every release.
+- **Token and byte counts are locked** in `conformance/efficiency.lock.json`. Any change in
+  either direction fails `tests/test_efficiency_lock.py`; update it deliberately and say in
+  the commit why the counts moved. After ANY change: corpus zero failures,
   G2/G3/G5 green, 75 unit tests green (`make check`).
 - Parser modules must not import PyO3 (canvas AD-002).
 
@@ -135,6 +145,10 @@ uv sync && uv run maturin build --release && \
   uv pip install --force-reinstall --no-deps target/wheels/*.whl   # build+install
 make check        # lint (ruff, rustfmt, clippy -D warnings, both feature sets) + mypy + tests
 make g2           # instrumented build in .venv-g2: the G2 proof and its artifact
+make guard        # build the gate baseline (latest release) into .venv-guard
+make ab           # THE SPEED GATE: fails on a reproduced slowdown vs the guard
+make ab-story     # report vs the frozen v0.1.0 baseline; never gates
+make efficiency   # show any drift in the token/byte lock
 make bench        # bench_codecs + bench_typed (release wheel, rebuilds first)
 uv run python benches/bench_tokens.py                              # token gates
 uv run python conformance/run.py                                   # 538-test corpus

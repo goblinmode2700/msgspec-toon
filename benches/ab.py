@@ -1,31 +1,34 @@
 """Same-session A/B harness: baseline build vs current build, one session.
 
-Runs the typed and codec benchmarks in the baseline environment (`.venv-baseline`,
-built by `make baseline` from the frozen tag) and in the current one, and reports
-paired deltas. Comparisons across sessions are exactly what this tool exists to
-forbid: it always runs both sides itself.
+Design, in one paragraph. A block measures **one metric at one payload size**,
+so it runs in about a second and an adjacent pair of blocks straddles seconds
+rather than minutes — machine drift then acts on both sides almost equally and
+cancels in the difference. Blocks alternate `B C C B`, which is symmetric under
+a linear drift. A difference is called only when a two-sample two-tailed
+Student t-test at alpha 0.95 rejects the null, the same test and alpha `pyperf`
+uses; anything else is published as "no significant difference" with the
+minimum detectable effect beside it, so a null result is interpretable rather
+than merely unexciting.
 
-**Blocks alternate.** The obvious design — run all of B, then all of C — confounds
-the change under test with whatever the machine does over the next minute. Measured
-in this repository: a same-commit comparison of two builds put whichever side ran
-second 0.4–3.6% slower on *every* row, a penalty larger than several deltas this
-project has published. So each round runs `B C C B`, which cancels a linear drift
-in the paired estimates and, as a by-product, measures the drift itself: the two
-baseline blocks are the same build in two positions, and their difference is the
-harness's own noise floor.
+Why not simply run both and subtract: measured in this repository, the same
+build measured in two processes minutes apart differs by 2.4-4.1%, with the
+second run systematically slower as the machine warms. That confound is larger
+than several deltas this project has published.
 
-Nothing here reports a single number and calls it the answer. Every block is kept
-in the artifact, the reported delta is the median of the paired ratios, and the
-spread across pairs is printed beside it. A delta smaller than the drift is not a
-result — the output labels those rather than leaving a reader to notice.
-
-The comparison side defaults to the frozen tag's environment, but any two
-environments in this repo can be paired — `--baseline-venv .venv-g2` measures what
-the G2 instrumentation costs, for example.
+The harness **fails** (non-zero exit) when a metric is significantly *slower*
+than the baseline **twice**. One test at alpha 0.95 is wrong about one time in
+twenty; across sixteen metrics that is a coin-flip chance of a spurious failure
+per run, and a gate that cries wolf gets ignored. So a slowdown triggers an
+independent confirmation run of that metric alone, and only a slowdown that
+reproduces fails the build. Measured: comparing this build against itself, one
+of eight metrics reported a slowdown on the first pass and none survived
+confirmation. A significant speed-up is reported, never enforced: a gate that
+demands improvement becomes a ratchet that eventually fails on a quiet
+machine.
 
 Usage: uv run python benches/ab.py [--records 16 64 512 4096]
                                    [--baseline-venv .venv-baseline]
-                                   [--rounds 1]
+                                   [--rounds 2] [--no-gate]
 """
 
 from __future__ import annotations
@@ -38,57 +41,126 @@ import statistics
 import subprocess
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_BASELINE_VENV = ".venv-baseline"
+#: The gate measures against the latest release, not the distant frozen tag: a
+#: baseline the current build already beats by 15-20% cannot detect a
+#: regression. Measured — a 24% typed-decode slowdown read as "+2.2%, no
+#: significant difference" against `v0.1.0-conformant`.
+DEFAULT_BASELINE_VENV = ".venv-guard"
 CURRENT_PYTHON = REPO / ".venv" / "bin" / "python"
 
 BASELINE = "baseline"
 CURRENT = "current"
-# One round. Alternating and symmetric: a linear drift over the round cancels in
-# the paired ratios, and the two same-side blocks bracket it.
+#: Symmetric under a linear drift: each side is equidistant from the round's
+#: midpoint, so a trend over the round biases neither.
 ROUND_PATTERN = (BASELINE, CURRENT, CURRENT, BASELINE)
 
+#: Two-tailed t critical values at alpha 0.95 by degrees of freedom. A table
+#: beats a SciPy dependency for the handful of sizes this harness uses.
+T_CRITICAL_95 = {
+    1: 12.706,
+    2: 4.303,
+    3: 3.182,
+    4: 2.776,
+    5: 2.571,
+    6: 2.447,
+    7: 2.365,
+    8: 2.306,
+    9: 2.262,
+    10: 2.228,
+    11: 2.201,
+    12: 2.179,
+    13: 2.160,
+    14: 2.145,
+    15: 2.131,
+    16: 2.120,
+    18: 2.101,
+    20: 2.086,
+    24: 2.064,
+    30: 2.042,
+}
+T_CRITICAL_LARGE = 1.960
+
+#: (bench module, section, metric key, human label).
 METRICS = (
-    ("typed", "decode_us", "typed_direct"),
-    ("typed", "encode_us", "typed_direct_whole"),
-    ("codecs", "encode_us", "msgspec_toon"),
-    ("codecs", "decode_us", "msgspec_toon"),
+    ("bench_typed", "decode_us", "typed_direct", "typed decode"),
+    ("bench_typed", "encode_us", "typed_direct_whole", "typed encode"),
+    ("bench_codecs", "decode_us", "msgspec_toon", "untyped decode"),
+    ("bench_codecs", "encode_us", "msgspec_toon", "untyped encode"),
 )
 
+#: One block: one bench module's worker-side sampler at one size, reporting the
+#: single metric the block exists to measure.
 PROBE = r"""
 import json, sys
 sys.path.insert(0, "benches")
-import bench_typed, bench_codecs
 from msgspec_toon import _native
-records = json.loads(sys.argv[1])
-out = {
-    "typed": [bench_typed.run(n) for n in records],
-    "codecs": [bench_codecs.run(n) for n in records],
+module = __import__(sys.argv[1])
+result = module.sample_run(int(sys.argv[2]))
+print(json.dumps({
+    "value": result[sys.argv[3]][sys.argv[4]],
     "instrumented": hasattr(_native, "alloc_stats"),
-}
-print(json.dumps(out))
+}))
 """
 
 
-def run_block(python: pathlib.Path, records: list[int], is_baseline: bool) -> dict:
+def t_critical(degrees_of_freedom: int) -> float:
+    if degrees_of_freedom in T_CRITICAL_95:
+        return T_CRITICAL_95[degrees_of_freedom]
+    if degrees_of_freedom > 30:
+        return T_CRITICAL_LARGE
+    return max(value for key, value in T_CRITICAL_95.items() if key <= degrees_of_freedom)
+
+
+def compare(baseline: list[float], current: list[float]) -> dict:
+    """Two-sample two-tailed test at alpha 0.95, plus the effect it can detect.
+
+    The minimum detectable effect is the half-width of the interval on the
+    difference, against the baseline mean: a true change smaller than this
+    cannot be told from noise by this run, which is exactly what a null result
+    needs beside it to mean anything.
+    """
+    baseline_mean, current_mean = statistics.fmean(baseline), statistics.fmean(current)
+    if len(baseline) < 2 or len(current) < 2:
+        return {
+            "change_pct": (current_mean / baseline_mean - 1) * 100,
+            "significant": False,
+            "minimum_detectable_effect_pct": float("inf"),
+        }
+    standard_error = (
+        statistics.variance(baseline) / len(baseline) + statistics.variance(current) / len(current)
+    ) ** 0.5
+    critical = t_critical(len(baseline) + len(current) - 2)
+    difference = current_mean - baseline_mean
+    return {
+        "change_pct": difference / baseline_mean * 100,
+        "significant": bool(standard_error > 0 and abs(difference) > critical * standard_error),
+        "minimum_detectable_effect_pct": critical * standard_error / baseline_mean * 100,
+    }
+
+
+def run_block(
+    python: pathlib.Path,
+    module: str,
+    records: int,
+    section: str,
+    metric: str,
+    is_baseline: bool,
+) -> dict:
     """Run one block.
 
     The current side must be a clean release build — that is the claim being
-    made. The baseline side is a historical artifact: `v0.1.0-conformant`
-    predates the counters becoming test-only and carries them in release, and
-    `.venv-g2` carries them by construction. Those are properties to record in
-    the artifact, not reasons to refuse the comparison.
+    made. The baseline side is a historical artifact whose properties are
+    recorded rather than policed: `v0.1.0-conformant` predates the counters
+    becoming test-only and carries them in release.
     """
     if not python.exists():
-        raise SystemExit(
-            f"missing interpreter {python} — run `make baseline` first"
-            if "baseline" in str(python)
-            else f"missing interpreter {python}"
-        )
+        target = "guard" if "guard" in str(python) else "baseline"
+        raise SystemExit(f"missing interpreter {python} — run `make {target}` first")
     environment = dict(os.environ)
     if is_baseline:
         environment["MSGSPEC_TOON_MEASURE_INSTRUMENTATION"] = "1"
     proc = subprocess.run(
-        [str(python), "-c", PROBE, json.dumps(records)],
+        [str(python), "-c", PROBE, module, str(records), section, metric],
         cwd=REPO,
         capture_output=True,
         text=True,
@@ -100,42 +172,23 @@ def run_block(python: pathlib.Path, records: list[int], is_baseline: bool) -> di
     return json.loads(proc.stdout.splitlines()[-1])
 
 
-def metric_value(block: dict, kind: str, section: str, metric: str, records: int) -> float:
-    for row in block[kind]:
-        if row["records"] == records:
-            return float(row[section][metric])
-    raise KeyError(f"{kind}.{section}.{metric}@{records} missing from block")
-
-
-def percent(ratio: float) -> str:
-    return f"{(ratio - 1) * 100:+.1f}%"
-
-
-def spread_percent(values: list[float]) -> float:
-    """How far apart the same measurement landed, as a percentage of the best."""
-    return (max(values) / min(values) - 1) * 100
-
-
-def summarize(baselines: list[float], currents: list[float]) -> dict:
-    """Pair each current block with the baseline block adjacent to it.
-
-    `B C C B` gives (B1,C1) and (C2,B2): both pairs straddle the midpoint from
-    opposite directions, so a drift that grows over the round pushes them in
-    opposite directions and the median lands near the true ratio.
-
-    The noise floor is the spread among the *same* build's blocks — one binary
-    measured two or more times, minutes apart. It is not a refinement of the
-    delta; it is the smallest delta this session can distinguish from nothing.
-    """
-    pairs = [current / baseline for baseline, current in zip(baselines, currents, strict=True)]
-    return {
-        "baseline_us": baselines,
-        "current_us": currents,
-        "paired_ratios": [round(ratio, 5) for ratio in pairs],
-        "median_ratio": statistics.median(pairs),
-        "pair_spread_pp": (max(pairs) - min(pairs)) * 100,
-        "noise_floor_pp": max(spread_percent(baselines), spread_percent(currents)),
-    }
+def measure_metric(
+    baseline_python: pathlib.Path,
+    sequence: list[str],
+    module: str,
+    records: int,
+    section: str,
+    metric: str,
+) -> tuple[dict, dict[str, list[float]], bool]:
+    """Run the full alternating sequence for one metric and test it."""
+    samples: dict[str, list[float]] = {BASELINE: [], CURRENT: []}
+    instrumented = False
+    for side in sequence:
+        python = baseline_python if side == BASELINE else CURRENT_PYTHON
+        block = run_block(python, module, records, section, metric, side == BASELINE)
+        samples[side].append(block["value"])
+        instrumented |= side == BASELINE and block["instrumented"]
+    return compare(samples[BASELINE], samples[CURRENT]), samples, instrumented
 
 
 def main() -> None:
@@ -144,68 +197,96 @@ def main() -> None:
     parser.add_argument(
         "--baseline-venv",
         default=DEFAULT_BASELINE_VENV,
-        help="environment to compare against (default: the frozen tag's)",
+        help="environment to compare against (default: the guard, i.e. the latest release)",
     )
+    parser.add_argument("--rounds", type=int, default=2, help="B C C B rounds per metric")
     parser.add_argument(
-        "--rounds",
-        type=int,
-        default=1,
-        help="B C C B rounds; each adds two paired estimates per metric",
+        "--no-gate",
+        action="store_true",
+        help="report only; do not exit non-zero on a significant slowdown",
     )
     arguments = parser.parse_args()
 
     baseline_python = REPO / arguments.baseline_venv / "bin" / "python"
     sequence = list(ROUND_PATTERN) * arguments.rounds
-    blocks: dict[str, list[dict]] = {BASELINE: [], CURRENT: []}
+    results = []
+    baseline_instrumented = False
+    regressions = []
 
-    for position, side in enumerate(sequence, start=1):
-        python = baseline_python if side == BASELINE else CURRENT_PYTHON
-        print(f"block {position}/{len(sequence)}: {side}...")
-        blocks[side].append(run_block(python, arguments.records, side == BASELINE))
+    print(f"{'metric':<28} {'change':>9}  {'MDE':>7}   verdict")
+    for module, section, metric, label in METRICS:
+        for records in arguments.records:
+            name = f"{label}@{records}"
+            test, samples, instrumented = measure_metric(
+                baseline_python, sequence, module, records, section, metric
+            )
+            baseline_instrumented |= instrumented
+            slower = test["significant"] and test["change_pct"] > 0
 
-    if blocks[BASELINE][0]["instrumented"]:
+            confirmation = None
+            if slower:
+                # A single test at alpha 0.95 is wrong one time in twenty, and
+                # this harness runs sixteen of them. Confirm before failing —
+                # at DOUBLE the block count, because a confirmation run at the
+                # same power can reproduce a borderline effect by chance twice.
+                # Observed: typed encode@4096 flagged at +2.5% over two rounds
+                # and came back "no significant difference" at three.
+                print(f"{name:<28} {test['change_pct']:>+8.1f}%  confirming at 2x blocks...")
+                confirmation, _, _ = measure_metric(
+                    baseline_python, sequence * 2, module, records, section, metric
+                )
+                slower = confirmation["significant"] and confirmation["change_pct"] > 0
+
+            verdict = (
+                ("SLOWER" if slower else "faster")
+                if test["significant"]
+                else "no significant difference"
+            )
+            if confirmation is not None and not slower:
+                verdict = "slowdown did not reproduce"
+            results.append(
+                {
+                    "metric": name,
+                    "baseline_us": samples[BASELINE],
+                    "current_us": samples[CURRENT],
+                    "verdict": verdict,
+                    "confirmation": confirmation,
+                    **test,
+                }
+            )
+            if slower:
+                regressions.append(name)
+            print(
+                f"{name:<28} {test['change_pct']:>+8.1f}%  "
+                f"{test['minimum_detectable_effect_pct']:>6.1f}%   {verdict}"
+            )
+
+    if baseline_instrumented:
         print(
             f"\nNOTE: {arguments.baseline_venv} carries the alloc-stats counters; "
             "part of any delta is instrumentation the current build no longer has"
         )
 
-    results = []
-    print(
-        f"\n{'metric':<50} {'median':>8}  {'spread':>7}  {'noise':>7}   verdict",
-    )
-    for kind, section, metric in METRICS:
-        for records in arguments.records:
-            label = f"{kind}.{section}.{metric}@{records}"
-            summary = summarize(
-                [metric_value(b, kind, section, metric, records) for b in blocks[BASELINE]],
-                [metric_value(b, kind, section, metric, records) for b in blocks[CURRENT]],
-            )
-            change_pp = abs(summary["median_ratio"] - 1) * 100
-            noise_pp = summary["noise_floor_pp"]
-            # A change the harness cannot separate from its own noise is not a
-            # result. Saying so is the entire point of this rewrite.
-            verdict = "resolved" if change_pp > noise_pp else "BELOW NOISE — not a result"
-            summary |= {"metric": label, "verdict": verdict}
-            results.append(summary)
-            print(
-                f"{label:<50} {percent(summary['median_ratio']):>8}  "
-                f"{summary['pair_spread_pp']:>6.1f}pp  {noise_pp:>6.1f}pp   {verdict}"
-            )
-
-    out = REPO / "benches" / "ab-latest.json"
+    # Named for the environment measured against, so the gate run and the story
+    # run do not overwrite each other and a reader can tell them apart.
+    role = arguments.baseline_venv.removeprefix(".venv-").removeprefix(".venv") or "current"
+    out = REPO / "benches" / f"ab-{role}.json"
     out.write_text(
         json.dumps(
             {
                 "records": arguments.records,
                 "baseline_venv": arguments.baseline_venv,
+                "gated": not arguments.no_gate,
                 "block_sequence": sequence,
-                "baseline_instrumented": blocks[BASELINE][0]["instrumented"],
-                "current_instrumented": blocks[CURRENT][0]["instrumented"],
+                "baseline_instrumented": baseline_instrumented,
                 "method": (
-                    "alternating B C C B blocks; reported delta is the median of the paired "
-                    "ratios, pair_spread_pp is their range, and noise_floor_pp is the spread "
-                    "among repeated blocks of the SAME build — the smallest delta this "
-                    "session can distinguish from nothing"
+                    "one metric at one size per block, alternating B C C B; two-sample "
+                    "two-tailed t-test at alpha 0.95; a change smaller than the reported "
+                    "minimum detectable effect is published as no significant difference; "
+                    "a slowdown must reproduce in an independent confirmation run at double "
+                    "the block count to fail the gate, because one test in twenty is wrong, "
+                    "this runs sixteen, and a same-power confirmation can reproduce a "
+                    "borderline effect twice by chance"
                 ),
                 "results": results,
             },
@@ -214,6 +295,12 @@ def main() -> None:
         + "\n"
     )
     print(f"\nall blocks written to {out}")
+
+    if regressions and not arguments.no_gate:
+        raise SystemExit(
+            f"\nSIGNIFICANT SLOWDOWN vs {arguments.baseline_venv}, reproduced on a "
+            f"confirmation run: {', '.join(regressions)}"
+        )
 
 
 if __name__ == "__main__":
