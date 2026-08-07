@@ -37,12 +37,21 @@ Rust core.
    document adopted techniques, rejected choices, and any misses it exposes in our
    parser/encoder (it is v3.0-era, so the review must also flag behaviors we must NOT
    inherit).
+7. **14-day package cooldown, both ecosystems** (applied 2026-08-06 with owner
+   approval via the whiteboard review): Python enforces it natively with
+   `tool.uv.exclude-newer = "14 days"` (per-package CVE escape hatch:
+   `exclude-newer-package`); Rust — where Cargo has no equivalent — pins the one
+   violating family (`pyo3 =0.29.0`) and enforces the window with
+   `scripts/check-package-ages.py` via `make audit`. The audit found and evicted two
+   transitive packages that were zero days old at audit time.
 
 ## Impact
 
 - Modified spec: `distribution-quality` (dependency pin, expanded speed-floor baselines,
-  incumbent-pipeline rows, standardized timing).
-- New spec: `dev-tooling` (Makefile entry points, prior-art review artifact).
+  incumbent-pipeline rows, standardized timing, package cooldown).
+- New spec: `dev-tooling` (Makefile entry points, prior-art review artifact, cooldown
+  audit targets).
 - Code: `pyproject.toml`, new `Makefile`, `benches/` (new `_timing.py`, expanded
-  `bench_codecs.py`), new `docs/prior-art/toons.md`, dev-dependency additions
-  (`python-toon` variants, `toons` if installable).
+  `bench_codecs.py`), new `docs/prior-art/toons.md`, new
+  `scripts/check-package-ages.py`, dev-dependency additions (`python-toon` variants,
+  `toons` if installable).

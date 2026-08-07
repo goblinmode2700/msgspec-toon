@@ -34,3 +34,17 @@
 - [ ] 5.2 Write `docs/prior-art/toons.md` (adopted / rejected / misses found).
 - [ ] 5.3 File or fix every identified miss in our Rust core; note each in the report's
       known-gaps list if deferred.
+
+## 6. Package cooldown (applied early, 2026-08-06, with owner approval)
+
+- [x] 6.1 Upgrade uv (0.5.14 → 0.12.2) so duration-valued `exclude-newer` parses.
+- [x] 6.2 Add `tool.uv.exclude-newer = "14 days"`; re-lock (evicted zero-day-old
+      `ast-serialize 0.7.0` and `librt 0.14.0`, plus `packaging`, `ruff`).
+- [x] 6.3 Pin `pyo3 = "=0.29.0"` (0.29.1/0.29.2 inside the window);
+      `cargo update -p pyo3 --precise 0.29.0`; full re-test on the downgrade
+      (63 tests pass, gates unchanged: G3 all-pass, G4 known miss).
+- [x] 6.4 Add `scripts/check-package-ages.py` + Makefile `audit`/`relock` targets;
+      `make audit` runs clean.
+- [ ] 6.5 When extending the Makefile (task 2.1), keep `audit` out of `make check`
+      (network); run it in CI and before releases.
+- [ ] 6.6 Lift the pyo3 pin once 0.29.2 ages past 14 days (`make audit` will confirm).

@@ -10,7 +10,10 @@ name = "_native"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pyo3 = { version = "0.29", features = ["abi3-py313"] }
+# Cooldown pin: 0.29.1 and 0.29.2 are younger than 14 days at lock time.
+# Cargo has no exclude-newer equivalent; `make audit` enforces the window
+# against Cargo.lock and says when the pin is eligible to lift.
+pyo3 = { version = "=0.29.0", features = ["abi3-py313"] }
 itoa = "1.0"
 memchr = "2.7"
 ryu = "1.0"

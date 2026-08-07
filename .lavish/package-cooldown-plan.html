@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2-week package cooldown — planned change</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, h4, li, td, th, .badge, .label) { overflow-wrap: anywhere; }
+  :where(img, svg, video, canvas, iframe) { max-width: 100%; height: auto; }
+  .diff-shell { border: 1px solid var(--color-base-300); border-radius: 0.75rem; overflow: hidden; }
+</style>
+</head>
+<body class="bg-base-200 text-base-content min-h-screen">
+<main class="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-8">
+
+  <!-- ============ DECISION ============ -->
+  <header class="flex flex-col gap-3">
+    <h1 class="text-3xl font-bold">2-week package cooldown — planned change</h1>
+    <p class="text-base-content/80 max-w-3xl">
+      Apply the supply-chain cooldown from your global doctrine — <em>no dependency version younger
+      than 14 days at resolution time</em> — to both the Python and Rust sides of
+      <code>msgspec-toon</code>. Cutoff as of today (2026-08-06): <b>releases on or after 2026-07-23
+      are excluded</b>. Nothing below has been applied; this page is the review surface.
+    </p>
+    <div role="alert" class="alert alert-success">
+      <span><b>Verdict from dry-runs:</b> the cooldown resolves cleanly on both sides. No direct
+      dependency becomes unsatisfiable — <code>msgspec==0.21.1</code> (2026-04-12) is safely outside
+      the window — and only 4 Python packages and the 5-crate pyo3 family move.</span>
+    </div>
+    <div role="alert" class="alert alert-error">
+      <span><b>Correction (you were right, I was wrong):</b> the first draft of this page hardcoded
+      absolute cutoff dates. uv's <code>exclude-newer</code> natively accepts <b>relative
+      durations</b> — <code>exclude-newer = "14 days"</code> — plus per-package overrides via
+      <code>exclude-newer-package</code>. I had checked the flag help of our <i>installed</i> uv
+      (0.5.14, Jan 2025), which predates duration support, instead of the current docs (uv 0.12.2).
+      The plan below now uses the native rolling setting, and gains one prerequisite: <b>upgrade uv
+      itself</b>. Cargo was re-checked too (1.93.1): it genuinely has no equivalent, so the Rust
+      side keeps the pin-plus-audit approach.</span>
+    </div>
+  </header>
+
+  <!-- ============ WHY IT MATTERS HERE ============ -->
+  <section class="grid gap-4 sm:grid-cols-3">
+    <div class="stat bg-base-100 rounded-xl border border-base-300">
+      <div class="stat-title">Rust crates audited</div>
+      <div class="stat-value text-2xl">18</div>
+      <div class="stat-desc">5 violations — all one family (pyo3 0.29.2, released <b>yesterday</b>)</div>
+    </div>
+    <div class="stat bg-base-100 rounded-xl border border-base-300">
+      <div class="stat-title">Python packages audited</div>
+      <div class="stat-value text-2xl">17</div>
+      <div class="stat-desc">4 violations, all resolvable to compliant versions</div>
+    </div>
+    <div class="stat bg-base-100 rounded-xl border border-base-300 border-warning">
+      <div class="stat-title">Poster children</div>
+      <div class="stat-value text-2xl text-warning">0 days old</div>
+      <div class="stat-desc"><code>ast-serialize 0.7.0</code> and <code>librt 0.14.0</code> — released
+      <b>today</b>, already in our tree via mypy</div>
+    </div>
+  </section>
+
+  <p class="text-base-content/70 max-w-3xl -mt-3">
+    That last cell is the whole argument: two transitive dependencies published <b>hours ago</b> are
+    sitting in <code>uv.lock</code> right now. A malicious or compromised release would have had zero
+    days of community scrutiny before landing on this machine. The cooldown makes that structurally
+    impossible instead of luck-dependent.
+  </p>
+
+  <!-- ============ WHAT MOVES ============ -->
+  <section class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-4">
+      <h2 class="card-title">What would change (verified by dry-run, not guessed)</h2>
+      <p class="text-sm text-base-content/70">
+        <code>UV_EXCLUDE_NEWER=2026-07-23 uv lock --dry-run</code> and
+        <code>cargo update -p pyo3 --precise 0.29.0 --dry-run</code> produced exactly these moves:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead><tr><th>Ecosystem</th><th>Package</th><th>Now (released)</th><th>After cooldown (released)</th><th>Why it's in the tree</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-sm badge-neutral">Rust</span></td>
+              <td><code>pyo3</code> ×5 crates</td>
+              <td>0.29.2 <span class="text-warning">(2026-08-05)</span></td>
+              <td><b>0.29.0</b> (2026-06-11)</td>
+              <td>direct — the whole extension</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-sm badge-accent">Python</span></td>
+              <td><code>ruff</code></td>
+              <td>0.16.1 <span class="text-warning">(2026-07-30)</span></td>
+              <td><b>0.15.22</b> (2026-07-16)</td>
+              <td>dev — linter</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-sm badge-accent">Python</span></td>
+              <td><code>ast-serialize</code></td>
+              <td>0.7.0 <span class="text-error font-bold">(2026-08-06 — today)</span></td>
+              <td><b>0.6.0</b> (2026-06-30)</td>
+              <td>transitive — mypy 2.3.0</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-sm badge-accent">Python</span></td>
+              <td><code>librt</code></td>
+              <td>0.14.0 <span class="text-error font-bold">(2026-08-06 — today)</span></td>
+              <td><b>0.13.0</b> (2026-07-08)</td>
+              <td>transitive — mypy 2.3.0</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-sm badge-accent">Python</span></td>
+              <td><code>packaging</code></td>
+              <td>26.3 <span class="text-warning">(2026-08-04)</span></td>
+              <td><b>26.2</b> (2026-04-24)</td>
+              <td>transitive — pytest</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-sm text-base-content/70">
+        Everything else — <code>msgspec 0.21.1</code>, <code>maturin 1.14.1</code>,
+        <code>pytest 9.1.1</code>, <code>mypy 2.3.0</code> (it accepts the older transitives, no
+        downgrade), <code>memchr 2.8.3</code>, <code>ryu</code>, <code>itoa</code>,
+        <code>smallvec</code>, <code>libc 0.2.189</code> (2026-07-21, two days inside the window) —
+        already complies and stays put.
+      </p>
+      <details class="collapse collapse-arrow bg-base-200 border border-base-300">
+        <summary class="collapse-title text-sm font-medium">Full audit output (both lockfiles, release date per resolved version)</summary>
+        <div class="collapse-content">
+          <div class="mockup-code text-xs"><pre><code>=== Cargo.lock (cutoff 2026-07-23) ===
+heck 0.5.0 (2024-03-12) ok        itoa 1.0.18 (2026-03-20) ok
+libc 0.2.189 (2026-07-21) ok      memchr 2.8.3 (2026-07-08) ok
+once_cell 1.21.4 (2026-03-12) ok  portable-atomic 1.14.0 (2026-07-17) ok
+proc-macro2 1.0.107 (2026-07-19)  quote 1.0.47 (2026-07-19) ok
+pyo3 0.29.2 (2026-08-05) VIOLATES         pyo3-ffi 0.29.2 VIOLATES
+pyo3-build-config 0.29.2 VIOLATES         pyo3-macros 0.29.2 VIOLATES
+pyo3-macros-backend 0.29.2 VIOLATES
+ryu 1.0.23 (2026-02-08) ok        smallvec 1.15.2 (2026-06-11) ok
+syn 2.0.119 (2026-07-15) ok       target-lexicon 0.13.5 (2026-02-15) ok
+unicode-ident 1.0.24 (2026-02-16) ok
+
+=== uv.lock (cutoff 2026-07-23) ===
+ast-serialize 0.7.0 (2026-08-06) VIOLATES   librt 0.14.0 (2026-08-06) VIOLATES
+packaging 26.3 (2026-08-04) VIOLATES        ruff 0.16.1 (2026-07-30) VIOLATES
+colorama ok  iniconfig ok  maturin 1.14.1 ok  msgspec 0.21.1 ok  mypy 2.3.0 ok
+mypy-extensions ok  pathspec ok  pluggy ok  py-cpuinfo ok  pygments ok
+pytest 9.1.1 ok  pytest-benchmark 5.2.3 ok  typing-extensions 4.16.0 ok</code></pre></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ MECHANISM ============ -->
+  <section class="flex flex-col gap-4">
+    <h2 class="text-2xl font-bold">The mechanism — planned edits</h2>
+    <p class="text-base-content/70 max-w-3xl">
+      The two ecosystems get different tools because only one has native support.
+      <b>uv enforces the cutoff at every resolution</b> with a relative duration — no dates, no
+      relock machinery; a plain <code>uv lock</code> is always ≥14 days behind whenever it runs.
+      <b>Cargo has no equivalent</b> (re-verified against cargo 1.93.1), so the Rust side is a
+      pinned version plus an audit script that fails loudly when any locked crate is younger than
+      14 days. Reproducibility note: the rolling window moves, but <code>uv.lock</code> pins exact
+      versions — day-to-day builds are byte-identical; only an explicit re-lock resolves anew.
+    </p>
+
+    <div class="card bg-base-100 border border-warning">
+      <div class="card-body gap-2">
+        <h3 class="font-semibold">Prerequisite — upgrade uv (0.5.14 → 0.12.x)</h3>
+        <p class="text-sm text-base-content/70">The installed uv (Jan 2025) only accepts RFC 3339
+        timestamps for <code>exclude-newer</code>; duration support ("<code>14 days</code>") and
+        <code>exclude-newer-package</code> came later. <code>uv self update</code> (or brew) first —
+        and note the irony is handled: uv is a standalone binary tool, not a package inside either
+        lockfile, so upgrading it doesn't violate the cooldown being installed.</p>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body gap-2">
+        <h3 class="font-semibold"><code>pyproject.toml</code> — native rolling cutoff for every uv resolution</h3>
+        <p class="text-sm text-base-content/70">One line, no dates. Per-package escalation for a
+        critical fix uses <code>exclude-newer-package = { somepkg = "0 days" }</code> with the
+        justification in the commit — better than the allowlist I originally sketched.</p>
+        <div id="diff-pyproject" class="diff-shell"></div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body gap-2">
+        <h3 class="font-semibold"><code>Cargo.toml</code> — pin pyo3 to the newest compliant version</h3>
+        <p class="text-sm text-base-content/70">The exact pin drags the whole same-versioned family
+        (<code>pyo3-ffi</code>, <code>-macros</code>, <code>-build-config</code>, <code>-macros-backend</code>)
+        down to 0.29.0 with it. Same minor version, so the <code>cast</code>/<code>Bound</code> API we
+        compile against is unchanged — the rebuild gate verifies that claim.</p>
+        <div id="diff-cargo" class="diff-shell"></div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body gap-2">
+        <h3 class="font-semibold">Makefile — <code>relock</code> + <code>audit</code> targets (folds into the pending <code>refine-benchmarks-and-tooling</code> Makefile)</h3>
+        <div id="file-makefile" class="diff-shell"></div>
+        <p class="text-sm text-base-content/70">
+          <code>scripts/check-package-ages.py</code> is the audit I ran to produce this page, formalized:
+          it parses <code>Cargo.lock</code> and <code>uv.lock</code>, queries crates.io/PyPI for each
+          resolved version's release date, and exits non-zero naming every violator. It needs network,
+          which is why it's a separate target (and a CI job) rather than part of every local
+          <code>make check</code> — see decision 2 below.
+        </p>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body gap-2">
+        <h3 class="font-semibold">Apply sequence</h3>
+        <ol class="list-decimal list-inside text-sm flex flex-col gap-1">
+          <li><b>Upgrade uv</b> (0.5.14 → 0.12.x) so <code>exclude-newer = "14 days"</code> parses</li>
+          <li>Edit <code>pyproject.toml</code> and <code>Cargo.toml</code> as diffed above</li>
+          <li><code>cargo update -p pyo3 --precise 0.29.0</code> (family follows automatically)</li>
+          <li><code>uv lock</code> (now rolling-compliant by construction) then <code>uv sync</code></li>
+          <li>Rebuild the release wheel, run <b>all 63 tests</b>, re-run the benchmark gates — the
+              pyo3 downgrade touches every FFI call, so G2/G3 numbers get re-verified, not assumed</li>
+          <li>Add the audit script + Makefile targets; run <code>make audit</code> clean</li>
+          <li>Update the <code>refine-benchmarks-and-tooling</code> change (proposal + delta specs +
+              tasks) so the cooldown is spec'd, not folklore; commit</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRADEOFFS ============ -->
+  <section class="card bg-base-100 border border-base-300">
+    <div class="card-body gap-3">
+      <h2 class="card-title">Tradeoffs and risks — the honest column</h2>
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead><tr><th>Cost</th><th>Concretely</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="font-medium">Security fixes are delayed too</td>
+              <td>A CVE patch released tomorrow waits 14 days like everything else. This is the classic
+                  cooldown tradeoff: you trade zero-day <i>fix</i> speed for zero-day <i>compromise</i>
+                  immunity.</td>
+              <td>Documented override: Python uses uv's native
+                  <code>exclude-newer-package = { pkg = "0 days" }</code>; Rust pins the newer version
+                  explicitly. Justification goes in the commit message either way, and the audit
+                  script honors both.</td>
+            </tr>
+            <tr>
+              <td class="font-medium">pyo3 loses two patch releases</td>
+              <td>0.29.1 (Aug 2) and 0.29.2 (Aug 5) contain unknown fixes we forgo until Aug 16 / Aug 19.</td>
+              <td>Compile + full test suite + benchmark gates re-run on 0.29.0 before committing. If
+                  something we need was fixed in .1/.2, the gates will say so and that becomes an
+                  override candidate.</td>
+            </tr>
+            <tr>
+              <td class="font-medium">Rust enforcement is soft</td>
+              <td>Cargo can't refuse young versions at resolve time; a bare <code>cargo update</code>
+                  can walk past the pin for other crates.</td>
+              <td><code>Cargo.lock</code> is committed, and <code>make audit</code> fails on any young
+                  locked version — enforcement moves to CI/pre-release rather than resolve time.</td>
+            </tr>
+            <tr>
+              <td class="font-medium">ruff drops a minor (0.16 → 0.15.22)</td>
+              <td>Lint rule set shifts slightly; a rule we currently pass could differ.</td>
+              <td><code>make lint</code> runs in the apply sequence; deltas fixed on the spot.</td>
+            </tr>
+            <tr>
+              <td class="font-medium">Audit needs network</td>
+              <td>Release dates come from crates.io/PyPI APIs; offline <code>make check</code> would fail.</td>
+              <td>Separate <code>make audit</code> target (decision 2) so day-to-day checks stay offline.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DECISIONS ============ -->
+  <section class="flex flex-col gap-4">
+    <h2 class="text-2xl font-bold">Decision record — all three settled</h2>
+
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body gap-3">
+        <ul class="text-sm flex flex-col gap-2">
+          <li class="flex gap-2 items-start">
+            <span class="badge badge-success badge-sm mt-0.5">1</span>
+            <span><b>Cutoff style: rolling, via uv's native setting.</b> Your call, and the docs
+            back it: <code>exclude-newer = "14 days"</code> in <code>[tool.uv]</code> — no hardcoded
+            dates anywhere, no Makefile date plumbing. Reproducibility is preserved by the committed
+            lockfile; only explicit re-locks re-resolve.</span>
+          </li>
+          <li class="flex gap-2 items-start">
+            <span class="badge badge-success badge-sm mt-0.5">2</span>
+            <span><b>Audit placement: separate <code>make audit</code></b>, run in CI and before
+            releases, so <code>make check</code> stays offline-capable.</span>
+          </li>
+          <li class="flex gap-2 items-start">
+            <span class="badge badge-success badge-sm mt-0.5">3</span>
+            <span><b>Landing: fold into the open <code>refine-benchmarks-and-tooling</code> change
+            and apply.</b> Proposal, delta specs, and tasks get the cooldown added so it's spec'd,
+            not folklore.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 border border-primary">
+      <div class="card-body sm:flex-row sm:items-center gap-3">
+        <p class="text-sm grow">Final go/no-go on the corrected plan: upgrade uv, native
+        <code>"14 days"</code> setting, pyo3 pinned to 0.29.0 with audit enforcement, full re-test
+        after the downgrade, folded into the open change.</p>
+        <div class="flex gap-2 flex-wrap">
+          <div class="btn btn-primary" data-lavish-action
+            onclick="window.lavish.queuePrompt('Approved: apply the corrected cooldown plan (upgrade uv; exclude-newer = 14 days; pin pyo3 =0.29.0; make audit; fold into refine-benchmarks-and-tooling; full re-test).', { tag: 'approval', text: 'Apply corrected plan' })">
+            Approve — apply the corrected plan
+          </div>
+          <div class="btn btn-outline" data-lavish-action
+            onclick="window.lavish.queuePrompt('Still holding; more feedback coming.', { tag: 'hold', text: 'Still holding' })">
+            Hold — more feedback coming
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module">
+  import { File, FileDiff } from "https://esm.sh/@pierre/diffs@1.2.10?bundle";
+
+  const theme = { light: "github-light", dark: "github-dark" };
+  const options = { theme, themeType: "dark", overflow: "wrap" };
+
+  const pyprojectOld = {
+    name: "pyproject.toml",
+    contents: '[build-system]\nrequires = ["maturin>=1.9,<2"]\nbuild-backend = "maturin"\n\n[project]\nname = "msgspec-toon"\nversion = "0.0.1"\nrequires-python = ">=3.13"\ndependencies = ["msgspec>=0.21.1"]\n',
+  };
+  const pyprojectNew = {
+    name: "pyproject.toml",
+    contents: '[build-system]\nrequires = ["maturin>=1.9,<2"]\nbuild-backend = "maturin"\n\n[project]\nname = "msgspec-toon"\nversion = "0.0.1"\nrequires-python = ">=3.13"\ndependencies = ["msgspec==0.21.1"]\n\n[tool.uv]\n# Supply-chain cooldown: every resolution refuses artifacts uploaded within\n# the last 14 days. Per-package CVE escape hatch: exclude-newer-package.\nexclude-newer = "14 days"\n',
+  };
+
+  const cargoOld = {
+    name: "Cargo.toml",
+    contents: '[dependencies]\npyo3 = { version = "0.29", features = ["abi3-py313"] }\nitoa = "1.0"\nmemchr = "2.7"\nryu = "1.0"\nsmallvec = "1.15"\n',
+  };
+  const cargoNew = {
+    name: "Cargo.toml",
+    contents: '[dependencies]\n# Cooldown pin: 0.29.1 and 0.29.2 are younger than 14 days at lock time.\n# Cargo has no exclude-newer equivalent; `make audit` enforces the window\n# against Cargo.lock and says when the pin is eligible to lift.\npyo3 = { version = "=0.29.0", features = ["abi3-py313"] }\nitoa = "1.0"\nmemchr = "2.7"\nryu = "1.0"\nsmallvec = "1.15"\n',
+  };
+
+  const makefileNew = {
+    name: "Makefile (cooldown targets — excerpt of the pending refine-benchmarks-and-tooling Makefile)",
+    contents: 'COOLDOWN_DAYS := 14\n\n.PHONY: relock audit\n\n# Python needs no date plumbing: [tool.uv] exclude-newer = "14 days" makes\n# every uv resolution rolling-compliant on its own. This target just\n# re-resolves both ecosystems and re-audits.\nrelock:\n\tuv lock\n\tcargo update\n\t$(MAKE) audit\n\n# Fail if any resolved version in Cargo.lock or uv.lock is younger than\n# $(COOLDOWN_DAYS) days (queries crates.io / PyPI; network required).\n# This is the enforcement layer Cargo lacks natively, and a belt-and-\n# suspenders double check on the uv side.\naudit:\n\tuv run python scripts/check-package-ages.py --days $(COOLDOWN_DAYS)\n',
+  };
+
+  new FileDiff({ ...options, diffStyle: "split" }).render({
+    containerWrapper: document.querySelector("#diff-pyproject"),
+    oldFile: pyprojectOld,
+    newFile: pyprojectNew,
+  });
+  new FileDiff({ ...options, diffStyle: "split" }).render({
+    containerWrapper: document.querySelector("#diff-cargo"),
+    oldFile: cargoOld,
+    newFile: cargoNew,
+  });
+  new File(options).render({
+    containerWrapper: document.querySelector("#file-makefile"),
+    file: makefileNew,
+  });
+</script>
+</body>
+</html>

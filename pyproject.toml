@@ -7,7 +7,7 @@ name = "msgspec-toon"
 version = "0.0.1"
 description = "A native TOON 4.1 codec with direct msgspec.Struct decoding"
 requires-python = ">=3.13"
-dependencies = ["msgspec>=0.21.1"]
+dependencies = ["msgspec==0.21.1"]
 readme = "README.md"
 license = { text = "MIT" }
 classifiers = [
@@ -25,6 +25,12 @@ dev = [
   "ruff>=0.12",
   "mypy>=1.17",
 ]
+
+[tool.uv]
+# Supply-chain cooldown: every resolution refuses artifacts uploaded within
+# the last 14 days. Per-package CVE escape hatch: exclude-newer-package
+# (e.g. { somepkg = "0 days" }) with the justification in the commit.
+exclude-newer = "14 days"
 
 [tool.maturin]
 python-source = "python"

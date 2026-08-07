@@ -9,10 +9,12 @@ The repository SHALL provide a `Makefile` whose targets cover both languages:
 `cargo clippy --all-targets -- -D warnings`), `typecheck` (mypy over
 `python/msgspec_toon`), `test` (`cargo test` and `pytest`), `check` (all of the above),
 `build` (release wheel via maturin, installed into the project environment), `bench`
-(the benchmark scripts against the installed release wheel), and `report`
-(`scripts/release-report.py`). The Makefile SHALL export the environment `cargo test`
-needs to link a Python (`PYO3_PYTHON`), so a fresh clone can run every target without
-tribal knowledge.
+(the benchmark scripts against the installed release wheel), `report`
+(`scripts/release-report.py`), `audit` (the package-cooldown age audit), and `relock`
+(re-resolve both lockfiles, then audit). The Makefile SHALL export the environment
+`cargo test` needs to link a Python (`PYO3_PYTHON`), so a fresh clone can run every
+target without tribal knowledge. `audit` SHALL NOT be part of `check` — it requires
+network access to registry APIs — and SHALL run in CI and before releases instead.
 
 #### Scenario: A fresh clone checks clean
 

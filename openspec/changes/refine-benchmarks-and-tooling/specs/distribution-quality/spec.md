@@ -71,6 +71,38 @@ as sources of conformant reference bytes.
 
 ## ADDED Requirements
 
+### Requirement: Dependencies observe a 14-day cooldown
+
+No resolved dependency version, direct or transitive, SHALL be younger than 14 days at
+resolution time, in either ecosystem. Python SHALL enforce this natively with
+`tool.uv.exclude-newer = "14 days"` — a relative duration, never a hardcoded date.
+Rust, where Cargo has no equivalent, SHALL enforce it by pinning any in-window version
+(with the reason and lift condition in a comment) and by the lockfile age audit
+(`scripts/check-package-ages.py`, run as `make audit`), which SHALL fail on any locked
+version younger than the window. Overrides for critical fixes SHALL be explicit and
+attributed: `tool.uv.exclude-newer-package` on the Python side, an explicit newer pin
+on the Rust side, with the justification in the commit that introduces it.
+
+#### Scenario: A zero-day-old package cannot enter the tree
+
+- **WHEN** dependency resolution runs and a candidate version was uploaded within the
+  last 14 days
+- **THEN** an older compliant version is selected, or resolution fails — the young
+  version is never locked silently
+
+#### Scenario: The audit fails loudly on a young locked version
+
+- **WHEN** `make audit` runs against a lockfile containing a version younger than 14
+  days that has no declared override
+- **THEN** the audit exits non-zero naming the ecosystem, package, version, and
+  release date
+
+#### Scenario: An override is visible, not silent
+
+- **WHEN** a package is admitted inside the window via an override
+- **THEN** the audit reports it as an override rather than passing it silently
+- **AND** the override's justification is recorded in the commit that added it
+
 ### Requirement: Benchmark timing is standardized
 
 All benchmark scripts SHALL time through one shared utility (`benches/_timing.py`)
