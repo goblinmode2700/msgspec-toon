@@ -1,0 +1,132 @@
+{
+  "generated_at": "2026-08-06T23:55:53.383552+00:00",
+  "distribution": "msgspec-toon 0.0.1 (proof of concept)",
+  "environment": {
+    "python": "3.13.1",
+    "msgspec": "0.21.1",
+    "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "conformance": {
+    "spec_version_target": "4.1",
+    "fixture_commit": "UNPINNED_PHASE_0_INCOMPLETE",
+    "status": "NOT RUN \u2014 fixture corpus not yet pinned (Phase 0 incomplete)",
+    "encode_pass": null,
+    "decode_pass": null,
+    "strict_error_pass": null,
+    "divergences": "unknown until the corpus runs"
+  },
+  "allocation_proof": {
+    "payload_records": 64,
+    "typed": {
+      "intermediate_dicts": 0,
+      "intermediate_lists": 0
+    },
+    "wrapper": {
+      "intermediate_dicts": 129,
+      "intermediate_lists": 1
+    },
+    "gate_G2_zero_intermediates": true
+  },
+  "benchmarks_same_run": [
+    {
+      "records": 16,
+      "toon_bytes": 527,
+      "json_bytes": 1339,
+      "decode_us": {
+        "typed_direct": 5.74,
+        "untyped_tree": 4.78,
+        "convert_only": 1.39,
+        "wrapper_tree_plus_convert": 6.14,
+        "msgspec_json_native": 2.15
+      },
+      "encode_us": {
+        "typed_direct_whole": 2.23,
+        "to_builtins_alone": 1.04,
+        "msgspec_json_native": 1.0
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false
+      }
+    },
+    {
+      "records": 64,
+      "toon_bytes": 1991,
+      "json_bytes": 5347,
+      "decode_us": {
+        "typed_direct": 21.65,
+        "untyped_tree": 18.08,
+        "convert_only": 5.29,
+        "wrapper_tree_plus_convert": 23.55,
+        "msgspec_json_native": 8.3
+      },
+      "encode_us": {
+        "typed_direct_whole": 7.66,
+        "to_builtins_alone": 4.41,
+        "msgspec_json_native": 3.08
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false
+      }
+    },
+    {
+      "records": 512,
+      "toon_bytes": 16068,
+      "json_bytes": 43167,
+      "decode_us": {
+        "typed_direct": 162.91,
+        "untyped_tree": 154.24,
+        "convert_only": 43.11,
+        "wrapper_tree_plus_convert": 199.35,
+        "msgspec_json_native": 67.18
+      },
+      "encode_us": {
+        "typed_direct_whole": 58.23,
+        "to_builtins_alone": 43.59,
+        "msgspec_json_native": 22.66
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false
+      }
+    },
+    {
+      "records": 4096,
+      "toon_bytes": 132061,
+      "json_bytes": 349111,
+      "decode_us": {
+        "typed_direct": 1521.74,
+        "untyped_tree": 1442.44,
+        "convert_only": 447.23,
+        "wrapper_tree_plus_convert": 1854.46,
+        "msgspec_json_native": 638.39
+      },
+      "encode_us": {
+        "typed_direct_whole": 468.22,
+        "to_builtins_alone": 438.82,
+        "msgspec_json_native": 172.96
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false
+      }
+    }
+  ],
+  "gates": {
+    "G1_conformance": "not run (no pinned corpus)",
+    "G2_zero_intermediates": true,
+    "G3_typed_decode_beats_wrapper": true,
+    "G4_whole_encode_beats_to_builtins_alone": false,
+    "G5_codec_floor": "not run (competing compiled codecs not installed here)",
+    "G6_wheel_parity": "measurements taken on the installed abi3 release wheel"
+  },
+  "known_divergences_and_gaps": [
+    "G4 fails: whole direct encode does not beat msgspec.to_builtins alone at small payloads (2.1x at 16 records) and approaches parity at 1 MiB scale (~3% gap). Cause: public stable-ABI attribute reads (~20ns/field) versus msgspec's private C slot reads. This is the canvas risk R-02 outcome, reported rather than masked.",
+    "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, literals, dec_hook customs). No enums/datetime/UUID/Decimal yet.",
+    "Delimiter is comma only; tab/pipe delimiters and keyed tabular objects are not implemented.",
+    "Canonical float formatting follows ryu shortest-repr with JS-style exponent signs; unverified against the official fixture corpus.",
+    "Recursive (self-referential) Struct types are not supported."
+  ]
+}

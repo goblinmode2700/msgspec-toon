@@ -1,0 +1,10 @@
+/target/
+/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+.DS_Store
+python/msgspec_toon/*.so

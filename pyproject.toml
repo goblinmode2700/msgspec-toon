@@ -1,0 +1,42 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "msgspec-toon"
+version = "0.0.1"
+description = "A native TOON 4.1 codec with direct msgspec.Struct decoding"
+requires-python = ">=3.13"
+dependencies = ["msgspec>=0.21.1"]
+readme = "README.md"
+license = { text = "MIT" }
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Rust",
+  "Typing :: Typed",
+]
+
+[dependency-groups]
+dev = [
+  "maturin>=1.9,<2",
+  "pytest>=8.4",
+  "pytest-benchmark>=5.1",
+  "ruff>=0.12",
+  "mypy>=1.17",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "msgspec_toon._native"
+bindings = "pyo3"
+features = ["extension-module"]
+strip = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100

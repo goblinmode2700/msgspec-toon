@@ -1,0 +1,8 @@
+{
+  "spec_version": "4.1",
+  "repository": "toon-format/spec",
+  "commit": "UNPINNED_PHASE_0_INCOMPLETE",
+  "fixture_root": "tests/fixtures",
+  "tree_sha256": "UNPINNED_PHASE_0_INCOMPLETE",
+  "note": "The official TOON 4.1 fixture corpus has not been fetched and pinned yet. No conformance claim is made until this lock names a real commit and the runner passes against it (openspec: toon-parsing / toon-encoding conformance requirements)."
+}

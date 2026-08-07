@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  Project: msgspec_toon — a native TOON 4.1 codec for Python with a direct typed path
+  into msgspec.Struct (no intermediate builtin tree), the way msgspec.json works and
+  msgspec.toml does not.
+
+  Tech stack: Rust + PyO3 (abi3-py313) built with maturin; thin Python layer in
+  python/msgspec_toon; Python >= 3.13; msgspec >= 0.21.1 is the only runtime dependency.
+  Python environments use uv.
+
+  Architecture (see docs/implementation-spec/toon-native-codec-implementation-canvas.md):
+  parser emits borrowed Rust events into a Consumer trait; UntypedConsumer builds
+  dict/list for type=Any; TypedConsumer builds the requested msgspec.Struct directly via
+  the public constructor, guided by a CompiledPlan lowered from msgspec.inspect through
+  the single adapter module python/msgspec_toon/_plan.py. Encoder reads Struct fields
+  directly (never msgspec.to_builtins) and emits canonical TOON 4.1 with nested field
+  group tabular headers. Errors carry line/column/code and never echo payload content.
+
+  Decisive requirements (docs/original-spec/requirements.md): byte-exact conformance
+  against the pinned official 4.1 fixture corpus in both directions, and typed decoding
+  that provably allocates no intermediate dict/list tree — demonstrated by measurement,
+  not asserted. Everything else (speed floors vs the fastest compiled codec, abi3 wheels,
+  empty dependency tree, published machine-readable report) is a floor.
+
+  Specs in openspec/specs: toon-parsing, toon-encoding, typed-codec, public-api,
+  distribution-quality. The original abstract spec and requirements live in
+  docs/original-spec/; the implementation canvas in docs/implementation-spec/ is the
+  engineering design of record.
