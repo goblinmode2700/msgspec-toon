@@ -4,6 +4,8 @@
 
 use std::borrow::Cow;
 
+use memchr::memchr;
+
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::ScalarToken;
 
@@ -209,6 +211,24 @@ pub fn find_unquoted(content: &[u8], needle: u8, from: usize) -> Option<usize> {
 /// Split a row into cells on an unquoted delimiter.
 pub fn split_cells(content: &[u8], delimiter: u8) -> Vec<&[u8]> {
     let mut cells = Vec::new();
+    split_cells_into(content, delimiter, &mut cells);
+    cells
+}
+
+/// Split into a caller-owned buffer so tabular rows reuse one allocation
+/// (optimization D2). Quote-free rows — the overwhelming majority — take a
+/// plain `memchr` scan instead of byte-at-a-time quote tracking (P1).
+pub fn split_cells_into<'a>(content: &'a [u8], delimiter: u8, cells: &mut Vec<&'a [u8]>) {
+    cells.clear();
+    if memchr(b'"', content).is_none() {
+        let mut start = 0;
+        for end in memchr::memchr_iter(delimiter, content) {
+            cells.push(trim_spaces(&content[start..end]));
+            start = end + 1;
+        }
+        cells.push(trim_spaces(&content[start..]));
+        return;
+    }
     let mut start = 0;
     loop {
         match find_unquoted(content, delimiter, start) {
@@ -218,7 +238,7 @@ pub fn split_cells(content: &[u8], delimiter: u8) -> Vec<&[u8]> {
             }
             None => {
                 cells.push(trim_spaces(&content[start..]));
-                return cells;
+                return;
             }
         }
     }

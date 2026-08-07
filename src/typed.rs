@@ -34,6 +34,19 @@ enum Frame<'py, 'plan> {
     },
 }
 
+/// Optimization D1: rows of one array repeat an identical key-event
+/// sequence, so the first row's wire-name→field-index resolutions are
+/// recorded and replayed positionally for every later row — a byte
+/// comparison instead of a hash lookup per cell. Any sequence deviation
+/// disables the memo for that array and falls back to hashing.
+#[derive(Default)]
+struct RowMemo {
+    entries: Vec<(Vec<u8>, Option<usize>)>,
+    cursor: usize,
+    complete: bool,
+    disabled: bool,
+}
+
 pub struct TypedConsumer<'py, 'plan> {
     py: Python<'py>,
     root: &'plan CompiledPlan,
@@ -50,6 +63,8 @@ pub struct TypedConsumer<'py, 'plan> {
     /// the same field-slot and argument buffers instead of allocating.
     values_pool: Vec<Vec<Option<Bound<'py, PyAny>>>>,
     arguments_scratch: Vec<Bound<'py, PyAny>>,
+    /// One memo per open array frame, scoped like the frame stack.
+    row_memos: Vec<RowMemo>,
 }
 
 impl<'py, 'plan> TypedConsumer<'py, 'plan> {
@@ -74,6 +89,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             any_hook_class: None,
             values_pool: Vec::new(),
             arguments_scratch: Vec::new(),
+            row_memos: Vec::new(),
         }
     }
 
@@ -381,6 +397,13 @@ impl Consumer for TypedConsumer<'_, '_> {
             .resolve_container();
         match &expected.kind {
             PlanKind::Struct(plan) => {
+                // A struct opening directly under an array frame starts a
+                // new row: rewind the array's key memo for replay.
+                if matches!(self.stack.last(), Some(Frame::List { .. }))
+                    && let Some(memo) = self.row_memos.last_mut()
+                {
+                    memo.cursor = 0;
+                }
                 let field_count = plan.fields.len();
                 let mut values = self.values_pool.pop().unwrap_or_default();
                 values.clear();
@@ -428,8 +451,36 @@ impl Consumer for TypedConsumer<'_, '_> {
                     StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
                     StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
                 };
-                match plan.by_wire.get(raw.as_ref()) {
-                    Some(&index) => {
+                // D1 memo: replay the first row's resolution positionally.
+                let mut resolved: Option<Option<usize>> = None;
+                if let Some(memo) = self.row_memos.last_mut()
+                    && !memo.disabled
+                    && memo.complete
+                {
+                    match memo.entries.get(memo.cursor) {
+                        Some((bytes, index)) if bytes.as_slice() == raw.as_ref() => {
+                            memo.cursor += 1;
+                            resolved = Some(*index);
+                        }
+                        _ => memo.disabled = true,
+                    }
+                }
+                let looked_up = match resolved {
+                    Some(index) => index,
+                    None => {
+                        let index = plan.by_wire.get(raw.as_ref()).copied();
+                        if let Some(memo) = self.row_memos.last_mut()
+                            && !memo.disabled
+                            && !memo.complete
+                        {
+                            memo.entries.push((raw.clone().into_owned(), index));
+                            memo.cursor += 1;
+                        }
+                        index
+                    }
+                };
+                match looked_up {
+                    Some(index) => {
                         if values[index].is_some() && self.strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
                         }
@@ -473,6 +524,14 @@ impl Consumer for TypedConsumer<'_, '_> {
         match self.stack.pop() {
             Some(Frame::Struct { plan, values, .. }) => {
                 let value = self.finish_struct(plan, values, at)?;
+                // Closing a row (a struct directly under an array frame)
+                // seals the memo: later rows replay it positionally.
+                if matches!(self.stack.last(), Some(Frame::List { .. }))
+                    && let Some(memo) = self.row_memos.last_mut()
+                    && !memo.disabled
+                {
+                    memo.complete = true;
+                }
                 self.place(value, at)
             }
             Some(Frame::Dict { map, .. }) => self.place(map.into_any(), at),
@@ -503,6 +562,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     item,
                     as_tuple: false,
                 });
+                self.row_memos.push(RowMemo::default());
                 Ok(())
             }
             PlanKind::TupleVar(item) => {
@@ -511,6 +571,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     item,
                     as_tuple: true,
                 });
+                self.row_memos.push(RowMemo::default());
                 Ok(())
             }
             PlanKind::Any => self.begin_any(AnyEvent::StartArray(declared_len), at, None),
@@ -537,6 +598,7 @@ impl Consumer for TypedConsumer<'_, '_> {
             Some(Frame::List {
                 items, as_tuple, ..
             }) => {
+                self.row_memos.pop();
                 let value = if as_tuple {
                     match PyTuple::new(self.py, items) {
                         Ok(tuple) => tuple.into_any(),

@@ -1,7 +1,7 @@
 //! The compiled type plan: the Rust lowering of the frozen `PlanSpec` IR
 //! produced by `msgspec_toon._plan`. Nothing here reads `msgspec.inspect`.
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 use pyo3::prelude::*;
 use pyo3::types::PyString;
@@ -29,7 +29,7 @@ pub struct CompiledPlan {
 pub struct StructPlan {
     pub class: Py<PyAny>,
     pub fields: Vec<FieldPlan>,
-    pub by_wire: HashMap<Vec<u8>, usize>,
+    pub by_wire: FxHashMap<Vec<u8>, usize>,
     pub forbid_unknown: bool,
 }
 
@@ -106,7 +106,7 @@ impl CompiledPlan {
             "struct" => {
                 let class = spec.getattr("python_type")?.unbind();
                 let mut fields = Vec::new();
-                let mut by_wire = HashMap::new();
+                let mut by_wire = FxHashMap::default();
                 for field in spec.getattr("fields")?.try_iter()? {
                     let field = field?;
                     let python_name = field

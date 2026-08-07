@@ -15,7 +15,7 @@ use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
 use crate::scalar::{
-    classify_bare, find_unquoted, scan_quoted, split_cells, trim_spaces, unescape,
+    classify_bare, find_unquoted, scan_quoted, split_cells, split_cells_into, trim_spaces, unescape,
 };
 use crate::scan::{Line, Lines};
 
@@ -330,8 +330,9 @@ fn parse_array_body<C: Consumer>(
 
     if !header.fields.is_empty() {
         let leaf_count = header.leaf_count();
+        let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
         body_rows(lines, depth, strict, header.declared_len, |_, row| {
-            let cells = split_cells(row.content, header.delimiter);
+            split_cells_into(row.content, header.delimiter, &mut cells);
             if cells.len() != leaf_count {
                 return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
             }
@@ -371,6 +372,7 @@ fn parse_keyed_body<C: Consumer>(
     let leaf_count = header.leaf_count();
     consumer.start_object(at)?;
     let mut seen: Vec<Vec<u8>> = Vec::new();
+    let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
     body_rows(lines, depth, strict, header.declared_len, |_, row| {
         let Some(colon) = entry_colon(row.content) else {
             // Non-strict decoders skip an entry-depth line without a colon.
@@ -386,7 +388,7 @@ fn parse_keyed_body<C: Consumer>(
             // An entry row must carry cells after its key.
             return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
         }
-        let cells = split_cells(rest, header.delimiter);
+        split_cells_into(rest, header.delimiter, &mut cells);
         if cells.len() != leaf_count {
             return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
         }

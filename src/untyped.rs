@@ -4,11 +4,12 @@
 //! the wrapper-vs-typed allocation comparison is measurable (G2).
 
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
+use pyo3::types::{PyDict, PyList, PyString};
+use rustc_hash::FxHashMap;
 
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
-use crate::pyval::{count_dict, count_list, scalar_to_py, string_token_to_py};
+use crate::pyval::{count_dict, count_list, scalar_to_py};
 
 enum Builder<'py> {
     Dict {
@@ -26,6 +27,10 @@ pub struct UntypedConsumer<'py> {
     stack: Vec<Builder<'py>>,
     result: Option<Bound<'py, PyAny>>,
     pub pending_err: Option<PyErr>,
+    /// Optimization D3: tabular rows repeat the same few keys thousands of
+    /// times; cache one PyString per distinct key instead of allocating one
+    /// per cell row.
+    key_cache: FxHashMap<Vec<u8>, Py<PyString>>,
 }
 
 impl<'py> UntypedConsumer<'py> {
@@ -36,6 +41,7 @@ impl<'py> UntypedConsumer<'py> {
             stack: Vec::new(),
             result: None,
             pending_err: None,
+            key_cache: FxHashMap::default(),
         }
     }
 
@@ -68,10 +74,19 @@ impl<'py> UntypedConsumer<'py> {
     }
 
     fn key_to_py(&mut self, key: StringToken<'_>) -> Bound<'py, PyAny> {
-        match key {
-            StringToken::Bare(bytes) => string_token_to_py(self.py, bytes, false),
-            StringToken::Quoted { inner, escaped } => string_token_to_py(self.py, inner, escaped),
+        let bytes = match key {
+            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+            StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
+        };
+        if let Some(cached) = self.key_cache.get(bytes.as_ref()) {
+            return cached.bind(self.py).to_owned().into_any();
         }
+        // The document was validated as UTF-8 and escapes decode to valid UTF-8.
+        let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
+        let created = PyString::new(self.py, text);
+        self.key_cache
+            .insert(bytes.into_owned(), created.clone().unbind());
+        created.into_any()
     }
 }
 
