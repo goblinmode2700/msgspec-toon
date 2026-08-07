@@ -9,6 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 tree**, and encodes Structs without `msgspec.to_builtins`. Equivalently: make `msgspec.toon`
 exist and behave like `msgspec.json`, not like the wrapper-shaped `msgspec.toml`.
 
+**Public name is `msgspec-toon`.** The local directory name ("toon-millennium-challenge")
+is a working title only and must not leak into anything published: if creating a GitHub
+repo, name it explicitly (`gh repo create <owner>/msgspec-toon --source=.` — never rely on
+`gh`'s directory-name default) and keep the distribution/wheel name `msgspec-toon`.
+
 Why it exists: existing Python TOON codecs are either slow (pure Python), behind the spec
 (the Rust `toons` library targets v3.0 and misses nested field groups, so its output can be
 *less* token-efficient than JSON), or unfinished. TOON's entire value is the tabular array
