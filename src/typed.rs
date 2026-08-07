@@ -88,9 +88,11 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     fn expected_plan(&self) -> Option<&'plan CompiledPlan> {
         match self.stack.last() {
-            Some(Frame::Struct { plan, awaiting: Some(index), .. }) => {
-                Some(&plan.fields[*index].value)
-            }
+            Some(Frame::Struct {
+                plan,
+                awaiting: Some(index),
+                ..
+            }) => Some(&plan.fields[*index].value),
             Some(Frame::Struct { .. }) => None,
             Some(Frame::List { item, .. }) => Some(item),
             Some(Frame::Dict { value, .. }) => Some(value),
@@ -100,13 +102,19 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     fn place(&mut self, value: Bound<'py, PyAny>, at: Position) -> Result<(), Fault> {
         match self.stack.last_mut() {
-            Some(Frame::Struct { values, awaiting, .. }) => {
-                let index = awaiting.take().ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+            Some(Frame::Struct {
+                values, awaiting, ..
+            }) => {
+                let index = awaiting
+                    .take()
+                    .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
                 values[index] = Some(value);
             }
             Some(Frame::List { items, .. }) => items.push(value),
             Some(Frame::Dict { map, pending, .. }) => {
-                let key = pending.take().ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+                let key = pending
+                    .take()
+                    .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
                 if let Err(err) = map.set_item(key, value) {
                     return Err(self.internal(err, at));
                 }
@@ -202,7 +210,9 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                     .call1((class, raw))
                     .map_err(|err| self.internal(err, at))
             }
-            PlanKind::List(_) | PlanKind::TupleVar(_) | PlanKind::Dict(_, _)
+            PlanKind::List(_)
+            | PlanKind::TupleVar(_)
+            | PlanKind::Dict(_, _)
             | PlanKind::Struct(_) => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
         }
     }
@@ -255,12 +265,10 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     /// Route an event into the untyped sub-consumer while inside an `Any`
     /// subtree; returns true when the event was consumed.
-    fn any_forward(
-        &mut self,
-        event: AnyEvent<'_>,
-        at: Position,
-    ) -> Result<bool, Fault> {
-        let Some((sub, depth)) = self.any_sub.as_mut() else { return Ok(false) };
+    fn any_forward(&mut self, event: AnyEvent<'_>, at: Position) -> Result<bool, Fault> {
+        let Some((sub, depth)) = self.any_sub.as_mut() else {
+            return Ok(false);
+        };
         let outcome = match event {
             AnyEvent::StartObject => {
                 *depth += 1;
@@ -329,7 +337,13 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
     }
 
     fn top_struct_skips(&mut self) -> bool {
-        matches!(self.stack.last(), Some(Frame::Struct { skip_value: true, .. }))
+        matches!(
+            self.stack.last(),
+            Some(Frame::Struct {
+                skip_value: true,
+                ..
+            })
+        )
     }
 
     fn clear_top_skip(&mut self) {
@@ -380,7 +394,11 @@ impl Consumer for TypedConsumer<'_, '_> {
                 Ok(())
             }
             PlanKind::Dict(_, value) => {
-                self.stack.push(Frame::Dict { map: PyDict::new(self.py), pending: None, value });
+                self.stack.push(Frame::Dict {
+                    map: PyDict::new(self.py),
+                    pending: None,
+                    value,
+                });
                 Ok(())
             }
             PlanKind::Any => self.begin_any(AnyEvent::StartObject, at, None),
@@ -400,7 +418,12 @@ impl Consumer for TypedConsumer<'_, '_> {
             return Ok(());
         }
         match self.stack.last_mut() {
-            Some(Frame::Struct { plan, values, awaiting, skip_value }) => {
+            Some(Frame::Struct {
+                plan,
+                values,
+                awaiting,
+                skip_value,
+            }) => {
                 let raw = match key {
                     StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
                     StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
@@ -511,7 +534,9 @@ impl Consumer for TypedConsumer<'_, '_> {
             return Ok(());
         }
         match self.stack.pop() {
-            Some(Frame::List { items, as_tuple, .. }) => {
+            Some(Frame::List {
+                items, as_tuple, ..
+            }) => {
                 let value = if as_tuple {
                     match PyTuple::new(self.py, items) {
                         Ok(tuple) => tuple.into_any(),
@@ -542,8 +567,9 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.clear_top_skip();
             return Ok(());
         }
-        let expected =
-            self.expected_plan().ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+        let expected = self
+            .expected_plan()
+            .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
         let value = self.convert_scalar(expected, token, at)?;
         self.place(value, at)
     }

@@ -47,17 +47,13 @@ pub fn float_from_digits<'py>(
     if let Some(hook) = float_hook {
         return hook.bind(py).call1((text,));
     }
-    let value: f64 = text.parse().map_err(|_| {
-        pyo3::exceptions::PyValueError::new_err("unparseable float token")
-    })?;
+    let value: f64 = text
+        .parse()
+        .map_err(|_| pyo3::exceptions::PyValueError::new_err("unparseable float token"))?;
     Ok(value.into_pyobject(py)?.into_any())
 }
 
-pub fn string_token_to_py<'py>(
-    py: Python<'py>,
-    inner: &[u8],
-    escaped: bool,
-) -> Bound<'py, PyAny> {
+pub fn string_token_to_py<'py>(py: Python<'py>, inner: &[u8], escaped: bool) -> Bound<'py, PyAny> {
     let bytes = unescape(inner, escaped);
     // The document was validated as UTF-8 and escapes decode to valid UTF-8.
     let text = unsafe { std::str::from_utf8_unchecked(&bytes) };

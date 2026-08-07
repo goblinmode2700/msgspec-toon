@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T23:55:53.383552+00:00",
+  "generated_at": "2026-08-07T00:48:53.040681+00:00",
   "distribution": "msgspec-toon 0.0.1 (proof of concept)",
   "environment": {
     "python": "3.13.1",
@@ -7,6 +7,14 @@
     "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
     "machine": "arm64"
   },
+  "measured_versions": {
+    "msgspec-toon": "0.0.1",
+    "msgspec": "0.21.1",
+    "python-toon": "0.1.3",
+    "toons": "0.7.0",
+    "python": "3.13.1"
+  },
+  "timing_methodology": "minimum per-call time across 7 autoranged batches; batch size grows until one batch takes >= 0.05s; callable warmed once before measurement",
   "conformance": {
     "spec_version_target": "4.1",
     "fixture_commit": "UNPINNED_PHASE_0_INCOMPLETE",
@@ -28,89 +36,223 @@
     },
     "gate_G2_zero_intermediates": true
   },
-  "benchmarks_same_run": [
+  "benchmarks_typed_same_run": [
     {
       "records": 16,
       "toon_bytes": 527,
+      "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.74,
-        "untyped_tree": 4.78,
-        "convert_only": 1.39,
-        "wrapper_tree_plus_convert": 6.14,
-        "msgspec_json_native": 2.15
+        "typed_direct": 5.79,
+        "untyped_tree": 4.85,
+        "convert_only": 1.38,
+        "wrapper_tree_plus_convert": 6.16,
+        "incumbent_pipeline_python_toon_plus_convert": 107.17,
+        "msgspec_json_native": 2.19
       },
       "encode_us": {
-        "typed_direct_whole": 2.23,
+        "typed_direct_whole": 2.26,
         "to_builtins_alone": 1.04,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 93.92,
         "msgspec_json_native": 1.0
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
-        "G4_whole_encode_beats_to_builtins_alone": false
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
       "records": 64,
       "toon_bytes": 1991,
+      "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 21.65,
-        "untyped_tree": 18.08,
-        "convert_only": 5.29,
+        "typed_direct": 22.81,
+        "untyped_tree": 18.16,
+        "convert_only": 5.13,
         "wrapper_tree_plus_convert": 23.55,
-        "msgspec_json_native": 8.3
+        "incumbent_pipeline_python_toon_plus_convert": 439.36,
+        "msgspec_json_native": 8.33
       },
       "encode_us": {
-        "typed_direct_whole": 7.66,
-        "to_builtins_alone": 4.41,
-        "msgspec_json_native": 3.08
+        "typed_direct_whole": 7.64,
+        "to_builtins_alone": 4.35,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 368.65,
+        "msgspec_json_native": 2.99
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
-        "G4_whole_encode_beats_to_builtins_alone": false
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
       "records": 512,
       "toon_bytes": 16068,
+      "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 162.91,
-        "untyped_tree": 154.24,
-        "convert_only": 43.11,
-        "wrapper_tree_plus_convert": 199.35,
-        "msgspec_json_native": 67.18
+        "typed_direct": 164.15,
+        "untyped_tree": 155.39,
+        "convert_only": 42.12,
+        "wrapper_tree_plus_convert": 198.12,
+        "incumbent_pipeline_python_toon_plus_convert": 3590.2,
+        "msgspec_json_native": 65.92
       },
       "encode_us": {
-        "typed_direct_whole": 58.23,
-        "to_builtins_alone": 43.59,
-        "msgspec_json_native": 22.66
+        "typed_direct_whole": 58.06,
+        "to_builtins_alone": 43.0,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2956.64,
+        "msgspec_json_native": 23.26
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
-        "G4_whole_encode_beats_to_builtins_alone": false
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       }
     },
     {
       "records": 4096,
       "toon_bytes": 132061,
+      "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1521.74,
-        "untyped_tree": 1442.44,
-        "convert_only": 447.23,
-        "wrapper_tree_plus_convert": 1854.46,
-        "msgspec_json_native": 638.39
+        "typed_direct": 1399.53,
+        "untyped_tree": 1443.64,
+        "convert_only": 437.78,
+        "wrapper_tree_plus_convert": 1750.72,
+        "incumbent_pipeline_python_toon_plus_convert": 29959.21,
+        "msgspec_json_native": 649.08
       },
       "encode_us": {
-        "typed_direct_whole": 468.22,
-        "to_builtins_alone": 438.82,
-        "msgspec_json_native": 172.96
+        "typed_direct_whole": 468.14,
+        "to_builtins_alone": 436.9,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24002.29,
+        "msgspec_json_native": 172.38
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
-        "G4_whole_encode_beats_to_builtins_alone": false
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      }
+    }
+  ],
+  "benchmarks_codecs_same_run": [
+    {
+      "records": 16,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 527,
+        "toons_rust_fallback_3_0": 1482,
+        "python_toon_fallback": 1482,
+        "json_compact": 1339
+      },
+      "encode_us": {
+        "msgspec_toon": 4.69,
+        "toons_rust": 26.22,
+        "python_toon": 94.55,
+        "msgspec_json_context": 1.22
+      },
+      "decode_us": {
+        "msgspec_toon": 4.86,
+        "toons_rust": 11.09,
+        "python_toon": 108.09,
+        "msgspec_json_context": 2.35
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 64,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 1991,
+        "toons_rust_fallback_3_0": 5922,
+        "python_toon_fallback": 5922,
+        "json_compact": 5347
+      },
+      "encode_us": {
+        "msgspec_toon": 16.15,
+        "toons_rust": 99.41,
+        "python_toon": 368.92,
+        "msgspec_json_context": 3.65
+      },
+      "decode_us": {
+        "msgspec_toon": 18.23,
+        "toons_rust": 43.95,
+        "python_toon": 436.86,
+        "msgspec_json_context": 9.6
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 512,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 16068,
+        "toons_rust_fallback_3_0": 47775,
+        "python_toon_fallback": 47775,
+        "json_compact": 43167
+      },
+      "encode_us": {
+        "msgspec_toon": 124.74,
+        "toons_rust": 802.39,
+        "python_toon": 2942.74,
+        "msgspec_json_context": 28.87
+      },
+      "decode_us": {
+        "msgspec_toon": 151.52,
+        "toons_rust": 359.29,
+        "python_toon": 3600.7,
+        "msgspec_json_context": 83.0
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 4096,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 132061,
+        "toons_rust_fallback_3_0": 385976,
+        "python_toon_fallback": 385976,
+        "json_compact": 349111
+      },
+      "encode_us": {
+        "msgspec_toon": 992.98,
+        "toons_rust": 6502.65,
+        "python_toon": 23705.07,
+        "msgspec_json_context": 214.1
+      },
+      "decode_us": {
+        "msgspec_toon": 1360.99,
+        "toons_rust": 2986.87,
+        "python_toon": 29417.17,
+        "msgspec_json_context": 817.12
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
       }
     }
   ],
@@ -119,9 +261,14 @@
     "G2_zero_intermediates": true,
     "G3_typed_decode_beats_wrapper": true,
     "G4_whole_encode_beats_to_builtins_alone": false,
-    "G5_codec_floor": "not run (competing compiled codecs not installed here)",
+    "G5_codec_floor": true,
+    "typed_beats_incumbent_pipeline": true,
     "G6_wheel_parity": "measurements taken on the installed abi3 release wheel"
   },
+  "benchmark_caveats": [
+    "Each codec round-trips its own encoded bytes: the incumbents predate TOON 4.x and emit the fallback list form (no nested field groups), so they parse roughly 2.9x more bytes for the same value. Byte sizes are published per row; that difference is the real-world comparison, not an unfair one.",
+    "The incumbent pipeline rows (to_builtins + python-toon encode; python-toon decode + convert) reproduce a known-inefficient composition \u2014 a benchmark to beat, not the strongest alternative."
+  ],
   "known_divergences_and_gaps": [
     "G4 fails: whole direct encode does not beat msgspec.to_builtins alone at small payloads (2.1x at 16 records) and approaches parity at 1 MiB scale (~3% gap). Cause: public stable-ABI attribute reads (~20ns/field) versus msgspec's private C slot reads. This is the canvas risk R-02 outcome, reported rather than masked.",
     "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, literals, dec_hook customs). No enums/datetime/UUID/Decimal yet.",

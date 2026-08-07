@@ -2,7 +2,8 @@
 
 ## 1. Dependency pin
 
-- [ ] 1.1 Pin `msgspec==0.21.1` in `pyproject.toml`; `uv sync`; confirm tests pass.
+- [x] 1.1 Pin `msgspec==0.21.1` in `pyproject.toml`; `uv sync`; confirm tests pass.
+      (Landed with the cooldown commit.)
 
 ## 2. Makefile
 

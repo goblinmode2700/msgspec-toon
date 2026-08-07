@@ -70,9 +70,10 @@ fn extract_input<'py>(buf: &Bound<'py, PyAny>) -> PyResult<InputView<'py>> {
     }
     // memoryview and other buffer-protocol objects.
     if let Ok(raw) = buf.call_method0("tobytes")
-        && let Ok(bytes) = raw.cast::<PyBytes>() {
-            return Ok(InputView::Owned(bytes.as_bytes().to_vec()));
-        }
+        && let Ok(bytes) = raw.cast::<PyBytes>()
+    {
+        return Ok(InputView::Owned(bytes.as_bytes().to_vec()));
+    }
     Err(PyTypeError::new_err(
         "decode input must be bytes, bytearray, memoryview, or str",
     ))
@@ -102,7 +103,12 @@ impl Decoder {
             .map(|spec| CompiledPlan::from_python(py, spec))
             .transpose()?
             .map(Arc::new);
-        Ok(Self { plan: compiled, strict, dec_hook, float_hook })
+        Ok(Self {
+            plan: compiled,
+            strict,
+            dec_hook,
+            float_hook,
+        })
     }
 
     fn decode(&self, py: Python<'_>, buf: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
@@ -181,7 +187,11 @@ impl Encoder {
         }
     }
 
-    fn encode<'py>(&self, py: Python<'py>, obj: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyBytes>> {
+    fn encode<'py>(
+        &self,
+        py: Python<'py>,
+        obj: &Bound<'py, PyAny>,
+    ) -> PyResult<Bound<'py, PyBytes>> {
         let out = encode::encode_root(&self.context, py, obj)?;
         Ok(PyBytes::new(py, &out))
     }

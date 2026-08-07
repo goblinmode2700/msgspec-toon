@@ -15,7 +15,7 @@ import msgspec.inspect as mi
 
 from ._types import _UNSET, FieldSpec, PlanSpec
 
-_NODEFAULT = mi.NODEFAULT
+_NODEFAULT = msgspec.NODEFAULT
 
 
 @lru_cache(maxsize=512)
@@ -68,9 +68,7 @@ def _lower(info: mi.Type) -> PlanSpec:
                         required=item.required,
                         default=_UNSET if item.default is _NODEFAULT else item.default,
                         default_factory=(
-                            None
-                            if item.default_factory is _NODEFAULT
-                            else item.default_factory
+                            None if item.default_factory is _NODEFAULT else item.default_factory
                         ),
                     )
                     for item in fields
@@ -97,9 +95,7 @@ def _constraints(info: Any) -> tuple[tuple[str, Any], ...]:
         "tz",
     )
     return tuple(
-        (name, value)
-        for name in names
-        if (value := getattr(info, name, None)) is not None
+        (name, value) for name in names if (value := getattr(info, name, None)) is not None
     )
 
 

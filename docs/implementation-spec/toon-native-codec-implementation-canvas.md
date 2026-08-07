@@ -1012,9 +1012,7 @@ def _constraints(info: Any) -> tuple[tuple[str, Any], ...]:
         "tz",
     )
     return tuple(
-        (name, value)
-        for name in names
-        if (value := getattr(info, name, None)) is not None
+        (name, value) for name in names if (value := getattr(info, name, None)) is not None
     )
 ```
 
@@ -1132,10 +1130,12 @@ class Metadata(msgspec.Struct):
     alias: str
     region: str
 
+
 class Worker(msgspec.Struct):
     pid: int
     provider: str
     metadata: Metadata
+
 
 class Document(msgspec.Struct):
     workers: list[Worker]

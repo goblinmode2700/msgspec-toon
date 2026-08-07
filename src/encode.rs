@@ -12,8 +12,8 @@ use std::sync::{Arc, Mutex};
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 
-use crate::scalar::classify_bare;
 use crate::event::ScalarToken;
+use crate::scalar::classify_bare;
 use crate::writer::Writer;
 
 const MAX_HOOK_DEPTH: usize = 8;
@@ -56,7 +56,10 @@ enum Val<'py> {
 
 impl Val<'_> {
     fn is_scalar(&self) -> bool {
-        matches!(self, Val::None | Val::Bool(_) | Val::Int(_) | Val::Float(_) | Val::Str(_))
+        matches!(
+            self,
+            Val::None | Val::Bool(_) | Val::Int(_) | Val::Float(_) | Val::Str(_)
+        )
     }
 }
 
@@ -145,7 +148,11 @@ fn plan_from_spec(
         Some(nodes) if !nodes.is_empty() => Some(Arc::new(nodes)),
         _ => None,
     };
-    Ok(Arc::new(EncodePlan { class: class.clone().unbind(), fields, static_shape }))
+    Ok(Arc::new(EncodePlan {
+        class: class.clone().unbind(),
+        fields,
+        static_shape,
+    }))
 }
 
 fn plan_for_nested(
@@ -195,7 +202,11 @@ fn classify<'py>(
     if obj.is_instance_of::<PyFloat>() {
         let value = obj.extract::<f64>()?;
         if !value.is_finite() {
-            return Err(encode_err(ctx, py, "non-finite floats are not encodable in TOON"));
+            return Err(encode_err(
+                ctx,
+                py,
+                "non-finite floats are not encodable in TOON",
+            ));
         }
         return Ok(Val::Float(value));
     }
@@ -224,7 +235,11 @@ fn classify<'py>(
         return classify(ctx, py, &replaced, hook_depth + 1);
     }
     let type_name = obj.get_type().name()?.to_string();
-    Err(encode_err(ctx, py, &format!("unsupported type: {type_name}")))
+    Err(encode_err(
+        ctx,
+        py,
+        &format!("unsupported type: {type_name}"),
+    ))
 }
 
 fn object_pairs<'py>(
@@ -255,7 +270,11 @@ fn object_pairs<'py>(
     }
 }
 
-pub fn encode_root(ctx: &EncodeContext, py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Vec<u8>> {
+pub fn encode_root(
+    ctx: &EncodeContext,
+    py: Python<'_>,
+    obj: &Bound<'_, PyAny>,
+) -> PyResult<Vec<u8>> {
     let mut writer = Writer::with_capacity(256);
     let value = classify(ctx, py, obj, 0)?;
     match &value {
@@ -445,28 +464,26 @@ fn write_list_item<'py>(
             write_entries(ctx, py, writer, &pairs[1..], depth + 1)?;
             Ok(())
         }
-        Val::Seq(seq) => {
-            match inline_cells(ctx, py, seq)? {
-                Some(cells) => {
-                    writer.indent(depth);
-                    writer.bytes(b"- [");
-                    writer.text(&seq.len().to_string());
-                    writer.bytes(b"]:");
-                    if !cells.is_empty() {
-                        writer.byte(b' ');
-                        writer.text(&cells.join(","));
-                    }
-                    writer.newline();
-                    Ok(())
+        Val::Seq(seq) => match inline_cells(ctx, py, seq)? {
+            Some(cells) => {
+                writer.indent(depth);
+                writer.bytes(b"- [");
+                writer.text(&seq.len().to_string());
+                writer.bytes(b"]:");
+                if !cells.is_empty() {
+                    writer.byte(b' ');
+                    writer.text(&cells.join(","));
                 }
-                None => Err(encode_err(
-                    ctx,
-                    py,
-                    "nested non-scalar arrays inside list items are not supported by this \
-                     proof of concept",
-                )),
+                writer.newline();
+                Ok(())
             }
-        }
+            None => Err(encode_err(
+                ctx,
+                py,
+                "nested non-scalar arrays inside list items are not supported by this \
+                     proof of concept",
+            )),
+        },
         _ => {
             writer.indent(depth);
             writer.bytes(b"- ");
@@ -557,16 +574,22 @@ fn build_shape<'py>(
     } else if let Ok(first_map) = first.cast::<PyDict>() {
         let mut first_keys = Vec::with_capacity(first_map.len());
         for key in first_map.keys() {
-            let Ok(text) = key.cast::<PyString>() else { return Ok(None) };
+            let Ok(text) = key.cast::<PyString>() else {
+                return Ok(None);
+            };
             first_keys.push(text.to_str()?.to_string());
         }
         for row in rows.iter().skip(1) {
-            let Ok(map) = row.cast::<PyDict>() else { return Ok(None) };
+            let Ok(map) = row.cast::<PyDict>() else {
+                return Ok(None);
+            };
             if map.len() != first_keys.len() {
                 return Ok(None);
             }
             for (key, expected) in map.keys().iter().zip(&first_keys) {
-                let Ok(text) = key.cast::<PyString>() else { return Ok(None) };
+                let Ok(text) = key.cast::<PyString>() else {
+                    return Ok(None);
+                };
                 if text.to_str()? != expected {
                     return Ok(None);
                 }
@@ -604,7 +627,11 @@ fn build_shape<'py>(
             column.push(item);
         }
         if column.iter().all(is_scalar_obj) {
-            shape.push(ShapeNode { wire, access, children: Vec::new() });
+            shape.push(ShapeNode {
+                wire,
+                access,
+                children: Vec::new(),
+            });
         } else {
             match build_shape(ctx, py, &column)? {
                 Some(nested) if !nested.nodes().is_empty() => {
@@ -612,7 +639,11 @@ fn build_shape<'py>(
                         Shape::Owned(nodes) => nodes,
                         Shape::Shared(nodes) => clone_nodes(py, &nodes),
                     };
-                    shape.push(ShapeNode { wire, access, children });
+                    shape.push(ShapeNode {
+                        wire,
+                        access,
+                        children,
+                    });
                 }
                 _ => return Ok(None),
             }
@@ -683,7 +714,11 @@ fn write_scalar_obj<'py>(
         return Ok(());
     }
     if obj.is_instance_of::<PyBool>() {
-        writer.bytes(if obj.extract::<bool>()? { b"true" } else { b"false" });
+        writer.bytes(if obj.extract::<bool>()? {
+            b"true"
+        } else {
+            b"false"
+        });
         return Ok(());
     }
     if obj.is_instance_of::<PyInt>() {
@@ -699,7 +734,11 @@ fn write_scalar_obj<'py>(
     if obj.is_instance_of::<PyFloat>() {
         let number = obj.extract::<f64>()?;
         if !number.is_finite() {
-            return Err(encode_err(ctx, py, "non-finite floats are not encodable in TOON"));
+            return Err(encode_err(
+                ctx,
+                py,
+                "non-finite floats are not encodable in TOON",
+            ));
         }
         write_float(writer, number);
         return Ok(());

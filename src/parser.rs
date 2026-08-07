@@ -8,7 +8,9 @@
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::header::{FieldNode, Header, parse_header, parse_string_token};
-use crate::scalar::{classify_bare, find_unquoted, scan_quoted, split_cells, trim_spaces, unescape};
+use crate::scalar::{
+    classify_bare, find_unquoted, scan_quoted, split_cells, trim_spaces, unescape,
+};
 use crate::scan::Lines;
 
 pub fn parse<C: Consumer>(input: &[u8], strict: bool, consumer: &mut C) -> Result<(), Fault> {
@@ -30,7 +32,7 @@ pub fn parse<C: Consumer>(input: &[u8], strict: bool, consumer: &mut C) -> Resul
     let at = first.position;
     if let Some(header) = parse_header(first.content, strict, at)? {
         if header.key.is_none() {
-            lines.next()?;
+            lines.advance()?;
             parse_array_body(&mut lines, &header, 0, at, strict, consumer)?;
             expect_end(&mut lines)?;
             return Ok(());
@@ -49,7 +51,7 @@ pub fn parse<C: Consumer>(input: &[u8], strict: bool, consumer: &mut C) -> Resul
     }
 
     // Root scalar.
-    lines.next()?;
+    lines.advance()?;
     consumer.scalar(classify_value(first.content, at)?, at)?;
     expect_end(&mut lines)?;
     Ok(())
@@ -79,7 +81,10 @@ fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, 
                 Some(at.column + end as u32),
             ));
         }
-        Ok(ScalarToken::Quoted { inner: &value[1..end - 1], escaped })
+        Ok(ScalarToken::Quoted {
+            inner: &value[1..end - 1],
+            escaped,
+        })
     } else {
         Ok(classify_bare(value))
     }
@@ -105,15 +110,25 @@ fn parse_object_body<C: Consumer>(
         parse_entry(content, at, lines, depth, strict, consumer, &mut seen)?;
     }
     loop {
-        let Some(line) = lines.peek()? else { return Ok(()) };
+        let Some(line) = lines.peek()? else {
+            return Ok(());
+        };
         if line.depth < depth {
             return Ok(());
         }
         if line.depth > depth {
             return Err(Fault::syntax_at(FaultCode::DepthJump, line.position));
         }
-        lines.next()?;
-        parse_entry(line.content, line.position, lines, depth, strict, consumer, &mut seen)?;
+        lines.advance()?;
+        parse_entry(
+            line.content,
+            line.position,
+            lines,
+            depth,
+            strict,
+            consumer,
+            &mut seen,
+        )?;
     }
 }
 
@@ -128,7 +143,9 @@ fn parse_entry<C: Consumer>(
     seen: &mut Vec<Vec<u8>>,
 ) -> Result<(), Fault> {
     if let Some(header) = parse_header(content, strict, at)? {
-        let key = header.key.ok_or(Fault::syntax_at(FaultCode::ExpectedKey, at))?;
+        let key = header
+            .key
+            .ok_or(Fault::syntax_at(FaultCode::ExpectedKey, at))?;
         note_key(&key, at, strict, seen)?;
         consumer.key(key, at)?;
         return parse_array_body(lines, &header, depth, at, strict, consumer);
@@ -160,7 +177,10 @@ fn parse_entry<C: Consumer>(
         return Ok(());
     }
 
-    let value_at = Position { line: at.line, column: at.column + colon as u32 + 2 };
+    let value_at = Position {
+        line: at.line,
+        column: at.column + colon as u32 + 2,
+    };
     consumer.key(key, at)?;
     consumer.scalar(classify_value(&rest[1..], value_at)?, value_at)?;
     Ok(())
@@ -198,10 +218,12 @@ fn parse_array_body<C: Consumer>(
         for _ in 0..header.declared_len {
             let row = match lines.peek()? {
                 Some(line) if line.depth == depth + 1 => {
-                    lines.next()?;
+                    lines.advance()?;
                     line
                 }
-                Some(line) => return Err(Fault::syntax_at(FaultCode::WrongArrayLength, line.position)),
+                Some(line) => {
+                    return Err(Fault::syntax_at(FaultCode::WrongArrayLength, line.position));
+                }
                 None => {
                     return Err(Fault::syntax(
                         FaultCode::WrongArrayLength,
@@ -232,10 +254,12 @@ fn parse_array_body<C: Consumer>(
         for _ in 0..header.declared_len {
             let item = match lines.peek()? {
                 Some(line) if line.depth == depth + 1 => {
-                    lines.next()?;
+                    lines.advance()?;
                     line
                 }
-                Some(line) => return Err(Fault::syntax_at(FaultCode::WrongArrayLength, line.position)),
+                Some(line) => {
+                    return Err(Fault::syntax_at(FaultCode::WrongArrayLength, line.position));
+                }
                 None => {
                     return Err(Fault::syntax(
                         FaultCode::WrongArrayLength,
@@ -299,7 +323,10 @@ fn parse_list_item<C: Consumer>(
     let Some(item) = content.strip_prefix(b"- ") else {
         return Err(Fault::syntax_at(FaultCode::MissingListItem, at));
     };
-    let item_at = Position { line: at.line, column: at.column + 2 };
+    let item_at = Position {
+        line: at.line,
+        column: at.column + 2,
+    };
 
     if let Some(header) = parse_header(item, strict, item_at)? {
         if header.key.is_none() {
@@ -339,12 +366,22 @@ fn continue_object_item<C: Consumer>(
     seen: &mut Vec<Vec<u8>>,
 ) -> Result<(), Fault> {
     loop {
-        let Some(line) = lines.peek()? else { return Ok(()) };
+        let Some(line) = lines.peek()? else {
+            return Ok(());
+        };
         if line.depth != depth + 2 {
             return Ok(());
         }
-        lines.next()?;
-        parse_entry(line.content, line.position, lines, depth + 2, strict, consumer, seen)?;
+        lines.advance()?;
+        parse_entry(
+            line.content,
+            line.position,
+            lines,
+            depth + 2,
+            strict,
+            consumer,
+            seen,
+        )?;
     }
 }
 

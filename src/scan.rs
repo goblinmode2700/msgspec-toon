@@ -31,7 +31,12 @@ pub struct Scanner<'a> {
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self { input, offset: 0, line: 0, strict }
+        Self {
+            input,
+            offset: 0,
+            line: 0,
+            strict,
+        }
     }
 
     pub fn next_line(&mut self) -> Result<Option<Line<'a>>, Fault> {
@@ -91,7 +96,10 @@ impl<'a> Scanner<'a> {
             return Ok(Some(Line {
                 content,
                 depth: indent / INDENT_SIZE,
-                position: Position { line: self.line, column: (indent + 1) as u32 },
+                position: Position {
+                    line: self.line,
+                    column: (indent + 1) as u32,
+                },
             }));
         }
     }
@@ -105,7 +113,10 @@ pub struct Lines<'a> {
 
 impl<'a> Lines<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self { scanner: Scanner::new(input, strict), peeked: None }
+        Self {
+            scanner: Scanner::new(input, strict),
+            peeked: None,
+        }
     }
 
     pub fn peek(&mut self) -> Result<Option<Line<'a>>, Fault> {
@@ -115,7 +126,7 @@ impl<'a> Lines<'a> {
         Ok(self.peeked.unwrap())
     }
 
-    pub fn next(&mut self) -> Result<Option<Line<'a>>, Fault> {
+    pub fn advance(&mut self) -> Result<Option<Line<'a>>, Fault> {
         match self.peeked.take() {
             Some(line) => Ok(line),
             None => self.scanner.next_line(),

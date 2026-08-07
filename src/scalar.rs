@@ -42,7 +42,10 @@ pub fn is_float_literal(token: &[u8]) -> bool {
     }
     match exponent {
         Some(exp) => {
-            let exp = exp.strip_prefix(b"+").or_else(|| exp.strip_prefix(b"-")).unwrap_or(exp);
+            let exp = exp
+                .strip_prefix(b"+")
+                .or_else(|| exp.strip_prefix(b"-"))
+                .unwrap_or(exp);
             !exp.is_empty() && exp.iter().all(u8::is_ascii_digit)
         }
         None => frac_part.is_some(),
@@ -105,7 +108,11 @@ pub fn scan_quoted(content: &[u8], start: usize, at: Position) -> Result<(usize,
             _ => index += 1,
         }
     }
-    Err(Fault::syntax(FaultCode::UnclosedQuote, at.line, Some(at.column + start as u32)))
+    Err(Fault::syntax(
+        FaultCode::UnclosedQuote,
+        at.line,
+        Some(at.column + start as u32),
+    ))
 }
 
 /// Unescape the inner bytes of a validated quoted string.
@@ -219,12 +226,21 @@ mod tests {
         assert!(matches!(classify_bare(b"true"), ScalarToken::Bool(true)));
         assert!(matches!(classify_bare(b"42"), ScalarToken::Integer(_)));
         assert!(matches!(classify_bare(b"-7"), ScalarToken::Integer(_)));
-        assert!(matches!(classify_bare(b"9007199254740993"), ScalarToken::Integer(_)));
+        assert!(matches!(
+            classify_bare(b"9007199254740993"),
+            ScalarToken::Integer(_)
+        ));
         assert!(matches!(classify_bare(b"1.5"), ScalarToken::Float(_)));
         assert!(matches!(classify_bare(b"1e-7"), ScalarToken::Float(_)));
         assert!(matches!(classify_bare(b"05"), ScalarToken::BareString(_)));
-        assert!(matches!(classify_bare(b"worker-a"), ScalarToken::BareString(_)));
-        assert!(matches!(classify_bare(b"1.2.3"), ScalarToken::BareString(_)));
+        assert!(matches!(
+            classify_bare(b"worker-a"),
+            ScalarToken::BareString(_)
+        ));
+        assert!(matches!(
+            classify_bare(b"1.2.3"),
+            ScalarToken::BareString(_)
+        ));
     }
 
     #[test]

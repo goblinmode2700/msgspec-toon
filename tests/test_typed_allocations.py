@@ -30,7 +30,7 @@ class Document(msgspec.Struct, frozen=True):
 
 RECORDS = 64
 TEXT = (
-    "workers[%d]{pid,provider,metadata{alias,region}}:\n" % RECORDS
+    f"workers[{RECORDS}]{{pid,provider,metadata{{alias,region}}}}:\n"
     + "\n".join(f"  {20000 + i},claude,worker-{i},west" for i in range(RECORDS))
 ).encode()
 

@@ -109,9 +109,14 @@ impl CompiledPlan {
                 let mut by_wire = HashMap::new();
                 for field in spec.getattr("fields")?.try_iter()? {
                     let field = field?;
-                    let python_name =
-                        field.getattr("python_name")?.cast_into::<PyString>()?.unbind();
-                    let wire_name = field.getattr("wire_name")?.extract::<String>()?.into_bytes();
+                    let python_name = field
+                        .getattr("python_name")?
+                        .cast_into::<PyString>()?
+                        .unbind();
+                    let wire_name = field
+                        .getattr("wire_name")?
+                        .extract::<String>()?
+                        .into_bytes();
                     let value = Self::lower(py, &field.getattr("plan")?, unset)?;
                     let required = field.getattr("required")?.extract::<bool>()?;
                     let default_factory = field.getattr("default_factory")?;
@@ -126,10 +131,20 @@ impl CompiledPlan {
                         DefaultPlan::Value(default_value.unbind())
                     };
                     by_wire.insert(wire_name.clone(), fields.len());
-                    fields.push(FieldPlan { python_name, wire_name, value, default });
+                    fields.push(FieldPlan {
+                        python_name,
+                        wire_name,
+                        value,
+                        default,
+                    });
                 }
                 let forbid_unknown = spec.getattr("forbid_unknown_fields")?.extract::<bool>()?;
-                PlanKind::Struct(Box::new(StructPlan { class, fields, by_wire, forbid_unknown }))
+                PlanKind::Struct(Box::new(StructPlan {
+                    class,
+                    fields,
+                    by_wire,
+                    forbid_unknown,
+                }))
             }
             _ => {
                 let class = spec.getattr("python_type")?.unbind();

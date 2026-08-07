@@ -7,7 +7,9 @@ pub struct Writer {
 
 impl Writer {
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { out: Vec::with_capacity(capacity) }
+        Self {
+            out: Vec::with_capacity(capacity),
+        }
     }
 
     pub fn bytes(&mut self, value: &[u8]) {

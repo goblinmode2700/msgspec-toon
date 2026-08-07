@@ -35,9 +35,7 @@ def fetch_json(url: str) -> dict:
 
 def crate_release_date(name: str, version: str) -> datetime.datetime:
     payload = fetch_json(f"https://crates.io/api/v1/crates/{name}/{version}")
-    return datetime.datetime.fromisoformat(
-        payload["version"]["created_at"].replace("Z", "+00:00")
-    )
+    return datetime.datetime.fromisoformat(payload["version"]["created_at"])
 
 
 def pypi_release_date(name: str, version: str) -> datetime.datetime | None:
@@ -45,7 +43,7 @@ def pypi_release_date(name: str, version: str) -> datetime.datetime | None:
     uploads = [f["upload_time_iso_8601"] for f in payload["urls"]]
     if not uploads:
         return None
-    return datetime.datetime.fromisoformat(min(uploads).replace("Z", "+00:00"))
+    return datetime.datetime.fromisoformat(min(uploads))
 
 
 def cargo_lock_packages() -> list[tuple[str, str]]:

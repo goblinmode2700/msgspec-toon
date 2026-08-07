@@ -10,11 +10,12 @@ The supported substitution is::
 
 from __future__ import annotations
 
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final, cast
 
 import msgspec
 
-from . import _native
+from . import _native  # type: ignore[attr-defined]
 from ._plan import compile_plan, encode_plan_for
 
 __all__ = [
@@ -33,7 +34,7 @@ EncodeError: Final = msgspec.EncodeError
 class DecodeError(msgspec.DecodeError):
     """A TOON syntax error carrying coordinates but never source text."""
 
-    __slots__ = ("line", "column", "code")
+    __slots__ = ("code", "column", "line")
 
     def __init__(
         self,
@@ -52,7 +53,7 @@ class DecodeError(msgspec.DecodeError):
 class ValidationError(msgspec.ValidationError):
     """A typed decoding error with TOON coordinates."""
 
-    __slots__ = ("line", "column", "code")
+    __slots__ = ("code", "column", "line")
 
     def __init__(
         self,
@@ -98,7 +99,7 @@ class Encoder:
 
     def encode(self, obj: Any) -> bytes:
         try:
-            return self._native.encode(obj)
+            return cast(bytes, self._native.encode(obj))
         except _native.NativeFault as exc:
             raise _translate_fault(exc) from None
 

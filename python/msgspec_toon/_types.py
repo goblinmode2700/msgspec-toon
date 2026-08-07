@@ -6,7 +6,7 @@ crosses this boundary (canvas AD-003).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal
 
 PlanKind = Literal[

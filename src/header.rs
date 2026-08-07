@@ -61,7 +61,10 @@ pub fn parse_header<'a>(
     let key = if bracket_start == 0 {
         None
     } else {
-        Some(parse_string_token(trim_spaces(&content[..bracket_start]), at)?)
+        Some(parse_string_token(
+            trim_spaces(&content[..bracket_start]),
+            at,
+        )?)
     };
 
     let length_digits = &content[bracket_start + 1..bracket_end];
@@ -107,7 +110,12 @@ pub fn parse_header<'a>(
         ));
     }
 
-    Ok(Some(Header { key, declared_len, fields, inline_values }))
+    Ok(Some(Header {
+        key,
+        declared_len,
+        fields,
+        inline_values,
+    }))
 }
 
 pub fn parse_string_token<'a>(entry: &'a [u8], at: Position) -> Result<StringToken<'a>, Fault> {
@@ -116,7 +124,10 @@ pub fn parse_string_token<'a>(entry: &'a [u8], at: Position) -> Result<StringTok
         if end != entry.len() {
             return Err(Fault::syntax_at(FaultCode::ContentAfterFieldGroup, at));
         }
-        Ok(StringToken::Quoted { inner: &entry[1..end - 1], escaped })
+        Ok(StringToken::Quoted {
+            inner: &entry[1..end - 1],
+            escaped,
+        })
     } else {
         Ok(StringToken::Bare(entry))
     }
@@ -183,7 +194,11 @@ fn parse_field_group<'a>(
             None => (parse_string_token(entry, at)?, Vec::new()),
         };
 
-        if strict && fields.iter().any(|prior| token_bytes_eq(&prior.name, &name)) {
+        if strict
+            && fields
+                .iter()
+                .any(|prior| token_bytes_eq(&prior.name, &name))
+        {
             return Err(Fault::syntax_at(FaultCode::DuplicateField, at));
         }
         fields.push(FieldNode { name, children });
@@ -242,9 +257,13 @@ mod tests {
 
     #[test]
     fn parses_nested_field_group_header() {
-        let header = parse_header(b"workers[2]{pid,provider,metadata{alias,region}}:", true, AT)
-            .unwrap()
-            .unwrap();
+        let header = parse_header(
+            b"workers[2]{pid,provider,metadata{alias,region}}:",
+            true,
+            AT,
+        )
+        .unwrap()
+        .unwrap();
         assert_eq!(header.declared_len, 2);
         assert_eq!(header.fields.len(), 3);
         assert_eq!(header.fields[2].children.len(), 2);

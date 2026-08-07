@@ -37,9 +37,5 @@ def document(records: int) -> Document:
 
 
 def toon_text(records: int) -> bytes:
-    rows = "\n".join(
-        f"  {20000 + i},claude,worker-{i},{REGIONS[i % 4]}" for i in range(records)
-    )
-    return (
-        f"workers[{records}]{{pid,provider,metadata{{alias,region}}}}:\n{rows}"
-    ).encode()
+    rows = "\n".join(f"  {20000 + i},claude,worker-{i},{REGIONS[i % 4]}" for i in range(records))
+    return (f"workers[{records}]{{pid,provider,metadata{{alias,region}}}}:\n{rows}").encode()

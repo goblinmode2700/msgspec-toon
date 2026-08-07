@@ -114,21 +114,41 @@ pub struct Fault {
 
 impl Fault {
     pub fn syntax(code: FaultCode, line: u32, column: Option<u32>) -> Self {
-        Self { code, line, column, validation: false }
+        Self {
+            code,
+            line,
+            column,
+            validation: false,
+        }
     }
 
     pub fn syntax_at(code: FaultCode, at: Position) -> Self {
-        Self { code, line: at.line, column: Some(at.column), validation: false }
+        Self {
+            code,
+            line: at.line,
+            column: Some(at.column),
+            validation: false,
+        }
     }
 
     pub fn validation_at(code: FaultCode, at: Position) -> Self {
-        Self { code, line: at.line, column: Some(at.column), validation: true }
+        Self {
+            code,
+            line: at.line,
+            column: Some(at.column),
+            validation: true,
+        }
     }
 
     pub fn safe_message(&self) -> String {
         match self.column {
             Some(column) => {
-                format!("{} at line {}, column {}", self.code.summary(), self.line, column)
+                format!(
+                    "{} at line {}, column {}",
+                    self.code.summary(),
+                    self.line,
+                    column
+                )
             }
             None => format!("{} at line {}", self.code.summary(), self.line),
         }

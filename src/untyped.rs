@@ -11,8 +11,13 @@ use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::pyval::{count_dict, count_list, scalar_to_py, string_token_to_py};
 
 enum Builder<'py> {
-    Dict { map: Bound<'py, PyDict>, pending_key: Option<Bound<'py, PyAny>> },
-    List { items: Vec<Bound<'py, PyAny>> },
+    Dict {
+        map: Bound<'py, PyDict>,
+        pending_key: Option<Bound<'py, PyAny>>,
+    },
+    List {
+        items: Vec<Bound<'py, PyAny>>,
+    },
 }
 
 pub struct UntypedConsumer<'py> {
@@ -25,7 +30,13 @@ pub struct UntypedConsumer<'py> {
 
 impl<'py> UntypedConsumer<'py> {
     pub fn new(py: Python<'py>, float_hook: Option<Py<PyAny>>) -> Self {
-        Self { py, float_hook, stack: Vec::new(), result: None, pending_err: None }
+        Self {
+            py,
+            float_hook,
+            stack: Vec::new(),
+            result: None,
+            pending_err: None,
+        }
     }
 
     pub fn take_result(&mut self) -> Option<Bound<'py, PyAny>> {
@@ -44,8 +55,11 @@ impl<'py> UntypedConsumer<'py> {
     fn place(&mut self, value: Bound<'py, PyAny>, at: Position) -> Result<(), Fault> {
         match self.stack.last_mut() {
             Some(Builder::Dict { map, pending_key }) => {
-                let key = pending_key.take().ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
-                map.set_item(key, value).map_err(|err| self.internal(err, at))?;
+                let key = pending_key
+                    .take()
+                    .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+                map.set_item(key, value)
+                    .map_err(|err| self.internal(err, at))?;
             }
             Some(Builder::List { items }) => items.push(value),
             None => self.result = Some(value),
@@ -64,7 +78,10 @@ impl<'py> UntypedConsumer<'py> {
 impl Consumer for UntypedConsumer<'_> {
     fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
         count_dict();
-        self.stack.push(Builder::Dict { map: PyDict::new(self.py), pending_key: None });
+        self.stack.push(Builder::Dict {
+            map: PyDict::new(self.py),
+            pending_key: None,
+        });
         Ok(())
     }
 
@@ -87,7 +104,9 @@ impl Consumer for UntypedConsumer<'_> {
     }
 
     fn start_array(&mut self, declared_len: usize, _at: Position) -> Result<(), Fault> {
-        self.stack.push(Builder::List { items: Vec::with_capacity(declared_len) });
+        self.stack.push(Builder::List {
+            items: Vec::with_capacity(declared_len),
+        });
         Ok(())
     }
 
