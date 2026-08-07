@@ -45,14 +45,59 @@ Do not modify canonical output to improve a selected payload.
 
 ## Ordered work queue
 
-### A. Containment repairs
+### A. Containment repairs — DONE (checkpoint 1)
 
-- [ ] F-01 cap array reservation hints without changing declared-count validation.
-- [ ] F-02 enforce a depth limit for field-group decode.
-- [ ] F-03 enforce a depth limit during encode shape discovery.
-- [ ] Add subprocess regression tests for panic and exit-139 inputs.
+- [x] F-01 cap array reservation hints without changing declared-count validation.
+- [x] F-02 enforce a depth limit for field-group decode.
+- [x] F-03 enforce a depth limit during encode shape discovery.
+- [x] Add subprocess regression tests for panic and exit-139 inputs.
 
 Exit: hostile inputs return static codec errors. The 538 fixtures still pass.
+
+Hypothesis (falsified as stated — all three defects reproduced): each defect lets a
+small input reach a machine resource sized by the payload, so bounding the payload-chosen
+quantity converts every crash into a codec fault without touching hot-path throughput.
+
+Result. Reproduced first on the release wheel: F-01 `PanicException: capacity overflow`,
+F-02 and F-03 exit 139. All three now raise `DecodeError`/`EncodeError`. Measurements
+below are the same-session A/B against `v0.1.0-conformant`; the deltas stay inside the
+v0.2.0 envelope, so the caps cost nothing measurable.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 52 Python tests, lint/format/clippy/mypy clean
+G3                          PASS at 16/64/512/4096
+G5                          PASS both directions, every size
+G4                          FAIL, unchanged (the known R-02 miss)
+A/B typed decode            -13.9 / -19.3 / -18.9 / -21.2 %
+A/B untyped decode          -12.5 / -16.0 / -19.1 / -16.7 %
+A/B encode (whole/codec)    -2.1 → -5.3 % / -5.3 → -7.4 %
+tokens                      T1 and T2 unchanged; canonical bytes untouched
+```
+
+Design notes for the next agent:
+
+- One shared ceiling now lives in `src/limits.rs` (`MAX_NESTING_DEPTH`), replacing the two
+  parallel `256` constants in `scan.rs` and `encode.rs`. The OpenSpec states it:
+  `toon-parsing` "Payload-chosen quantities are bounded", `toon-encoding` "Encoding is
+  bounded by the same nesting ceiling". This answers the review's open question — the
+  limit counts nesting levels, one ceiling for indentation, field groups, and encoding.
+- The field-group gate is a single check in `parse_header`, reading the max depth that
+  `find_matching_brace` already counts. Bounding construction bounds every later walk of
+  the tree (`leaf_count`, `emit_row_fields`), so no second check was added — the review's
+  suggestion to duplicate the limit into those two functions would have been a parallel
+  solution.
+- Depth is a hard fault in strict *and* non-strict mode, unlike a malformed header. A
+  resource limit is not a grammar ambiguity, and this matches `scan.rs`'s existing
+  unconditional line-depth fault.
+- `Makefile` `build` now clears `target/wheels` first: a stale `0.0.1` wheel made the
+  install glob ambiguous and broke `make bench`.
+- Not done, deliberately: no depth guard on `plan_from_spec`/`plan_for_nested`. That
+  recursion is bounded by the Python plan spec, which hits `RecursionError` in `_plan.py`
+  first. Recursive Structs remain open item 7 and need their own cycle detection, not a
+  depth cap.
 
 ### B. Evidence repairs
 

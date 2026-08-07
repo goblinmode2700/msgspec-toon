@@ -5,9 +5,11 @@ file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-The adversarial review is complete. Use `/last-mile` to execute the ordered queue in
-`LAST-MILE.md`. Start with F-01, F-02, and F-03. These defects let hostile inputs cause
-a native panic or process exit 139. Preserve 538/538 conformance and all protected gates.
+Phase A of `LAST-MILE.md` is done: F-01, F-02, and F-03 are fixed, with subprocess
+regression tests (`tests/test_containment.py`) that reproduce the old panic and exit-139
+inputs. **Next is Phase B, evidence repairs — start with F-05** (an independent,
+test-only G2 probe; the release counters both weaken the zero-tree proof and bias the
+wrapper side of G3/G5), then F-11 and F-12. Use `/last-mile`.
 
 ## The goal, precisely
 
@@ -41,6 +43,11 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 
 ## Open items (tracked, not forgotten)
 
+0. **Containment (P0) — closed.** A declared count no longer sizes an allocation, and one
+   shared nesting ceiling (`src/limits.rs`, `MAX_NESTING_DEPTH`) now bounds indentation,
+   header field groups, encoder writing, and encoder shape discovery. Depth is a hard
+   fault in both strict and non-strict mode. Both OpenSpec capabilities state the limit.
+   Same-session A/B showed no cost. The remaining review queue is Phase B onward.
 1. **Adversarial review sweep — complete.** The durable findings are in
    `docs/adversarial-review-v0.2.0.md`. The executable queue is in `LAST-MILE.md`.
    The review covered:

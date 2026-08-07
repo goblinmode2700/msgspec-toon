@@ -9,12 +9,9 @@
 use memchr::memchr;
 
 use crate::error::{Fault, FaultCode, Position};
+use crate::limits::MAX_NESTING_DEPTH;
 
 pub const INDENT_SIZE: usize = 2;
-
-/// The recursion in the parser is bounded by line depth; cap it so a
-/// pathological document cannot overflow the native stack.
-pub const MAX_DEPTH: usize = 256;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Line<'a> {
@@ -103,7 +100,7 @@ impl<'a> Scanner<'a> {
                     blank_before = true;
                     continue;
                 }
-                if levels > MAX_DEPTH {
+                if levels > MAX_NESTING_DEPTH {
                     return Err(Fault::syntax(FaultCode::DepthLimit, self.line, Some(1)));
                 }
                 return Ok(Some(Line {
@@ -135,7 +132,7 @@ impl<'a> Scanner<'a> {
                 return Err(Fault::syntax(FaultCode::InvalidIndent, self.line, Some(1)));
             }
 
-            if indent / self.indent_size > MAX_DEPTH {
+            if indent / self.indent_size > MAX_NESTING_DEPTH {
                 return Err(Fault::syntax(FaultCode::DepthLimit, self.line, Some(1)));
             }
 

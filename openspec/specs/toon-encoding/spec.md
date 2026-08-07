@@ -106,6 +106,19 @@ when it contains the active delimiter, not a delimiter that is not in effect.
 - **THEN** no such parameter exists on the public surface
 
 
+### Requirement: Encoding is bounded by the same nesting ceiling
+
+Encoding SHALL apply the codec's shared nesting ceiling to every recursive pass over a value,
+including tabular shape discovery, which runs ahead of the writer. A value nested beyond the
+ceiling SHALL raise an encode error with static text. The encoder SHALL NOT panic, abort, or
+exit on a signal for any input value.
+
+#### Scenario: A value deeper than the ceiling is rejected
+
+- **WHEN** a value nested beyond the codec's nesting ceiling is encoded
+- **THEN** an encode error carrying static text is raised
+- **AND** the process does not panic, abort, or exit on a signal
+
 ### Requirement: Round-trips are lossless in both directions
 
 For every value in the supported data model, decoding an encoded value SHALL return an equal

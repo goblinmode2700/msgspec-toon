@@ -12,6 +12,7 @@ pub mod encode;
 pub mod error;
 pub mod event;
 pub mod header;
+pub mod limits;
 pub mod parser;
 pub mod plan;
 pub mod pyval;

@@ -10,6 +10,7 @@ use pyo3::types::{PyBool, PyDict, PyList, PyTuple};
 
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
+use crate::limits::reserve_elements;
 use crate::plan::{CompiledPlan, DefaultPlan, PlanKind, StructPlan};
 use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_token_to_py};
 use crate::scalar::unescape;
@@ -558,7 +559,7 @@ impl Consumer for TypedConsumer<'_, '_> {
         match &expected.kind {
             PlanKind::List(item) => {
                 self.stack.push(Frame::List {
-                    items: Vec::with_capacity(declared_len),
+                    items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: false,
                 });
@@ -567,7 +568,7 @@ impl Consumer for TypedConsumer<'_, '_> {
             }
             PlanKind::TupleVar(item) => {
                 self.stack.push(Frame::List {
-                    items: Vec::with_capacity(declared_len),
+                    items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: true,
                 });

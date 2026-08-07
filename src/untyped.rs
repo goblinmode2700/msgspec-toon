@@ -9,6 +9,7 @@ use rustc_hash::FxHashMap;
 
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
+use crate::limits::reserve_elements;
 use crate::pyval::{count_dict, count_list, scalar_to_py};
 
 enum Builder<'py> {
@@ -120,7 +121,7 @@ impl Consumer for UntypedConsumer<'_> {
 
     fn start_array(&mut self, declared_len: usize, _at: Position) -> Result<(), Fault> {
         self.stack.push(Builder::List {
-            items: Vec::with_capacity(declared_len),
+            items: Vec::with_capacity(reserve_elements(declared_len)),
         });
         Ok(())
     }

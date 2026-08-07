@@ -31,6 +31,7 @@ check: lint typecheck test
 # Build the release wheel and install it — benchmarks measure this wheel,
 # never an unoptimized development build.
 build:
+	rm -f target/wheels/*.whl
 	uv run --no-sync maturin build --release
 	uv pip install --force-reinstall --no-deps target/wheels/*.whl
 

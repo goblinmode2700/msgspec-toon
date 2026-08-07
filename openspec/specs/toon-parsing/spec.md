@@ -93,6 +93,40 @@ SHALL NOT route integers through `f64` except as a fast path guarded by a checke
 - **THEN** the resulting Python `int` equals the source digits exactly
 - **AND** no error and no warning is produced
 
+### Requirement: Payload-chosen quantities are bounded
+
+A document chooses two quantities that would otherwise size a machine resource: how deeply it
+nests, and how many elements an array header declares. Both SHALL be bounded so that a
+document can be rejected, never allowed to exhaust the native stack or the allocator.
+
+Decoding SHALL enforce one nesting ceiling covering line indentation depth and header
+field-group depth, and SHALL raise a `depth_limit` decode error when a document exceeds it.
+The ceiling SHALL apply in strict and non-strict mode alike: a resource limit is not a grammar
+ambiguity, so it SHALL NOT fall through to the non-strict malformed-header tolerance.
+
+A declared array count SHALL NOT size an allocation. The declared count SHALL continue to
+govern length validation exactly as before; only the up-front reservation derived from it is
+capped.
+
+#### Scenario: A document deeper than the ceiling is rejected
+
+- **WHEN** a document nests field groups or indentation beyond the codec's nesting ceiling
+- **AND** it is decoded in either strict or non-strict mode
+- **THEN** a decode error with code `depth_limit` is raised carrying line and column
+- **AND** the process does not panic, abort, or exit on a signal
+
+#### Scenario: An unsatisfiable declared count allocates nothing
+
+- **WHEN** a header declares an array length near the largest representable count
+- **THEN** decoding either raises the ordinary length-mismatch error (strict) or retains the
+  rows actually present (non-strict)
+- **AND** no allocation is attempted for the declared count
+
+#### Scenario: Arrays larger than the reservation cap still decode
+
+- **WHEN** a document contains an array with more elements than the reservation cap
+- **THEN** every element decodes and the result length equals the element count
+
 ### Requirement: Parsing runs in the calling process with no I/O
 
 Decoding SHALL happen inside the calling process. It SHALL NOT start a subprocess, open a

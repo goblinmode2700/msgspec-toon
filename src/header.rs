@@ -7,6 +7,7 @@
 
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::StringToken;
+use crate::limits::MAX_NESTING_DEPTH;
 use crate::scalar::{find_unquoted, scan_quoted, trim_spaces};
 
 pub const DEFAULT_DELIMITER: u8 = b',';
@@ -90,9 +91,18 @@ pub fn parse_header<'a>(
 
     let mut cursor = bracket_end + 1;
     let fields = if content.get(cursor) == Some(&b'{') {
-        let Some(close) = find_matching_brace(content, cursor) else {
+        let Some((close, group_depth)) = find_matching_brace(content, cursor) else {
             return Ok(HeaderOutcome::Malformed(FaultCode::UnclosedFieldGroup));
         };
+        // The one gate on field-group nesting. `parse_field_group` recurses
+        // once per brace level, so bounding the measured depth here bounds
+        // that recursion — and with it `leaf_count` and `emit_row_fields`,
+        // which walk the same tree. A depth limit is a resource fault, not a
+        // grammar ambiguity, so it is a hard error in both modes rather than
+        // a non-strict fall-through, matching the scanner's line-depth limit.
+        if group_depth > MAX_NESTING_DEPTH {
+            return Err(Fault::syntax_at(FaultCode::DepthLimit, at));
+        }
         let parsed = match parse_field_group(&content[cursor + 1..close], delimiter, strict, at) {
             Ok(parsed) => parsed,
             Err(code) => return Ok(HeaderOutcome::Malformed(code)),
@@ -181,9 +191,14 @@ pub fn parse_string_token<'a>(entry: &'a [u8], at: Position) -> Result<StringTok
     }
 }
 
-fn find_matching_brace(content: &[u8], open: usize) -> Option<usize> {
+/// Locate the `}` closing the group opened at `open`, and report the deepest
+/// brace nesting reached inside it. The scan already counts depth, so the
+/// caller gets the containment measurement for free rather than from a second
+/// pass over the same bytes.
+fn find_matching_brace(content: &[u8], open: usize) -> Option<(usize, usize)> {
     debug_assert_eq!(content[open], b'{');
     let mut depth = 0usize;
+    let mut max_depth = 0usize;
     let mut in_quote = false;
     let mut index = open;
     while index < content.len() {
@@ -197,11 +212,14 @@ fn find_matching_brace(content: &[u8], open: usize) -> Option<usize> {
         } else {
             match byte {
                 b'"' => in_quote = true,
-                b'{' => depth += 1,
+                b'{' => {
+                    depth += 1;
+                    max_depth = max_depth.max(depth);
+                }
                 b'}' => {
                     depth -= 1;
                     if depth == 0 {
-                        return Some(index);
+                        return Some((index, max_depth));
                     }
                 }
                 _ => {}
@@ -230,7 +248,8 @@ fn parse_field_group<'a>(
 
         let (name, children) = match find_unquoted(entry, b'{', 0) {
             Some(group_start) => {
-                let Some(group_end) = find_matching_brace(entry, group_start) else {
+                // Depth is already bounded by the gate in `parse_header`.
+                let Some((group_end, _)) = find_matching_brace(entry, group_start) else {
                     return Err(FaultCode::UnclosedFieldGroup);
                 };
                 if group_end + 1 != entry.len() {
@@ -336,6 +355,34 @@ mod tests {
         assert!(!parsed.keyed);
         assert!(parsed.inline_values.is_none());
         assert!(matches!(parsed.key, Some(StringToken::Bare(b"workers"))));
+    }
+
+    #[test]
+    fn rejects_field_groups_past_the_depth_limit() {
+        // The gate is a hard fault in both modes: a resource limit is not a
+        // grammar ambiguity, so non-strict does not fall through to a literal
+        // key the way it does for a malformed header.
+        // `rows[0]{a{a{...x...}}}:` with `levels` open braces.
+        let deep = |levels: usize| {
+            let mut content = b"rows[0]{".to_vec();
+            content.extend(std::iter::repeat_n(&b"a{"[..], levels - 1).flatten());
+            content.push(b'x');
+            content.extend(std::iter::repeat_n(&b"}"[..], levels).flatten());
+            content.push(b':');
+            content
+        };
+
+        let at_limit = deep(MAX_NESTING_DEPTH);
+        assert!(matches!(
+            parse_header(&at_limit, true, AT).unwrap(),
+            HeaderOutcome::Header(_)
+        ));
+
+        let past_limit = deep(MAX_NESTING_DEPTH + 1);
+        for strict in [true, false] {
+            let fault = parse_header(&past_limit, strict, AT).unwrap_err();
+            assert_eq!(fault.code, FaultCode::DepthLimit);
+        }
     }
 
     #[test]

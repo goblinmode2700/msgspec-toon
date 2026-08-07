@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 
 use crate::event::ScalarToken;
+use crate::limits::{MAX_NESTING_DEPTH, reserve_bytes};
 use crate::scalar::classify_bare;
 use crate::writer::Writer;
 
@@ -21,7 +22,6 @@ use crate::writer::Writer;
 const CELL_WIDTH_ESTIMATE: usize = 10;
 
 const MAX_HOOK_DEPTH: usize = 8;
-const MAX_ENCODE_DEPTH: usize = 256;
 
 pub struct EncodeContext {
     pub enc_hook: Option<Py<PyAny>>,
@@ -278,7 +278,7 @@ pub fn encode_root(
     let value = classify(ctx, py, obj, 0)?;
     match &value {
         Val::Dict(_) | Val::Struct(_, _) => {
-            if let Some(keyed) = keyed_shape(ctx, py, &value)? {
+            if let Some(keyed) = keyed_shape(ctx, py, &value, 0)? {
                 write_keyed(ctx, py, &mut writer, None, &keyed, 0, false)?;
             } else {
                 let pairs = object_pairs(ctx, py, &value)?;
@@ -301,7 +301,7 @@ fn write_entries<'py>(
     pairs: &[(String, Bound<'py, PyAny>)],
     depth: usize,
 ) -> PyResult<()> {
-    if depth > MAX_ENCODE_DEPTH {
+    if depth > MAX_NESTING_DEPTH {
         return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
     }
     for (key, item) in pairs {
@@ -326,7 +326,7 @@ fn write_entry<'py>(
     match &value {
         Val::Seq(items) => write_array(ctx, py, writer, Some(key), items, depth, 0, inline),
         Val::Dict(_) | Val::Struct(_, _) => {
-            if let Some(keyed) = keyed_shape(ctx, py, &value)? {
+            if let Some(keyed) = keyed_shape(ctx, py, &value, depth)? {
                 return write_keyed(ctx, py, writer, Some(key), &keyed, depth, inline);
             }
             let nested = object_pairs(ctx, py, &value)?;
@@ -362,7 +362,7 @@ fn write_array<'py>(
     nesting: usize,
     inline: bool,
 ) -> PyResult<()> {
-    if nesting > MAX_ENCODE_DEPTH {
+    if nesting > MAX_NESTING_DEPTH {
         return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
     }
     let header = |writer: &mut Writer, suffix: &str| {
@@ -418,7 +418,7 @@ fn write_array<'py>(
     // Tabular form applies to named arrays and the root array; an anonymous
     // array in list-item position always uses list form.
     if (key.is_some() || !inline)
-        && let Some(shape) = build_shape(ctx, py, items)?
+        && let Some(shape) = build_shape(ctx, py, items, nesting)?
     {
         let nodes = shape.nodes();
         if !inline {
@@ -439,10 +439,11 @@ fn write_array<'py>(
         writer.newline();
         // Optimization E2: one up-front reservation instead of growth
         // doublings while streaming rows.
-        writer.reserve(
-            items.len()
-                * ((depth + 1) * ctx.indent + shape_leaf_count(nodes) * CELL_WIDTH_ESTIMATE + 1),
-        );
+        let row_width_estimate =
+            (depth + 1) * ctx.indent + shape_leaf_count(nodes) * CELL_WIDTH_ESTIMATE + 1;
+        writer.reserve(reserve_bytes(
+            items.len().saturating_mul(row_width_estimate),
+        ));
         for item in items {
             writer.indent(depth + 1);
             let mut first = true;
@@ -518,6 +519,7 @@ fn keyed_shape<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     value: &Val<'py>,
+    depth: usize,
 ) -> PyResult<Option<KeyedShape<'py>>> {
     let Val::Dict(map) = value else {
         return Ok(None);
@@ -537,7 +539,7 @@ fn keyed_shape<'py>(
         entries.push((key_text.to_str()?.to_string(), item.clone()));
         rows.push(item);
     }
-    let Some(shape) = build_shape(ctx, py, &rows)? else {
+    let Some(shape) = build_shape(ctx, py, &rows, depth)? else {
         return Ok(None);
     };
     Ok(Some(KeyedShape { entries, shape }))
@@ -639,7 +641,14 @@ fn build_shape<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     rows: &[Bound<'py, PyAny>],
+    depth: usize,
 ) -> PyResult<Option<Shape>> {
+    // Shape discovery recurses per nested column, ahead of the writer's own
+    // depth check, so it needs the same ceiling. Bailing to list form here
+    // would only defer the error to the writer; report it directly.
+    if depth > MAX_NESTING_DEPTH {
+        return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
+    }
     let first = &rows[0];
     let accessors: Vec<(String, Access)> = if first.is_instance(ctx.struct_base.bind(py))? {
         let class = first.get_type();
@@ -719,7 +728,7 @@ fn build_shape<'py>(
                 children: Vec::new(),
             });
         } else {
-            match build_shape(ctx, py, &column)? {
+            match build_shape(ctx, py, &column, depth + 1)? {
                 Some(nested) if !nested.nodes().is_empty() => {
                     let children = match nested {
                         Shape::Owned(nodes) => nodes,
