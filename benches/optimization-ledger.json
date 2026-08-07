@@ -157,6 +157,15 @@
       "source": "external review round (Fable 5), patch 04 of 5",
       "measurement": "make ab vs the v0.3.0 guard, cumulative; D5's share isolated against the E5 run: typed decode -5.9 to -8.3% cumulative, D5 adding ~3 to 4 points. Untyped decode and both encode directions unchanged, which is the expected signature since D5 touches only TypedConsumer.",
       "note": "A new `begin_tabular` consumer event carries the announcement; its default implementation is a no-op so the untyped and probe consumers are untouched. Trust is granted only when the stack top is the array's own frame (start_array fires first, verified), never inside an `Any` subtree or a skipped value, and never to a memo that declined to memoize. List-form arrays keep the untrusted verify-by-compare path. Not extended to the untyped consumer: speeding the untyped wrapper would thin G3's measured margin, which should be a deliberate decision rather than a side effect."
+    },
+    {
+      "id": "E7",
+      "target": "Struct field reads during encode (canvas risk R-02, gate G4)",
+      "hypothesis": "Replacing N stable-ABI getattr calls per Struct instance with one msgspec.structs.astuple call \u2014 msgspec's own C slot reads through its public API \u2014 should close part of the G4 gap against msgspec.to_builtins.",
+      "status": "rejected",
+      "source": "external review round (Fable 5), patch 05 of 5",
+      "measurement": "make ab vs the v0.3.0 guard. With E7 applied, typed encode measured -5.7/-7.5/-6.6/-5.8% at 16/64/512/4096. With E7 reverted and nothing else changed, the same metric measured -20.4/-16.1/-16.6/-16.5%. E7 costs roughly 9 to 10 points of typed encode at every size. Untyped encode, which never touches a Struct, stayed flat across both runs and serves as the drift control.",
+      "note": "The candidate arrived with this exact falsification condition stated \u2014 one vectorcall plus a tuple allocation per row could lose to bare getattr at narrow structs \u2014 and it fired, at every size rather than only the small ones. The challenge shape is narrow: Worker has 3 fields and Metadata 2, so write_row_obj trades 5 getattrs for 2 tuple allocations and 2 vectorcalls per row. Not adopted, and deliberately not adopted conditionally: dispatching on field count would put a magic number in the hot path and add a second field-read implementation beside the first. E7 could be revisited only with evidence from a wide-struct payload, and that payload would have to earn its place on the ladder first. G4 remains the honest miss it was; R-02 is unchanged."
     }
   ],
   "token_findings": {

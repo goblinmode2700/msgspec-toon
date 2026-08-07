@@ -1,27 +1,28 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at v0.3.0. Read CLAUDE.md (or AGENTS.md, same
+_Last updated after the external review round (unreleased, on top of v0.3.0). Read CLAUDE.md (or AGENTS.md, same
 file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-**v0.3.0 is cut, the guard is re-cut from it, and every gate is green.** Phases A and B of
-`LAST-MILE.md` are complete; Phase C is partly done (F-07, F-08, F-09, F-10, F-13).
+**An external review round has landed on top of v0.3.0 and is unreleased.** Four of five
+proposed optimizations were adopted on measurement, one was rejected on measurement, and a
+pre-existing silent wrong answer was found and fixed while reviewing them. Everything is
+green but **nothing is tagged**: the next release should be cut and the guard re-cut from
+it before further perf work, or the next round measures against a stale baseline.
 
-The next item is **constraint enforcement** — `Annotated[int, Meta(ge=10)]` is parsed into
-the plan IR and never applied, so a value `msgspec.json` rejects is accepted. It is the
-last silent divergence in the codec and it has no lettered finding of its own, which is
-probably why the adversarial review missed it. After that, in order: **F-06**
-(`strict=False` scalar coercion) and **F-04** (cell-accurate error columns, the one
-remaining hot-path item).
+After that, the queue is unchanged: **C-00 constraint enforcement** (`Annotated[int,
+Meta(ge=10)]` is parsed into the plan IR and never applied, so a value `msgspec.json`
+rejects is accepted — the last silent divergence in the codec), then **F-06**
+(`strict=False` scalar coercion), then **F-04** (cell-accurate error columns).
 
 `conformance/support_matrix.py` is both the work list and the acceptance test: flipping an
 entry to `supported` is the definition of done, and the report's gap list regenerates from
 it. Use `/last-mile`.
 
-A review bundle for an outside model sits at `~/Desktop/msgspec-toon-review-bundle/`
-(repomix pack + `REVIEW-CONTRACT.md` pinning the locked token and speed numbers). It is a
-snapshot of `58ba1a7`; regenerate it if the state moves.
+The review bundle at `~/Desktop/msgspec-toon-review-bundle/` is a snapshot of `58ba1a7`
+and is now **stale** — its REVIEW-CONTRACT.md pins speed figures this round has beaten.
+Regenerate it before sending it anywhere again.
 
 ## The goal, precisely
 
@@ -34,7 +35,7 @@ are measured: **tokens** (tiktoken `o200k_base`, `benches/bench_tokens.py`) and
 plus a frozen-baseline A/B harness `benches/ab.py`). Claims exist only as generated
 evidence in `conformance/report.json` — never as assertions.
 
-## Where things stand (all verified at v0.3.0)
+## Where things stand (verified on the current tree, unreleased)
 
 | claim | state | evidence |
 |---|---|---|
@@ -50,7 +51,8 @@ evidence in `conformance/report.json` — never as assertions.
 | Optimizations | 6 adopted, re-qualified under the significance-tested harness against `v0.1.0-conformant`: **all 16 metrics resolve as faster** — typed decode −14.3/−17.0/−16.9/−18.1%, untyped decode −11.8/−15.5/−18.2/−17.6%, typed encode −6.4/−6.7/−6.2/−3.4%, untyped encode −8.6/−6.6/−7.2/−6.3%. The two encode rows F-12 could not resolve now resolve | `benches/optimization-ledger.json`, report `speed_ab.baseline` |
 | A/B rigor | **mean across 10 worker processes** (never a minimum); one metric per block, alternating `B C C B`, t-test at alpha 0.95, per-row minimum detectable effect; a slowdown must reproduce at double power to fail | `benches/ab.py`, `benches/ab-guard.json`, `benches/ab-baseline.json` |
 | Regression gates | **token/byte lock** (any drift fails) and **speed gate vs the latest release** (a reproduced slowdown exits non-zero). Both proven to fire by deliberate perturbation | `conformance/efficiency.lock.json`, `make ab` |
-| Release + guard | **v0.3.0 tagged; `.venv-guard` built from it; `make ab` green (16/16 no significant difference)**. `GUARD_TAG` is derived from the latest tag, and the gate refuses a guard built from an older one | `git tag`, `.venv-guard/GUARD_TAG` |
+| Release + guard | **v0.3.0 tagged; `.venv-guard` built from it. The tree is now AHEAD of the guard by one adopted review round** — `make ab` reports wins, not parity, which is the expected state before a release is cut. `GUARD_TAG` is derived from the latest tag, and the gate refuses a guard built from an older one | `git tag`, `.venv-guard/GUARD_TAG` |
+| External review round | **4 adopted, 1 rejected, all on measurement.** vs the v0.3.0 guard: typed decode −6.0/−9.0/−7.2/−7.7%, typed encode −13.9/−14.9/−15.8/−16.6%, untyped decode −2.7/−2.6/−7.4/−5.2%, untyped encode −7.0/−7.8/−7.4/−7.5%, and keyed decode −19.3/−51.9/−88.4% at 64/512/4096 | `benches/optimization-ledger.json` (D6, P2, E5, D5 adopted; E7 rejected) |
 
 Wire options: `delimiter` (`","`/`"\t"`/`"|"`), `indent`, `indent_size` — exactly TOON
 4.1's own option domain, spelled in the wire, defaults byte-identical to canonical.

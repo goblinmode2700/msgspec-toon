@@ -250,6 +250,33 @@ Exit: supported behavior matches `msgspec==0.21.1`. Unsupported behavior fails l
 
 Exit: all unsafe and memo invariants have executable tests or local proofs.
 
+### E0. External review round — DONE
+
+A five-candidate perf stack arrived from an outside model with correctness verified in a
+container and **speed explicitly unmeasured** ("`make guard && make ab` on your machine
+before adoption"). That framing was correct and is why this went well: every candidate was
+adjudicated by measurement here, and one was rejected.
+
+- [x] **D6 hashed duplicate-key set.** Adopted. Keyed decode −19.3/−51.9/−88.4% at
+      64/512/4096. The candidate warned that the ladder could not see it; that was true, so
+      the keyed payload landed first.
+- [x] **P2 single-pass scalar classifier.** Adopted. Decode −3 to −5%, encode −7% (the
+      encode share via `needs_quote`, which E5 then took over). 111,126-token differential.
+- [x] **E5 one-pass quoting, span-copy escaping.** Adopted. Typed encode −17% cumulative,
+      ~10 points of it E5's. 107,841-pair differential; canonical bytes unmoved.
+- [x] **D5 trusted positional replay.** Adopted. Typed decode −3 to −4%, with untyped and
+      encode flat as the confining control.
+- [x] **E7 struct field tuple (`msgspec.structs.astuple`).** **Rejected on measurement.**
+      Applied: typed encode −5.7/−7.5/−6.6/−5.8%. Reverted, nothing else changed:
+      −20.4/−16.1/−16.6/−16.5%. It costs ~9–10 points at every size. Its own stated
+      falsification condition fired. Not adopted conditionally either: dispatching on field
+      count would put a magic number in the hot path and a second field-read implementation
+      beside the first. G4 and R-02 are unchanged.
+
+Lesson worth keeping: **a candidate that ships its own falsification condition is worth
+more than one that ships a benchmark.** E7 named the exact condition under which it would
+lose, which made rejecting it a ten-minute measurement instead of an argument.
+
 ### E. Continued efficiency work
 
 - [ ] Run formal profiles for typed decode, untyped decode, Struct encode, and dictionary encode.
