@@ -210,8 +210,16 @@ and F-13 were the only two silent divergences, so they went first. F-04 stays qu
 it is error-message precision on a hot path, which is lower value and higher risk than
 the parity items around it.
 
-- [ ] F-04 preserve exact cell columns without adding an intermediate tree.
+- [ ] **C-00 enforce constraints (`msgspec.Meta`).** No lettered finding — the adversarial
+      review logged it only as "parsed but not enforced" — but it is the **last silent
+      divergence in the codec**: `Annotated[int, Meta(ge=10)]` reaches the plan IR and is
+      never applied, so a value `msgspec.json` rejects is accepted. Take it first: a wrong
+      value returned silently outranks a loud refusal, which is the severity order this
+      project's own support matrix encodes.
 - [ ] F-06 differential-test and implement `strict=False` Tier 0 coercions.
+- [ ] F-04 preserve exact cell columns without adding an intermediate tree. Last, not
+      first: it is error-message precision on a hot path, so it carries the most risk and
+      the least user-visible value of the three.
 - [x] F-07 distinguish booleans from integer literals.
 - [x] F-08 implement fixed tuples.
 - [x] F-09 support `kw_only` Struct construction on a cold branch.

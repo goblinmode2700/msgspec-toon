@@ -124,7 +124,16 @@ Optional, renames, defaults) → Tier 1 (tuples, dicts, literals, tagged unions,
 constraints) → Tier 2 (enums, datetime, UUID, Decimal, dataclasses, dec_hook). Document
 the matrix; don't claim msgspec.json parity early.
 
-## Status (2026-08-07): optimized, token-measured, perfect corpus
+## Status (2026-08-07): v0.3.0 — gated on tokens and speed
+
+Read `HANDOFF.md` for the live state; this section and the one below it are the narrative
+of how it got here. At v0.3.0: 538/538 corpus, G2 zero builtin containers proven by an
+instrumented build, a generated support matrix (11 supported, 2 parity-rejects, 13
+unsupported, 1 inert, 0 silently wrong), and two regression gates that are proven to fire
+— a locked token/byte snapshot and a significance-tested speed gate against the previous
+release. Timings are the mean across 10 worker processes, never a minimum.
+
+## Status (2026-08-06): optimized, token-measured, perfect corpus
 
 Since the section below was written, the `optimize-speed-and-token-efficiency` change
 landed (23/24 tasks): **G1 is now a perfect 538/538 corpus score with zero declared
