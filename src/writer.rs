@@ -15,6 +15,10 @@ impl Writer {
         }
     }
 
+    pub fn reserve(&mut self, additional: usize) {
+        self.out.reserve(additional);
+    }
+
     pub fn bytes(&mut self, value: &[u8]) {
         self.out.extend_from_slice(value);
     }

@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "benches"))
 
 import bench_codecs
+import bench_tokens
 import msgspec
 import msgspec_toon as toon
 from _timing import methodology
@@ -107,6 +108,7 @@ def main() -> None:
         "allocation_proof": allocation_proof(),
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
+        "token_efficiency": bench_tokens.run(),
         "gates": {
             "G1_conformance": (
                 "zero failures on all runnable fixtures; 25 unsupported-option "

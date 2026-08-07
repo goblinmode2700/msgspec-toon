@@ -16,6 +16,10 @@ use crate::event::ScalarToken;
 use crate::scalar::classify_bare;
 use crate::writer::Writer;
 
+/// Capacity heuristic only — never policy: an assumed average encoded cell
+/// width used to pre-reserve the output buffer for tabular rows.
+const CELL_WIDTH_ESTIMATE: usize = 10;
+
 const MAX_HOOK_DEPTH: usize = 8;
 const MAX_ENCODE_DEPTH: usize = 256;
 
@@ -433,6 +437,12 @@ fn write_array<'py>(
         write_field_group(writer, nodes, ctx.delimiter);
         writer.text("}:");
         writer.newline();
+        // Optimization E2: one up-front reservation instead of growth
+        // doublings while streaming rows.
+        writer.reserve(
+            items.len()
+                * ((depth + 1) * ctx.indent + shape_leaf_count(nodes) * CELL_WIDTH_ESTIMATE + 1),
+        );
         for item in items {
             writer.indent(depth + 1);
             let mut first = true;
@@ -602,6 +612,17 @@ impl Shape {
 
 /// Fast scalar-primitive check that never touches the plan cache.
 fn is_scalar_obj(obj: &Bound<'_, PyAny>) -> bool {
+    let type_ptr = exact_type(obj);
+    {
+        use std::ptr::addr_of_mut;
+        if type_ptr == addr_of_mut!(pyo3::ffi::PyUnicode_Type)
+            || type_ptr == addr_of_mut!(pyo3::ffi::PyLong_Type)
+            || type_ptr == addr_of_mut!(pyo3::ffi::PyFloat_Type)
+            || type_ptr == addr_of_mut!(pyo3::ffi::PyBool_Type)
+        {
+            return true;
+        }
+    }
     obj.is_none()
         || obj.is_instance_of::<PyBool>()
         || obj.is_instance_of::<PyInt>()
@@ -717,6 +738,19 @@ fn build_shape<'py>(
     Ok(Some(Shape::Owned(shape)))
 }
 
+fn shape_leaf_count(shape: &[ShapeNode]) -> usize {
+    shape
+        .iter()
+        .map(|node| {
+            if node.children.is_empty() {
+                1
+            } else {
+                shape_leaf_count(&node.children)
+            }
+        })
+        .sum()
+}
+
 fn write_field_group(writer: &mut Writer, shape: &[ShapeNode], delimiter: u8) {
     for (index, node) in shape.iter().enumerate() {
         if index > 0 {
@@ -768,16 +802,65 @@ fn write_row_obj<'py>(
 
 /// Write a scalar primitive straight into the output buffer, no intermediate
 /// String except for the cold big-int and exponent-float paths.
+/// Exact-type pointer dispatch (optimization E1): one pointer compare per
+/// common case instead of a chain of limited-API type-check calls. Exact
+/// types cover ordinary data; subclasses take the original slow chain.
+#[inline]
+fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
+    unsafe { pyo3::ffi::Py_TYPE(obj.as_ptr()) }
+}
+
 fn write_scalar_obj<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     writer: &mut Writer,
     obj: &Bound<'py, PyAny>,
 ) -> PyResult<()> {
+    let type_ptr = exact_type(obj);
+    unsafe {
+        use std::ptr::addr_of_mut;
+        if type_ptr == addr_of_mut!(pyo3::ffi::PyUnicode_Type) {
+            let text = obj.cast_unchecked::<PyString>().to_str()?;
+            if needs_quote(text, ctx.delimiter) {
+                write_quoted(writer, text);
+            } else {
+                writer.text(text);
+            }
+            return Ok(());
+        }
+        if type_ptr == addr_of_mut!(pyo3::ffi::PyLong_Type) {
+            // Exact int: bool has its own type object, so no bool check needed.
+            match obj.extract::<i64>() {
+                Ok(small) => {
+                    let mut buffer = itoa::Buffer::new();
+                    writer.text(buffer.format(small));
+                }
+                Err(_) => writer.text(obj.str()?.to_str()?),
+            }
+            return Ok(());
+        }
+        if type_ptr == addr_of_mut!(pyo3::ffi::PyFloat_Type) {
+            let number = obj.extract::<f64>()?;
+            if !number.is_finite() {
+                return Err(encode_err(
+                    ctx,
+                    py,
+                    "non-finite floats are not encodable in TOON",
+                ));
+            }
+            write_float(writer, number);
+            return Ok(());
+        }
+        if type_ptr == addr_of_mut!(pyo3::ffi::PyBool_Type) {
+            writer.bytes(if obj.is_truthy()? { b"true" } else { b"false" });
+            return Ok(());
+        }
+    }
     if obj.is_none() {
         writer.bytes(b"null");
         return Ok(());
     }
+    // Subclass slow path.
     if obj.is_instance_of::<PyBool>() {
         writer.bytes(if obj.extract::<bool>()? {
             b"true"

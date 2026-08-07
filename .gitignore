@@ -8,3 +8,6 @@ __pycache__/
 dist/
 .DS_Store
 python/msgspec_toon/*.so
+.venv-baseline/
+.baseline-src/
+benches/ab-latest.json

@@ -7,7 +7,9 @@ export PYO3_PYTHON
 
 COOLDOWN_DAYS := 14
 
-.PHONY: lint typecheck test check build bench report audit relock
+BASELINE_TAG := v0.1.0-conformant
+
+.PHONY: lint typecheck test check build bench report audit relock baseline ab
 
 lint:
 	uv run --no-sync ruff check .
@@ -38,6 +40,22 @@ bench: build
 
 report: build
 	uv run --no-sync python scripts/release-report.py
+
+# Build the frozen-baseline wheel ($(BASELINE_TAG)) into .venv-baseline so
+# benches/ab.py can run same-session before/after comparisons.
+baseline:
+	git worktree remove --force .baseline-src 2>/dev/null || true
+	rm -rf .baseline-src .venv-baseline target/baseline-wheels
+	git worktree add --detach .baseline-src $(BASELINE_TAG)
+	uv venv .venv-baseline --python 3.13
+	uv run --no-sync maturin build --release \
+		-m .baseline-src/Cargo.toml -o target/baseline-wheels
+	uv pip install --python .venv-baseline/bin/python target/baseline-wheels/*.whl \
+		python-toon==0.1.3 toons pytest
+	git worktree remove --force .baseline-src
+
+ab:
+	uv run --no-sync python benches/ab.py
 
 # Python needs no date plumbing: [tool.uv] exclude-newer = "14 days" makes
 # every uv resolution rolling-compliant on its own. This target just

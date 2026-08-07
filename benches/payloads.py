@@ -39,3 +39,38 @@ def document(records: int) -> Document:
 def toon_text(records: int) -> bytes:
     rows = "\n".join(f"  {20000 + i},claude,worker-{i},{REGIONS[i % 4]}" for i in range(records))
     return (f"workers[{records}]{{pid,provider,metadata{{alias,region}}}}:\n{rows}").encode()
+
+
+def string_heavy_tree(records: int) -> dict:
+    """Prose-like values: long strings dominate the payload."""
+    return {
+        "articles": [
+            {
+                "title": f"Weekly operations report number {index} for the western region",
+                "summary": (
+                    "The deployment completed without incident and latency stayed "
+                    "within the agreed budget across all monitored endpoints "
+                    f"during window {index}."
+                ),
+                "author": {"name": f"Reporter {index}", "desk": "operations desk"},
+            }
+            for index in range(records)
+        ]
+    }
+
+
+def numeric_heavy_tree(records: int) -> dict:
+    """Many numeric columns, short strings."""
+    return {
+        "samples": [
+            {
+                "t": 1_722_000_000 + index,
+                "cpu": round(0.1 + (index % 90) / 100, 2),
+                "mem": 512 + index,
+                "io": index * 37,
+                "err": index % 3,
+                "node": f"n{index % 8}",
+            }
+            for index in range(records)
+        ]
+    }
