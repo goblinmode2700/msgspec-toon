@@ -15,8 +15,8 @@
     },
     "encode": {
       "total": 179,
-      "pass": 131,
-      "fail": 25,
+      "pass": 156,
+      "fail": 0,
       "unsupported_option": 23
     },
     "strict_error_fixtures": {
@@ -3692,8 +3692,8 @@
       "name": "encodes root-level array mixing primitive, object, and array of objects in list form",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: nested non-scalar arrays inside list items are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3712,8 +3712,8 @@
       "name": "encodes empty root-level array",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got '[0]:' want '[]'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3722,8 +3722,8 @@
       "name": "encodes complex nested structure",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'user:\\n  id: 123\\n  name: Ada\\n  tags[2]: reading,gaming\\n  active: true\\n  prefs[0]:' want 'user:\\n  id: 123\\n  name: Ada\\n  tags[2]: reading,gaming\\n  active: true\\n  prefs: []'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3762,8 +3762,8 @@
       "name": "uses list form for a tabular-eligible array in list-item position",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: nested non-scalar arrays inside list items are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3812,8 +3812,8 @@
       "name": "uses list form for objects containing arrays of arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: non-scalar arrays as the first field of a list item are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3822,8 +3822,8 @@
       "name": "uses tabular form for nested uniform object arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: non-scalar arrays as the first field of a list item are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3832,8 +3832,8 @@
       "name": "uses list form for nested object arrays with mismatched keys",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: non-scalar arrays as the first field of a list item are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3862,8 +3862,8 @@
       "name": "encodes objects with empty arrays in list form",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'items[1]:\\n  - name: Ada\\n    data[0]:' want 'items[1]:\\n  - name: Ada\\n    data: []'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3872,8 +3872,8 @@
       "name": "uses canonical encoding for multi-field list-item objects with tabular arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: non-scalar arrays as the first field of a list item are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3882,8 +3882,8 @@
       "name": "uses canonical encoding for single-field list-item tabular arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "raised EncodeError: non-scalar arrays as the first field of a list item are not supported by this proof of concept"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3892,8 +3892,8 @@
       "name": "places empty arrays on hyphen line when first",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'items[1]:\\n  - data[0]:\\n    name: x' want 'items[1]:\\n  - data: []\\n    name: x'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3912,8 +3912,8 @@
       "name": "uses field order from first object for tabular headers",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'items[2]:\\n  - a: 1\\n    b: 2\\n    c: 3\\n  - c: 30\\n    b: 20\\n    a: 10' want 'items[2]{a,b,c}:\\n  1,2,3\\n  10,20,30'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -3982,8 +3982,8 @@
       "name": "encodes empty arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'items[0]:' want 'items: []'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4002,8 +4002,8 @@
       "name": "encodes empty string keys for empty arrays",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got '\"\"[0]:' want '\"\": []'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4462,8 +4462,8 @@
       "name": "encodes objects of uniform objects in keyed tabular form",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'servers:\\n  alpha:\\n    host: a.example.com\\n    port: 8080\\n  beta:\\n    host: b.example.com\\n    port: 9090' want 'servers[2:]{host,port}:\\n  alpha: a.example.com,8080\\n  beta: b.example.com,9090'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4472,8 +4472,8 @@
       "name": "encodes an eligible root object with a keyless keyed header",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'alice:\\n  age: 30\\n  city: Berlin\\nbob:\\n  age: 25\\n  city: Oslo' want '[2:]{age,city}:\\n  alice: 30,Berlin\\n  bob: 25,Oslo'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4482,8 +4482,8 @@
       "name": "collapses uniform nested object columns inside keyed headers",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'regions:\\n  eu:\\n    name: Europe\\n    geo:\\n      lat: 50\\n      lon: 10\\n  us:\\n    name: America\\n    geo:\\n      la want 'regions[2:]{name,geo{lat,lon}}:\\n  eu: Europe,50,10\\n  us: America,40,-100'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4492,8 +4492,8 @@
       "name": "orders fields by the first entry value's encounter order",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'm:\\n  a:\\n    x: 1\\n    y: 2\\n  b:\\n    y: 4\\n    x: 3' want 'm[2:]{x,y}:\\n  a: 1,2\\n  b: 3,4'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4512,8 +4512,8 @@
       "name": "quotes entry keys per key encoding",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'ids:\\n  \"42\":\\n    v: 1\\n  \"my key\":\\n    v: 2' want 'ids[2:]{v}:\\n  \"42\": 1\\n  \"my key\": 2'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4522,8 +4522,8 @@
       "name": "quotes entry-row cells containing the active delimiter",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'notes:\\n  n1:\\n    text: \"a,b\"\\n  n2:\\n    text: c' want 'notes[2:]{text}:\\n  n1: \"a,b\"\\n  n2: c'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4572,8 +4572,8 @@
       "name": "emits a keyed header on the hyphen line when it is the first field of a list item",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'items[2]:\\n  - config:\\n      a:\\n        x: 1\\n      b:\\n        x: 2\\n    status: ok\\n  - status: down' want 'items[2]:\\n  - config[2:]{x}:\\n      a: 1\\n      b: 2\\n    status: ok\\n  - status: down'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4652,8 +4652,8 @@
       "name": "quotes string value with embedded quotes",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got 'text: say \"hello\"' want 'text: \"say \\\\\"hello\\\\\"\"'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -5022,8 +5022,8 @@
       "name": "quotes string with leading zero",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got '05' want '\"05\"'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -5272,8 +5272,8 @@
       "name": "encodes small decimal without exponent notation",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got '1e-6' want '0.000001'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -5342,8 +5342,8 @@
       "name": "quotes leading-plus numeric-like string",
       "strict": true,
       "should_error": false,
-      "status": "fail",
-      "detail": "byte mismatch: got '+1' want '\"+1\"'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",

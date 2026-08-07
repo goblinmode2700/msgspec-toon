@@ -34,22 +34,16 @@ def typed_equal(left: Any, right: Any) -> bool:
     """
     if isinstance(left, bool) is not isinstance(right, bool):
         return False
-    if (
-        type(left) is not type(right)
-        and not (isinstance(left, int | float) and isinstance(right, int | float))
+    if type(left) is not type(right) and not (
+        isinstance(left, int | float) and isinstance(right, int | float)
     ):
         return False
     if isinstance(left, dict):
-        return (
-            len(left) == len(right)
-            and all(
-                key in right and typed_equal(value, right[key]) for key, value in left.items()
-            )
+        return len(left) == len(right) and all(
+            key in right and typed_equal(value, right[key]) for key, value in left.items()
         )
     if isinstance(left, list):
-        return len(left) == len(right) and all(
-            typed_equal(a, b) for a, b in zip(left, right)
-        )
+        return len(left) == len(right) and all(typed_equal(a, b) for a, b in zip(left, right))
     return bool(left == right)
 
 
@@ -126,11 +120,7 @@ def main() -> int:
                 )
 
     def count(**criteria: Any) -> int:
-        return sum(
-            1
-            for r in results
-            if all(r[key] == value for key, value in criteria.items())
-        )
+        return sum(1 for r in results if all(r[key] == value for key, value in criteria.items()))
 
     summary = {
         "corpus": {
@@ -159,9 +149,7 @@ def main() -> int:
     }
 
     out = ROOT / "conformance-results.json"
-    out.write_text(
-        json.dumps({"summary": summary, "results": results}, indent=2) + "\n"
-    )
+    out.write_text(json.dumps({"summary": summary, "results": results}, indent=2) + "\n")
 
     print(f"corpus {LOCK['tag']} @ {LOCK['commit'][:12]} ({len(results)} tests)")
     for section in ("decode", "encode"):

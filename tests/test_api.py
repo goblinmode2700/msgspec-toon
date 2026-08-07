@@ -80,11 +80,29 @@ def test_non_finite_floats_raise_encode_error() -> None:
 
 
 def test_empty_containers() -> None:
-    assert toon.encode({"empty_list": []}) == b"empty_list[0]:"
+    # Canonical empty array is the literal `[]`; `[0]:` stays decodable.
+    assert toon.encode({"empty_list": []}) == b"empty_list: []"
+    assert toon.decode(b"empty_list: []") == {"empty_list": []}
     assert toon.decode(b"empty_list[0]:") == {"empty_list": []}
+    assert toon.encode([]) == b"[]"
+    assert toon.decode(b"[]") == []
     assert toon.encode({"empty_obj": {}}) == b"empty_obj:"
     assert toon.decode(b"empty_obj:") == {"empty_obj": {}}
     assert toon.decode(b"") == {}
+
+
+def test_keyed_tabular_round_trip() -> None:
+    value = {
+        "servers": {
+            "alpha": {"host": "a.example.com", "port": 8080},
+            "beta": {"host": "b.example.com", "port": 9090},
+        }
+    }
+    encoded = toon.encode(value)
+    assert encoded == (
+        b"servers[2:]{host,port}:\n  alpha: a.example.com,8080\n  beta: b.example.com,9090"
+    )
+    assert toon.decode(encoded) == value
 
 
 def test_dict_target_type() -> None:

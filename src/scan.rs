@@ -35,7 +35,12 @@ pub struct Scanner<'a> {
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self { input, offset: 0, line: 0, strict }
+        Self {
+            input,
+            offset: 0,
+            line: 0,
+            strict,
+        }
     }
 
     pub fn next_line(&mut self) -> Result<Option<Line<'a>>, Fault> {
@@ -70,7 +75,6 @@ impl<'a> Scanner<'a> {
                 indent += 1;
             }
 
-            let mut tab_in_indent = false;
             if raw[indent] == b'\t' {
                 if self.strict {
                     return Err(Fault::syntax(
@@ -80,7 +84,6 @@ impl<'a> Scanner<'a> {
                     ));
                 }
                 // Non-strict leniency: a tab counts as one indent level.
-                tab_in_indent = true;
                 let mut levels = indent / INDENT_SIZE;
                 let mut cursor = indent;
                 while cursor < raw.len() && (raw[cursor] == b'\t' || raw[cursor] == b' ') {
@@ -104,11 +107,13 @@ impl<'a> Scanner<'a> {
                 return Ok(Some(Line {
                     content,
                     depth: levels,
-                    position: Position { line: self.line, column: (indent + 1) as u32 },
+                    position: Position {
+                        line: self.line,
+                        column: (indent + 1) as u32,
+                    },
                     blank_before,
                 }));
             }
-            let _ = tab_in_indent;
 
             let mut end = raw.len();
             while end > indent && raw[end - 1] == b' ' {
@@ -135,7 +140,10 @@ impl<'a> Scanner<'a> {
             return Ok(Some(Line {
                 content,
                 depth: indent / INDENT_SIZE,
-                position: Position { line: self.line, column: (indent + 1) as u32 },
+                position: Position {
+                    line: self.line,
+                    column: (indent + 1) as u32,
+                },
                 blank_before,
             }));
         }
@@ -150,7 +158,10 @@ pub struct Lines<'a> {
 
 impl<'a> Lines<'a> {
     pub fn new(input: &'a [u8], strict: bool) -> Self {
-        Self { scanner: Scanner::new(input, strict), peeked: None }
+        Self {
+            scanner: Scanner::new(input, strict),
+            peeked: None,
+        }
     }
 
     pub fn peek(&mut self) -> Result<Option<Line<'a>>, Fault> {

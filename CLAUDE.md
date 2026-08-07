@@ -97,31 +97,33 @@ Optional, renames, defaults) → Tier 1 (tuples, dicts, literals, tagged unions,
 constraints) → Tier 2 (enums, datetime, UUID, Decimal, dataclasses, dec_hook). Document
 the matrix; don't claim msgspec.json parity early.
 
-## Status (2026-08-06): Phase 1 vertical slice EXECUTED
+## Status (2026-08-06): Phases 0–2 executed; conformance measured
 
-The POC is built and measured (see `conformance/report.json`, regenerate with
-`uv run python scripts/release-report.py`). Results on the abi3 release wheel:
+Evidence: `conformance/report.json` (regenerate with `make report`). All measurements
+on the installed abi3 release wheel. `make check` / `make bench` / `make audit` are the
+entry points.
 
-- **G2 PASS** — typed decode of the challenge payload allocates **zero** intermediate
-  dicts/lists (wrapper shape allocates 129 dicts for the same 64-record document).
-  Counters live in `_native.alloc_stats()`.
-- **G3 PASS at every size** (16→4096 records) — direct typed decode beats untyped
-  decode + `msgspec.convert`; at 4 MiB-ish scale building Structs costs the same as
-  building the raw dict tree.
+- **G1 — official 4.1.1 corpus (538 tests, pinned + hash-locked, vendored in
+  `conformance/fixtures/`): ZERO failures.** Decode 357/359, encode 156/179,
+  strict-error fixtures 83/84 — every non-pass is one of 25 tests requiring encoder
+  wire options (`delimiter`, `indentSize`) that AD-005 deliberately does not expose;
+  they are published as declared divergences. Run: `uv run python conformance/run.py`.
+- **G2 PASS** — typed decode allocates zero intermediate dicts/lists (wrapper: 129
+  dicts on the same document). Counters in `_native.alloc_stats()`.
+- **G3 PASS at every size** — typed decode beats untyped + `msgspec.convert`.
+- **G5 PASS at every size, both directions** — 2–6.5x faster than `toons` 0.7.0,
+  ~20x faster than `python-toon` 0.1.3, with output 2.9x smaller than both (their
+  fallback form exceeds compact JSON). The incumbent pipeline
+  (`to_builtins`+python-toon / python-toon+`convert`) loses 19–51x.
 - **G4 FAIL, reported honestly** — whole direct encode does not beat
-  `msgspec.to_builtins` alone: 2.1x slower at 16 records, ~3% gap at 4096. Cause is
-  canvas risk R-02: public stable-ABI `getattr` (~20ns/field) vs msgspec's private C
-  slot reads. Already applied: static per-class shape precomputation, interned attr
-  names, single-pass row emission, vectorcall construction, pooled row frames. Do not
-  mask this; further wins need either wider rows or an upstream (Route A) argument.
-- **G1/G5 NOT RUN** — the official 4.1 fixture corpus is not yet fetched/pinned
-  (Phase 0 incomplete; `conformance/fixtures.lock.json` says so), and competing
-  compiled codecs are not installed here. No conformance claim is made.
+  `msgspec.to_builtins` alone (2.3x at 16 records → ~10% at 4096). Canvas risk R-02:
+  public stable-ABI `getattr` vs msgspec's private C slot reads. Mitigations already
+  applied: static per-class shapes, interned names, single-pass rows, vectorcall,
+  pooled frames. Don't mask it; further wins need an upstream (Route A) argument.
 
-Test suite: 25 Rust unit tests (`cargo test` — needs
-`PYO3_PYTHON=/opt/homebrew/opt/python@3.13/bin/python3.13`; the uv-managed CPython's
-dylib install path breaks test linking) + 38 Python tests (`uv run pytest`).
-Known POC gaps: comma delimiter only, no keyed tabular objects, Tier 0 + partial
-Tier 1 types only, float canonical form unverified against fixtures, no recursive
-Struct support. Next milestones: pin the fixture corpus (Phase 0), then Phase 2
-untyped conformance per canvas §17.
+Decode grammar is corpus-complete: keyed tabular objects (`k[N:]{f}:`), tab/pipe
+delimiters, `[]` literals, nested field groups, non-strict leniencies (malformed-header
+fall-through, count tolerance, LWW duplicates), blank-line strictness. Encoder emits
+canonical forms incl. keyed tabular, JS-style float spelling, numeric-like string
+quoting. Test suite: 32 Rust + 39 Python tests. Remaining gaps: encoder wire options
+(deliberate), typed Tier 1/2 long tail, recursive Structs, `indentSize≠2` decode.

@@ -14,7 +14,9 @@
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
-use crate::scalar::{classify_bare, find_unquoted, scan_quoted, split_cells, trim_spaces, unescape};
+use crate::scalar::{
+    classify_bare, find_unquoted, scan_quoted, split_cells, trim_spaces, unescape,
+};
 use crate::scan::{Line, Lines};
 
 pub fn parse<C: Consumer>(input: &[u8], strict: bool, consumer: &mut C) -> Result<(), Fault> {
@@ -97,7 +99,10 @@ fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, 
                 Some(at.column + end as u32),
             ));
         }
-        Ok(ScalarToken::Quoted { inner: &value[1..end - 1], escaped })
+        Ok(ScalarToken::Quoted {
+            inner: &value[1..end - 1],
+            escaped,
+        })
     } else {
         Ok(classify_bare(value))
     }
@@ -123,7 +128,9 @@ fn parse_object_body<C: Consumer>(
         parse_entry(content, at, lines, depth, strict, consumer, &mut seen)?;
     }
     loop {
-        let Some(line) = lines.peek()? else { return Ok(()) };
+        let Some(line) = lines.peek()? else {
+            return Ok(());
+        };
         if line.depth < depth {
             return Ok(());
         }
@@ -131,7 +138,15 @@ fn parse_object_body<C: Consumer>(
             return Err(Fault::syntax_at(FaultCode::DepthJump, line.position));
         }
         lines.advance()?;
-        parse_entry(line.content, line.position, lines, depth, strict, consumer, &mut seen)?;
+        parse_entry(
+            line.content,
+            line.position,
+            lines,
+            depth,
+            strict,
+            consumer,
+            &mut seen,
+        )?;
     }
 }
 
@@ -147,7 +162,9 @@ fn parse_entry<C: Consumer>(
 ) -> Result<(), Fault> {
     match parse_header(content, strict, at)? {
         HeaderOutcome::Header(header) => {
-            let key = header.key.ok_or(Fault::syntax_at(FaultCode::ExpectedKey, at))?;
+            let key = header
+                .key
+                .ok_or(Fault::syntax_at(FaultCode::ExpectedKey, at))?;
             note_key(&key, at, strict, seen)?;
             consumer.key(key, at)?;
             return parse_array_or_keyed_body(lines, &header, depth, at, strict, consumer);
@@ -185,7 +202,10 @@ fn parse_entry<C: Consumer>(
     }
 
     let value = &rest[1..];
-    let value_at = Position { line: at.line, column: at.column + colon as u32 + 2 };
+    let value_at = Position {
+        line: at.line,
+        column: at.column + colon as u32 + 2,
+    };
     consumer.key(key, at)?;
     if value == b"[]" {
         consumer.start_array(0, value_at)?;
@@ -237,9 +257,11 @@ fn next_body_line<'a>(
         Some(line) if strict && remaining > 0 => {
             Err(Fault::syntax_at(FaultCode::WrongArrayLength, line.position))
         }
-        None if strict && remaining > 0 => {
-            Err(Fault::syntax(FaultCode::WrongArrayLength, lines.current_line_number(), None))
-        }
+        None if strict && remaining > 0 => Err(Fault::syntax(
+            FaultCode::WrongArrayLength,
+            lines.current_line_number(),
+            None,
+        )),
         _ => Ok(None),
     }
 }
@@ -410,7 +432,10 @@ fn parse_list_item<C: Consumer>(
     let Some(item) = content.strip_prefix(b"- ") else {
         return Err(Fault::syntax_at(FaultCode::MissingListItem, at));
     };
-    let item_at = Position { line: at.line, column: at.column + 2 };
+    let item_at = Position {
+        line: at.line,
+        column: at.column + 2,
+    };
 
     if item == b"[]" {
         consumer.start_array(0, item_at)?;
@@ -469,7 +494,9 @@ fn continue_object_item<C: Consumer>(
     seen: &mut Vec<Vec<u8>>,
 ) -> Result<(), Fault> {
     loop {
-        let Some(line) = lines.peek()? else { return Ok(()) };
+        let Some(line) = lines.peek()? else {
+            return Ok(());
+        };
         if line.depth != depth + 2 {
             return Ok(());
         }
@@ -477,7 +504,15 @@ fn continue_object_item<C: Consumer>(
             return Err(Fault::syntax_at(FaultCode::BlankLineInArray, line.position));
         }
         lines.advance()?;
-        parse_entry(line.content, line.position, lines, depth + 2, strict, consumer, seen)?;
+        parse_entry(
+            line.content,
+            line.position,
+            lines,
+            depth + 2,
+            strict,
+            consumer,
+            seen,
+        )?;
     }
 }
 
@@ -625,7 +660,13 @@ mod tests {
     fn parses_empty_array_literals() {
         assert_eq!(
             run(b"items: []"),
-            vec![Ev::So, Ev::Key(b"items".to_vec()), Ev::Sa(0), Ev::Ea, Ev::Eo]
+            vec![
+                Ev::So,
+                Ev::Key(b"items".to_vec()),
+                Ev::Sa(0),
+                Ev::Ea,
+                Ev::Eo
+            ]
         );
         assert_eq!(run(b"[]"), vec![Ev::Sa(0), Ev::Ea]);
         assert_eq!(
@@ -693,7 +734,12 @@ mod tests {
         let events = run_nonstrict(b"key[]: 1,2");
         assert_eq!(
             events,
-            vec![Ev::So, Ev::Key(b"key[]".to_vec()), Ev::Scalar("s:1,2".into()), Ev::Eo]
+            vec![
+                Ev::So,
+                Ev::Key(b"key[]".to_vec()),
+                Ev::Scalar("s:1,2".into()),
+                Ev::Eo
+            ]
         );
     }
 
@@ -703,16 +749,25 @@ mod tests {
             run_err(b"items[3]:\n  - a\n\n  - b\n  - c").code,
             FaultCode::BlankLineInArray
         );
-        assert_eq!(run_err(b"items[2]{id}:\n  1\n\n  2").code, FaultCode::BlankLineInArray);
+        assert_eq!(
+            run_err(b"items[2]{id}:\n  1\n\n  2").code,
+            FaultCode::BlankLineInArray
+        );
         // ... but a blank between the header and the first row is fine.
         assert!(run(b"m[2:]{v}:\n\n  a: 1\n  b: 2").contains(&Ev::Key(b"b".to_vec())));
     }
 
     #[test]
     fn strict_rejects_malformed_headers() {
-        assert_eq!(run_err(b"foo [2]: bar,baz").code, FaultCode::MalformedHeader);
+        assert_eq!(
+            run_err(b"foo [2]: bar,baz").code,
+            FaultCode::MalformedHeader
+        );
         assert_eq!(run_err(b"items[03]: a,b,c").code, FaultCode::InvalidLength);
-        assert_eq!(run_err(b"items[1]:\n  - [2]{x}:").code, FaultCode::MalformedHeader);
+        assert_eq!(
+            run_err(b"items[1]:\n  - [2]{x}:").code,
+            FaultCode::MalformedHeader
+        );
     }
 
     #[test]
@@ -724,8 +779,14 @@ mod tests {
 
     #[test]
     fn row_count_mismatch_faults() {
-        assert_eq!(run_err(b"rows[2]{a}:\n  1").code, FaultCode::WrongArrayLength);
-        assert_eq!(run_err(b"rows[1]{a}:\n  1\n  2").code, FaultCode::WrongArrayLength);
+        assert_eq!(
+            run_err(b"rows[2]{a}:\n  1").code,
+            FaultCode::WrongArrayLength
+        );
+        assert_eq!(
+            run_err(b"rows[1]{a}:\n  1\n  2").code,
+            FaultCode::WrongArrayLength
+        );
     }
 
     #[test]

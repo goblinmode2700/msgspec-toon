@@ -54,15 +54,6 @@ enum Val<'py> {
     Struct(Bound<'py, PyAny>, Arc<EncodePlan>),
 }
 
-impl Val<'_> {
-    fn is_scalar(&self) -> bool {
-        matches!(
-            self,
-            Val::None | Val::Bool(_) | Val::Int(_) | Val::Float(_) | Val::Str(_)
-        )
-    }
-}
-
 fn encode_err(ctx: &EncodeContext, py: Python<'_>, message: &str) -> PyErr {
     match ctx.encode_error.bind(py).call1((message,)) {
         Ok(instance) => PyErr::from_value(instance),
@@ -279,10 +270,14 @@ pub fn encode_root(
     let value = classify(ctx, py, obj, 0)?;
     match &value {
         Val::Dict(_) | Val::Struct(_, _) => {
-            let pairs = object_pairs(ctx, py, &value)?;
-            write_entries(ctx, py, &mut writer, &pairs, 0)?;
+            if let Some(keyed) = keyed_shape(ctx, py, &value)? {
+                write_keyed(ctx, py, &mut writer, None, &keyed, 0, false)?;
+            } else {
+                let pairs = object_pairs(ctx, py, &value)?;
+                write_entries(ctx, py, &mut writer, &pairs, 0)?;
+            }
         }
-        Val::Seq(items) => write_array(ctx, py, &mut writer, None, items, 0, 0)?,
+        Val::Seq(items) => write_array(ctx, py, &mut writer, None, items, 0, 0, false)?,
         _ => {
             write_scalar(ctx, py, &mut writer, &value)?;
             writer.newline();
@@ -302,31 +297,53 @@ fn write_entries<'py>(
         return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
     }
     for (key, item) in pairs {
-        let value = classify(ctx, py, item, 0)?;
-        match &value {
-            Val::Seq(items) => {
-                write_array(ctx, py, writer, Some(key), items, depth, 0)?;
-            }
-            Val::Dict(_) | Val::Struct(_, _) => {
-                let nested = object_pairs(ctx, py, &value)?;
-                writer.indent(depth);
-                write_key(writer, key);
-                writer.byte(b':');
-                writer.newline();
-                write_entries(ctx, py, writer, &nested, depth + 1)?;
-            }
-            _ => {
-                writer.indent(depth);
-                write_key(writer, key);
-                writer.bytes(b": ");
-                write_scalar(ctx, py, writer, &value)?;
-                writer.newline();
-            }
-        }
+        write_entry(ctx, py, writer, key, item, depth, false)?;
     }
     Ok(())
 }
 
+/// Write one `key: value` entry. With `inline`, the writer is already
+/// positioned on the entry's line (after a `- ` prefix) and the first line
+/// must not be indented again.
+fn write_entry<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    writer: &mut Writer,
+    key: &str,
+    item: &Bound<'py, PyAny>,
+    depth: usize,
+    inline: bool,
+) -> PyResult<()> {
+    let value = classify(ctx, py, item, 0)?;
+    match &value {
+        Val::Seq(items) => write_array(ctx, py, writer, Some(key), items, depth, 0, inline),
+        Val::Dict(_) | Val::Struct(_, _) => {
+            if let Some(keyed) = keyed_shape(ctx, py, &value)? {
+                return write_keyed(ctx, py, writer, Some(key), &keyed, depth, inline);
+            }
+            let nested = object_pairs(ctx, py, &value)?;
+            if !inline {
+                writer.indent(depth);
+            }
+            write_key(writer, key);
+            writer.byte(b':');
+            writer.newline();
+            write_entries(ctx, py, writer, &nested, depth + 1)
+        }
+        _ => {
+            if !inline {
+                writer.indent(depth);
+            }
+            write_key(writer, key);
+            writer.bytes(b": ");
+            write_scalar(ctx, py, writer, &value)?;
+            writer.newline();
+            Ok(())
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn write_array<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
@@ -335,12 +352,15 @@ fn write_array<'py>(
     items: &[Bound<'py, PyAny>],
     depth: usize,
     nesting: usize,
+    inline: bool,
 ) -> PyResult<()> {
     if nesting > MAX_ENCODE_DEPTH {
         return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
     }
     let header = |writer: &mut Writer, suffix: &str| {
-        writer.indent(depth);
+        if !inline {
+            writer.indent(depth);
+        }
         if let Some(key) = key {
             write_key(writer, key);
         }
@@ -352,7 +372,22 @@ fn write_array<'py>(
     };
 
     if items.is_empty() {
-        header(writer, ":");
+        // Named values and the document root spell an empty array as the
+        // literal `[]`; an anonymous empty array in list-item position keeps
+        // the `[0]:` header form.
+        if key.is_none() && inline {
+            header(writer, ":");
+            writer.newline();
+            return Ok(());
+        }
+        if !inline {
+            writer.indent(depth);
+        }
+        if let Some(key) = key {
+            write_key(writer, key);
+            writer.bytes(b": ");
+        }
+        writer.bytes(b"[]");
         writer.newline();
         return Ok(());
     }
@@ -369,9 +404,15 @@ fn write_array<'py>(
         return Ok(());
     }
 
-    if let Some(shape) = build_shape(ctx, py, items)? {
+    // Tabular form applies to named arrays and the root array; an anonymous
+    // array in list-item position always uses list form.
+    if (key.is_some() || !inline)
+        && let Some(shape) = build_shape(ctx, py, items)?
+    {
         let nodes = shape.nodes();
-        writer.indent(depth);
+        if !inline {
+            writer.indent(depth);
+        }
         if let Some(key) = key {
             write_key(writer, key);
         }
@@ -391,12 +432,11 @@ fn write_array<'py>(
         return Ok(());
     }
 
-    // List fallback: `- ` items.
+    // List fallback: `- ` items one level below the array construct.
     header(writer, ":");
     writer.newline();
     for item in items {
-        let value = classify(ctx, py, item, 0)?;
-        write_list_item(ctx, py, writer, &value, depth + 1, nesting)?;
+        write_list_item(ctx, py, writer, item, depth + 1, nesting + 1)?;
     }
     Ok(())
 }
@@ -405,13 +445,14 @@ fn write_list_item<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     writer: &mut Writer,
-    value: &Val<'py>,
+    item: &Bound<'py, PyAny>,
     depth: usize,
-    _nesting: usize,
+    nesting: usize,
 ) -> PyResult<()> {
-    match value {
+    let value = classify(ctx, py, item, 0)?;
+    match &value {
         Val::Dict(_) | Val::Struct(_, _) => {
-            let pairs = object_pairs(ctx, py, value)?;
+            let pairs = object_pairs(ctx, py, &value)?;
             if pairs.is_empty() {
                 writer.indent(depth);
                 writer.byte(b'-');
@@ -421,93 +462,99 @@ fn write_list_item<'py>(
             writer.indent(depth);
             writer.bytes(b"- ");
             let (first_key, first_item) = &pairs[0];
-            let first_value = classify(ctx, py, first_item, 0)?;
-            match &first_value {
-                Val::Seq(seq) => {
-                    let all_scalar_texts = inline_cells(ctx, py, seq)?;
-                    match all_scalar_texts {
-                        Some(cells) => {
-                            write_key(writer, first_key);
-                            writer.byte(b'[');
-                            writer.text(&seq.len().to_string());
-                            writer.bytes(b"]:");
-                            if !cells.is_empty() {
-                                writer.byte(b' ');
-                                writer.text(&cells.join(","));
-                            }
-                            writer.newline();
-                        }
-                        None => {
-                            return Err(encode_err(
-                                ctx,
-                                py,
-                                "non-scalar arrays as the first field of a list item are not \
-                                 supported by this proof of concept",
-                            ));
-                        }
-                    }
-                }
-                Val::Dict(_) | Val::Struct(_, _) => {
-                    let nested = object_pairs(ctx, py, &first_value)?;
-                    write_key(writer, first_key);
-                    writer.byte(b':');
-                    writer.newline();
-                    write_entries(ctx, py, writer, &nested, depth + 2)?;
-                }
-                _ => {
-                    write_key(writer, first_key);
-                    writer.bytes(b": ");
-                    write_scalar(ctx, py, writer, &first_value)?;
-                    writer.newline();
-                }
-            }
+            // The item's fields live one level below the dash line; the
+            // first field shares the dash line itself.
+            write_entry(ctx, py, writer, first_key, first_item, depth + 1, true)?;
             write_entries(ctx, py, writer, &pairs[1..], depth + 1)?;
             Ok(())
         }
-        Val::Seq(seq) => match inline_cells(ctx, py, seq)? {
-            Some(cells) => {
-                writer.indent(depth);
-                writer.bytes(b"- [");
-                writer.text(&seq.len().to_string());
-                writer.bytes(b"]:");
-                if !cells.is_empty() {
-                    writer.byte(b' ');
-                    writer.text(&cells.join(","));
-                }
-                writer.newline();
-                Ok(())
-            }
-            None => Err(encode_err(
-                ctx,
-                py,
-                "nested non-scalar arrays inside list items are not supported by this \
-                     proof of concept",
-            )),
-        },
+        Val::Seq(seq) => {
+            // An anonymous nested array item: `- []`, `- [n]: cells`, or
+            // block list form with its items one level below the dash line.
+            writer.indent(depth);
+            writer.bytes(b"- ");
+            write_array(ctx, py, writer, None, seq, depth, nesting + 1, true)
+        }
         _ => {
             writer.indent(depth);
             writer.bytes(b"- ");
-            write_scalar(ctx, py, writer, value)?;
+            write_scalar(ctx, py, writer, &value)?;
             writer.newline();
             Ok(())
         }
     }
 }
 
-fn inline_cells<'py>(
+// --- keyed tabular form ------------------------------------------------------
+
+/// An eligible keyed tabular object: two or more entries, every value an
+/// object of one uniform shape. Field order follows the first entry.
+struct KeyedShape<'py> {
+    entries: Vec<(String, Bound<'py, PyAny>)>,
+    shape: Shape,
+}
+
+fn keyed_shape<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
-    items: &[Bound<'py, PyAny>],
-) -> PyResult<Option<Vec<String>>> {
-    let mut cells = Vec::with_capacity(items.len());
-    for item in items {
-        let value = classify(ctx, py, item, 0)?;
-        if !value.is_scalar() {
+    value: &Val<'py>,
+) -> PyResult<Option<KeyedShape<'py>>> {
+    let Val::Dict(map) = value else {
+        return Ok(None);
+    };
+    if map.len() < 2 {
+        return Ok(None);
+    }
+    let mut entries = Vec::with_capacity(map.len());
+    let mut rows = Vec::with_capacity(map.len());
+    for (key, item) in map.iter() {
+        let Ok(key_text) = key.cast::<PyString>() else {
+            return Ok(None);
+        };
+        if !(item.is_instance_of::<PyDict>() || item.is_instance(ctx.struct_base.bind(py))?) {
             return Ok(None);
         }
-        cells.push(scalar_text(ctx, py, &value)?);
+        entries.push((key_text.to_str()?.to_string(), item.clone()));
+        rows.push(item);
     }
-    Ok(Some(cells))
+    let Some(shape) = build_shape(ctx, py, &rows)? else {
+        return Ok(None);
+    };
+    Ok(Some(KeyedShape { entries, shape }))
+}
+
+fn write_keyed<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    writer: &mut Writer,
+    key: Option<&str>,
+    keyed: &KeyedShape<'py>,
+    depth: usize,
+    inline: bool,
+) -> PyResult<()> {
+    let nodes = keyed.shape.nodes();
+    if !inline {
+        writer.indent(depth);
+    }
+    if let Some(key) = key {
+        write_key(writer, key);
+    }
+    writer.byte(b'[');
+    let mut count = itoa::Buffer::new();
+    writer.text(count.format(keyed.entries.len()));
+    writer.text(":]{");
+    write_field_group(writer, nodes);
+    writer.text("}:");
+    writer.newline();
+    for (row_key, row) in &keyed.entries {
+        writer.indent(depth + 1);
+        write_key(writer, row_key);
+        writer.bytes(b": ");
+        let mut first = true;
+        write_row_obj(ctx, py, writer, row, nodes, &mut first)?;
+        writer.newline();
+    }
+    Ok(())
 }
 
 // --- tabular shape -----------------------------------------------------------
@@ -549,9 +596,10 @@ fn is_scalar_obj(obj: &Bound<'_, PyAny>) -> bool {
 }
 
 /// Classify a row array once. All rows must share one shape — the same
-/// Struct class or the same ordered dict keys — with every leaf a primitive
-/// and every nested column uniformly object-shaped. Anything else bails to
-/// the specification's list fallback.
+/// Struct class or the same dict key set — with every leaf a primitive and
+/// every nested column uniformly object-shaped. Anything else bails to the
+/// specification's list fallback. Dict rows may list their keys in any
+/// order; columns follow the first row's encounter order.
 fn build_shape<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
@@ -586,11 +634,14 @@ fn build_shape<'py>(
             if map.len() != first_keys.len() {
                 return Ok(None);
             }
-            for (key, expected) in map.keys().iter().zip(&first_keys) {
+            // Same key set is enough; the column pass fetches by name and
+            // bails if any key is absent.
+            for key in map.keys() {
                 let Ok(text) = key.cast::<PyString>() else {
                     return Ok(None);
                 };
-                if text.to_str()? != expected {
+                let text = text.to_str()?;
+                if !first_keys.iter().any(|expected| expected == text) {
                     return Ok(None);
                 }
             }
@@ -765,16 +816,7 @@ fn write_float(writer: &mut Writer, number: f64) {
         writer.text(buffer.format(number as i64));
         return;
     }
-    let mut buffer = ryu::Buffer::new();
-    let text = buffer.format_finite(number);
-    match text.find('e') {
-        Some(index) if text.as_bytes().get(index + 1) != Some(&b'-') => {
-            writer.text(&text[..index]);
-            writer.bytes(b"e+");
-            writer.text(&text[index + 1..]);
-        }
-        _ => writer.text(text),
-    }
+    writer.text(&canonical_float(number));
 }
 
 fn write_quoted(writer: &mut Writer, text: &str) {
@@ -827,22 +869,62 @@ fn scalar_text<'py>(ctx: &EncodeContext, py: Python<'py>, value: &Val<'py>) -> P
     }
 }
 
+/// The canonical (JavaScript `Number.prototype.toString`) spelling: decimal
+/// expansion while the decimal point lands within [-5, 21] digits of the
+/// shortest representation, exponent form with an explicit sign outside it.
 fn canonical_float(number: f64) -> String {
     if number == 0.0 {
         return "0".to_string();
     }
-    if number.fract() == 0.0 && number.abs() < 1e16 {
-        return format!("{}", number as i64);
+    let scientific = format!("{:e}", number.abs());
+    let (mantissa, exponent_text) = scientific.split_once('e').expect("{:e} always has an e");
+    let exponent: i32 = exponent_text.parse().expect("{:e} exponent is an integer");
+    let digits: String = mantissa.chars().filter(|ch| *ch != '.').collect();
+    let digits = digits.trim_end_matches('0');
+    let digits = if digits.is_empty() { "0" } else { digits };
+    let digit_count = digits.len() as i32;
+    // The decimal point sits after `point` digits of `digits`.
+    let point = exponent + 1;
+    let sign = if number < 0.0 { "-" } else { "" };
+
+    if digit_count <= point && point <= 21 {
+        format!(
+            "{sign}{digits}{}",
+            "0".repeat((point - digit_count) as usize)
+        )
+    } else if 0 < point && point <= 21 {
+        format!(
+            "{sign}{}.{}",
+            &digits[..point as usize],
+            &digits[point as usize..]
+        )
+    } else if -6 < point && point <= 0 {
+        format!("{sign}0.{}{digits}", "0".repeat((-point) as usize))
+    } else {
+        let mantissa = if digit_count == 1 {
+            digits.to_string()
+        } else {
+            format!("{}.{}", &digits[..1], &digits[1..])
+        };
+        let exponent = point - 1;
+        let exponent_sign = if exponent >= 0 { "+" } else { "-" };
+        format!("{sign}{mantissa}e{exponent_sign}{}", exponent.abs())
     }
-    let mut buffer = ryu::Buffer::new();
-    let text = buffer.format_finite(number);
-    // Match the canonical (JavaScript-style) positive exponent spelling.
-    match text.find('e') {
-        Some(index) if text.as_bytes().get(index + 1) != Some(&b'-') => {
-            format!("{}e+{}", &text[..index], &text[index + 1..])
-        }
-        _ => text.to_string(),
-    }
+}
+
+/// A string that could be mistaken for a number token (leading sign or
+/// digit, only number-ish bytes, at least one digit) must be quoted even
+/// when it is not itself a valid number — `05`, `+1`, `1.2.3`.
+fn is_numeric_like(bytes: &[u8]) -> bool {
+    let rest = match bytes.first() {
+        Some(b'+' | b'-') => &bytes[1..],
+        _ => bytes,
+    };
+    !rest.is_empty()
+        && rest.iter().any(u8::is_ascii_digit)
+        && rest
+            .iter()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'.' | b'e' | b'E' | b'+' | b'-'))
 }
 
 fn needs_quote(text: &str) -> bool {
@@ -853,18 +935,21 @@ fn needs_quote(text: &str) -> bool {
     if !matches!(classify_bare(bytes), ScalarToken::BareString(_)) {
         return true;
     }
+    if is_numeric_like(bytes) {
+        return true;
+    }
     if bytes[0] == b' '
         || bytes[bytes.len() - 1] == b' '
         || matches!(bytes[0], b'"' | b'[' | b'{' | b'#' | b'\'')
     {
         return true;
     }
-    if text == "-" || text.starts_with("- ") {
+    if text == "-" || text.starts_with("- ") || text == "[]" {
         return true;
     }
-    bytes
-        .iter()
-        .any(|&byte| matches!(byte, b',' | b':' | b'\n' | b'\r' | b'\t') || byte < 0x20)
+    bytes.iter().any(|&byte| {
+        matches!(byte, b',' | b':' | b'\n' | b'\r' | b'\t' | b'"' | b'\\') || byte < 0x20
+    })
 }
 
 fn quote_if_needed(text: &str) -> String {
@@ -926,7 +1011,12 @@ mod tests {
         assert_eq!(canonical_float(-0.0), "0");
         assert_eq!(canonical_float(1.0), "1");
         assert_eq!(canonical_float(1.5), "1.5");
+        assert_eq!(canonical_float(123.456), "123.456");
+        assert_eq!(canonical_float(-0.5), "-0.5");
+        assert_eq!(canonical_float(1e-6), "0.000001");
         assert_eq!(canonical_float(1e-7), "1e-7");
+        assert_eq!(canonical_float(2.5e-8), "2.5e-8");
+        assert_eq!(canonical_float(1e20), "100000000000000000000");
         assert_eq!(canonical_float(1e21), "1e+21");
     }
 }

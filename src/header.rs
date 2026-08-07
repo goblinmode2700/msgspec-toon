@@ -116,7 +116,9 @@ pub fn parse_header<'a>(
     let inline_values = (!inline_values.is_empty()).then_some(inline_values);
 
     if !fields.is_empty() && inline_values.is_some() {
-        return Ok(HeaderOutcome::Malformed(FaultCode::ContentAfterFieldsHeader));
+        return Ok(HeaderOutcome::Malformed(
+            FaultCode::ContentAfterFieldsHeader,
+        ));
     }
     if keyed && fields.is_empty() {
         return Ok(HeaderOutcome::Malformed(FaultCode::MalformedHeader));
@@ -135,7 +137,10 @@ pub fn parse_header<'a>(
 /// Parse the inside of the bracket: `N`, `N:`, `N<d>`, or `N:<d>` where `<d>`
 /// is one of tab, pipe, comma. Leading-zero lengths are malformed.
 fn parse_bracket(content: &[u8]) -> Option<(usize, bool, u8)> {
-    let digit_count = content.iter().take_while(|byte| byte.is_ascii_digit()).count();
+    let digit_count = content
+        .iter()
+        .take_while(|byte| byte.is_ascii_digit())
+        .count();
     if digit_count == 0 {
         return None;
     }
@@ -143,7 +148,9 @@ fn parse_bracket(content: &[u8]) -> Option<(usize, bool, u8)> {
     if digits.len() > 1 && digits[0] == b'0' {
         return None;
     }
-    let declared_len: usize = std::str::from_utf8(digits).ok().and_then(|text| text.parse().ok())?;
+    let declared_len: usize = std::str::from_utf8(digits)
+        .ok()
+        .and_then(|text| text.parse().ok())?;
 
     let mut cursor = digit_count;
     let keyed = content.get(cursor) == Some(&b':');
@@ -165,7 +172,10 @@ pub fn parse_string_token<'a>(entry: &'a [u8], at: Position) -> Result<StringTok
         if end != entry.len() {
             return Err(Fault::syntax_at(FaultCode::ContentAfterFieldGroup, at));
         }
-        Ok(StringToken::Quoted { inner: &entry[1..end - 1], escaped })
+        Ok(StringToken::Quoted {
+            inner: &entry[1..end - 1],
+            escaped,
+        })
     } else {
         Ok(StringToken::Bare(entry))
     }
@@ -232,13 +242,20 @@ fn parse_field_group<'a>(
                     parse_field_group(&entry[group_start + 1..group_end], delimiter, strict, at)?,
                 )
             }
-            None => (parse_string_token(entry, at).map_err(|fault| fault.code)?, Vec::new()),
+            None => (
+                parse_string_token(entry, at).map_err(|fault| fault.code)?,
+                Vec::new(),
+            ),
         };
 
         // Duplicate field names: strict rejects; non-strict resolves
         // last-write-wins downstream, so both fields are kept and the
         // consumer's key overwrite provides the mandated behavior.
-        if strict && fields.iter().any(|prior| token_bytes_eq(&prior.name, &name)) {
+        if strict
+            && fields
+                .iter()
+                .any(|prior| token_bytes_eq(&prior.name, &name))
+        {
             return Err(FaultCode::DuplicateField);
         }
         fields.push(FieldNode { name, children });
@@ -355,8 +372,14 @@ mod tests {
 
     #[test]
     fn plain_key_value_is_not_a_header() {
-        assert!(matches!(parse_header(b"name: value", true, AT).unwrap(), HeaderOutcome::NotHeader));
-        assert!(matches!(parse_header(b"note: see [1]", true, AT).unwrap(), HeaderOutcome::NotHeader));
+        assert!(matches!(
+            parse_header(b"name: value", true, AT).unwrap(),
+            HeaderOutcome::NotHeader
+        ));
+        assert!(matches!(
+            parse_header(b"note: see [1]", true, AT).unwrap(),
+            HeaderOutcome::NotHeader
+        ));
     }
 
     #[test]
