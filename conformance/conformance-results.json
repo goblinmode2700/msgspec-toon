@@ -8,20 +8,20 @@
     },
     "decode": {
       "total": 359,
-      "pass": 357,
+      "pass": 359,
       "fail": 0,
-      "unsupported_option": 2,
+      "unsupported_option": 0,
       "fail_nonstrict_only": 0
     },
     "encode": {
       "total": 179,
-      "pass": 156,
+      "pass": 179,
       "fail": 0,
-      "unsupported_option": 23
+      "unsupported_option": 0
     },
     "strict_error_fixtures": {
       "total": 84,
-      "pass": 83
+      "pass": 84
     }
   },
   "results": [
@@ -1362,8 +1362,8 @@
       "name": "throws on non-multiple indentation with custom indentSize 4 (3 spaces)",
       "strict": true,
       "should_error": true,
-      "status": "unsupported_option",
-      "detail": "indentSize=4"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "decode",
@@ -1372,8 +1372,8 @@
       "name": "accepts correct indentation with custom indentSize (4 spaces with indentSize 4)",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "indentSize=4"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "decode",
@@ -4182,8 +4182,8 @@
       "name": "uses the active delimiter inside nested field groups",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4242,8 +4242,8 @@
       "name": "encodes primitive arrays with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4252,8 +4252,8 @@
       "name": "encodes primitive arrays with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4272,8 +4272,8 @@
       "name": "encodes tabular arrays with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4282,8 +4282,8 @@
       "name": "encodes tabular arrays with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4292,8 +4292,8 @@
       "name": "encodes nested arrays with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4302,8 +4302,8 @@
       "name": "encodes nested arrays with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4312,8 +4312,8 @@
       "name": "encodes root-level array with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4322,8 +4322,8 @@
       "name": "encodes root-level array with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4332,8 +4332,8 @@
       "name": "encodes root-level array of objects with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4342,8 +4342,8 @@
       "name": "encodes root-level array of objects with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4352,8 +4352,8 @@
       "name": "quotes strings containing tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4362,8 +4362,8 @@
       "name": "quotes strings containing pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4372,8 +4372,8 @@
       "name": "does not quote commas with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4382,8 +4382,8 @@
       "name": "does not quote commas with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4402,8 +4402,8 @@
       "name": "does not quote commas in tabular values with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4412,8 +4412,8 @@
       "name": "does not quote commas in object values with pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4422,8 +4422,8 @@
       "name": "does not quote commas in object values with tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4432,8 +4432,8 @@
       "name": "quotes nested array values containing pipe delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4442,8 +4442,8 @@
       "name": "quotes nested array values containing tab delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='\\t'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4452,8 +4452,8 @@
       "name": "preserves ambiguity quoting regardless of delimiter",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -4502,8 +4502,8 @@
       "name": "uses the active delimiter in keyed headers and entry-row cells",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "delimiter='|'"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",
@@ -5392,8 +5392,8 @@
       "name": "respects custom indentSize option",
       "strict": true,
       "should_error": false,
-      "status": "unsupported_option",
-      "detail": "indentSize=4"
+      "status": "pass",
+      "detail": ""
     },
     {
       "category": "encode",

@@ -1,14 +1,17 @@
-//! Canonical output writer. No wire knobs (canvas AD-005): two-space
-//! indentation, LF newlines, no trailing newline at the root.
+//! Canonical output writer: LF newlines, no trailing newline at the root.
+//! Indentation width is a spec-defined option (default 2); everything else
+//! about the wire stays knob-free.
 
 pub struct Writer {
     out: Vec<u8>,
+    indent_width: usize,
 }
 
 impl Writer {
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize, indent_width: usize) -> Self {
         Self {
             out: Vec::with_capacity(capacity),
+            indent_width,
         }
     }
 
@@ -25,7 +28,8 @@ impl Writer {
     }
 
     pub fn indent(&mut self, depth: usize) {
-        self.out.resize(self.out.len() + depth * 2, b' ');
+        self.out
+            .resize(self.out.len() + depth * self.indent_width, b' ');
     }
 
     pub fn newline(&mut self) {

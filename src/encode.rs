@@ -25,6 +25,10 @@ pub struct EncodeContext {
     pub plan_source: Py<PyAny>,
     pub encode_error: Py<PyAny>,
     pub cache: Mutex<HashMap<usize, Arc<EncodePlan>>>,
+    /// Spec-defined wire options (TOON 4.1 delimiter and indentation width);
+    /// defaults produce canonical output.
+    pub delimiter: u8,
+    pub indent: usize,
 }
 
 pub struct EncodePlan {
@@ -266,7 +270,7 @@ pub fn encode_root(
     py: Python<'_>,
     obj: &Bound<'_, PyAny>,
 ) -> PyResult<Vec<u8>> {
-    let mut writer = Writer::with_capacity(256);
+    let mut writer = Writer::with_capacity(256, ctx.indent);
     let value = classify(ctx, py, obj, 0)?;
     match &value {
         Val::Dict(_) | Val::Struct(_, _) => {
@@ -367,6 +371,9 @@ fn write_array<'py>(
         writer.byte(b'[');
         let mut count = itoa::Buffer::new();
         writer.text(count.format(items.len()));
+        if ctx.delimiter != b',' {
+            writer.byte(ctx.delimiter);
+        }
         writer.byte(b']');
         writer.text(suffix);
     };
@@ -396,7 +403,7 @@ fn write_array<'py>(
         header(writer, ": ");
         for (index, item) in items.iter().enumerate() {
             if index > 0 {
-                writer.byte(b',');
+                writer.byte(ctx.delimiter);
             }
             write_scalar_obj(ctx, py, writer, item)?;
         }
@@ -419,8 +426,11 @@ fn write_array<'py>(
         writer.byte(b'[');
         let mut count = itoa::Buffer::new();
         writer.text(count.format(items.len()));
+        if ctx.delimiter != b',' {
+            writer.byte(ctx.delimiter);
+        }
         writer.text("]{");
-        write_field_group(writer, nodes);
+        write_field_group(writer, nodes, ctx.delimiter);
         writer.text("}:");
         writer.newline();
         for item in items {
@@ -542,8 +552,12 @@ fn write_keyed<'py>(
     writer.byte(b'[');
     let mut count = itoa::Buffer::new();
     writer.text(count.format(keyed.entries.len()));
-    writer.text(":]{");
-    write_field_group(writer, nodes);
+    writer.byte(b':');
+    if ctx.delimiter != b',' {
+        writer.byte(ctx.delimiter);
+    }
+    writer.text("]{");
+    write_field_group(writer, nodes, ctx.delimiter);
     writer.text("}:");
     writer.newline();
     for (row_key, row) in &keyed.entries {
@@ -703,15 +717,15 @@ fn build_shape<'py>(
     Ok(Some(Shape::Owned(shape)))
 }
 
-fn write_field_group(writer: &mut Writer, shape: &[ShapeNode]) {
+fn write_field_group(writer: &mut Writer, shape: &[ShapeNode], delimiter: u8) {
     for (index, node) in shape.iter().enumerate() {
         if index > 0 {
-            writer.byte(b',');
+            writer.byte(delimiter);
         }
         write_key(writer, &node.wire);
         if !node.children.is_empty() {
             writer.byte(b'{');
-            write_field_group(writer, &node.children);
+            write_field_group(writer, &node.children, delimiter);
             writer.byte(b'}');
         }
     }
@@ -739,7 +753,7 @@ fn write_row_obj<'py>(
         };
         if node.children.is_empty() {
             if !*first {
-                writer.byte(b',');
+                writer.byte(ctx.delimiter);
             }
             *first = false;
             write_scalar_obj(ctx, py, writer, &item)?;
@@ -796,7 +810,7 @@ fn write_scalar_obj<'py>(
     }
     if let Ok(text) = obj.cast::<PyString>() {
         let text = text.to_str()?;
-        if needs_quote(text) {
+        if needs_quote(text, ctx.delimiter) {
             write_quoted(writer, text);
         } else {
             writer.text(text);
@@ -864,7 +878,7 @@ fn scalar_text<'py>(ctx: &EncodeContext, py: Python<'py>, value: &Val<'py>) -> P
             }
         }
         Val::Float(number) => Ok(canonical_float(*number)),
-        Val::Str(text) => Ok(quote_if_needed(text.to_str()?)),
+        Val::Str(text) => Ok(quote_if_needed(text.to_str()?, ctx.delimiter)),
         _ => Err(encode_err(ctx, py, "not a scalar")),
     }
 }
@@ -927,7 +941,7 @@ fn is_numeric_like(bytes: &[u8]) -> bool {
             .all(|byte| byte.is_ascii_digit() || matches!(byte, b'.' | b'e' | b'E' | b'+' | b'-'))
 }
 
-fn needs_quote(text: &str) -> bool {
+fn needs_quote(text: &str, delimiter: u8) -> bool {
     let bytes = text.as_bytes();
     if bytes.is_empty() {
         return true;
@@ -948,12 +962,14 @@ fn needs_quote(text: &str) -> bool {
         return true;
     }
     bytes.iter().any(|&byte| {
-        matches!(byte, b',' | b':' | b'\n' | b'\r' | b'\t' | b'"' | b'\\') || byte < 0x20
+        byte == delimiter
+            || matches!(byte, b':' | b'\n' | b'\r' | b'\t' | b'"' | b'\\')
+            || byte < 0x20
     })
 }
 
-fn quote_if_needed(text: &str) -> String {
-    if needs_quote(text) {
+fn quote_if_needed(text: &str, delimiter: u8) -> String {
+    if needs_quote(text, delimiter) {
         quote(text)
     } else {
         text.to_string()

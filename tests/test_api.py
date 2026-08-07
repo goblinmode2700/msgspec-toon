@@ -119,3 +119,31 @@ def test_bytearray_and_memoryview_inputs() -> None:
 def test_comments_are_skipped() -> None:
     value = toon.decode(b"# heading\na: 1\n# note\nb: 2")
     assert value == {"a": 1, "b": 2}
+
+
+def test_delimiter_options_round_trip() -> None:
+    value = {"tags": ["a,b", "c|d", "plain"], "rows": [{"x": 1, "y": "u,v"}, {"x": 2, "y": "w"}]}
+    for delimiter in (",", "\t", "|"):
+        encoded = toon.encode(value, delimiter=delimiter)
+        assert toon.decode(encoded) == value, delimiter
+    tab = toon.encode({"tags": ["a", "b"]}, delimiter="\t")
+    assert tab == b"tags[2\t]: a\tb"
+
+
+def test_indent_options_round_trip() -> None:
+    value = {"outer": {"inner": {"deep": 1}}, "rows": [{"x": 1}, {"x": 2}]}
+    encoded = toon.encode(value, indent=4)
+    assert b"    inner:" in encoded
+    assert toon.decode(encoded, indent_size=4) == value
+
+
+def test_default_options_are_byte_identical() -> None:
+    value = {"rows": [{"x": 1, "y": "a"}, {"x": 2, "y": "b"}], "note": "n"}
+    assert toon.encode(value) == toon.encode(value, delimiter=",", indent=2)
+
+
+def test_invalid_options_are_refused() -> None:
+    with pytest.raises(TypeError):
+        toon.encode({"a": 1}, delimiter=";")
+    with pytest.raises(TypeError):
+        toon.encode({"a": 1}, indent=0)

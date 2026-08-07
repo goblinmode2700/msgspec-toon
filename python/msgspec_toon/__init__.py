@@ -89,12 +89,16 @@ class Encoder:
         decimal_format: str | Callable[[Any], Any] = "string",
         uuid_format: str = "canonical",
         order: str | None = None,
+        delimiter: str = ",",
+        indent: int = 2,
     ) -> None:
         self._native = _native.Encoder(
             enc_hook=enc_hook,
             plan_source=encode_plan_for,
             struct_base=msgspec.Struct,
             encode_error=msgspec.EncodeError,
+            delimiter=delimiter,
+            indent=indent,
         )
 
     def encode(self, obj: Any) -> bytes:
@@ -112,6 +116,7 @@ class Decoder:
         type: Any = Any,
         *,
         strict: bool = True,
+        indent_size: int = 2,
         dec_hook: Callable[[type, Any], Any] | None = None,
         float_hook: Callable[[str], Any] | None = None,
     ) -> None:
@@ -120,6 +125,7 @@ class Decoder:
         self._native = _native.Decoder(
             plan=plan,
             strict=strict,
+            indent_size=indent_size,
             dec_hook=dec_hook,
             float_hook=float_hook,
         )
@@ -136,8 +142,10 @@ def encode(
     *,
     enc_hook: Callable[[Any], Any] | None = None,
     order: str | None = None,
+    delimiter: str = ",",
+    indent: int = 2,
 ) -> bytes:
-    return Encoder(enc_hook=enc_hook, order=order).encode(obj)
+    return Encoder(enc_hook=enc_hook, order=order, delimiter=delimiter, indent=indent).encode(obj)
 
 
 def decode(
@@ -145,6 +153,7 @@ def decode(
     *,
     type: Any = Any,
     strict: bool = True,
+    indent_size: int = 2,
     dec_hook: Callable[[type, Any], Any] | None = None,
 ) -> Any:
-    return Decoder(type, strict=strict, dec_hook=dec_hook).decode(buf)
+    return Decoder(type, strict=strict, indent_size=indent_size, dec_hook=dec_hook).decode(buf)

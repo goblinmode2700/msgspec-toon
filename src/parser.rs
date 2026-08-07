@@ -19,12 +19,17 @@ use crate::scalar::{
 };
 use crate::scan::{Line, Lines};
 
-pub fn parse<C: Consumer>(input: &[u8], strict: bool, consumer: &mut C) -> Result<(), Fault> {
+pub fn parse<C: Consumer>(
+    input: &[u8],
+    strict: bool,
+    indent_size: usize,
+    consumer: &mut C,
+) -> Result<(), Fault> {
     if std::str::from_utf8(input).is_err() {
         return Err(Fault::syntax(FaultCode::InvalidUtf8, 1, None));
     }
 
-    let mut lines = Lines::new(input, strict);
+    let mut lines = Lines::new(input, strict, indent_size);
     let Some(first) = lines.peek()? else {
         let at = Position { line: 1, column: 1 };
         consumer.start_object(at)?;
@@ -581,19 +586,19 @@ mod tests {
 
     fn run(input: &[u8]) -> Vec<Ev> {
         let mut recorder = Recorder::default();
-        parse(input, true, &mut recorder).unwrap();
+        parse(input, true, 2, &mut recorder).unwrap();
         recorder.events
     }
 
     fn run_nonstrict(input: &[u8]) -> Vec<Ev> {
         let mut recorder = Recorder::default();
-        parse(input, false, &mut recorder).unwrap();
+        parse(input, false, 2, &mut recorder).unwrap();
         recorder.events
     }
 
     fn run_err(input: &[u8]) -> Fault {
         let mut recorder = Recorder::default();
-        parse(input, true, &mut recorder).unwrap_err()
+        parse(input, true, 2, &mut recorder).unwrap_err()
     }
 
     #[test]

@@ -31,15 +31,17 @@ pub struct Scanner<'a> {
     offset: usize,
     line: u32,
     strict: bool,
+    indent_size: usize,
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(input: &'a [u8], strict: bool) -> Self {
+    pub fn new(input: &'a [u8], strict: bool, indent_size: usize) -> Self {
         Self {
             input,
             offset: 0,
             line: 0,
             strict,
+            indent_size,
         }
     }
 
@@ -84,7 +86,7 @@ impl<'a> Scanner<'a> {
                     ));
                 }
                 // Non-strict leniency: a tab counts as one indent level.
-                let mut levels = indent / INDENT_SIZE;
+                let mut levels = indent / self.indent_size;
                 let mut cursor = indent;
                 while cursor < raw.len() && (raw[cursor] == b'\t' || raw[cursor] == b' ') {
                     levels += usize::from(raw[cursor] == b'\t');
@@ -129,17 +131,17 @@ impl<'a> Scanner<'a> {
                 continue;
             }
 
-            if self.strict && !indent.is_multiple_of(INDENT_SIZE) {
+            if self.strict && !indent.is_multiple_of(self.indent_size) {
                 return Err(Fault::syntax(FaultCode::InvalidIndent, self.line, Some(1)));
             }
 
-            if indent / INDENT_SIZE > MAX_DEPTH {
+            if indent / self.indent_size > MAX_DEPTH {
                 return Err(Fault::syntax(FaultCode::DepthLimit, self.line, Some(1)));
             }
 
             return Ok(Some(Line {
                 content,
-                depth: indent / INDENT_SIZE,
+                depth: indent / self.indent_size,
                 position: Position {
                     line: self.line,
                     column: (indent + 1) as u32,
@@ -157,9 +159,9 @@ pub struct Lines<'a> {
 }
 
 impl<'a> Lines<'a> {
-    pub fn new(input: &'a [u8], strict: bool) -> Self {
+    pub fn new(input: &'a [u8], strict: bool, indent_size: usize) -> Self {
         Self {
-            scanner: Scanner::new(input, strict),
+            scanner: Scanner::new(input, strict, indent_size),
             peeked: None,
         }
     }
@@ -189,7 +191,7 @@ mod tests {
 
     #[test]
     fn scans_lines_with_depth() {
-        let mut scanner = Scanner::new(b"a: 1\n  b: 2\n\n# comment\n  c: 3", true);
+        let mut scanner = Scanner::new(b"a: 1\n  b: 2\n\n# comment\n  c: 3", true, 2);
         let first = scanner.next_line().unwrap().unwrap();
         assert_eq!(first.content, b"a: 1");
         assert_eq!(first.depth, 0);
@@ -206,7 +208,7 @@ mod tests {
 
     #[test]
     fn strict_rejects_tab_indent() {
-        let mut scanner = Scanner::new(b"a:\n\tb: 2", true);
+        let mut scanner = Scanner::new(b"a:\n\tb: 2", true, 2);
         scanner.next_line().unwrap();
         let fault = scanner.next_line().unwrap_err();
         assert_eq!(fault.code, FaultCode::TabIndent);
@@ -215,7 +217,7 @@ mod tests {
 
     #[test]
     fn strict_rejects_odd_indent() {
-        let mut scanner = Scanner::new(b"a:\n   b: 2", true);
+        let mut scanner = Scanner::new(b"a:\n   b: 2", true, 2);
         scanner.next_line().unwrap();
         let fault = scanner.next_line().unwrap_err();
         assert_eq!(fault.code, FaultCode::InvalidIndent);
@@ -223,7 +225,7 @@ mod tests {
 
     #[test]
     fn whitespace_only_line_is_blank_even_at_odd_indent() {
-        let mut scanner = Scanner::new(b"a: 1\n   \nb: 2", true);
+        let mut scanner = Scanner::new(b"a: 1\n   \nb: 2", true, 2);
         scanner.next_line().unwrap();
         let next = scanner.next_line().unwrap().unwrap();
         assert_eq!(next.content, b"b: 2");
@@ -232,14 +234,14 @@ mod tests {
 
     #[test]
     fn strips_bom_and_carriage_returns() {
-        let mut scanner = Scanner::new(b"\xEF\xBB\xBFa: 1\r\nb: 2\r", true);
+        let mut scanner = Scanner::new(b"\xEF\xBB\xBFa: 1\r\nb: 2\r", true, 2);
         assert_eq!(scanner.next_line().unwrap().unwrap().content, b"a: 1");
         assert_eq!(scanner.next_line().unwrap().unwrap().content, b"b: 2");
     }
 
     #[test]
     fn non_strict_tab_indent_counts_as_level() {
-        let mut scanner = Scanner::new(b"a:\n\t#x", false);
+        let mut scanner = Scanner::new(b"a:\n\t#x", false, 2);
         scanner.next_line().unwrap();
         let line = scanner.next_line().unwrap().unwrap();
         assert_eq!(line.content, b"#x");

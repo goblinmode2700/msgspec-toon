@@ -51,12 +51,10 @@ def run_decode(test: dict[str, Any]) -> tuple[str, str]:
     options = test.get("options") or {}
     strict = options.get("strict", True)
     indent_size = options.get("indentSize", 2)
-    if indent_size != 2:
-        return "unsupported_option", f"indentSize={indent_size}"
 
     should_error = test.get("shouldError", False)
     try:
-        value = msgspec_toon.decode(test["input"], strict=strict)
+        value = msgspec_toon.decode(test["input"], strict=strict, indent_size=indent_size)
     except (msgspec_toon.DecodeError, msgspec_toon.ValidationError) as exc:
         if should_error:
             return "pass", ""
@@ -74,14 +72,12 @@ def run_encode(test: dict[str, Any]) -> tuple[str, str]:
     options = test.get("options") or {}
     delimiter = options.get("delimiter", ",")
     indent_size = options.get("indentSize", 2)
-    if delimiter != ",":
-        return "unsupported_option", f"delimiter={delimiter!r}"
-    if indent_size != 2:
-        return "unsupported_option", f"indentSize={indent_size}"
 
     should_error = test.get("shouldError", False)
     try:
-        output = msgspec_toon.encode(test["input"]).decode()
+        output = msgspec_toon.encode(
+            test["input"], delimiter=delimiter, indent=indent_size
+        ).decode()
     except Exception as exc:  # noqa: BLE001 - encode fixtures may expect errors
         if should_error:
             return "pass", ""

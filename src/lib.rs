@@ -83,6 +83,7 @@ fn extract_input<'py>(buf: &Bound<'py, PyAny>) -> PyResult<InputView<'py>> {
 struct Decoder {
     plan: Option<Arc<CompiledPlan>>,
     strict: bool,
+    indent_size: usize,
     dec_hook: Option<Py<PyAny>>,
     float_hook: Option<Py<PyAny>>,
 }
@@ -90,14 +91,18 @@ struct Decoder {
 #[pymethods]
 impl Decoder {
     #[new]
-    #[pyo3(signature = (*, plan=None, strict=true, dec_hook=None, float_hook=None))]
+    #[pyo3(signature = (*, plan=None, strict=true, indent_size=2, dec_hook=None, float_hook=None))]
     fn new(
         py: Python<'_>,
         plan: Option<Bound<'_, PyAny>>,
         strict: bool,
+        indent_size: usize,
         dec_hook: Option<Py<PyAny>>,
         float_hook: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
+        if indent_size == 0 || indent_size > 16 {
+            return Err(PyTypeError::new_err("indent_size must be between 1 and 16"));
+        }
         let compiled = plan
             .as_ref()
             .map(|spec| CompiledPlan::from_python(py, spec))
@@ -106,6 +111,7 @@ impl Decoder {
         Ok(Self {
             plan: compiled,
             strict,
+            indent_size,
             dec_hook,
             float_hook,
         })
@@ -124,7 +130,7 @@ impl Decoder {
                     self.dec_hook.as_ref().map(|hook| hook.clone_ref(py)),
                     self.float_hook.as_ref().map(|hook| hook.clone_ref(py)),
                 );
-                match parser::parse(bytes, self.strict, &mut consumer) {
+                match parser::parse(bytes, self.strict, self.indent_size, &mut consumer) {
                     Ok(()) => {}
                     Err(fault) => {
                         if let Some(err) = consumer.pending_err.take() {
@@ -143,7 +149,7 @@ impl Decoder {
                     py,
                     self.float_hook.as_ref().map(|hook| hook.clone_ref(py)),
                 );
-                match parser::parse(bytes, self.strict, &mut consumer) {
+                match parser::parse(bytes, self.strict, self.indent_size, &mut consumer) {
                     Ok(()) => {}
                     Err(fault) => {
                         if let Some(err) = consumer.pending_err.take() {
@@ -169,22 +175,40 @@ struct Encoder {
 #[pymethods]
 impl Encoder {
     #[new]
-    #[pyo3(signature = (*, enc_hook=None, plan_source, struct_base, encode_error))]
+    #[pyo3(signature = (*, enc_hook=None, plan_source, struct_base, encode_error, delimiter=",", indent=2))]
     fn new(
         enc_hook: Option<Py<PyAny>>,
         plan_source: Py<PyAny>,
         struct_base: Py<PyAny>,
         encode_error: Py<PyAny>,
-    ) -> Self {
-        Self {
+        delimiter: &str,
+        indent: usize,
+    ) -> PyResult<Self> {
+        // Only the wire options TOON 4.1 itself defines are accepted.
+        let delimiter = match delimiter {
+            "," => b',',
+            "\t" => b'\t',
+            "|" => b'|',
+            _ => {
+                return Err(PyTypeError::new_err(
+                    "delimiter must be \",\", \"\\t\", or \"|\"",
+                ));
+            }
+        };
+        if indent == 0 || indent > 16 {
+            return Err(PyTypeError::new_err("indent must be between 1 and 16"));
+        }
+        Ok(Self {
             context: encode::EncodeContext {
                 enc_hook,
                 struct_base,
                 plan_source,
                 encode_error,
                 cache: Mutex::new(std::collections::HashMap::new()),
+                delimiter,
+                indent,
             },
-        }
+        })
     }
 
     fn encode<'py>(
