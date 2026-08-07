@@ -121,6 +121,15 @@
       "hypothesis": "E1-E3 together might close G4 at large payloads",
       "status": "measured-outcome",
       "note": "G4 still fails: 2.36us vs 1.05us at 16 records, 494us vs 447us (~10% gap) at 4096. The floor remains public stable-ABI attribute reads vs msgspec's private C slot reads (canvas risk R-02). Reported, not masked."
+    },
+    {
+      "id": "D6",
+      "target": "strict-mode duplicate-key detection in the parser",
+      "hypothesis": "note_key kept seen keys in a Vec and scanned it linearly, so an object with N keys paid O(N^2) byte comparisons; keyed tabular bodies make N the row count. An FxHashSet should turn that into O(N) and be invisible everywhere else.",
+      "status": "adopted",
+      "source": "external review round (Fable 5), patch 01 of 5",
+      "measurement": "make ab vs the v0.3.0 guard: keyed decode -18.4% at 64, -50.7% at 512, -88.0% at 4096 (MDE 0.9-1.4%); 16 and every non-keyed metric resolved no significant difference. The growth with size is the quadratic signature the hypothesis predicted.",
+      "note": "The candidate arrived with its own gate-coverage warning and it was correct: the ladder had no keyed payload, so every existing metric reads flat and D6 would have been rejected as noise. benches/payloads.py gained keyed_document/keyed_toon_text and ab.py a 'keyed decode' metric BEFORE this was measured. Rejecting a real 88% win for want of a payload is the same failure as the speed gate that could not see a 24% regression."
     }
   ],
   "token_findings": {

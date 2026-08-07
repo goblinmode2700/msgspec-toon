@@ -11,6 +11,8 @@
 //! headers fall through to key-value lines, counts follow the actual rows,
 //! and duplicate keys resolve last-write-wins.
 
+use rustc_hash::FxHashSet;
+
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
@@ -127,7 +129,7 @@ fn parse_object_body<C: Consumer>(
     strict: bool,
     consumer: &mut C,
 ) -> Result<(), Fault> {
-    let mut seen: Vec<Vec<u8>> = Vec::new();
+    let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
 
     if let Some((content, at)) = first {
         parse_entry(content, at, lines, depth, strict, consumer, &mut seen)?;
@@ -163,7 +165,7 @@ fn parse_entry<C: Consumer>(
     depth: usize,
     strict: bool,
     consumer: &mut C,
-    seen: &mut Vec<Vec<u8>>,
+    seen: &mut FxHashSet<Vec<u8>>,
 ) -> Result<(), Fault> {
     match parse_header(content, strict, at)? {
         HeaderOutcome::Header(header) => {
@@ -225,16 +227,14 @@ fn note_key(
     key: &StringToken<'_>,
     at: Position,
     strict: bool,
-    seen: &mut Vec<Vec<u8>>,
+    seen: &mut FxHashSet<Vec<u8>>,
 ) -> Result<(), Fault> {
     if !strict {
         return Ok(());
     }
-    let owned = token_owned_bytes(key);
-    if seen.contains(&owned) {
+    if !seen.insert(token_owned_bytes(key)) {
         return Err(Fault::syntax_at(FaultCode::DuplicateKey, at));
     }
-    seen.push(owned);
     Ok(())
 }
 
@@ -371,7 +371,7 @@ fn parse_keyed_body<C: Consumer>(
 ) -> Result<(), Fault> {
     let leaf_count = header.leaf_count();
     consumer.start_object(at)?;
-    let mut seen: Vec<Vec<u8>> = Vec::new();
+    let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
     let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
     body_rows(lines, depth, strict, header.declared_len, |_, row| {
         let Some(colon) = entry_colon(row.content) else {
@@ -465,7 +465,8 @@ fn parse_list_item<C: Consumer>(
             // sit at depth + 3.
             consumer.start_object(item_at)?;
             let key = header.key.as_ref().expect("checked above");
-            let mut seen = vec![token_owned_bytes(key)];
+            let mut seen = FxHashSet::default();
+            seen.insert(token_owned_bytes(key));
             consumer.key(*key, item_at)?;
             parse_array_or_keyed_body(lines, &header, depth + 2, item_at, strict, consumer)?;
             continue_object_item(lines, depth, strict, consumer, &mut seen)?;
@@ -482,7 +483,7 @@ fn parse_list_item<C: Consumer>(
         // An object item: first key/value on the dash line, the rest two
         // levels deeper (the `- ` prefix occupies one indent unit).
         consumer.start_object(item_at)?;
-        let mut seen = Vec::new();
+        let mut seen = FxHashSet::default();
         parse_entry(item, item_at, lines, depth + 2, strict, consumer, &mut seen)?;
         continue_object_item(lines, depth, strict, consumer, &mut seen)?;
         consumer.end_object(item_at)?;
@@ -498,7 +499,7 @@ fn continue_object_item<C: Consumer>(
     depth: usize,
     strict: bool,
     consumer: &mut C,
-    seen: &mut Vec<Vec<u8>>,
+    seen: &mut FxHashSet<Vec<u8>>,
 ) -> Result<(), Fault> {
     loop {
         let Some(line) = lines.peek()? else {
