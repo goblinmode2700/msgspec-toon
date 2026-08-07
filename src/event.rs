@@ -25,6 +25,14 @@ pub enum ScalarToken<'a> {
 }
 
 pub trait Consumer {
+    /// Announce that every row of the array just started is emitted from one
+    /// tabular header — an identical key/structure sequence per row, with
+    /// `leaf_count` scalar cells. Consumers may resolve keys positionally for
+    /// such rows; the default ignores the announcement.
+    fn begin_tabular(&mut self, leaf_count: usize, at: Position) -> Result<(), Fault> {
+        let _ = (leaf_count, at);
+        Ok(())
+    }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault>;
     fn end_object(&mut self, at: Position) -> Result<(), Fault>;

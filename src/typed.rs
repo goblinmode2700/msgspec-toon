@@ -72,6 +72,11 @@ struct RowMemo {
     cursor: usize,
     complete: bool,
     disabled: bool,
+    /// Set by `begin_tabular` (optimization D5): every row of this array is
+    /// emitted from one header, so a sealed memo replays positionally without
+    /// re-reading key bytes. An untrusted sealed memo still verifies each key
+    /// by byte comparison before replaying.
+    trusted: bool,
 }
 
 impl RowMemo {
@@ -459,6 +464,25 @@ enum AnyEvent<'a> {
 }
 
 impl Consumer for TypedConsumer<'_, '_> {
+    fn begin_tabular(&mut self, _leaf_count: usize, _at: Position) -> Result<(), Fault> {
+        // Inside an `Any` subtree or a skipped value the announcement is not
+        // about a frame this consumer owns; the sub-consumer resolves keys by
+        // hash and needs nothing from it.
+        if self.any_sub.is_some() || self.skip_depth > 0 {
+            return Ok(());
+        }
+        // A memo that declined to memoize stays declined: trusting it would
+        // be a contradictory state even though the replay path checks
+        // `disabled` first.
+        if matches!(self.stack.last(), Some(Frame::List { .. }))
+            && let Some(memo) = self.row_memos.last_mut()
+            && !memo.disabled
+        {
+            memo.trusted = true;
+        }
+        Ok(())
+    }
+
     fn start_object(&mut self, at: Position) -> Result<(), Fault> {
         if self.any_forward(AnyEvent::StartObject, at)? {
             return Ok(());
@@ -524,36 +548,58 @@ impl Consumer for TypedConsumer<'_, '_> {
                 awaiting,
                 skip_value,
             }) => {
-                let raw = match key {
-                    StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
-                    StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
-                };
                 // D1 memo: replay the first row's resolution positionally.
-                let mut resolved: Option<Option<usize>> = None;
+                // A trusted memo (D5: the parser announced a tabular body,
+                // whose rows are all emitted from one header) resolves
+                // without reading the key bytes at all.
+                let mut replayed: Option<Option<usize>> = None;
                 if let Some(memo) = self.row_memos.last_mut()
                     && !memo.disabled
                     && memo.complete
+                    && memo.trusted
                 {
                     match memo.entries.get(memo.cursor) {
-                        Some((bytes, index)) if bytes.as_slice() == raw.as_ref() => {
+                        Some((_, index)) => {
                             memo.cursor += 1;
-                            resolved = Some(*index);
+                            replayed = Some(*index);
                         }
-                        _ => memo.disabled = true,
+                        None => memo.disabled = true,
                     }
                 }
-                let looked_up = match resolved {
+                let looked_up = match replayed {
                     Some(index) => index,
                     None => {
-                        let index = plan.by_wire.get(raw.as_ref()).copied();
+                        let raw = match key {
+                            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+                            StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
+                        };
+                        let mut verified: Option<Option<usize>> = None;
                         if let Some(memo) = self.row_memos.last_mut()
                             && !memo.disabled
-                            && !memo.complete
+                            && memo.complete
                         {
-                            memo.entries.push((raw.clone().into_owned(), index));
-                            memo.cursor += 1;
+                            match memo.entries.get(memo.cursor) {
+                                Some((bytes, index)) if bytes.as_slice() == raw.as_ref() => {
+                                    memo.cursor += 1;
+                                    verified = Some(*index);
+                                }
+                                _ => memo.disabled = true,
+                            }
                         }
-                        index
+                        match verified {
+                            Some(index) => index,
+                            None => {
+                                let index = plan.by_wire.get(raw.as_ref()).copied();
+                                if let Some(memo) = self.row_memos.last_mut()
+                                    && !memo.disabled
+                                    && !memo.complete
+                                {
+                                    memo.entries.push((raw.clone().into_owned(), index));
+                                    memo.cursor += 1;
+                                }
+                                index
+                            }
+                        }
                     }
                 };
                 match looked_up {

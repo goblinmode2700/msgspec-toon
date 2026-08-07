@@ -148,6 +148,15 @@
       "source": "external review round (Fable 5), patch 03 of 5",
       "measurement": "make ab vs the v0.3.0 guard, cumulative; E5's share isolated against the P2 run: typed encode -13.3 to -17.2% cumulative (E5 adds ~-10 points over P2), untyped encode -6.1 to -9.0%. Decode is unchanged by E5, as expected.",
       "note": "The pass-collapsing rests on one observation: every valid number token is also numeric-like, so the number grammar needs no separate pass in the quoting decision. Verified by differential against the replaced multi-pass implementation, kept as a #[cfg(test)] oracle: 107,841 (string, delimiter) pairs over an alphabet covering delimiters, structural bytes, controls, the number grammar and multi-byte UTF-8, plus 35,937 escape comparisons. Zero divergences. The efficiency lock independently confirms canonical bytes did not move."
+    },
+    {
+      "id": "D5",
+      "target": "per-cell key resolution for tabular rows (src/event.rs, parser.rs, typed.rs)",
+      "hypothesis": "The D1 memo already replays the first row's key resolutions, but re-derived each key's bytes (Cow plus possible unescape) and memcmp'd per cell to verify. Rows of a tabular body all come from one header, so the parser can announce that and the typed consumer can replay purely by cursor.",
+      "status": "adopted",
+      "source": "external review round (Fable 5), patch 04 of 5",
+      "measurement": "make ab vs the v0.3.0 guard, cumulative; D5's share isolated against the E5 run: typed decode -5.9 to -8.3% cumulative, D5 adding ~3 to 4 points. Untyped decode and both encode directions unchanged, which is the expected signature since D5 touches only TypedConsumer.",
+      "note": "A new `begin_tabular` consumer event carries the announcement; its default implementation is a no-op so the untyped and probe consumers are untouched. Trust is granted only when the stack top is the array's own frame (start_array fires first, verified), never inside an `Any` subtree or a skipped value, and never to a memo that declined to memoize. List-form arrays keep the untrusted verify-by-compare path. Not extended to the untyped consumer: speeding the untyped wrapper would thin G3's measured margin, which should be a deliberate decision rather than a side effect."
     }
   ],
   "token_findings": {

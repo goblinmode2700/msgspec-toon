@@ -23,402 +23,402 @@
     {
       "metric": "typed decode@16",
       "baseline_us": [
-        5.12,
-        5.16,
-        5.17,
-        5.23
+        5.13,
+        5.18,
+        5.06,
+        5.18
       ],
       "current_us": [
-        6.11,
-        5.01,
-        5.17,
-        5.06
+        4.87,
+        4.85,
+        4.82,
+        4.79
       ],
-      "verdict": "no significant difference",
+      "verdict": "faster",
       "confirmation": null,
-      "change_pct": 3.2398452611218653,
-      "significant": false,
-      "minimum_detectable_effect_pct": 12.336866517756832
+      "change_pct": -5.936739659367392,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.5886643291930482
     },
     {
       "metric": "typed decode@64",
       "baseline_us": [
-        18.17,
-        18.0,
+        17.85,
         17.91,
-        17.93
+        17.59,
+        17.73
       ],
       "current_us": [
-        17.16,
-        16.73,
-        17.03,
-        17.23
+        16.54,
+        16.1,
+        16.25,
+        16.29
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -5.360366615747812,
+      "change_pct": -8.300506471581306,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.7038203267078451
+      "minimum_detectable_effect_pct": 1.5905655962626029
     },
     {
       "metric": "typed decode@512",
       "baseline_us": [
-        137.02,
-        140.7,
-        139.88,
-        138.52
+        139.14,
+        136.85,
+        137.81,
+        138.16
       ],
       "current_us": [
-        134.48,
-        133.14,
-        133.78,
-        133.74
+        126.96,
+        129.02,
+        128.7,
+        126.63
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -3.772567071854999,
+      "change_pct": -7.36466410609465,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.4997235243903557
+      "minimum_detectable_effect_pct": 1.3595373401101667
     },
     {
       "metric": "typed decode@4096",
       "baseline_us": [
-        1218.71,
-        1223.88,
-        1221.01,
-        1229.9
+        1207.59,
+        1213.22,
+        1198.23,
+        1206.68
       ],
       "current_us": [
-        1153.56,
-        1145.31,
-        1162.87,
-        1167.68
+        1102.25,
+        1115.06,
+        1105.33,
+        1103.7
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -5.396546439153979,
+      "change_pct": -8.276070721053026,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.1056912440171571
+      "minimum_detectable_effect_pct": 0.8590753520289522
     },
     {
       "metric": "typed encode@16",
       "baseline_us": [
-        2.33,
-        2.29,
+        2.28,
         2.3,
-        2.31
+        2.34,
+        2.29
       ],
       "current_us": [
-        2.02,
-        2.02,
-        1.98,
-        1.98
+        1.99,
+        2.03,
+        2.03,
+        1.97
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -13.326110509209105,
+      "change_pct": -12.920738327904447,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.5229625997918288
+      "minimum_detectable_effect_pct": 2.1199733203890307
     },
     {
       "metric": "typed encode@64",
       "baseline_us": [
-        7.93,
-        7.96,
-        7.97,
-        7.94
+        7.81,
+        7.7,
+        7.84,
+        7.77
       ],
       "current_us": [
         6.76,
-        6.76,
         6.79,
-        6.87
+        6.61,
+        6.72
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -14.528301886792455,
+      "change_pct": -13.62467866323907,
       "significant": true,
-      "minimum_detectable_effect_pct": 0.8476116433464855
+      "minimum_detectable_effect_pct": 1.5621027784838666
     },
     {
       "metric": "typed encode@512",
       "baseline_us": [
-        61.26,
-        60.79,
-        62.1,
-        62.14
+        61.16,
+        61.67,
+        62.22,
+        62.18
       ],
       "current_us": [
-        51.95,
-        51.05,
-        51.75,
-        51.49
+        52.45,
+        50.71,
+        51.98,
+        50.46
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -16.261317958504197,
+      "change_pct": -16.838571370788333,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.5234956289959194
+      "minimum_detectable_effect_pct": 2.152046402729709
     },
     {
       "metric": "typed encode@4096",
       "baseline_us": [
-        509.87,
-        492.17,
-        487.95,
-        500.78
+        487.91,
+        487.54,
+        486.58,
+        498.66
       ],
       "current_us": [
-        410.09,
-        418.88,
-        408.38,
-        410.48
+        410.42,
+        413.27,
+        413.52,
+        412.3
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -17.22650029887933,
+      "change_pct": -15.870943392377177,
       "significant": true,
-      "minimum_detectable_effect_pct": 2.6539069678259177
+      "minimum_detectable_effect_pct": 1.4620773453866875
     },
     {
       "metric": "keyed decode@16",
       "baseline_us": [
-        4.28,
+        4.31,
+        4.25,
         4.33,
-        4.41,
-        4.36
+        4.75
       ],
       "current_us": [
-        4.26,
         4.28,
-        4.33,
-        4.3
+        4.35,
+        4.26,
+        4.34
       ],
       "verdict": "no significant difference",
       "confirmation": null,
-      "change_pct": -1.2082853855005802,
+      "change_pct": -2.3242630385487533,
       "significant": false,
-      "minimum_detectable_effect_pct": 1.7490976866444419
+      "minimum_detectable_effect_pct": 6.476351769768273
     },
     {
       "metric": "keyed decode@64",
       "baseline_us": [
-        21.6,
-        19.92,
-        19.84,
-        19.92
+        19.56,
+        20.68,
+        19.78,
+        19.68
       ],
       "current_us": [
-        16.63,
-        15.82,
-        15.84,
-        16.1
+        15.91,
+        15.95,
+        15.93,
+        15.84
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -20.78001968503937,
+      "change_pct": -20.16311166875785,
       "significant": true,
-      "minimum_detectable_effect_pct": 5.622267869728356
+      "minimum_detectable_effect_pct": 3.1534161980610076
     },
     {
       "metric": "keyed decode@512",
       "baseline_us": [
-        281.96,
-        285.11,
-        280.51,
-        283.97
+        277.96,
+        298.84,
+        281.74,
+        281.47
       ],
       "current_us": [
-        135.11,
-        135.98,
-        133.9,
-        134.31
+        135.64,
+        137.94,
+        135.39,
+        137.98
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -52.3397110158632,
+      "change_pct": -52.02235068113438,
       "significant": true,
-      "minimum_detectable_effect_pct": 0.9722583820324994
+      "minimum_detectable_effect_pct": 4.074196487672837
     },
     {
       "metric": "keyed decode@4096",
       "baseline_us": [
-        9731.0,
-        9705.64,
-        9739.54,
-        9706.61
+        9685.55,
+        9656.64,
+        9599.69,
+        9635.69
       ],
       "current_us": [
-        1116.83,
-        1123.74,
-        1104.81,
-        1127.79
+        1144.01,
+        1136.9,
+        1130.74,
+        1112.39
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -88.49575866340868,
+      "change_pct": -88.27287462636967,
       "significant": true,
-      "minimum_detectable_effect_pct": 0.25069687024377796
+      "minimum_detectable_effect_pct": 0.48960662338568856
     },
     {
       "metric": "untyped decode@16",
       "baseline_us": [
-        4.48,
-        4.44,
+        4.36,
         4.43,
-        4.44
+        4.36,
+        4.41
       ],
       "current_us": [
-        4.25,
-        4.28,
-        4.29,
-        4.34
+        4.32,
+        4.26,
+        4.22,
+        4.28
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -3.541315345699826,
+      "change_pct": -2.73348519362189,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.1964934417898687
+      "minimum_detectable_effect_pct": 1.5265115013839885
     },
     {
       "metric": "untyped decode@64",
       "baseline_us": [
-        15.75,
-        15.68,
-        15.87,
-        15.78
+        15.58,
+        15.83,
+        16.25,
+        15.81
       ],
       "current_us": [
-        15.14,
-        15.07,
-        15.14,
-        15.18
+        14.99,
+        15.55,
+        15.22,
+        15.14
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -4.042485732403293,
+      "change_pct": -4.0491570820860145,
       "significant": true,
-      "minimum_detectable_effect_pct": 0.7064691432043522
+      "minimum_detectable_effect_pct": 2.821800422947546
     },
     {
       "metric": "untyped decode@512",
       "baseline_us": [
-        128.57,
-        130.63,
-        132.54,
-        127.77
+        131.7,
+        126.55,
+        131.01,
+        131.17
       ],
       "current_us": [
-        125.04,
-        120.34,
-        124.94,
-        120.84
+        126.27,
+        122.03,
+        125.22,
+        125.05
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -5.4570653115435634,
+      "change_pct": -4.200372768672052,
       "significant": true,
-      "minimum_detectable_effect_pct": 3.1383924539236996
+      "minimum_detectable_effect_pct": 2.8268044123564593
     },
     {
       "metric": "untyped decode@4096",
       "baseline_us": [
-        1177.51,
-        1155.32,
-        1170.52,
-        1183.19
+        1152.31,
+        1159.34,
+        1179.12,
+        1152.08
       ],
       "current_us": [
-        1113.38,
-        1119.64,
-        1118.19,
-        1120.46
+        1121.42,
+        1104.82,
+        1119.37,
+        1108.79
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -4.584832306989803,
+      "change_pct": -4.058929321429722,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.3008716321825673
+      "minimum_detectable_effect_pct": 1.587583128936574
     },
     {
       "metric": "untyped encode@16",
       "baseline_us": [
+        4.71,
         4.73,
-        4.69,
-        4.66,
-        4.66
+        4.63,
+        4.77
       ],
       "current_us": [
-        4.43,
         4.38,
-        4.43,
-        4.35
+        4.32,
+        4.35,
+        4.45
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -6.136606189967994,
+      "change_pct": -7.112526539278131,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.3464774886459423
+      "minimum_detectable_effect_pct": 2.1050167322333655
     },
     {
       "metric": "untyped encode@64",
       "baseline_us": [
-        16.37,
-        16.06,
-        16.5,
-        16.44
+        16.26,
+        16.04,
+        16.21,
+        16.08
       ],
       "current_us": [
-        15.31,
-        15.33,
-        15.94,
-        14.99
+        15.16,
+        15.21,
+        14.81,
+        15.16
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -5.81306409668044,
+      "change_pct": -6.579965938999845,
       "significant": true,
-      "minimum_detectable_effect_pct": 3.312633116750599
+      "minimum_detectable_effect_pct": 1.6083710309376307
     },
     {
       "metric": "untyped encode@512",
       "baseline_us": [
-        123.84,
-        127.6,
-        125.52,
-        123.16
+        122.06,
+        122.55,
+        123.66,
+        126.05
       ],
       "current_us": [
-        116.79,
-        119.32,
-        115.23,
-        116.68
+        115.08,
+        115.72,
+        114.13,
+        113.9
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -6.418459569703276,
+      "change_pct": -7.17955979932028,
       "significant": true,
-      "minimum_detectable_effect_pct": 2.5530175120143026
+      "minimum_detectable_effect_pct": 1.9491670787708681
     },
     {
       "metric": "untyped encode@4096",
       "baseline_us": [
-        994.94,
-        993.54,
-        1006.6,
-        1028.14
+        967.69,
+        967.64,
+        995.3,
+        976.93
       ],
       "current_us": [
-        910.54,
-        920.7,
-        908.74,
-        919.37
+        901.6,
+        896.11,
+        904.28,
+        929.61
       ],
       "verdict": "faster",
       "confirmation": null,
-      "change_pct": -9.044248139549921,
+      "change_pct": -7.062207618053211,
       "significant": true,
-      "minimum_detectable_effect_pct": 2.0816426016749863
+      "minimum_detectable_effect_pct": 2.475760856971453
     }
   ]
 }

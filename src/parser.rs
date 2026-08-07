@@ -330,6 +330,7 @@ fn parse_array_body<C: Consumer>(
 
     if !header.fields.is_empty() {
         let leaf_count = header.leaf_count();
+        consumer.begin_tabular(leaf_count, at)?;
         let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
         body_rows(lines, depth, strict, header.declared_len, |_, row| {
             split_cells_into(row.content, header.delimiter, &mut cells);
