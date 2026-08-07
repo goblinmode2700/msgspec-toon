@@ -137,7 +137,9 @@ adopted with same-session A/B proof** against the frozen `v0.1.0-conformant` bas
 (`make baseline` + `benches/ab.py`): typed decode −15→−24%, untyped decode −10→−21%,
 encode −4→−8%. Ledger with hypotheses, deltas, and open candidates (E3, formal profiling)
 in `benches/optimization-ledger.json`, embedded in the report. G4 remains the honest R-02
-miss (~10% at 4096 after E1/E2). Tag: `v0.2.0`.
+miss (measured 1.11x at 4096 at v0.3.0 under the mean-across-workers estimator; the
+older ~10% figure came from the min-of-batches estimator and is not comparable).
+Tag: `v0.3.0`.
 
 ## Status (2026-08-06): Phases 0–2 executed; conformance measured
 
@@ -161,7 +163,7 @@ entry points.
   fallback form exceeds compact JSON). The incumbent pipeline
   (`to_builtins`+python-toon / python-toon+`convert`) loses 19–51x.
 - **G4 FAIL, reported honestly** — whole direct encode does not beat
-  `msgspec.to_builtins` alone (2.3x at 16 records → ~10% at 4096). Canvas risk R-02:
+  `msgspec.to_builtins` alone (2.16x at 16 records -> 1.11x at 4096). Canvas risk R-02:
   public stable-ABI `getattr` vs msgspec's private C slot reads. Mitigations already
   applied: static per-class shapes, interned names, single-pass rows, vectorcall,
   pooled frames. Don't mask it; further wins need an upstream (Route A) argument.
