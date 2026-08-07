@@ -130,6 +130,15 @@
       "source": "external review round (Fable 5), patch 01 of 5",
       "measurement": "make ab vs the v0.3.0 guard: keyed decode -18.4% at 64, -50.7% at 512, -88.0% at 4096 (MDE 0.9-1.4%); 16 and every non-keyed metric resolved no significant difference. The growth with size is the quadratic signature the hypothesis predicted.",
       "note": "The candidate arrived with its own gate-coverage warning and it was correct: the ladder had no keyed payload, so every existing metric reads flat and D6 would have been rejected as noise. benches/payloads.py gained keyed_document/keyed_toon_text and ab.py a 'keyed decode' metric BEFORE this was measured. Rejecting a real 88% win for want of a payload is the same failure as the speed gate that could not see a 24% regression."
+    },
+    {
+      "id": "P2",
+      "target": "bare scalar classification (src/scalar.rs)",
+      "hypothesis": "classify_bare ran an integer scan and then re-scanned the same bytes through the float grammar, so every bare string paid two failed passes. One pass over the number grammar should win on every decode, and on encode too while needs_quote still calls classify_bare.",
+      "status": "adopted",
+      "source": "external review round (Fable 5), patch 02 of 5",
+      "measurement": "make ab vs the v0.3.0 guard, cumulative with D6; P2's share isolated against the D6-only run: typed decode -2.5 to -4.5%, untyped decode -3.3 to -3.5%, typed encode -6.7% at 4096. The encode win is expected at this point in the stack because needs_quote still routes through classify_bare; E5 later removes that call.",
+      "note": "Verified by an exhaustive differential against the replaced two-pass implementation, kept in src/scalar.rs as a #[cfg(test)] oracle: every token up to length 5 over the alphabet that decides the grammar (0192.eE+-n) plus the edge literals, 111,126 tokens, zero divergences."
     }
   ],
   "token_findings": {

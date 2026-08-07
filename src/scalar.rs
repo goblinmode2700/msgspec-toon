@@ -9,62 +9,64 @@ use memchr::memchr;
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::ScalarToken;
 
-pub fn is_integer_literal(token: &[u8]) -> bool {
-    let digits = token.strip_prefix(b"-").unwrap_or(token);
-    if digits.is_empty() || !digits.iter().all(u8::is_ascii_digit) {
-        return false;
-    }
-    // Leading zeros are not canonical numbers; they classify as strings.
-    digits.len() == 1 || digits[0] != b'0'
-}
-
-pub fn is_float_literal(token: &[u8]) -> bool {
-    let body = token.strip_prefix(b"-").unwrap_or(token);
-    if body.is_empty() {
-        return false;
-    }
-    let (mantissa, exponent) = match body.iter().position(|&b| b == b'e' || b == b'E') {
-        Some(index) => (&body[..index], Some(&body[index + 1..])),
-        None => (body, None),
-    };
-    let (int_part, frac_part) = match mantissa.iter().position(|&b| b == b'.') {
-        Some(index) => (&mantissa[..index], Some(&mantissa[index + 1..])),
-        None => (mantissa, None),
-    };
-    if int_part.is_empty() || !int_part.iter().all(u8::is_ascii_digit) {
-        return false;
-    }
-    if int_part.len() > 1 && int_part[0] == b'0' {
-        return false;
-    }
-    if let Some(frac) = frac_part
-        && (frac.is_empty() || !frac.iter().all(u8::is_ascii_digit))
-    {
-        return false;
-    }
-    match exponent {
-        Some(exp) => {
-            let exp = exp
-                .strip_prefix(b"+")
-                .or_else(|| exp.strip_prefix(b"-"))
-                .unwrap_or(exp);
-            !exp.is_empty() && exp.iter().all(u8::is_ascii_digit)
-        }
-        None => frac_part.is_some(),
-    }
-}
-
 /// Classify an unquoted token. Quoted tokens are built by the caller, which
 /// knows the quote boundaries.
+///
+/// One pass over the number grammar (optimization P2): integer digits, an
+/// optional fraction, an optional exponent. The previous implementation ran
+/// an integer scan and then re-scanned the same bytes for the float grammar,
+/// so every bare string paid two failed passes. Leading zeros are not
+/// canonical numbers; they classify as strings.
 pub fn classify_bare(token: &[u8]) -> ScalarToken<'_> {
     match token {
-        b"null" => ScalarToken::Null,
-        b"true" => ScalarToken::Bool(true),
-        b"false" => ScalarToken::Bool(false),
-        _ if is_integer_literal(token) => ScalarToken::Integer(token),
-        _ if is_float_literal(token) => ScalarToken::Float(token),
-        _ => ScalarToken::BareString(token),
+        b"null" => return ScalarToken::Null,
+        b"true" => return ScalarToken::Bool(true),
+        b"false" => return ScalarToken::Bool(false),
+        _ => {}
     }
+    let body = token.strip_prefix(b"-").unwrap_or(token);
+    let mut index = 0;
+    while index < body.len() && body[index].is_ascii_digit() {
+        index += 1;
+    }
+    let integer_digits = index;
+    if integer_digits == 0 || (integer_digits > 1 && body[0] == b'0') {
+        return ScalarToken::BareString(token);
+    }
+    if index == body.len() {
+        return ScalarToken::Integer(token);
+    }
+    let mut fraction = false;
+    if body[index] == b'.' {
+        index += 1;
+        let first_fraction_digit = index;
+        while index < body.len() && body[index].is_ascii_digit() {
+            index += 1;
+        }
+        if index == first_fraction_digit {
+            return ScalarToken::BareString(token);
+        }
+        fraction = true;
+    }
+    let mut exponent = false;
+    if index < body.len() && matches!(body[index], b'e' | b'E') {
+        index += 1;
+        if index < body.len() && matches!(body[index], b'+' | b'-') {
+            index += 1;
+        }
+        let first_exponent_digit = index;
+        while index < body.len() && body[index].is_ascii_digit() {
+            index += 1;
+        }
+        if index == first_exponent_digit {
+            return ScalarToken::BareString(token);
+        }
+        exponent = true;
+    }
+    if index != body.len() || !(fraction || exponent) {
+        return ScalarToken::BareString(token);
+    }
+    ScalarToken::Float(token)
 }
 
 /// Scan a quoted string starting at `content[start] == b'"'`. Returns the
@@ -303,5 +305,144 @@ mod tests {
         let fault = scan_quoted(br#""abc"#, 0, at).unwrap_err();
         assert_eq!(fault.code, FaultCode::UnclosedQuote);
         assert_eq!(fault.line, 3);
+    }
+}
+
+#[cfg(test)]
+mod p2_differential {
+    use super::*;
+    use crate::event::ScalarToken;
+
+    /// The implementation P2 replaced, kept here only as the differential
+    /// oracle: an integer scan followed by an independent float scan.
+    fn classify_bare_two_pass(token: &[u8]) -> ScalarToken<'_> {
+        fn is_integer_literal(token: &[u8]) -> bool {
+            let digits = token.strip_prefix(b"-").unwrap_or(token);
+            if digits.is_empty() || !digits.iter().all(u8::is_ascii_digit) {
+                return false;
+            }
+            digits.len() == 1 || digits[0] != b'0'
+        }
+        fn is_float_literal(token: &[u8]) -> bool {
+            let body = token.strip_prefix(b"-").unwrap_or(token);
+            if body.is_empty() {
+                return false;
+            }
+            let (mantissa, exponent) = match body.iter().position(|&b| b == b'e' || b == b'E') {
+                Some(index) => (&body[..index], Some(&body[index + 1..])),
+                None => (body, None),
+            };
+            let (int_part, frac_part) = match mantissa.iter().position(|&b| b == b'.') {
+                Some(index) => (&mantissa[..index], Some(&mantissa[index + 1..])),
+                None => (mantissa, None),
+            };
+            if int_part.is_empty() || !int_part.iter().all(u8::is_ascii_digit) {
+                return false;
+            }
+            if int_part.len() > 1 && int_part[0] == b'0' {
+                return false;
+            }
+            if let Some(frac) = frac_part
+                && (frac.is_empty() || !frac.iter().all(u8::is_ascii_digit))
+            {
+                return false;
+            }
+            match exponent {
+                Some(exp) => {
+                    let exp = exp
+                        .strip_prefix(b"+")
+                        .or_else(|| exp.strip_prefix(b"-"))
+                        .unwrap_or(exp);
+                    !exp.is_empty() && exp.iter().all(u8::is_ascii_digit)
+                }
+                None => frac_part.is_some(),
+            }
+        }
+        match token {
+            b"null" => ScalarToken::Null,
+            b"true" => ScalarToken::Bool(true),
+            b"false" => ScalarToken::Bool(false),
+            _ if is_integer_literal(token) => ScalarToken::Integer(token),
+            _ if is_float_literal(token) => ScalarToken::Float(token),
+            _ => ScalarToken::BareString(token),
+        }
+    }
+
+    fn same(token: &[u8]) -> bool {
+        matches!(
+            (classify_bare(token), classify_bare_two_pass(token)),
+            (ScalarToken::Null, ScalarToken::Null)
+                | (ScalarToken::Bool(true), ScalarToken::Bool(true))
+                | (ScalarToken::Bool(false), ScalarToken::Bool(false))
+                | (ScalarToken::Integer(_), ScalarToken::Integer(_))
+                | (ScalarToken::Float(_), ScalarToken::Float(_))
+                | (ScalarToken::BareString(_), ScalarToken::BareString(_))
+        )
+    }
+
+    /// Exhaustive over the alphabet that decides the number grammar. Every
+    /// token up to length 5 is checked against the old implementation.
+    #[test]
+    fn one_pass_classifier_matches_the_two_pass_one() {
+        const ALPHABET: &[u8] = b"0192.eE+-n";
+        let mut checked = 0usize;
+        let mut token = Vec::new();
+        for length in 0..=5usize {
+            let mut indices = vec![0usize; length];
+            loop {
+                token.clear();
+                token.extend(indices.iter().map(|&i| ALPHABET[i]));
+                assert!(
+                    same(&token),
+                    "divergence on {:?}",
+                    String::from_utf8_lossy(&token)
+                );
+                checked += 1;
+                let mut position = length;
+                loop {
+                    if position == 0 {
+                        break;
+                    }
+                    position -= 1;
+                    indices[position] += 1;
+                    if indices[position] < ALPHABET.len() {
+                        break;
+                    }
+                    indices[position] = 0;
+                    if position == 0 {
+                        break;
+                    }
+                }
+                if length == 0 || indices.iter().all(|&i| i == 0) {
+                    break;
+                }
+            }
+        }
+        for literal in [
+            &b"null"[..],
+            b"true",
+            b"false",
+            b"nan",
+            b"inf",
+            b"-inf",
+            b"NaN",
+            b"1e309",
+            b"-0",
+            b"0.0",
+            b"00",
+            b"01",
+            b"1_000",
+            b"1.2.3",
+            b"--1",
+        ] {
+            assert!(
+                same(literal),
+                "divergence on {:?}",
+                String::from_utf8_lossy(literal)
+            );
+            checked += 1;
+        }
+        assert!(checked > 100_000, "differential was too small: {checked}");
+        println!("P2 differential: {checked} tokens, zero divergences");
     }
 }
