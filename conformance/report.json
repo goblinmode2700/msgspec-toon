@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T03:56:17.333807+00:00",
+  "generated_at": "2026-08-07T04:13:55.627782+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -334,18 +334,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 4.99,
-        "untyped_tree": 4.25,
-        "convert_only": 1.35,
-        "wrapper_tree_plus_convert": 5.65,
-        "incumbent_pipeline_python_toon_plus_convert": 106.14,
-        "msgspec_json_native": 2.14
+        "typed_direct": 5.16,
+        "untyped_tree": 4.32,
+        "convert_only": 1.38,
+        "wrapper_tree_plus_convert": 5.74,
+        "incumbent_pipeline_python_toon_plus_convert": 110.24,
+        "msgspec_json_native": 2.19
       },
       "encode_us": {
-        "typed_direct_whole": 2.23,
-        "to_builtins_alone": 1.02,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 93.33,
-        "msgspec_json_native": 0.99
+        "typed_direct_whole": 2.29,
+        "to_builtins_alone": 1.07,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 96.0,
+        "msgspec_json_native": 1.02
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -363,18 +363,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.53,
-        "untyped_tree": 15.19,
-        "convert_only": 5.15,
-        "wrapper_tree_plus_convert": 20.39,
-        "incumbent_pipeline_python_toon_plus_convert": 427.95,
-        "msgspec_json_native": 8.16
+        "typed_direct": 18.36,
+        "untyped_tree": 15.41,
+        "convert_only": 5.22,
+        "wrapper_tree_plus_convert": 21.06,
+        "incumbent_pipeline_python_toon_plus_convert": 445.96,
+        "msgspec_json_native": 8.19
       },
       "encode_us": {
-        "typed_direct_whole": 7.68,
-        "to_builtins_alone": 4.29,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 365.69,
-        "msgspec_json_native": 3.05
+        "typed_direct_whole": 7.78,
+        "to_builtins_alone": 4.44,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 369.83,
+        "msgspec_json_native": 3.08
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -392,18 +392,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 134.35,
-        "untyped_tree": 129.71,
-        "convert_only": 41.57,
-        "wrapper_tree_plus_convert": 168.52,
-        "incumbent_pipeline_python_toon_plus_convert": 3497.7,
-        "msgspec_json_native": 65.94
+        "typed_direct": 137.22,
+        "untyped_tree": 129.56,
+        "convert_only": 42.08,
+        "wrapper_tree_plus_convert": 175.4,
+        "incumbent_pipeline_python_toon_plus_convert": 3667.78,
+        "msgspec_json_native": 66.29
       },
       "encode_us": {
-        "typed_direct_whole": 60.1,
-        "to_builtins_alone": 42.56,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2908.01,
-        "msgspec_json_native": 22.74
+        "typed_direct_whole": 60.28,
+        "to_builtins_alone": 43.75,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2935.99,
+        "msgspec_json_native": 22.94
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -421,18 +421,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1171.53,
-        "untyped_tree": 1109.46,
-        "convert_only": 427.35,
-        "wrapper_tree_plus_convert": 1513.48,
-        "incumbent_pipeline_python_toon_plus_convert": 29455.87,
-        "msgspec_json_native": 641.79
+        "typed_direct": 1226.62,
+        "untyped_tree": 1126.6,
+        "convert_only": 435.21,
+        "wrapper_tree_plus_convert": 1535.99,
+        "incumbent_pipeline_python_toon_plus_convert": 29960.5,
+        "msgspec_json_native": 648.99
       },
       "encode_us": {
-        "typed_direct_whole": 478.43,
-        "to_builtins_alone": 441.24,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23429.27,
-        "msgspec_json_native": 172.85
+        "typed_direct_whole": 488.36,
+        "to_builtins_alone": 445.34,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23723.17,
+        "msgspec_json_native": 173.27
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -456,14 +456,14 @@
       },
       "encode_us": {
         "msgspec_toon": 4.48,
-        "toons_rust": 25.21,
-        "python_toon": 92.79,
-        "msgspec_json_context": 1.2
+        "toons_rust": 25.97,
+        "python_toon": 93.32,
+        "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.27,
-        "toons_rust": 10.82,
-        "python_toon": 106.52,
+        "msgspec_toon": 4.38,
+        "toons_rust": 11.31,
+        "python_toon": 108.95,
         "msgspec_json_context": 2.28
       },
       "gates": {
@@ -480,16 +480,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.52,
-        "toons_rust": 100.47,
-        "python_toon": 362.93,
-        "msgspec_json_context": 3.71
+        "msgspec_toon": 15.97,
+        "toons_rust": 101.68,
+        "python_toon": 362.41,
+        "msgspec_json_context": 3.72
       },
       "decode_us": {
-        "msgspec_toon": 15.11,
-        "toons_rust": 43.48,
-        "python_toon": 431.12,
-        "msgspec_json_context": 9.55
+        "msgspec_toon": 15.3,
+        "toons_rust": 44.27,
+        "python_toon": 439.58,
+        "msgspec_json_context": 9.24
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -505,16 +505,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 118.88,
-        "toons_rust": 775.21,
-        "python_toon": 2847.43,
-        "msgspec_json_context": 28.28
+        "msgspec_toon": 121.59,
+        "toons_rust": 803.2,
+        "python_toon": 2890.34,
+        "msgspec_json_context": 28.25
       },
       "decode_us": {
-        "msgspec_toon": 121.85,
-        "toons_rust": 358.05,
-        "python_toon": 3558.71,
-        "msgspec_json_context": 81.85
+        "msgspec_toon": 124.87,
+        "toons_rust": 359.31,
+        "python_toon": 3638.15,
+        "msgspec_json_context": 82.81
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -530,16 +530,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 961.78,
-        "toons_rust": 6250.98,
-        "python_toon": 22946.92,
-        "msgspec_json_context": 210.93
+        "msgspec_toon": 961.94,
+        "toons_rust": 6582.0,
+        "python_toon": 23404.58,
+        "msgspec_json_context": 211.02
       },
       "decode_us": {
-        "msgspec_toon": 1114.6,
-        "toons_rust": 2988.17,
-        "python_toon": 29264.52,
-        "msgspec_json_context": 790.1
+        "msgspec_toon": 1156.35,
+        "toons_rust": 3052.19,
+        "python_toon": 29795.25,
+        "msgspec_json_context": 819.14
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1052,10 +1052,434 @@
       "note": "The tab-saves-tokens folklore does not hold under o200k_base on these shapes: differences are within a few tokens per ten thousand in either direction (tab wins marginally on numeric-heavy payloads, loses by one header token elsewhere)."
     }
   },
+  "speed_ab_latest": {
+    "records": [
+      16,
+      64,
+      512,
+      4096
+    ],
+    "baseline_venv": ".venv-baseline",
+    "block_sequence": [
+      "baseline",
+      "current",
+      "current",
+      "baseline",
+      "baseline",
+      "current",
+      "current",
+      "baseline"
+    ],
+    "baseline_instrumented": true,
+    "current_instrumented": false,
+    "method": "alternating B C C B blocks; reported delta is the median of the paired ratios, pair_spread_pp is their range, and noise_floor_pp is the spread among repeated blocks of the SAME build \u2014 the smallest delta this session can distinguish from nothing",
+    "results": [
+      {
+        "baseline_us": [
+          5.78,
+          5.98,
+          5.98,
+          5.98
+        ],
+        "current_us": [
+          5.04,
+          5.22,
+          5.13,
+          5.2
+        ],
+        "paired_ratios": [
+          0.87197,
+          0.87291,
+          0.85786,
+          0.86957
+        ],
+        "median_ratio": 0.8707687678652023,
+        "pair_spread_pp": 1.5050167224080258,
+        "noise_floor_pp": 3.5714285714285587,
+        "metric": "typed.decode_us.typed_direct@16",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          22.22,
+          21.98,
+          22.04,
+          21.98
+        ],
+        "current_us": [
+          17.42,
+          17.64,
+          17.59,
+          18.3
+        ],
+        "paired_ratios": [
+          0.78398,
+          0.80255,
+          0.79809,
+          0.83258
+        ],
+        "median_ratio": 0.8003210722831678,
+        "pair_spread_pp": 4.8596670404074,
+        "noise_floor_pp": 5.051664753157281,
+        "metric": "typed.decode_us.typed_direct@64",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          169.01,
+          164.65,
+          167.51,
+          167.82
+        ],
+        "current_us": [
+          135.08,
+          135.96,
+          136.19,
+          140.03
+        ],
+        "paired_ratios": [
+          0.79924,
+          0.82575,
+          0.81303,
+          0.83441
+        ],
+        "median_ratio": 0.8193888411428334,
+        "pair_spread_pp": 3.5163262731218836,
+        "noise_floor_pp": 3.664495114006505,
+        "metric": "typed.decode_us.typed_direct@512",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          1417.03,
+          1497.71,
+          1531.89,
+          1541.51
+        ],
+        "current_us": [
+          1191.54,
+          1218.57,
+          1214.24,
+          1211.34
+        ],
+        "paired_ratios": [
+          0.84087,
+          0.81362,
+          0.79264,
+          0.78581
+        ],
+        "median_ratio": 0.8031319495512226,
+        "pair_spread_pp": 5.505749030307627,
+        "noise_floor_pp": 8.784570545436576,
+        "metric": "typed.decode_us.typed_direct@4096",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          2.42,
+          2.46,
+          2.47,
+          2.5
+        ],
+        "current_us": [
+          2.31,
+          2.24,
+          2.32,
+          2.38
+        ],
+        "paired_ratios": [
+          0.95455,
+          0.91057,
+          0.93927,
+          0.952
+        ],
+        "median_ratio": 0.9456356275303643,
+        "pair_spread_pp": 4.397634885439761,
+        "noise_floor_pp": 6.249999999999978,
+        "metric": "typed.encode_us.typed_direct_whole@16",
+        "verdict": "BELOW NOISE \u2014 not a result"
+      },
+      {
+        "baseline_us": [
+          8.15,
+          8.27,
+          8.48,
+          8.38
+        ],
+        "current_us": [
+          7.83,
+          7.9,
+          8.07,
+          8.22
+        ],
+        "paired_ratios": [
+          0.96074,
+          0.95526,
+          0.95165,
+          0.98091
+        ],
+        "median_ratio": 0.9579980860676108,
+        "pair_spread_pp": 2.92559778448237,
+        "noise_floor_pp": 4.980842911877392,
+        "metric": "typed.encode_us.typed_direct_whole@64",
+        "verdict": "BELOW NOISE \u2014 not a result"
+      },
+      {
+        "baseline_us": [
+          64.33,
+          65.07,
+          64.53,
+          66.57
+        ],
+        "current_us": [
+          61.78,
+          60.59,
+          62.29,
+          62.88
+        ],
+        "paired_ratios": [
+          0.96036,
+          0.93115,
+          0.96529,
+          0.94457
+        ],
+        "median_ratio": 0.9524651332026652,
+        "pair_spread_pp": 3.413639511488409,
+        "noise_floor_pp": 3.7795015679154886,
+        "metric": "typed.encode_us.typed_direct_whole@512",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          507.96,
+          518.32,
+          519.9,
+          522.27
+        ],
+        "current_us": [
+          488.41,
+          489.25,
+          496.08,
+          495.98
+        ],
+        "paired_ratios": [
+          0.96151,
+          0.94391,
+          0.95418,
+          0.94966
+        ],
+        "median_ratio": 0.9519227745107688,
+        "pair_spread_pp": 1.7597761525083855,
+        "noise_floor_pp": 2.817150956768244,
+        "metric": "typed.encode_us.typed_direct_whole@4096",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          4.92,
+          5.03,
+          4.99,
+          4.9
+        ],
+        "current_us": [
+          4.58,
+          4.59,
+          4.53,
+          4.53
+        ],
+        "paired_ratios": [
+          0.93089,
+          0.91252,
+          0.90782,
+          0.92449
+        ],
+        "median_ratio": 0.9185073234064998,
+        "pair_spread_pp": 2.3078677680564375,
+        "noise_floor_pp": 2.6530612244897833,
+        "metric": "codecs.encode_us.msgspec_toon@16",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          17.12,
+          17.25,
+          17.36,
+          17.21
+        ],
+        "current_us": [
+          15.89,
+          15.74,
+          16.39,
+          16.44
+        ],
+        "paired_ratios": [
+          0.92815,
+          0.91246,
+          0.94412,
+          0.95526
+        ],
+        "median_ratio": 0.9361393147853052,
+        "pair_spread_pp": 4.27948024825473,
+        "noise_floor_pp": 4.447268106734437,
+        "metric": "codecs.encode_us.msgspec_toon@64",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          131.38,
+          131.01,
+          133.22,
+          133.05
+        ],
+        "current_us": [
+          121.15,
+          120.65,
+          121.35,
+          122.0
+        ],
+        "paired_ratios": [
+          0.92213,
+          0.92092,
+          0.9109,
+          0.91695
+        ],
+        "median_ratio": 0.9189352913067128,
+        "pair_spread_pp": 1.1235002637003388,
+        "noise_floor_pp": 1.6868941302190743,
+        "metric": "codecs.encode_us.msgspec_toon@512",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          1020.84,
+          1048.75,
+          1038.19,
+          1036.47
+        ],
+        "current_us": [
+          952.25,
+          959.13,
+          976.84,
+          974.84
+        ],
+        "paired_ratios": [
+          0.93281,
+          0.91455,
+          0.94091,
+          0.94054
+        ],
+        "median_ratio": 0.9366743967353115,
+        "pair_spread_pp": 2.6360882475151226,
+        "noise_floor_pp": 2.734022961482707,
+        "metric": "codecs.encode_us.msgspec_toon@4096",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          4.83,
+          4.94,
+          5.01,
+          4.9
+        ],
+        "current_us": [
+          4.39,
+          4.41,
+          4.36,
+          4.42
+        ],
+        "paired_ratios": [
+          0.9089,
+          0.89271,
+          0.87026,
+          0.90204
+        ],
+        "median_ratio": 0.897376683466909,
+        "pair_spread_pp": 3.8643210473462752,
+        "noise_floor_pp": 3.7267080745341463,
+        "metric": "codecs.decode_us.msgspec_toon@16",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          18.55,
+          18.84,
+          18.81,
+          18.54
+        ],
+        "current_us": [
+          15.72,
+          15.58,
+          15.29,
+          15.75
+        ],
+        "paired_ratios": [
+          0.84744,
+          0.82696,
+          0.81287,
+          0.84951
+        ],
+        "median_ratio": 0.8372016298407358,
+        "pair_spread_pp": 3.664906603077278,
+        "noise_floor_pp": 3.00850228907783,
+        "metric": "codecs.decode_us.msgspec_toon@64",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          154.62,
+          156.61,
+          154.51,
+          155.32
+        ],
+        "current_us": [
+          123.68,
+          124.61,
+          120.62,
+          124.7
+        ],
+        "paired_ratios": [
+          0.7999,
+          0.79567,
+          0.78066,
+          0.80286
+        ],
+        "median_ratio": 0.7977836475186728,
+        "pair_spread_pp": 2.2197168612235973,
+        "noise_floor_pp": 3.382523627922396,
+        "metric": "codecs.decode_us.msgspec_toon@512",
+        "verdict": "resolved"
+      },
+      {
+        "baseline_us": [
+          1425.57,
+          1436.63,
+          1440.68,
+          1448.05
+        ],
+        "current_us": [
+          1139.89,
+          1164.1,
+          1121.34,
+          1170.7
+        ],
+        "paired_ratios": [
+          0.7996,
+          0.8103,
+          0.77834,
+          0.80847
+        ],
+        "median_ratio": 0.8040347621532011,
+        "pair_spread_pp": 3.1958319242429423,
+        "noise_floor_pp": 4.401876326537901,
+        "metric": "codecs.decode_us.msgspec_toon@4096",
+        "verdict": "resolved"
+      }
+    ]
+  },
   "optimization_ledger": {
     "baseline": {
       "tag": "v0.1.0-conformant",
-      "harness": "benches/ab.py \u2014 both wheels rebuilt and run back to back in one session on the same machine; figures are min-of-autoranged-batches microseconds and per-row deltas from ab-latest.json at each adoption commit",
+      "harness": "benches/ab.py \u2014 alternating B C C B blocks in one session on one machine; the reported delta is the median of the paired ratios, and the noise floor is the spread among repeated blocks of the SAME build. Figures before F-12 came from a single B-then-C run, which could not separate a small delta from run-order drift",
       "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them"
     },
     "candidates": [
@@ -1079,7 +1503,8 @@
             "-6.5% @4096"
           ]
         },
-        "note": "measured together with E2; also recovered the +14-15% typed-encode regression that the wire-options plumbing introduced (caught by the A/B harness on its first run)"
+        "note": "measured together with E2; also recovered the +14-15% typed-encode regression that the wire-options plumbing introduced (caught by the A/B harness on its first run)",
+        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
       },
       {
         "id": "E2",
@@ -1089,7 +1514,8 @@
         "commit": "perf: E1 type-pointer dispatch + E2 row capacity reservation",
         "ab_delta": {
           "combined_with": "E1"
-        }
+        },
+        "requalified_under_f12": "the encode gain is resolved at 512 and 4096 records; at 16 and 64 it is smaller than the session noise floor and is reported as unresolved rather than as a win"
       },
       {
         "id": "P1",
@@ -1177,6 +1603,13 @@
         "conclusion": "the counters were a proof-quality defect, not a measurable speed defect; the published G3/G5 margins were not materially inflated by them",
         "artifact": "benches/ab-instrumentation-cost.json",
         "follow_on": "the sign-consistent penalty on the second-run side independently reproduces F-12: baseline always runs first, and run order is worth 1-3% \u2014 larger than the effect under test"
+      },
+      "run_order_drift": {
+        "question": "how much of a published delta is the machine rather than the code?",
+        "method": "benches/ab.py --rounds 2 \u2014 eight blocks, B C C B twice; noise floor is the spread among the four blocks of each build",
+        "result": "same-build blocks disagree by 1.7-8.8 percentage points depending on metric and size; an earlier single-order run put whichever side ran second 0.4-3.6% slower on every row",
+        "consequence": "decode deltas (-13 to -20%) sit well above the floor and are resolved; typed-encode at 16 and 64 records (-5.4%, -4.2%) sits BELOW it and is not a result on this machine",
+        "action": "ab.py now labels below-noise rows explicitly and keeps every block in benches/ab-latest.json"
       }
     }
   },

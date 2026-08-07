@@ -1,17 +1,31 @@
-"""Same-session A/B harness: baseline wheel vs current wheel, one session.
+"""Same-session A/B harness: baseline build vs current build, one session.
 
-Runs a probe module (default: the typed and codec benchmarks) in the baseline
-environment (`.venv-baseline`, built by `make baseline` from the frozen tag)
-and in the current environment, back to back in this process's session, and
-prints paired per-row deltas. Comparisons across sessions are exactly what
-this tool exists to forbid: it always runs both sides itself.
+Runs the typed and codec benchmarks in the baseline environment (`.venv-baseline`,
+built by `make baseline` from the frozen tag) and in the current one, and reports
+paired deltas. Comparisons across sessions are exactly what this tool exists to
+forbid: it always runs both sides itself.
+
+**Blocks alternate.** The obvious design — run all of B, then all of C — confounds
+the change under test with whatever the machine does over the next minute. Measured
+in this repository: a same-commit comparison of two builds put whichever side ran
+second 0.4–3.6% slower on *every* row, a penalty larger than several deltas this
+project has published. So each round runs `B C C B`, which cancels a linear drift
+in the paired estimates and, as a by-product, measures the drift itself: the two
+baseline blocks are the same build in two positions, and their difference is the
+harness's own noise floor.
+
+Nothing here reports a single number and calls it the answer. Every block is kept
+in the artifact, the reported delta is the median of the paired ratios, and the
+spread across pairs is printed beside it. A delta smaller than the drift is not a
+result — the output labels those rather than leaving a reader to notice.
 
 The comparison side defaults to the frozen tag's environment, but any two
-environments in this repo can be paired — `--baseline-venv .venv-g2` measures
-what the G2 instrumentation costs, for example.
+environments in this repo can be paired — `--baseline-venv .venv-g2` measures what
+the G2 instrumentation costs, for example.
 
 Usage: uv run python benches/ab.py [--records 16 64 512 4096]
                                    [--baseline-venv .venv-baseline]
+                                   [--rounds 1]
 """
 
 from __future__ import annotations
@@ -20,11 +34,25 @@ import argparse
 import json
 import os
 import pathlib
+import statistics
 import subprocess
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_BASELINE_VENV = ".venv-baseline"
 CURRENT_PYTHON = REPO / ".venv" / "bin" / "python"
+
+BASELINE = "baseline"
+CURRENT = "current"
+# One round. Alternating and symmetric: a linear drift over the round cancels in
+# the paired ratios, and the two same-side blocks bracket it.
+ROUND_PATTERN = (BASELINE, CURRENT, CURRENT, BASELINE)
+
+METRICS = (
+    ("typed", "decode_us", "typed_direct"),
+    ("typed", "encode_us", "typed_direct_whole"),
+    ("codecs", "encode_us", "msgspec_toon"),
+    ("codecs", "decode_us", "msgspec_toon"),
+)
 
 PROBE = r"""
 import json, sys
@@ -41,8 +69,8 @@ print(json.dumps(out))
 """
 
 
-def run_side(python: pathlib.Path, records: list[int], is_baseline: bool = False) -> dict:
-    """Run one side.
+def run_block(python: pathlib.Path, records: list[int], is_baseline: bool) -> dict:
+    """Run one block.
 
     The current side must be a clean release build — that is the claim being
     made. The baseline side is a historical artifact: `v0.1.0-conformant`
@@ -72,9 +100,42 @@ def run_side(python: pathlib.Path, records: list[int], is_baseline: bool = False
     return json.loads(proc.stdout.splitlines()[-1])
 
 
-def delta(current: float, baseline: float) -> str:
-    change = (current - baseline) / baseline * 100
-    return f"{change:+.1f}%"
+def metric_value(block: dict, kind: str, section: str, metric: str, records: int) -> float:
+    for row in block[kind]:
+        if row["records"] == records:
+            return float(row[section][metric])
+    raise KeyError(f"{kind}.{section}.{metric}@{records} missing from block")
+
+
+def percent(ratio: float) -> str:
+    return f"{(ratio - 1) * 100:+.1f}%"
+
+
+def spread_percent(values: list[float]) -> float:
+    """How far apart the same measurement landed, as a percentage of the best."""
+    return (max(values) / min(values) - 1) * 100
+
+
+def summarize(baselines: list[float], currents: list[float]) -> dict:
+    """Pair each current block with the baseline block adjacent to it.
+
+    `B C C B` gives (B1,C1) and (C2,B2): both pairs straddle the midpoint from
+    opposite directions, so a drift that grows over the round pushes them in
+    opposite directions and the median lands near the true ratio.
+
+    The noise floor is the spread among the *same* build's blocks — one binary
+    measured two or more times, minutes apart. It is not a refinement of the
+    delta; it is the smallest delta this session can distinguish from nothing.
+    """
+    pairs = [current / baseline for baseline, current in zip(baselines, currents, strict=True)]
+    return {
+        "baseline_us": baselines,
+        "current_us": currents,
+        "paired_ratios": [round(ratio, 5) for ratio in pairs],
+        "median_ratio": statistics.median(pairs),
+        "pair_spread_pp": (max(pairs) - min(pairs)) * 100,
+        "noise_floor_pp": max(spread_percent(baselines), spread_percent(currents)),
+    }
 
 
 def main() -> None:
@@ -85,33 +146,51 @@ def main() -> None:
         default=DEFAULT_BASELINE_VENV,
         help="environment to compare against (default: the frozen tag's)",
     )
+    parser.add_argument(
+        "--rounds",
+        type=int,
+        default=1,
+        help="B C C B rounds; each adds two paired estimates per metric",
+    )
     arguments = parser.parse_args()
 
     baseline_python = REPO / arguments.baseline_venv / "bin" / "python"
-    print(f"running baseline side ({arguments.baseline_venv})...")
-    baseline = run_side(baseline_python, arguments.records, is_baseline=True)
-    if baseline["instrumented"]:
+    sequence = list(ROUND_PATTERN) * arguments.rounds
+    blocks: dict[str, list[dict]] = {BASELINE: [], CURRENT: []}
+
+    for position, side in enumerate(sequence, start=1):
+        python = baseline_python if side == BASELINE else CURRENT_PYTHON
+        print(f"block {position}/{len(sequence)}: {side}...")
+        blocks[side].append(run_block(python, arguments.records, side == BASELINE))
+
+    if blocks[BASELINE][0]["instrumented"]:
         print(
-            f"NOTE: {arguments.baseline_venv} carries the alloc-stats counters; "
+            f"\nNOTE: {arguments.baseline_venv} carries the alloc-stats counters; "
             "part of any delta is instrumentation the current build no longer has"
         )
-    print("running current side (.venv)...")
-    current = run_side(CURRENT_PYTHON, arguments.records)
 
-    pairs = []
-    for kind, metric_path in (
-        ("typed", ("decode_us", "typed_direct")),
-        ("typed", ("encode_us", "typed_direct_whole")),
-        ("codecs", ("encode_us", "msgspec_toon")),
-        ("codecs", ("decode_us", "msgspec_toon")),
-    ):
-        section, metric = metric_path
-        for base_row, cur_row in zip(baseline[kind], current[kind]):
-            b = base_row[section][metric]
-            c = cur_row[section][metric]
-            label = f"{kind}.{section}.{metric}@{base_row['records']}"
-            pairs.append({"metric": label, "baseline_us": b, "current_us": c, "delta": delta(c, b)})
-            print(f"{label:<50} baseline={b:>9}  current={c:>9}  {delta(c, b)}")
+    results = []
+    print(
+        f"\n{'metric':<50} {'median':>8}  {'spread':>7}  {'noise':>7}   verdict",
+    )
+    for kind, section, metric in METRICS:
+        for records in arguments.records:
+            label = f"{kind}.{section}.{metric}@{records}"
+            summary = summarize(
+                [metric_value(b, kind, section, metric, records) for b in blocks[BASELINE]],
+                [metric_value(b, kind, section, metric, records) for b in blocks[CURRENT]],
+            )
+            change_pp = abs(summary["median_ratio"] - 1) * 100
+            noise_pp = summary["noise_floor_pp"]
+            # A change the harness cannot separate from its own noise is not a
+            # result. Saying so is the entire point of this rewrite.
+            verdict = "resolved" if change_pp > noise_pp else "BELOW NOISE — not a result"
+            summary |= {"metric": label, "verdict": verdict}
+            results.append(summary)
+            print(
+                f"{label:<50} {percent(summary['median_ratio']):>8}  "
+                f"{summary['pair_spread_pp']:>6.1f}pp  {noise_pp:>6.1f}pp   {verdict}"
+            )
 
     out = REPO / "benches" / "ab-latest.json"
     out.write_text(
@@ -119,15 +198,22 @@ def main() -> None:
             {
                 "records": arguments.records,
                 "baseline_venv": arguments.baseline_venv,
-                "baseline_instrumented": baseline["instrumented"],
-                "current_instrumented": current["instrumented"],
-                "pairs": pairs,
+                "block_sequence": sequence,
+                "baseline_instrumented": blocks[BASELINE][0]["instrumented"],
+                "current_instrumented": blocks[CURRENT][0]["instrumented"],
+                "method": (
+                    "alternating B C C B blocks; reported delta is the median of the paired "
+                    "ratios, pair_spread_pp is their range, and noise_floor_pp is the spread "
+                    "among repeated blocks of the SAME build — the smallest delta this "
+                    "session can distinguish from nothing"
+                ),
+                "results": results,
             },
             indent=2,
         )
         + "\n"
     )
-    print(f"\npaired results written to {out}")
+    print(f"\nall blocks written to {out}")
 
 
 if __name__ == "__main__":

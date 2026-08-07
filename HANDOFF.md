@@ -35,7 +35,8 @@ evidence in `conformance/report.json` — never as assertions.
 | Tab-delimiter folklore (T2) | **measured false** at noise level; published as a finding | report `token_efficiency.findings` |
 | Type-support boundaries | **generated, not asserted**: 8 supported, 11 unsupported, 3 silently ignored, 2 silently wrong | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
 | G4 encode vs `to_builtins` alone | **fail, honestly reported**: 2.2× at 16 records, ~10% at 4096. Stable-ABI `getattr` vs msgspec's private C slot reads (canvas risk R-02) | report `known_divergences_and_gaps` |
-| Optimizations | 6 adopted with same-session A/B vs frozen `v0.1.0-conformant` wheel: typed decode −15→−24%, untyped decode −10→−21%, encode −4→−8% | `benches/optimization-ledger.json` |
+| Optimizations | 6 adopted, re-qualified under the F-12 harness: typed decode −13→−20%, untyped decode −10→−20%, codec encode −6→−8% — all above the session noise floor. Typed encode at 16/64 records is **below noise and reported as unresolved** | `benches/optimization-ledger.json`, report `speed_ab_latest` |
+| A/B rigor | **alternating `B C C B` blocks**; every block published, and rows whose change is under the same-build noise floor (1.7–8.8 pp) are labelled not-a-result | `benches/ab.py`, `benches/ab-latest.json` |
 
 Wire options: `delimiter` (`","`/`"\t"`/`"|"`), `indent`, `indent_size` — exactly TOON
 4.1's own option domain, spelled in the wire, defaults byte-identical to canonical.
@@ -121,8 +122,9 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 - **14-day dependency cooldown**: uv enforces natively (`tool.uv.exclude-newer`);
   Rust via pin + `make audit`. Overrides need a commit-message justification.
 - **Every perf claim is same-session A/B** vs the frozen baseline, on a build
-  `benches/build_freshness.py` has verified is current and uninstrumented; every corpus
-  claim is a fresh `conformance/run.py` run. After ANY change: corpus zero failures,
+  `benches/build_freshness.py` has verified is current and uninstrumented, with
+  alternating blocks and a published noise floor; a delta under that floor is reported as
+  unresolved, never as a win. Every corpus claim is a fresh `conformance/run.py` run. After ANY change: corpus zero failures,
   G2/G3/G5 green, 75 unit tests green (`make check`).
 - Parser modules must not import PyO3 (canvas AD-002).
 

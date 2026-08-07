@@ -105,9 +105,9 @@ Design notes for the next agent:
 - [x] Rerun G3 and G5 without atomic counter bias.
 - [x] F-21 (new) refuse to publish a measurement from a stale or instrumented build.
 - [x] F-11 generate the known-gap report from one maintained support matrix.
-- [ ] F-12 alternate A/B blocks and publish raw repetitions plus spread.
+- [x] F-12 alternate A/B blocks and publish raw repetitions plus spread.
 
-Exit: each performance and G2 claim has independent, same-session evidence.
+Exit: each performance and G2 claim has independent, same-session evidence. **MET.**
 
 #### Checkpoint 3 — F-11
 
@@ -267,3 +267,42 @@ Before each checkpoint commit, record:
 - all remaining known gaps.
 
 The last commit must leave `git diff --check` clean.
+
+#### Checkpoint 4 — F-12
+
+Hypothesis: run order, not the code under test, explains a material share of the small
+deltas this project publishes, and the old harness could not tell the difference because
+it ran all of B and then all of C exactly once.
+
+CONFIRMED, and it cost two published claims their status. `benches/ab.py` now runs
+`B C C B` rounds and reports, per metric: the median of the paired ratios, the spread
+across pairs, and a **noise floor** — the spread among repeated blocks of the *same*
+build, minutes apart. That floor is not a refinement of the delta; it is the smallest
+delta the session can distinguish from nothing.
+
+Measured over eight blocks (`--rounds 2`), same-build blocks disagree by 1.7–8.8 pp
+depending on metric and size. Consequences:
+
+```text
+metric                                  median   noise   verdict
+typed decode      @16/64/512/4096      -12.9 to -20.0%   3.6-8.8pp   resolved
+untyped decode    @16/64/512/4096      -10.3 to -20.2%   1.7-4.4pp   resolved
+codec encode      @16/64/512/4096       -6.3 to  -8.1%   1.7-4.4pp   resolved
+typed encode      @512/4096                     -4.8%    2.8-3.8pp   resolved
+typed encode      @16                           -5.4%       6.2pp    BELOW NOISE
+typed encode      @64                           -4.2%       5.0pp    BELOW NOISE
+```
+
+So the project's "encode −4→−8%" claim is real at the larger sizes and **not resolvable
+at 16 and 64 records on this machine**. The E1/E2 ledger entries now say so. Every block
+is kept in `benches/ab-latest.json` and published in `conformance/report.json` under
+`speed_ab_latest`, so a reader sees the repetitions rather than one summary number.
+
+A false start worth recording: my first drift metric compared consecutive same-build
+blocks and reported 30–36 pp on two rows. The blocks were real but the metric was wrong —
+consecutive pairs across round boundaries are not comparable positions. The floor is now
+the full spread among a build's blocks, which is both simpler and harder to fool.
+
+Note for whoever reads the earlier checkpoints: the deltas recorded there came from
+single-order runs. The decode figures reproduce under the new instrument; treat the
+small encode figures in checkpoints 1 and 2 as unresolved rather than as measurements.

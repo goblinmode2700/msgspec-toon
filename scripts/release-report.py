@@ -49,6 +49,19 @@ def allocation_proof() -> dict:
     return proof
 
 
+def ab_latest() -> dict:
+    """Publish the last frozen-baseline A/B with every block it measured.
+
+    A single summary number hides the thing a reader most needs: whether the
+    session could resolve the delta at all. `benches/ab.py` keeps each block and
+    labels rows whose change is smaller than the same-build noise floor.
+    """
+    path = Path(__file__).resolve().parent.parent / "benches" / "ab-latest.json"
+    if not path.exists():
+        return {"status": "NOT RUN — execute `make baseline && make ab` first"}
+    return json.loads(path.read_text())
+
+
 def conformance_summary(lock: dict) -> dict:
     """Summarize the latest conformance run; refuse to fabricate one."""
     results_path = (
@@ -110,6 +123,7 @@ def main() -> None:
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "token_efficiency": bench_tokens.run(),
+        "speed_ab_latest": ab_latest(),
         "optimization_ledger": json.loads(
             (
                 Path(__file__).resolve().parent.parent / "benches" / "optimization-ledger.json"
