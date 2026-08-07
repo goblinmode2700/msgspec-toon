@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T08:39:29.452608+00:00",
+  "generated_at": "2026-08-07T08:48:22.672912+00:00",
   "distribution": "msgspec-toon 0.3.0",
   "environment": {
     "python": "3.13.1",
@@ -353,34 +353,34 @@
       "json_bytes": 1339,
       "decode_us": {
         "typed_direct": 5.09,
-        "untyped_tree": 4.29,
-        "keyed_document": 4.3,
-        "convert_only": 1.42,
-        "wrapper_tree_plus_convert": 5.83,
-        "incumbent_pipeline_python_toon_plus_convert": 112.82,
-        "msgspec_json_native": 2.23
+        "untyped_tree": 4.3,
+        "keyed_document": 4.31,
+        "convert_only": 1.44,
+        "wrapper_tree_plus_convert": 5.81,
+        "incumbent_pipeline_python_toon_plus_convert": 114.89,
+        "msgspec_json_native": 2.24
       },
       "encode_us": {
-        "typed_direct_whole": 2.19,
-        "to_builtins_alone": 1.09,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 95.98,
+        "typed_direct_whole": 2.06,
+        "to_builtins_alone": 1.08,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 96.06,
         "msgspec_json_native": 1.03
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.49,
-        "decode_us.untyped_tree": 0.76,
-        "decode_us.keyed_document": 1.03,
-        "decode_us.convert_only": 0.68,
-        "decode_us.wrapper_tree_plus_convert": 1.18,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.99,
-        "decode_us.msgspec_json_native": 1.0,
-        "encode_us.typed_direct_whole": 0.99,
-        "encode_us.to_builtins_alone": 2.69,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.5,
-        "encode_us.msgspec_json_native": 0.96
+        "decode_us.typed_direct": 0.6,
+        "decode_us.untyped_tree": 0.99,
+        "decode_us.keyed_document": 0.97,
+        "decode_us.convert_only": 4.35,
+        "decode_us.wrapper_tree_plus_convert": 1.25,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 6.29,
+        "decode_us.msgspec_json_native": 2.6,
+        "encode_us.typed_direct_whole": 1.71,
+        "encode_us.to_builtins_alone": 1.57,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.65,
+        "encode_us.msgspec_json_native": 1.04
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -395,35 +395,35 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.24,
-        "untyped_tree": 15.18,
-        "keyed_document": 16.04,
-        "convert_only": 5.38,
-        "wrapper_tree_plus_convert": 20.84,
-        "incumbent_pipeline_python_toon_plus_convert": 456.71,
-        "msgspec_json_native": 8.62
+        "typed_direct": 17.18,
+        "untyped_tree": 15.14,
+        "keyed_document": 16.1,
+        "convert_only": 5.39,
+        "wrapper_tree_plus_convert": 20.9,
+        "incumbent_pipeline_python_toon_plus_convert": 458.25,
+        "msgspec_json_native": 8.6
       },
       "encode_us": {
-        "typed_direct_whole": 7.43,
+        "typed_direct_whole": 6.89,
         "to_builtins_alone": 4.49,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 378.53,
-        "msgspec_json_native": 3.16
+        "incumbent_pipeline_to_builtins_plus_python_toon": 378.4,
+        "msgspec_json_native": 3.14
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.89,
-        "decode_us.untyped_tree": 0.99,
-        "decode_us.keyed_document": 1.21,
-        "decode_us.convert_only": 3.54,
-        "decode_us.wrapper_tree_plus_convert": 2.82,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.79,
-        "decode_us.msgspec_json_native": 0.88,
-        "encode_us.typed_direct_whole": 0.67,
-        "encode_us.to_builtins_alone": 0.62,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.14,
-        "encode_us.msgspec_json_native": 2.01
+        "decode_us.typed_direct": 0.75,
+        "decode_us.untyped_tree": 1.65,
+        "decode_us.keyed_document": 1.43,
+        "decode_us.convert_only": 2.66,
+        "decode_us.wrapper_tree_plus_convert": 3.31,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.4,
+        "decode_us.msgspec_json_native": 1.01,
+        "encode_us.typed_direct_whole": 1.12,
+        "encode_us.to_builtins_alone": 0.88,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.87,
+        "encode_us.msgspec_json_native": 1.75
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -438,35 +438,35 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 134.44,
-        "untyped_tree": 125.44,
-        "keyed_document": 137.56,
-        "convert_only": 43.55,
-        "wrapper_tree_plus_convert": 170.15,
-        "incumbent_pipeline_python_toon_plus_convert": 3723.87,
-        "msgspec_json_native": 67.78
+        "typed_direct": 134.17,
+        "untyped_tree": 127.55,
+        "keyed_document": 137.57,
+        "convert_only": 42.77,
+        "wrapper_tree_plus_convert": 170.97,
+        "incumbent_pipeline_python_toon_plus_convert": 3717.93,
+        "msgspec_json_native": 67.79
       },
       "encode_us": {
-        "typed_direct_whole": 57.91,
-        "to_builtins_alone": 43.85,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 3020.38,
-        "msgspec_json_native": 22.73
+        "typed_direct_whole": 52.55,
+        "to_builtins_alone": 43.95,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3005.73,
+        "msgspec_json_native": 22.89
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.7,
-        "decode_us.untyped_tree": 1.09,
-        "decode_us.keyed_document": 0.89,
-        "decode_us.convert_only": 4.25,
-        "decode_us.wrapper_tree_plus_convert": 1.13,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.52,
-        "decode_us.msgspec_json_native": 0.93,
-        "encode_us.typed_direct_whole": 1.46,
-        "encode_us.to_builtins_alone": 1.14,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.58,
-        "encode_us.msgspec_json_native": 0.74
+        "decode_us.typed_direct": 0.77,
+        "decode_us.untyped_tree": 3.55,
+        "decode_us.keyed_document": 3.07,
+        "decode_us.convert_only": 0.99,
+        "decode_us.wrapper_tree_plus_convert": 2.67,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.65,
+        "decode_us.msgspec_json_native": 0.68,
+        "encode_us.typed_direct_whole": 1.95,
+        "encode_us.to_builtins_alone": 1.53,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.76,
+        "encode_us.msgspec_json_native": 1.34
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -481,35 +481,35 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1185.79,
-        "untyped_tree": 1115.43,
-        "keyed_document": 1132.91,
-        "convert_only": 453.53,
-        "wrapper_tree_plus_convert": 1507.1,
-        "incumbent_pipeline_python_toon_plus_convert": 30954.69,
-        "msgspec_json_native": 663.06
+        "typed_direct": 1178.76,
+        "untyped_tree": 1108.16,
+        "keyed_document": 1129.27,
+        "convert_only": 454.63,
+        "wrapper_tree_plus_convert": 1504.0,
+        "incumbent_pipeline_python_toon_plus_convert": 30995.6,
+        "msgspec_json_native": 665.28
       },
       "encode_us": {
-        "typed_direct_whole": 469.31,
-        "to_builtins_alone": 474.69,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 24448.39,
-        "msgspec_json_native": 175.92
+        "typed_direct_whole": 423.75,
+        "to_builtins_alone": 453.83,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24356.73,
+        "msgspec_json_native": 174.27
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.54,
-        "decode_us.untyped_tree": 1.32,
-        "decode_us.keyed_document": 1.29,
-        "decode_us.convert_only": 0.82,
-        "decode_us.wrapper_tree_plus_convert": 0.75,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.9,
-        "decode_us.msgspec_json_native": 1.49,
-        "encode_us.typed_direct_whole": 3.32,
-        "encode_us.to_builtins_alone": 9.57,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.69,
-        "encode_us.msgspec_json_native": 0.64
+        "decode_us.typed_direct": 0.76,
+        "decode_us.untyped_tree": 1.08,
+        "decode_us.keyed_document": 1.08,
+        "decode_us.convert_only": 1.01,
+        "decode_us.wrapper_tree_plus_convert": 0.85,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.84,
+        "decode_us.msgspec_json_native": 0.82,
+        "encode_us.typed_direct_whole": 2.41,
+        "encode_us.to_builtins_alone": 1.11,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.74,
+        "encode_us.msgspec_json_native": 1.77
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -529,26 +529,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.57,
-        "toons_rust": 27.47,
-        "python_toon": 95.36,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.39,
+        "toons_rust": 27.55,
+        "python_toon": 95.89,
+        "msgspec_json_context": 1.21
       },
       "decode_us": {
-        "msgspec_toon": 4.35,
-        "toons_rust": 11.63,
-        "python_toon": 112.12,
-        "msgspec_json_context": 2.37
+        "msgspec_toon": 4.32,
+        "toons_rust": 11.61,
+        "python_toon": 110.89,
+        "msgspec_json_context": 2.36
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.1,
-        "encode_us.toons_rust": 1.28,
-        "encode_us.python_toon": 0.61,
-        "encode_us.msgspec_json_context": 0.4,
-        "decode_us.msgspec_toon": 1.49,
-        "decode_us.toons_rust": 0.61,
-        "decode_us.python_toon": 2.48,
-        "decode_us.msgspec_json_context": 1.32
+        "encode_us.msgspec_toon": 0.94,
+        "encode_us.toons_rust": 0.94,
+        "encode_us.python_toon": 1.9,
+        "encode_us.msgspec_json_context": 1.1,
+        "decode_us.msgspec_toon": 1.0,
+        "decode_us.toons_rust": 0.5,
+        "decode_us.python_toon": 0.68,
+        "decode_us.msgspec_json_context": 1.23
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -564,26 +564,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 16.04,
-        "toons_rust": 108.66,
-        "python_toon": 372.75,
-        "msgspec_json_context": 3.76
+        "msgspec_toon": 15.28,
+        "toons_rust": 106.79,
+        "python_toon": 376.17,
+        "msgspec_json_context": 3.82
       },
       "decode_us": {
-        "msgspec_toon": 15.22,
-        "toons_rust": 46.06,
-        "python_toon": 453.18,
+        "msgspec_toon": 15.36,
+        "toons_rust": 45.95,
+        "python_toon": 452.89,
         "msgspec_json_context": 9.75
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 3.12,
-        "encode_us.toons_rust": 4.64,
-        "encode_us.python_toon": 0.56,
-        "encode_us.msgspec_json_context": 1.72,
-        "decode_us.msgspec_toon": 1.33,
-        "decode_us.toons_rust": 1.06,
-        "decode_us.python_toon": 1.65,
-        "decode_us.msgspec_json_context": 3.1
+        "encode_us.msgspec_toon": 1.61,
+        "encode_us.toons_rust": 1.17,
+        "encode_us.python_toon": 1.95,
+        "encode_us.msgspec_json_context": 4.08,
+        "decode_us.msgspec_toon": 3.09,
+        "decode_us.toons_rust": 0.73,
+        "decode_us.python_toon": 0.35,
+        "decode_us.msgspec_json_context": 1.67
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -599,26 +599,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 121.65,
-        "toons_rust": 850.88,
-        "python_toon": 2970.57,
-        "msgspec_json_context": 27.93
+        "msgspec_toon": 117.03,
+        "toons_rust": 843.92,
+        "python_toon": 2996.61,
+        "msgspec_json_context": 27.78
       },
       "decode_us": {
-        "msgspec_toon": 128.7,
-        "toons_rust": 381.25,
-        "python_toon": 3707.94,
-        "msgspec_json_context": 85.94
+        "msgspec_toon": 125.17,
+        "toons_rust": 379.62,
+        "python_toon": 3678.83,
+        "msgspec_json_context": 86.54
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.8,
-        "encode_us.toons_rust": 1.91,
-        "encode_us.python_toon": 0.87,
-        "encode_us.msgspec_json_context": 1.28,
-        "decode_us.msgspec_toon": 8.41,
-        "decode_us.toons_rust": 0.96,
-        "decode_us.python_toon": 3.38,
-        "decode_us.msgspec_json_context": 0.66
+        "encode_us.msgspec_toon": 1.91,
+        "encode_us.toons_rust": 1.57,
+        "encode_us.python_toon": 2.97,
+        "encode_us.msgspec_json_context": 1.38,
+        "decode_us.msgspec_toon": 1.58,
+        "decode_us.toons_rust": 0.67,
+        "decode_us.python_toon": 1.1,
+        "decode_us.msgspec_json_context": 0.83
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -634,26 +634,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 961.01,
-        "toons_rust": 6868.14,
-        "python_toon": 24017.9,
-        "msgspec_json_context": 213.41
+        "msgspec_toon": 923.4,
+        "toons_rust": 6828.89,
+        "python_toon": 23894.55,
+        "msgspec_json_context": 215.37
       },
       "decode_us": {
-        "msgspec_toon": 1129.6,
-        "toons_rust": 3171.34,
-        "python_toon": 30755.59,
-        "msgspec_json_context": 832.15
+        "msgspec_toon": 1117.49,
+        "toons_rust": 3175.69,
+        "python_toon": 30623.8,
+        "msgspec_json_context": 836.09
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 0.98,
-        "encode_us.toons_rust": 1.78,
-        "encode_us.python_toon": 0.61,
-        "encode_us.msgspec_json_context": 1.02,
-        "decode_us.msgspec_toon": 1.0,
-        "decode_us.toons_rust": 0.75,
-        "decode_us.python_toon": 0.33,
-        "decode_us.msgspec_json_context": 0.79
+        "encode_us.msgspec_toon": 1.19,
+        "encode_us.toons_rust": 1.73,
+        "encode_us.python_toon": 0.49,
+        "encode_us.msgspec_json_context": 1.59,
+        "decode_us.msgspec_toon": 1.27,
+        "decode_us.toons_rust": 0.58,
+        "decode_us.python_toon": 0.62,
+        "decode_us.msgspec_json_context": 0.86
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1622,402 +1622,402 @@
         {
           "metric": "typed decode@16",
           "baseline_us": [
-            5.29,
-            5.22,
-            5.26,
+            5.12,
+            5.16,
+            5.17,
             5.23
           ],
           "current_us": [
-            5.05,
-            5.15,
-            5.12,
-            5.08
+            6.11,
+            5.01,
+            5.17,
+            5.06
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -2.857142857142864,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.2621918715012221
+          "change_pct": 3.2398452611218653,
+          "significant": false,
+          "minimum_detectable_effect_pct": 12.336866517756832
         },
         {
           "metric": "typed decode@64",
           "baseline_us": [
-            18.07,
-            18.63,
-            18.14,
-            17.96
+            18.17,
+            18.0,
+            17.91,
+            17.93
           ],
           "current_us": [
-            17.24,
-            17.33,
-            17.17,
-            17.15
+            17.16,
+            16.73,
+            17.03,
+            17.23
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -5.370879120879116,
+          "change_pct": -5.360366615747812,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.064283027525737
+          "minimum_detectable_effect_pct": 1.7038203267078451
         },
         {
           "metric": "typed decode@512",
           "baseline_us": [
-            139.17,
-            140.56,
-            141.49,
-            139.4
+            137.02,
+            140.7,
+            139.88,
+            138.52
           ],
           "current_us": [
-            134.06,
-            133.64,
-            134.46,
-            135.17
+            134.48,
+            133.14,
+            133.78,
+            133.74
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.154329135599885,
+          "change_pct": -3.772567071854999,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.0993749283079717
+          "minimum_detectable_effect_pct": 1.4997235243903557
         },
         {
           "metric": "typed decode@4096",
           "baseline_us": [
-            1214.68,
-            1215.69,
-            1214.64,
-            1230.5
+            1218.71,
+            1223.88,
+            1221.01,
+            1229.9
           ],
           "current_us": [
-            1179.55,
-            1174.47,
-            1163.58,
-            1185.58
+            1153.56,
+            1145.31,
+            1162.87,
+            1167.68
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -3.5346045849562384,
+          "change_pct": -5.396546439153979,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.2178973600473766
+          "minimum_detectable_effect_pct": 1.1056912440171571
         },
         {
           "metric": "typed encode@16",
           "baseline_us": [
-            2.35,
             2.33,
-            2.36,
+            2.29,
+            2.3,
             2.31
           ],
           "current_us": [
-            2.14,
-            2.17,
-            2.17,
-            2.16
+            2.02,
+            2.02,
+            1.98,
+            1.98
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.593582887700526,
+          "change_pct": -13.326110509209105,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.3765778503291073
+          "minimum_detectable_effect_pct": 1.5229625997918288
         },
         {
           "metric": "typed encode@64",
           "baseline_us": [
-            7.95,
-            7.94,
-            8.09,
-            8.23
+            7.93,
+            7.96,
+            7.97,
+            7.94
           ],
           "current_us": [
-            7.35,
-            7.38,
-            7.28,
-            7.37
+            6.76,
+            6.76,
+            6.79,
+            6.87
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -8.786091276001248,
+          "change_pct": -14.528301886792455,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.187361228166958
+          "minimum_detectable_effect_pct": 0.8476116433464855
         },
         {
           "metric": "typed encode@512",
           "baseline_us": [
-            63.33,
-            62.93,
-            63.84,
-            62.68
+            61.26,
+            60.79,
+            62.1,
+            62.14
           ],
           "current_us": [
-            56.74,
-            75.88,
-            57.93,
-            57.7
+            51.95,
+            51.05,
+            51.75,
+            51.49
           ],
-          "verdict": "no significant difference",
+          "verdict": "faster",
           "confirmation": null,
-          "change_pct": -1.7920721576074061,
-          "significant": false,
-          "minimum_detectable_effect_pct": 17.88923130655858
+          "change_pct": -16.261317958504197,
+          "significant": true,
+          "minimum_detectable_effect_pct": 1.5234956289959194
         },
         {
           "metric": "typed encode@4096",
           "baseline_us": [
-            513.09,
-            486.09,
-            501.18,
-            498.74
+            509.87,
+            492.17,
+            487.95,
+            500.78
           ],
           "current_us": [
-            464.68,
-            464.4,
-            459.48,
-            463.47
+            410.09,
+            418.88,
+            408.38,
+            410.48
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.356810564754136,
+          "change_pct": -17.22650029887933,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.7733407311729716
+          "minimum_detectable_effect_pct": 2.6539069678259177
         },
         {
           "metric": "keyed decode@16",
           "baseline_us": [
-            4.4,
-            4.34,
-            4.3,
-            4.38
+            4.28,
+            4.33,
+            4.41,
+            4.36
           ],
           "current_us": [
-            4.29,
-            4.32,
+            4.26,
+            4.28,
             4.33,
-            4.33
+            4.3
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -0.8610792192881865,
+          "change_pct": -1.2082853855005802,
           "significant": false,
-          "minimum_detectable_effect_pct": 1.3546505977123908
+          "minimum_detectable_effect_pct": 1.7490976866444419
         },
         {
           "metric": "keyed decode@64",
           "baseline_us": [
-            19.81,
-            19.98,
+            21.6,
             19.92,
-            20.12
+            19.84,
+            19.92
           ],
           "current_us": [
-            15.72,
-            15.79,
-            15.81,
-            15.86
+            16.63,
+            15.82,
+            15.84,
+            16.1
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -20.85682074408117,
+          "change_pct": -20.78001968503937,
           "significant": true,
-          "minimum_detectable_effect_pct": 0.8682509313881337
+          "minimum_detectable_effect_pct": 5.622267869728356
         },
         {
           "metric": "keyed decode@512",
           "baseline_us": [
-            283.95,
-            283.91,
-            288.89,
-            289.22
+            281.96,
+            285.11,
+            280.51,
+            283.97
           ],
           "current_us": [
-            136.36,
-            135.12,
-            135.34,
-            137.05
+            135.11,
+            135.98,
+            133.9,
+            134.31
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -52.54064242519437,
+          "change_pct": -52.3397110158632,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.3222546162096032
+          "minimum_detectable_effect_pct": 0.9722583820324994
         },
         {
           "metric": "keyed decode@4096",
           "baseline_us": [
-            9779.32,
-            9819.36,
-            9798.33,
-            9699.94
+            9731.0,
+            9705.64,
+            9739.54,
+            9706.61
           ],
           "current_us": [
-            1108.61,
-            1116.63,
-            1133.4,
-            1118.49
+            1116.83,
+            1123.74,
+            1104.81,
+            1127.79
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -88.54864637778651,
+          "change_pct": -88.49575866340868,
           "significant": true,
-          "minimum_detectable_effect_pct": 0.6656456457956633
+          "minimum_detectable_effect_pct": 0.25069687024377796
         },
         {
           "metric": "untyped decode@16",
           "baseline_us": [
-            4.49,
-            4.49,
-            4.42,
-            4.47
+            4.48,
+            4.44,
+            4.43,
+            4.44
           ],
           "current_us": [
+            4.25,
             4.28,
-            4.27,
-            4.3,
-            4.31
+            4.29,
+            4.34
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -3.973139339675438,
+          "change_pct": -3.541315345699826,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.0338245586517942
+          "minimum_detectable_effect_pct": 1.1964934417898687
         },
         {
           "metric": "untyped decode@64",
           "baseline_us": [
-            15.74,
-            16.08,
-            16.14,
-            15.88
+            15.75,
+            15.68,
+            15.87,
+            15.78
           ],
           "current_us": [
-            15.23,
-            15.28,
-            15.09,
-            15.38
+            15.14,
+            15.07,
+            15.14,
+            15.18
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.4799498746867155,
+          "change_pct": -4.042485732403293,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.6871094827099913
+          "minimum_detectable_effect_pct": 0.7064691432043522
         },
         {
           "metric": "untyped decode@512",
           "baseline_us": [
-            136.28,
-            131.89,
-            132.5,
-            131.78
+            128.57,
+            130.63,
+            132.54,
+            127.77
           ],
           "current_us": [
-            135.16,
-            124.92,
-            122.15,
-            124.95
+            125.04,
+            120.34,
+            124.94,
+            120.84
           ],
-          "verdict": "no significant difference",
+          "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.7459855385482275,
-          "significant": false,
-          "minimum_detectable_effect_pct": 5.619771730873572
+          "change_pct": -5.4570653115435634,
+          "significant": true,
+          "minimum_detectable_effect_pct": 3.1383924539236996
         },
         {
           "metric": "untyped decode@4096",
           "baseline_us": [
-            1183.1,
-            1171.48,
-            1183.14,
-            1193.69
+            1177.51,
+            1155.32,
+            1170.52,
+            1183.19
           ],
           "current_us": [
-            1123.55,
-            1138.05,
-            1126.61,
-            1129.64
+            1113.38,
+            1119.64,
+            1118.19,
+            1120.46
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.513665059675646,
+          "change_pct": -4.584832306989803,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.1390536790240862
+          "minimum_detectable_effect_pct": 1.3008716321825673
         },
         {
           "metric": "untyped encode@16",
           "baseline_us": [
-            4.7,
-            4.68,
-            4.9,
-            4.74
+            4.73,
+            4.69,
+            4.66,
+            4.66
           ],
           "current_us": [
-            4.49,
-            4.5,
-            4.52,
-            4.53
+            4.43,
+            4.38,
+            4.43,
+            4.35
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -5.152471083070455,
+          "change_pct": -6.136606189967994,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.6113919726372985
+          "minimum_detectable_effect_pct": 1.3464774886459423
         },
         {
           "metric": "untyped encode@64",
           "baseline_us": [
-            16.29,
-            16.5,
+            16.37,
             16.06,
-            16.35
+            16.5,
+            16.44
           ],
           "current_us": [
-            16.09,
-            15.75,
-            15.84,
-            15.68
+            15.31,
+            15.33,
+            15.94,
+            14.99
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -2.822085889570557,
+          "change_pct": -5.81306409668044,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.9205538273898506
+          "minimum_detectable_effect_pct": 3.312633116750599
         },
         {
           "metric": "untyped encode@512",
           "baseline_us": [
-            123.37,
-            125.76,
-            125.17,
-            124.66
+            123.84,
+            127.6,
+            125.52,
+            123.16
           ],
           "current_us": [
-            119.28,
-            120.25,
-            117.99,
-            120.33
+            116.79,
+            119.32,
+            115.23,
+            116.68
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.230800064133399,
+          "change_pct": -6.418459569703276,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.4639265105190296
+          "minimum_detectable_effect_pct": 2.5530175120143026
         },
         {
           "metric": "untyped encode@4096",
           "baseline_us": [
-            990.25,
-            1021.09,
-            1002.83,
-            1015.94
+            994.94,
+            993.54,
+            1006.6,
+            1028.14
           ],
           "current_us": [
-            950.26,
-            948.39,
-            947.84,
-            961.5
+            910.54,
+            920.7,
+            908.74,
+            919.37
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -5.511512092722044,
+          "change_pct": -9.044248139549921,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.8535129298429522
+          "minimum_detectable_effect_pct": 2.0816426016749863
         }
       ]
     },
@@ -2507,6 +2507,15 @@
         "source": "external review round (Fable 5), patch 02 of 5",
         "measurement": "make ab vs the v0.3.0 guard, cumulative with D6; P2's share isolated against the D6-only run: typed decode -2.5 to -4.5%, untyped decode -3.3 to -3.5%, typed encode -6.7% at 4096. The encode win is expected at this point in the stack because needs_quote still routes through classify_bare; E5 later removes that call.",
         "note": "Verified by an exhaustive differential against the replaced two-pass implementation, kept in src/scalar.rs as a #[cfg(test)] oracle: every token up to length 5 over the alphabet that decides the grammar (0192.eE+-n) plus the edge literals, 111,126 tokens, zero divergences."
+      },
+      {
+        "id": "E5",
+        "target": "quoting decision and string escaping (src/encode.rs)",
+        "hypothesis": "needs_quote made up to four passes over the same bytes (classify_bare, numeric-like, forbidden-byte, prefix checks) and write_quoted re-encoded every character through UTF-8. One pass for the decision and bulk span copies for the escaping should win on every string cell.",
+        "status": "adopted",
+        "source": "external review round (Fable 5), patch 03 of 5",
+        "measurement": "make ab vs the v0.3.0 guard, cumulative; E5's share isolated against the P2 run: typed encode -13.3 to -17.2% cumulative (E5 adds ~-10 points over P2), untyped encode -6.1 to -9.0%. Decode is unchanged by E5, as expected.",
+        "note": "The pass-collapsing rests on one observation: every valid number token is also numeric-like, so the number grammar needs no separate pass in the quoting decision. Verified by differential against the replaced multi-pass implementation, kept as a #[cfg(test)] oracle: 107,841 (string, delimiter) pairs over an alphabet covering delimiters, structural bytes, controls, the number grammar and multi-byte UTF-8, plus 35,937 escape comparisons. Zero divergences. The efficiency lock independently confirms canonical bytes did not move."
       }
     ],
     "token_findings": {

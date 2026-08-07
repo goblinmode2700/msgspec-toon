@@ -12,9 +12,7 @@ use std::sync::{Arc, Mutex};
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 
-use crate::event::ScalarToken;
 use crate::limits::{MAX_NESTING_DEPTH, reserve_bytes};
-use crate::scalar::classify_bare;
 use crate::writer::Writer;
 
 /// Capacity heuristic only — never policy: an assumed average encoded cell
@@ -925,24 +923,38 @@ fn write_float(writer: &mut Writer, number: f64) {
     writer.text(&canonical_float(number));
 }
 
+const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
+
+/// The one escape implementation (optimization E5): clean spans are copied in
+/// bulk instead of re-encoded character by character, and only the bytes that
+/// need an escape interrupt the copy. Multi-byte UTF-8 sequences are all
+/// >= 0x80, so they pass through inside the clean spans untouched.
 fn write_quoted(writer: &mut Writer, text: &str) {
     writer.byte(b'"');
-    for ch in text.chars() {
-        match ch {
-            '"' => writer.bytes(b"\\\""),
-            '\\' => writer.bytes(b"\\\\"),
-            '\n' => writer.bytes(b"\\n"),
-            '\r' => writer.bytes(b"\\r"),
-            '\t' => writer.bytes(b"\\t"),
-            control if (control as u32) < 0x20 => {
-                writer.text(&format!("\\u{:04x}", control as u32));
+    let bytes = text.as_bytes();
+    let mut clean_start = 0;
+    for (position, &byte) in bytes.iter().enumerate() {
+        let escape: &[u8] = match byte {
+            b'"' => b"\\\"",
+            b'\\' => b"\\\\",
+            b'\n' => b"\\n",
+            b'\r' => b"\\r",
+            b'\t' => b"\\t",
+            control if control < 0x20 => {
+                writer.bytes(&bytes[clean_start..position]);
+                writer.bytes(b"\\u00");
+                writer.byte(HEX_DIGITS[usize::from(control >> 4)]);
+                writer.byte(HEX_DIGITS[usize::from(control & 0x0F)]);
+                clean_start = position + 1;
+                continue;
             }
-            other => {
-                let mut buf = [0u8; 4];
-                writer.text(other.encode_utf8(&mut buf));
-            }
-        }
+            _ => continue,
+        };
+        writer.bytes(&bytes[clean_start..position]);
+        writer.bytes(escape);
+        clean_start = position + 1;
     }
+    writer.bytes(&bytes[clean_start..]);
     writer.byte(b'"');
 }
 
@@ -970,7 +982,16 @@ fn scalar_text<'py>(ctx: &EncodeContext, py: Python<'py>, value: &Val<'py>) -> P
             }
         }
         Val::Float(number) => Ok(canonical_float(*number)),
-        Val::Str(text) => Ok(quote_if_needed(text.to_str()?, ctx.delimiter)),
+        Val::Str(text) => {
+            let text = text.to_str()?;
+            if needs_quote(text, ctx.delimiter) {
+                let mut quoted = Writer::with_capacity(text.len() + 2, ctx.indent);
+                write_quoted(&mut quoted, text);
+                Ok(String::from_utf8(quoted.finish()).expect("escaped output is valid UTF-8"))
+            } else {
+                Ok(text.to_string())
+            }
+        }
         _ => Err(encode_err(ctx, py, "not a scalar")),
     }
 }
@@ -1018,74 +1039,45 @@ fn canonical_float(number: f64) -> String {
     }
 }
 
-/// A string that could be mistaken for a number token (leading sign or
-/// digit, only number-ish bytes, at least one digit) must be quoted even
-/// when it is not itself a valid number — `05`, `+1`, `1.2.3`.
-fn is_numeric_like(bytes: &[u8]) -> bool {
-    let rest = match bytes.first() {
-        Some(b'+' | b'-') => &bytes[1..],
-        _ => bytes,
-    };
-    !rest.is_empty()
-        && rest.iter().any(u8::is_ascii_digit)
-        && rest
-            .iter()
-            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'.' | b'e' | b'E' | b'+' | b'-'))
-}
-
+/// One scan (optimization E5) deciding whether a string must be quoted. The
+/// literal keywords come first; the loop then answers both remaining
+/// questions at once: does any byte force quoting, and could the whole token
+/// be mistaken for a number — leading sign or digit, only number-ish bytes,
+/// at least one digit (`05`, `+1`, `1.2.3`)? Every valid number token is
+/// also numeric-like, so the number grammar needs no separate pass here.
 fn needs_quote(text: &str, delimiter: u8) -> bool {
     let bytes = text.as_bytes();
     if bytes.is_empty() {
         return true;
     }
-    if !matches!(classify_bare(bytes), ScalarToken::BareString(_)) {
-        return true;
-    }
-    if is_numeric_like(bytes) {
+    if matches!(bytes, b"null" | b"true" | b"false" | b"-" | b"[]") {
         return true;
     }
     if bytes[0] == b' '
         || bytes[bytes.len() - 1] == b' '
         || matches!(bytes[0], b'"' | b'[' | b'{' | b'#' | b'\'')
+        || bytes.starts_with(b"- ")
     {
         return true;
     }
-    if text == "-" || text.starts_with("- ") || text == "[]" {
-        return true;
-    }
-    bytes.iter().any(|&byte| {
-        byte == delimiter
-            || matches!(byte, b':' | b'\n' | b'\r' | b'\t' | b'"' | b'\\')
-            || byte < 0x20
-    })
-}
-
-fn quote_if_needed(text: &str, delimiter: u8) -> String {
-    if needs_quote(text, delimiter) {
-        quote(text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn quote(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    for ch in text.chars() {
-        match ch {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            control if (control as u32) < 0x20 => {
-                out.push_str(&format!("\\u{:04x}", control as u32));
-            }
-            other => out.push(other),
+    let sign_prefixed = matches!(bytes[0], b'+' | b'-');
+    let mut any_digit = false;
+    let mut all_numeric_ish = true;
+    for (position, &byte) in bytes.iter().enumerate() {
+        // `\n`, `\r`, and `\t` are all below 0x20.
+        if byte == delimiter || matches!(byte, b':' | b'"' | b'\\') || byte < 0x20 {
+            return true;
+        }
+        if position == 0 && sign_prefixed {
+            continue;
+        }
+        if byte.is_ascii_digit() {
+            any_digit = true;
+        } else if !matches!(byte, b'.' | b'e' | b'E' | b'+' | b'-') {
+            all_numeric_ish = false;
         }
     }
-    out.push('"');
-    out
+    any_digit && all_numeric_ish
 }
 
 fn key_needs_quote(text: &str) -> bool {
@@ -1103,7 +1095,7 @@ fn key_needs_quote(text: &str) -> bool {
 
 fn write_key(writer: &mut Writer, key: &str) {
     if key_needs_quote(key) {
-        writer.text(&quote(key));
+        write_quoted(writer, key);
     } else {
         writer.text(key);
     }
@@ -1126,5 +1118,131 @@ mod tests {
         assert_eq!(canonical_float(2.5e-8), "2.5e-8");
         assert_eq!(canonical_float(1e20), "100000000000000000000");
         assert_eq!(canonical_float(1e21), "1e+21");
+    }
+}
+
+#[cfg(test)]
+mod e5_differential {
+    use super::*;
+
+    /// The implementations E5 replaced, kept as the differential oracle: a
+    /// classify pass, an independent numeric-like pass, then a forbidden-byte
+    /// pass; and escaping that re-encoded every character through UTF-8.
+    fn needs_quote_multi_pass(text: &str, delimiter: u8) -> bool {
+        fn is_numeric_like(bytes: &[u8]) -> bool {
+            let rest = match bytes.first() {
+                Some(b'+' | b'-') => &bytes[1..],
+                _ => bytes,
+            };
+            !rest.is_empty()
+                && rest.iter().any(u8::is_ascii_digit)
+                && rest.iter().all(|byte| {
+                    byte.is_ascii_digit() || matches!(byte, b'.' | b'e' | b'E' | b'+' | b'-')
+                })
+        }
+        let bytes = text.as_bytes();
+        if bytes.is_empty() {
+            return true;
+        }
+        if !matches!(
+            crate::scalar::classify_bare(bytes),
+            crate::event::ScalarToken::BareString(_)
+        ) {
+            return true;
+        }
+        if is_numeric_like(bytes) {
+            return true;
+        }
+        if bytes[0] == b' '
+            || bytes[bytes.len() - 1] == b' '
+            || matches!(bytes[0], b'"' | b'[' | b'{' | b'#' | b'\'')
+        {
+            return true;
+        }
+        if text == "-" || text.starts_with("- ") || text == "[]" {
+            return true;
+        }
+        bytes.iter().any(|&byte| {
+            byte == delimiter
+                || matches!(byte, b':' | b'\n' | b'\r' | b'\t' | b'"' | b'\\')
+                || byte < 0x20
+        })
+    }
+
+    fn quote_char_wise(text: &str) -> String {
+        let mut out = String::with_capacity(text.len() + 2);
+        out.push('"');
+        for ch in text.chars() {
+            match ch {
+                '"' => out.push_str("\\\""),
+                '\\' => out.push_str("\\\\"),
+                '\n' => out.push_str("\\n"),
+                '\r' => out.push_str("\\r"),
+                '\t' => out.push_str("\\t"),
+                control if (control as u32) < 0x20 => {
+                    out.push_str(&format!("\\u{:04x}", control as u32));
+                }
+                other => out.push(other),
+            }
+        }
+        out.push('"');
+        out
+    }
+
+    fn quote_span_wise(text: &str) -> String {
+        let mut writer = Writer::with_capacity(text.len() + 2, 2);
+        write_quoted(&mut writer, text);
+        String::from_utf8(writer.finish()).expect("escaped output is valid UTF-8")
+    }
+
+    /// Every string the encoder can be handed is either quoted or not, and if
+    /// quoted, escaped. Both decisions are checked against the replaced
+    /// implementations over an alphabet chosen to hit every branch: the
+    /// delimiters, the structural bytes, control bytes, the number grammar,
+    /// and multi-byte UTF-8.
+    #[test]
+    fn one_pass_quoting_matches_the_multi_pass_one() {
+        const ALPHABET: &[&str] = &[
+            "", "a", "0", "1", "9", ".", "e", "E", "+", "-", " ", ":", ",", "\t", "|", "\"", "\\",
+            "\n", "\r", "[", "]", "{", "#", "'", "\u{0}", "\u{1f}", "\u{7f}", "é", "→", "𝄞", "n",
+            "u", "l",
+        ];
+        const DELIMITERS: [u8; 3] = [b',', b'\t', b'|'];
+        let mut checked = 0usize;
+        for first in ALPHABET {
+            for second in ALPHABET {
+                for third in ALPHABET {
+                    let text = format!("{first}{second}{third}");
+                    for delimiter in DELIMITERS {
+                        assert_eq!(
+                            needs_quote(&text, delimiter),
+                            needs_quote_multi_pass(&text, delimiter),
+                            "needs_quote diverged on {text:?} delimiter {delimiter:?}"
+                        );
+                        checked += 1;
+                    }
+                    assert_eq!(
+                        quote_span_wise(&text),
+                        quote_char_wise(&text),
+                        "escaping diverged on {text:?}"
+                    );
+                }
+            }
+        }
+        for literal in [
+            "null", "true", "false", "[]", "- x", "-", "05", "+1", "1.2.3", "1e5",
+        ] {
+            for delimiter in DELIMITERS {
+                assert_eq!(
+                    needs_quote(literal, delimiter),
+                    needs_quote_multi_pass(literal, delimiter),
+                    "needs_quote diverged on {literal:?}"
+                );
+                checked += 1;
+            }
+            assert_eq!(quote_span_wise(literal), quote_char_wise(literal));
+        }
+        assert!(checked > 100_000, "differential was too small: {checked}");
+        println!("E5 differential: {checked} (string, delimiter) pairs, zero divergences");
     }
 }

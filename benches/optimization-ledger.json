@@ -139,6 +139,15 @@
       "source": "external review round (Fable 5), patch 02 of 5",
       "measurement": "make ab vs the v0.3.0 guard, cumulative with D6; P2's share isolated against the D6-only run: typed decode -2.5 to -4.5%, untyped decode -3.3 to -3.5%, typed encode -6.7% at 4096. The encode win is expected at this point in the stack because needs_quote still routes through classify_bare; E5 later removes that call.",
       "note": "Verified by an exhaustive differential against the replaced two-pass implementation, kept in src/scalar.rs as a #[cfg(test)] oracle: every token up to length 5 over the alphabet that decides the grammar (0192.eE+-n) plus the edge literals, 111,126 tokens, zero divergences."
+    },
+    {
+      "id": "E5",
+      "target": "quoting decision and string escaping (src/encode.rs)",
+      "hypothesis": "needs_quote made up to four passes over the same bytes (classify_bare, numeric-like, forbidden-byte, prefix checks) and write_quoted re-encoded every character through UTF-8. One pass for the decision and bulk span copies for the escaping should win on every string cell.",
+      "status": "adopted",
+      "source": "external review round (Fable 5), patch 03 of 5",
+      "measurement": "make ab vs the v0.3.0 guard, cumulative; E5's share isolated against the P2 run: typed encode -13.3 to -17.2% cumulative (E5 adds ~-10 points over P2), untyped encode -6.1 to -9.0%. Decode is unchanged by E5, as expected.",
+      "note": "The pass-collapsing rests on one observation: every valid number token is also numeric-like, so the number grammar needs no separate pass in the quoting decision. Verified by differential against the replaced multi-pass implementation, kept as a #[cfg(test)] oracle: 107,841 (string, delimiter) pairs over an alphabet covering delimiters, structural bytes, controls, the number grammar and multi-byte UTF-8, plus 35,937 escape comparisons. Zero divergences. The efficiency lock independently confirms canonical bytes did not move."
     }
   ],
   "token_findings": {
