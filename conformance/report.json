@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T03:49:16.014892+00:00",
+  "generated_at": "2026-08-07T03:56:17.333807+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -72,6 +72,261 @@
     "probe_observed_the_typed_path": true,
     "note": "An `Any` field asks for a builtin tree; containers inside an `Any` subtree are requested output and are not a G2 violation. See tests/test_typed_allocations.py for that case."
   },
+  "support_matrix": {
+    "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
+    "reference_implementation": "msgspec 0.21.1 (msgspec.json)",
+    "counts": {
+      "supported": 8,
+      "unsupported": 11,
+      "silently_ignored": 3,
+      "silently_wrong": 2
+    },
+    "entries": [
+      {
+        "feature": "scalars (int, float, str, bool, null)",
+        "tier": 0,
+        "status": "supported",
+        "detail": "including integers beyond 2**53, which round-trip exactly"
+      },
+      {
+        "feature": "nested Structs in a tabular array",
+        "tier": 0,
+        "status": "supported",
+        "detail": "the challenge shape: nested field groups keep a record on one row"
+      },
+      {
+        "feature": "Optional and defaults",
+        "tier": 0,
+        "status": "supported",
+        "detail": "an omitted field takes its declared default"
+      },
+      {
+        "feature": "field renaming",
+        "tier": 0,
+        "status": "supported",
+        "detail": "rename policies are read through the plan compiler"
+      },
+      {
+        "feature": "dict[str, T]",
+        "tier": 1,
+        "status": "supported",
+        "detail": "string-keyed mappings only; see the dict[int, T] entry"
+      },
+      {
+        "feature": "variable-length tuple",
+        "tier": 1,
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "Literal[str]",
+        "tier": 1,
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "forbid_unknown_fields",
+        "tier": 1,
+        "status": "supported",
+        "detail": "the accepted document round-trips; both reject an unknown field (tests/test_api.py)"
+      },
+      {
+        "feature": "fixed-length tuple",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-08: the plan compiler emits `tuple_fixed`, which Rust lowers as Custom"
+      },
+      {
+        "feature": "kw_only Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-09: construction is always a positional vectorcall"
+      },
+      {
+        "feature": "tagged unions",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "array_like Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "strict=False scalar coercion",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-06: `strict` reaches duplicate handling but not `convert_scalar`"
+      },
+      {
+        "feature": "recursive Struct types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the plan compiler recurses until RecursionError instead of erroring clearly"
+      },
+      {
+        "feature": "constraints (msgspec.Meta)",
+        "tier": 1,
+        "status": "silently_ignored",
+        "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
+      },
+      {
+        "feature": "Literal[int] membership",
+        "tier": 1,
+        "status": "silently_wrong",
+        "detail": "review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]"
+      },
+      {
+        "feature": "dict[int, T] and other non-string keys",
+        "tier": 1,
+        "status": "silently_wrong",
+        "detail": "review F-13: the key plan is compiled and ignored; keys stay strings"
+      },
+      {
+        "feature": "enum members",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "datetime",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "UUID",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "Decimal",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "dataclasses",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "encode(order=...)",
+        "tier": 1,
+        "status": "silently_ignored",
+        "detail": "review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError"
+      },
+      {
+        "feature": "Encoder(decimal_format=..., uuid_format=...)",
+        "tier": 2,
+        "status": "silently_ignored",
+        "detail": "accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
+      }
+    ],
+    "known_gaps": [
+      {
+        "feature": "fixed-length tuple",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-08: the plan compiler emits `tuple_fixed`, which Rust lowers as Custom"
+      },
+      {
+        "feature": "kw_only Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-09: construction is always a positional vectorcall"
+      },
+      {
+        "feature": "tagged unions",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "array_like Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "strict=False scalar coercion",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "review F-06: `strict` reaches duplicate handling but not `convert_scalar`"
+      },
+      {
+        "feature": "recursive Struct types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the plan compiler recurses until RecursionError instead of erroring clearly"
+      },
+      {
+        "feature": "constraints (msgspec.Meta)",
+        "tier": 1,
+        "status": "silently_ignored",
+        "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
+      },
+      {
+        "feature": "Literal[int] membership",
+        "tier": 1,
+        "status": "silently_wrong",
+        "detail": "review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]"
+      },
+      {
+        "feature": "dict[int, T] and other non-string keys",
+        "tier": 1,
+        "status": "silently_wrong",
+        "detail": "review F-13: the key plan is compiled and ignored; keys stay strings"
+      },
+      {
+        "feature": "enum members",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "datetime",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "UUID",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "Decimal",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "dataclasses",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "encode(order=...)",
+        "tier": 1,
+        "status": "silently_ignored",
+        "detail": "review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError"
+      },
+      {
+        "feature": "Encoder(decimal_format=..., uuid_format=...)",
+        "tier": 2,
+        "status": "silently_ignored",
+        "detail": "accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
+      }
+    ],
+    "severity_note": "`silently_wrong` and `silently_ignored` outrank `unsupported`: a rejection is visible to a caller, a wrong value is not."
+  },
   "benchmarks_typed_same_run": [
     {
       "records": 16,
@@ -79,18 +334,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.06,
-        "untyped_tree": 4.27,
-        "convert_only": 1.38,
-        "wrapper_tree_plus_convert": 5.7,
-        "incumbent_pipeline_python_toon_plus_convert": 107.19,
-        "msgspec_json_native": 2.16
+        "typed_direct": 4.99,
+        "untyped_tree": 4.25,
+        "convert_only": 1.35,
+        "wrapper_tree_plus_convert": 5.65,
+        "incumbent_pipeline_python_toon_plus_convert": 106.14,
+        "msgspec_json_native": 2.14
       },
       "encode_us": {
-        "typed_direct_whole": 2.26,
-        "to_builtins_alone": 1.05,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 94.31,
-        "msgspec_json_native": 1.01
+        "typed_direct_whole": 2.23,
+        "to_builtins_alone": 1.02,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 93.33,
+        "msgspec_json_native": 0.99
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -108,18 +363,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.75,
-        "untyped_tree": 15.45,
-        "convert_only": 5.18,
-        "wrapper_tree_plus_convert": 20.78,
-        "incumbent_pipeline_python_toon_plus_convert": 435.21,
-        "msgspec_json_native": 8.29
+        "typed_direct": 17.53,
+        "untyped_tree": 15.19,
+        "convert_only": 5.15,
+        "wrapper_tree_plus_convert": 20.39,
+        "incumbent_pipeline_python_toon_plus_convert": 427.95,
+        "msgspec_json_native": 8.16
       },
       "encode_us": {
-        "typed_direct_whole": 7.67,
-        "to_builtins_alone": 4.33,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 369.85,
-        "msgspec_json_native": 3.12
+        "typed_direct_whole": 7.68,
+        "to_builtins_alone": 4.29,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 365.69,
+        "msgspec_json_native": 3.05
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -137,18 +392,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 134.15,
-        "untyped_tree": 128.62,
-        "convert_only": 41.45,
-        "wrapper_tree_plus_convert": 171.26,
-        "incumbent_pipeline_python_toon_plus_convert": 3574.9,
-        "msgspec_json_native": 67.22
+        "typed_direct": 134.35,
+        "untyped_tree": 129.71,
+        "convert_only": 41.57,
+        "wrapper_tree_plus_convert": 168.52,
+        "incumbent_pipeline_python_toon_plus_convert": 3497.7,
+        "msgspec_json_native": 65.94
       },
       "encode_us": {
-        "typed_direct_whole": 60.94,
-        "to_builtins_alone": 43.39,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2946.14,
-        "msgspec_json_native": 23.42
+        "typed_direct_whole": 60.1,
+        "to_builtins_alone": 42.56,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2908.01,
+        "msgspec_json_native": 22.74
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -166,18 +421,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1182.09,
-        "untyped_tree": 1120.8,
-        "convert_only": 433.3,
-        "wrapper_tree_plus_convert": 1520.45,
-        "incumbent_pipeline_python_toon_plus_convert": 29831.75,
-        "msgspec_json_native": 646.44
+        "typed_direct": 1171.53,
+        "untyped_tree": 1109.46,
+        "convert_only": 427.35,
+        "wrapper_tree_plus_convert": 1513.48,
+        "incumbent_pipeline_python_toon_plus_convert": 29455.87,
+        "msgspec_json_native": 641.79
       },
       "encode_us": {
-        "typed_direct_whole": 483.68,
-        "to_builtins_alone": 435.65,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23837.13,
-        "msgspec_json_native": 182.25
+        "typed_direct_whole": 478.43,
+        "to_builtins_alone": 441.24,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23429.27,
+        "msgspec_json_native": 172.85
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -200,16 +455,16 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.49,
-        "toons_rust": 26.53,
-        "python_toon": 94.03,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.48,
+        "toons_rust": 25.21,
+        "python_toon": 92.79,
+        "msgspec_json_context": 1.2
       },
       "decode_us": {
-        "msgspec_toon": 4.36,
-        "toons_rust": 11.11,
-        "python_toon": 108.04,
-        "msgspec_json_context": 2.33
+        "msgspec_toon": 4.27,
+        "toons_rust": 10.82,
+        "python_toon": 106.52,
+        "msgspec_json_context": 2.28
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -225,16 +480,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.8,
-        "toons_rust": 98.47,
-        "python_toon": 368.79,
-        "msgspec_json_context": 3.69
+        "msgspec_toon": 15.52,
+        "toons_rust": 100.47,
+        "python_toon": 362.93,
+        "msgspec_json_context": 3.71
       },
       "decode_us": {
-        "msgspec_toon": 15.34,
-        "toons_rust": 43.99,
-        "python_toon": 434.34,
-        "msgspec_json_context": 9.58
+        "msgspec_toon": 15.11,
+        "toons_rust": 43.48,
+        "python_toon": 431.12,
+        "msgspec_json_context": 9.55
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -250,16 +505,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 121.15,
-        "toons_rust": 788.12,
-        "python_toon": 2909.29,
-        "msgspec_json_context": 29.04
+        "msgspec_toon": 118.88,
+        "toons_rust": 775.21,
+        "python_toon": 2847.43,
+        "msgspec_json_context": 28.28
       },
       "decode_us": {
-        "msgspec_toon": 122.03,
-        "toons_rust": 356.71,
-        "python_toon": 3568.33,
-        "msgspec_json_context": 81.83
+        "msgspec_toon": 121.85,
+        "toons_rust": 358.05,
+        "python_toon": 3558.71,
+        "msgspec_json_context": 81.85
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -275,16 +530,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 961.42,
-        "toons_rust": 6489.59,
-        "python_toon": 23561.24,
-        "msgspec_json_context": 212.64
+        "msgspec_toon": 961.78,
+        "toons_rust": 6250.98,
+        "python_toon": 22946.92,
+        "msgspec_json_context": 210.93
       },
       "decode_us": {
-        "msgspec_toon": 1123.86,
-        "toons_rust": 3007.66,
-        "python_toon": 29208.65,
-        "msgspec_json_context": 794.82
+        "msgspec_toon": 1114.6,
+        "toons_rust": 2988.17,
+        "python_toon": 29264.52,
+        "msgspec_json_context": 790.1
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -941,8 +1196,22 @@
   ],
   "known_divergences_and_gaps": [
     "G4 fails: whole direct encode does not beat msgspec.to_builtins alone (2.2x at 16 records, ~10% gap at 4096 after optimizations E1/E2). Cause: public stable-ABI attribute reads versus msgspec's private C slot reads. This is the canvas risk R-02 outcome, reported rather than masked; candidate E3 remains open in the optimization ledger.",
-    "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, literals, dec_hook customs). No enums/datetime/UUID/Decimal yet.",
-    "Recursive (self-referential) Struct types are not supported.",
-    "Non-finite float encoding raises EncodeError (msgspec.json parity); no 4.1 fixture exercises the alternative null mapping, so the prior-art question stands resolved-by-absence for this corpus."
+    "Non-finite float encoding raises EncodeError (msgspec.json parity); no 4.1 fixture exercises the alternative null mapping, so the prior-art question stands resolved-by-absence for this corpus.",
+    "unsupported: fixed-length tuple (tier 1) \u2014 review F-08: the plan compiler emits `tuple_fixed`, which Rust lowers as Custom",
+    "unsupported: kw_only Structs (tier 1) \u2014 review F-09: construction is always a positional vectorcall",
+    "unsupported: tagged unions (tier 1)",
+    "unsupported: array_like Structs (tier 1)",
+    "unsupported: strict=False scalar coercion (tier 1) \u2014 review F-06: `strict` reaches duplicate handling but not `convert_scalar`",
+    "unsupported: recursive Struct types (tier 1) \u2014 the plan compiler recurses until RecursionError instead of erroring clearly",
+    "silently_ignored: constraints (msgspec.Meta) (tier 1) \u2014 parsed by the plan compiler and never enforced: a value msgspec rejects is accepted",
+    "silently_wrong: Literal[int] membership (tier 1) \u2014 review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]",
+    "silently_wrong: dict[int, T] and other non-string keys (tier 1) \u2014 review F-13: the key plan is compiled and ignored; keys stay strings",
+    "unsupported: enum members (tier 2)",
+    "unsupported: datetime (tier 2)",
+    "unsupported: UUID (tier 2)",
+    "unsupported: Decimal (tier 2)",
+    "unsupported: dataclasses (tier 2)",
+    "silently_ignored: encode(order=...) (tier 1) \u2014 review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError",
+    "silently_ignored: Encoder(decimal_format=..., uuid_format=...) (tier 2) \u2014 accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
   ]
 }

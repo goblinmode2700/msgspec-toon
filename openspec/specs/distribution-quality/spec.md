@@ -63,6 +63,47 @@ comparison. A release without the report SHALL be treated as unqualified.
 - **THEN** it names the corpus commit, the counts, and the divergences
 - **AND** any divergence is stated rather than omitted
 
+### Requirement: The type-support gap list is generated from a verified matrix
+
+The report's type-support gaps SHALL be generated from a single maintained support matrix,
+never written freehand. Each matrix entry SHALL declare the behavior of this codec and of
+`msgspec.json` on an equivalent document, and a test SHALL execute both and fail when a
+declaration stops matching observed behavior — in either direction, so closing a gap without
+updating the matrix fails the suite.
+
+Entries SHALL distinguish a rejection from a silent divergence. A parameter accepted and
+ignored, or a value accepted and converted differently from `msgspec.json`, SHALL be reported
+as such rather than as an unsupported feature: a rejection is visible to a caller and a wrong
+value is not.
+
+#### Scenario: A gap cannot outlive its fix
+
+- **WHEN** an unsupported feature starts working
+- **AND** the matrix still declares it unsupported
+- **THEN** the support-matrix test fails
+
+#### Scenario: Support cannot be claimed without a probe
+
+- **WHEN** the report claims a feature is supported
+- **THEN** a matrix entry demonstrates it against `msgspec.json` on an equivalent document
+
+### Requirement: Measurements come from a verified build
+
+A published measurement SHALL come from the release extension in the environment that
+actually imports it, and the tooling SHALL verify this rather than assume it. A benchmark
+SHALL refuse to run when the extension is older than the sources it was built from, or when
+it carries test-only instrumentation.
+
+#### Scenario: A stale extension is refused
+
+- **WHEN** a source file is newer than the built extension the environment imports
+- **THEN** the benchmark exits with the rebuild instruction instead of publishing a number
+
+#### Scenario: An instrumented build is refused
+
+- **WHEN** the imported extension carries the allocation counters
+- **THEN** the benchmark exits rather than report the timing as a release measurement
+
 ### Requirement: Reference outputs never override fixtures
 
 Differential testing against the reference TypeScript implementation MAY generate additional

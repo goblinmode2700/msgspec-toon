@@ -5,12 +5,11 @@ file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-Phase A is done (containment: F-01/F-02/F-03) and Phase B is half done (F-05 independent
-G2 instrumentation, plus F-21 found while measuring it). **Next: F-11** (generate the
-known-gap list from one maintained support matrix — the report still carries a freehand
-summary that omits fixed tuples, `kw_only`, `Literal[int]`/bool, inert `order`, and the
-rest), then **F-12** (alternating A/B blocks and published spread — this session measured
-run order at 1–3%, which is larger than several published deltas). Use `/last-mile`.
+Phase A is done (containment: F-01/F-02/F-03). Phase B is done except **F-12**, which is
+next: alternate the A/B blocks and publish spread. It is well-motivated now — this
+session measured run order alone at 1–3%, larger than several published deltas, and every
+row of an instrumented-vs-clean comparison came back with the physically impossible sign.
+After that, Phase C (typed correctness) starts at F-04. Use `/last-mile`.
 
 ## The goal, precisely
 
@@ -34,6 +33,7 @@ evidence in `conformance/report.json` — never as assertions.
 | vs the real incumbent pipeline | 19–51× faster | `bench_typed.py` incumbent rows |
 | Token efficiency (T1) | **pass**: canonical TOON = 0.61–0.64× JSON tokens on record payloads; incumbents = 1.25× JSON | `bench_tokens.py` |
 | Tab-delimiter folklore (T2) | **measured false** at noise level; published as a finding | report `token_efficiency.findings` |
+| Type-support boundaries | **generated, not asserted**: 8 supported, 11 unsupported, 3 silently ignored, 2 silently wrong | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
 | G4 encode vs `to_builtins` alone | **fail, honestly reported**: 2.2× at 16 records, ~10% at 4096. Stable-ABI `getattr` vs msgspec's private C slot reads (canvas risk R-02) | report `known_divergences_and_gaps` |
 | Optimizations | 6 adopted with same-session A/B vs frozen `v0.1.0-conformant` wheel: typed decode −15→−24%, untyped decode −10→−21%, encode −4→−8% | `benches/optimization-ledger.json` |
 
@@ -50,18 +50,23 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
    instrumented wheel into `.venv-g2` and generates the proof artifact; the release
    report reads it and refuses to fabricate it. Measured: removing the counters from
    release changed nothing outside noise, so the older G3/G5 margins stand.
-2. **Build identity — enforced (F-21, new).** `.venv` is an *editable* install, so
+2. **Type-support gaps — generated (F-11).** `conformance/support_matrix.py` is the one
+   maintained statement of what works, with a probe for this codec and one for
+   `msgspec.json` per entry; `tests/test_support_matrix.py` fails when a declaration stops
+   matching reality in either direction. The report's gap list is generated from it (4
+   freehand entries → 18). Status distinguishes a rejection from a silent divergence.
+3. **Build identity — enforced (F-21, new).** `.venv` is an *editable* install, so
    `uv run` imports `python/msgspec_toon/_native.abi3.so`, and a pip-installed wheel is
    shadowed. `make build` is now `maturin develop --release`, and
    `benches/build_freshness.py` refuses to publish a number from a stale or instrumented
    extension. This bit for real: one A/B this session silently measured the previous
    checkpoint's binary.
-3. **Containment (P0) — closed.** A declared count no longer sizes an allocation, and one
+4. **Containment (P0) — closed.** A declared count no longer sizes an allocation, and one
    shared nesting ceiling (`src/limits.rs`, `MAX_NESTING_DEPTH`) now bounds indentation,
    header field groups, encoder writing, and encoder shape discovery. Depth is a hard
    fault in both strict and non-strict mode. Both OpenSpec capabilities state the limit.
    Same-session A/B showed no cost. The remaining review queue is Phase B onward.
-4. **Adversarial review sweep — complete.** The durable findings are in
+5. **Adversarial review sweep — complete.** The durable findings are in
    `docs/adversarial-review-v0.2.0.md`. The executable queue is in `LAST-MILE.md`.
    The review covered:
    - `src/typed.rs` — the D1 row-memo state machine (cursor/complete/disabled
@@ -82,25 +87,26 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
    - Payload-safety audit: grep every `format!`/error message for payload-derived
      content (AD-007). Tests cover sentinels; a reviewer should cover the negative
      space.
-5. **E3 (fused row templates)** — unattempted encode candidate; hypothesis in
+6. **E3 (fused row templates)** — unattempted encode candidate; hypothesis in
    `benches/optimization-ledger.json`. G4's remaining ~10% gap at 4096 is the target.
-6. **Formal profiling** (change task 4.1) — candidates were chosen by inspection and
+7. **Formal profiling** (change task 4.1) — candidates were chosen by inspection and
    validated by A/B; a flamegraph pass may reveal candidates nobody guessed.
-7. **pyo3 cooldown pin** — `=0.29.0` lifts when 0.29.2 ages past 14 days
+8. **pyo3 cooldown pin** — `=0.29.0` lifts when 0.29.2 ages past 14 days
    (~2026-08-19); `make audit` confirms. Then `cargo update -p pyo3` + full re-test.
-8. **Typed support ladder** — Tier 1 gaps (tagged unions, `array_like`,
-   `forbid_unknown_fields` is done, constraints are parsed but NOT enforced) and all
-   of Tier 2 (enums, datetime, UUID, Decimal, dataclasses). `decimal_format`/
-   `uuid_format` params are accepted but inert — either implement or fail loudly.
-9. **Keyed tabular in the typed path** — decode works via Dict frames for
+9. **Typed support ladder** — the authoritative list is now
+   `conformance/support_matrix.py`, not this file. Phase C of `LAST-MILE.md` implements
+   the Tier 1 items; Tier 2 (enums, datetime, UUID, Decimal, dataclasses) is untouched.
+   Note `decimal_format`/`uuid_format` are dropped by the `Encoder` constructor but
+   rejected by the `encode()` function — the two entry points disagree.
+10. **Keyed tabular in the typed path** — decode works via Dict frames for
    `dict[str, Struct]`; the D1 memo doesn't cover keyed rows (hash path). Minor.
-10. **Recursive Struct types** — will infinitely recurse in the plan compiler. Detect
-   and error cleanly, or support.
-11. **openspec changes** — `refine-benchmarks-and-tooling` (16/18) and
+11. **Recursive Struct types** — the plan compiler recurses until `RecursionError`
+   (catchable, not a crash). Detect the cycle and error clearly, or support them.
+12. **openspec changes** — `refine-benchmarks-and-tooling` (16/18) and
    `optimize-speed-and-token-efficiency` (23/24) remain open with only
    deferred/time-gated tasks; archive them (`openspec archive`) when their stragglers
    close. Main specs are already synced.
-12. **Wheel matrix + CI** — only local macOS arm64 wheels exist. The canvas §17
+13. **Wheel matrix + CI** — only local macOS arm64 wheels exist. The canvas §17
    Phase 6 (abi3 wheels for 5 platforms, syscall checks, CI) is untouched.
 
 ## Invariants — do not regress these

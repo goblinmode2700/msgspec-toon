@@ -104,10 +104,43 @@ Design notes for the next agent:
 - [x] F-05 replace release-wheel allocation counters with independent test instrumentation.
 - [x] Rerun G3 and G5 without atomic counter bias.
 - [x] F-21 (new) refuse to publish a measurement from a stale or instrumented build.
-- [ ] F-11 generate the known-gap report from one maintained support matrix.
+- [x] F-11 generate the known-gap report from one maintained support matrix.
 - [ ] F-12 alternate A/B blocks and publish raw repetitions plus spread.
 
 Exit: each performance and G2 claim has independent, same-session evidence.
+
+#### Checkpoint 3 — F-11
+
+Hypothesis: the released gap list is not merely incomplete but structurally unable to
+stay complete, because prose has no failure mode. Replacing it with a matrix that tests
+execute should (a) surface gaps the freehand list omitted and (b) make a stale claim a
+test failure.
+
+Confirmed both ways. Every gap the review named was verified by probe before being
+written down — none were copied on the review's authority — and the generated list went
+from 4 freehand entries to 18. `conformance/support_matrix.py` holds one entry per
+feature with a probe for this codec and a probe for `msgspec.json` on the equivalent
+document; `tests/test_support_matrix.py` runs all 26 and fails when a declaration stops
+being true in *either* direction. It caught a mis-declared entry of mine on its first
+run.
+
+Two refinements over the review's framing:
+
+- Status is not binary. `unsupported` (we raise, msgspec accepts) is ranked below
+  `silently_ignored` (a parameter accepted and dropped) and `silently_wrong` (both
+  succeed and disagree). A rejection is visible to a caller; a wrong value is not.
+  Current counts: 8 supported, 11 unsupported, 3 silently ignored, 2 silently wrong.
+- A gap is only ours if `msgspec.json` accepts what we reject. The `unsupported` checker
+  asserts the reference *succeeds*, so shared behavior can never be logged as our defect.
+
+Corrections to the review's list, found by probing:
+
+- `decimal_format`/`uuid_format` are not "accepted but inert" everywhere: the `Encoder`
+  constructor accepts and drops them, while the `encode()` function rejects the same
+  names with `TypeError`. The two entry points disagree; that is now one matrix entry.
+- Recursive Structs do not crash. `_plan.py` recurses until `RecursionError`, which is
+  catchable — bad ergonomics, not a containment defect. Open item 10 stands, but it is
+  not a P0.
 
 #### Checkpoint 2 — F-05 and F-21
 

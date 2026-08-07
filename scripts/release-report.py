@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "benches"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 
 import bench_codecs
 import bench_tokens
@@ -25,6 +26,7 @@ import msgspec
 from _timing import methodology
 from bench_typed import run
 from msgspec_toon import _native
+from support_matrix import as_report as support_matrix_report
 
 
 def allocation_proof() -> dict:
@@ -104,6 +106,7 @@ def main() -> None:
         "timing_methodology": methodology(),
         "conformance": conformance_summary(lock),
         "allocation_proof": allocation_proof(),
+        "support_matrix": support_matrix_report(),
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "token_efficiency": bench_tokens.run(),
@@ -159,6 +162,9 @@ def main() -> None:
                 "pinned and latest variants."
             ),
         ],
+        # Generated, never freehand: every type-support gap comes from the
+        # matrix that tests/test_support_matrix.py verifies against
+        # msgspec.json, so this list cannot lag the implementation (F-11).
         "known_divergences_and_gaps": [
             (
                 "G4 fails: whole direct encode does not beat msgspec.to_builtins alone "
@@ -168,14 +174,14 @@ def main() -> None:
                 "than masked; candidate E3 remains open in the optimization ledger."
             ),
             (
-                "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, "
-                "literals, dec_hook customs). No enums/datetime/UUID/Decimal yet."
-            ),
-            "Recursive (self-referential) Struct types are not supported.",
-            (
                 "Non-finite float encoding raises EncodeError (msgspec.json parity); "
                 "no 4.1 fixture exercises the alternative null mapping, so the "
                 "prior-art question stands resolved-by-absence for this corpus."
+            ),
+            *(
+                f"{gap['status']}: {gap['feature']} (tier {gap['tier']})"
+                + (f" — {gap['detail']}" if gap["detail"] else "")
+                for gap in support_matrix_report()["known_gaps"]
             ),
         ],
     }
