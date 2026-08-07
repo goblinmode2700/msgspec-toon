@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T00:48:53.040681+00:00",
+  "generated_at": "2026-08-07T00:53:20.555864+00:00",
   "distribution": "msgspec-toon 0.0.1 (proof of concept)",
   "environment": {
     "python": "3.13.1",
@@ -43,18 +43,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.79,
-        "untyped_tree": 4.85,
-        "convert_only": 1.38,
-        "wrapper_tree_plus_convert": 6.16,
-        "incumbent_pipeline_python_toon_plus_convert": 107.17,
-        "msgspec_json_native": 2.19
+        "typed_direct": 5.65,
+        "untyped_tree": 4.67,
+        "convert_only": 1.34,
+        "wrapper_tree_plus_convert": 6.09,
+        "incumbent_pipeline_python_toon_plus_convert": 104.27,
+        "msgspec_json_native": 2.11
       },
       "encode_us": {
-        "typed_direct_whole": 2.26,
-        "to_builtins_alone": 1.04,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 93.92,
-        "msgspec_json_native": 1.0
+        "typed_direct_whole": 2.23,
+        "to_builtins_alone": 1.05,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 91.64,
+        "msgspec_json_native": 0.97
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -72,18 +72,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 22.81,
-        "untyped_tree": 18.16,
-        "convert_only": 5.13,
-        "wrapper_tree_plus_convert": 23.55,
-        "incumbent_pipeline_python_toon_plus_convert": 439.36,
-        "msgspec_json_native": 8.33
+        "typed_direct": 20.76,
+        "untyped_tree": 17.59,
+        "convert_only": 5.15,
+        "wrapper_tree_plus_convert": 22.77,
+        "incumbent_pipeline_python_toon_plus_convert": 429.19,
+        "msgspec_json_native": 8.16
       },
       "encode_us": {
-        "typed_direct_whole": 7.64,
-        "to_builtins_alone": 4.35,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 368.65,
-        "msgspec_json_native": 2.99
+        "typed_direct_whole": 7.52,
+        "to_builtins_alone": 4.39,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 360.46,
+        "msgspec_json_native": 2.95
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -101,18 +101,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 164.15,
-        "untyped_tree": 155.39,
-        "convert_only": 42.12,
-        "wrapper_tree_plus_convert": 198.12,
-        "incumbent_pipeline_python_toon_plus_convert": 3590.2,
-        "msgspec_json_native": 65.92
+        "typed_direct": 158.89,
+        "untyped_tree": 153.91,
+        "convert_only": 41.58,
+        "wrapper_tree_plus_convert": 197.45,
+        "incumbent_pipeline_python_toon_plus_convert": 3509.21,
+        "msgspec_json_native": 66.54
       },
       "encode_us": {
-        "typed_direct_whole": 58.06,
-        "to_builtins_alone": 43.0,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2956.64,
-        "msgspec_json_native": 23.26
+        "typed_direct_whole": 57.18,
+        "to_builtins_alone": 42.85,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2880.96,
+        "msgspec_json_native": 22.72
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -130,18 +130,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1399.53,
-        "untyped_tree": 1443.64,
-        "convert_only": 437.78,
-        "wrapper_tree_plus_convert": 1750.72,
-        "incumbent_pipeline_python_toon_plus_convert": 29959.21,
-        "msgspec_json_native": 649.08
+        "typed_direct": 1451.57,
+        "untyped_tree": 1397.34,
+        "convert_only": 431.67,
+        "wrapper_tree_plus_convert": 1721.91,
+        "incumbent_pipeline_python_toon_plus_convert": 28854.33,
+        "msgspec_json_native": 647.67
       },
       "encode_us": {
-        "typed_direct_whole": 468.14,
+        "typed_direct_whole": 464.66,
         "to_builtins_alone": 436.9,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 24002.29,
-        "msgspec_json_native": 172.38
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23397.75,
+        "msgspec_json_native": 170.28
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -164,15 +164,15 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.69,
-        "toons_rust": 26.22,
-        "python_toon": 94.55,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.64,
+        "toons_rust": 25.91,
+        "python_toon": 92.35,
+        "msgspec_json_context": 1.19
       },
       "decode_us": {
-        "msgspec_toon": 4.86,
-        "toons_rust": 11.09,
-        "python_toon": 108.09,
+        "msgspec_toon": 4.75,
+        "toons_rust": 10.91,
+        "python_toon": 106.77,
         "msgspec_json_context": 2.35
       },
       "gates": {
@@ -189,16 +189,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 16.15,
-        "toons_rust": 99.41,
-        "python_toon": 368.92,
-        "msgspec_json_context": 3.65
+        "msgspec_toon": 16.38,
+        "toons_rust": 97.74,
+        "python_toon": 358.69,
+        "msgspec_json_context": 3.61
       },
       "decode_us": {
-        "msgspec_toon": 18.23,
-        "toons_rust": 43.95,
-        "python_toon": 436.86,
-        "msgspec_json_context": 9.6
+        "msgspec_toon": 17.97,
+        "toons_rust": 42.93,
+        "python_toon": 425.9,
+        "msgspec_json_context": 9.5
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -214,16 +214,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 124.74,
-        "toons_rust": 802.39,
-        "python_toon": 2942.74,
-        "msgspec_json_context": 28.87
+        "msgspec_toon": 123.45,
+        "toons_rust": 791.78,
+        "python_toon": 2863.28,
+        "msgspec_json_context": 28.47
       },
       "decode_us": {
-        "msgspec_toon": 151.52,
-        "toons_rust": 359.29,
-        "python_toon": 3600.7,
-        "msgspec_json_context": 83.0
+        "msgspec_toon": 149.68,
+        "toons_rust": 350.89,
+        "python_toon": 3514.43,
+        "msgspec_json_context": 81.61
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -239,16 +239,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 992.98,
-        "toons_rust": 6502.65,
-        "python_toon": 23705.07,
-        "msgspec_json_context": 214.1
+        "msgspec_toon": 1013.19,
+        "toons_rust": 6350.49,
+        "python_toon": 22970.2,
+        "msgspec_json_context": 209.4
       },
       "decode_us": {
-        "msgspec_toon": 1360.99,
-        "toons_rust": 2986.87,
-        "python_toon": 29417.17,
-        "msgspec_json_context": 817.12
+        "msgspec_toon": 1353.3,
+        "toons_rust": 2942.58,
+        "python_toon": 29323.4,
+        "msgspec_json_context": 794.33
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -267,13 +267,15 @@
   },
   "benchmark_caveats": [
     "Each codec round-trips its own encoded bytes: the incumbents predate TOON 4.x and emit the fallback list form (no nested field groups), so they parse roughly 2.9x more bytes for the same value. Byte sizes are published per row; that difference is the real-world comparison, not an unfair one.",
-    "The incumbent pipeline rows (to_builtins + python-toon encode; python-toon decode + convert) reproduce a known-inefficient composition \u2014 a benchmark to beat, not the strongest alternative."
+    "The incumbent pipeline rows (to_builtins + python-toon encode; python-toon decode + convert) reproduce a known-inefficient composition \u2014 a benchmark to beat, not the strongest alternative.",
+    "python-toon's latest PyPI release equals the pinned 0.1.3 at measurement time, so a single python-toon row covers both the pinned and latest variants."
   ],
   "known_divergences_and_gaps": [
     "G4 fails: whole direct encode does not beat msgspec.to_builtins alone at small payloads (2.1x at 16 records) and approaches parity at 1 MiB scale (~3% gap). Cause: public stable-ABI attribute reads (~20ns/field) versus msgspec's private C slot reads. This is the canvas risk R-02 outcome, reported rather than masked.",
     "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, literals, dec_hook customs). No enums/datetime/UUID/Decimal yet.",
     "Delimiter is comma only; tab/pipe delimiters and keyed tabular objects are not implemented.",
     "Canonical float formatting follows ryu shortest-repr with JS-style exponent signs; unverified against the official fixture corpus.",
-    "Recursive (self-referential) Struct types are not supported."
+    "Recursive (self-referential) Struct types are not supported.",
+    "Fixture-decidable (from the toons prior-art review, docs/prior-art/toons.md): whether non-finite floats encode as null (toons' reading of the spec) or raise (our msgspec.json-parity choice), and whether strict decode must accept consistent non-2 indent widths."
   ]
 }

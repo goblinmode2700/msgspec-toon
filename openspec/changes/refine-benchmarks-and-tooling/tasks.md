@@ -7,34 +7,41 @@
 
 ## 2. Makefile
 
-- [ ] 2.1 Add `Makefile` with `lint`, `typecheck`, `test`, `check`, `build`, `bench`,
+- [x] 2.1 Add `Makefile` with `lint`, `typecheck`, `test`, `check`, `build`, `bench`,
       `report` targets (design.md shapes; exports `PYO3_PYTHON` for `cargo test`).
-- [ ] 2.2 Add `mypy` configuration for `python/msgspec_toon` and fix anything it flags.
-- [ ] 2.3 Run `make check` clean.
+- [x] 2.2 Add `mypy` configuration for `python/msgspec_toon` and fix anything it flags.
+      (Strict mode; three findings fixed.)
+- [x] 2.3 Run `make check` clean. (Includes rustfmt across the crate and a clippy
+      `-D warnings` fix: `Lines::next` renamed to `advance`.)
 
 ## 3. Timing utility
 
-- [ ] 3.1 Add `benches/_timing.py` (`best_of` + `@timed`), delete the hand-rolled loop
-      in `bench_typed.py`, and port `bench_typed.py` and `scripts/release-report.py` to it.
+- [x] 3.1 Add `benches/_timing.py` (`best_of` returning a `Timing` with methodology
+      parameters), delete the hand-rolled loop in `bench_typed.py`, and port
+      `bench_typed.py`, `bench_codecs.py`, and `scripts/release-report.py` to it.
 
 ## 4. Incumbent benchmarks
 
-- [ ] 4.1 Add `python-toon==0.1.3` to a benchmark dependency group; check what the
-      latest release is and record whether it differs.
-- [ ] 4.2 Add `benches/bench_codecs.py`: raw-codec rows (python-toon variants, `toons`
-      if installable, msgspec.json context) per design.md matrix, including byte sizes
-      per codec.
-- [ ] 4.3 Add incumbent-pipeline rows (`encode(to_builtins(...))` /
-      `convert(decode(...))`) to the typed benchmark, alongside the existing
-      `to_builtins`-alone row.
-- [ ] 4.4 Fold the new rows into `scripts/release-report.py` output.
+- [x] 4.1 Add `python-toon==0.1.3` and `toons` to the `bench` dependency group.
+      Latest python-toon release equals 0.1.3 at measurement time; recorded in the
+      report, one row covers both variants.
+- [x] 4.2 Add `benches/bench_codecs.py`: raw-codec rows with per-codec byte sizes.
+      Result: G5 passes at every size in both directions (2-6.5x vs toons, ~20x vs
+      python-toon); our tabular output is 2.9x smaller than both incumbents' fallback
+      form, which exceeds compact JSON.
+- [x] 4.3 Add incumbent-pipeline rows to the typed benchmark. Result: typed path wins
+      19-49x decode, 41-51x encode.
+- [x] 4.4 Fold the new rows, versions, methodology, and caveats into
+      `scripts/release-report.py` output.
 
 ## 5. toons prior art
 
-- [ ] 5.1 Fetch `toons` source at a pinned version; review per design.md target list.
-- [ ] 5.2 Write `docs/prior-art/toons.md` (adopted / rejected / misses found).
-- [ ] 5.3 File or fix every identified miss in our Rust core; note each in the report's
-      known-gaps list if deferred.
+- [x] 5.1 Fetch `toons` 0.7.0 source (PyPI sdist); review per design.md target list.
+- [x] 5.2 Write `docs/prior-art/toons.md` (adopted / rejected / misses found).
+- [x] 5.3 Misses found in our core are tracked: two fixture-decidable conformance
+      questions (non-finite float encoding, indent-width flexibility) added to the
+      report's known-gaps list; the `[N\t]`/`[N|]` delimiter grammar recorded as the
+      reference for the existing comma-only gap.
 
 ## 6. Package cooldown (applied early, 2026-08-06, with owner approval)
 

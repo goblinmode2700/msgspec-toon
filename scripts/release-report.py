@@ -109,6 +109,11 @@ def main() -> None:
                 "python-toon decode + convert) reproduce a known-inefficient "
                 "composition — a benchmark to beat, not the strongest alternative."
             ),
+            (
+                "python-toon's latest PyPI release equals the pinned 0.1.3 at "
+                "measurement time, so a single python-toon row covers both the "
+                "pinned and latest variants."
+            ),
         ],
         "known_divergences_and_gaps": [
             (
@@ -131,6 +136,13 @@ def main() -> None:
                 "exponent signs; unverified against the official fixture corpus."
             ),
             "Recursive (self-referential) Struct types are not supported.",
+            (
+                "Fixture-decidable (from the toons prior-art review, "
+                "docs/prior-art/toons.md): whether non-finite floats encode as null "
+                "(toons' reading of the spec) or raise (our msgspec.json-parity "
+                "choice), and whether strict decode must accept consistent non-2 "
+                "indent widths."
+            ),
         ],
     }
     report["gates"]["G2_zero_intermediates"] = report["allocation_proof"][
