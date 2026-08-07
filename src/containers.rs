@@ -142,6 +142,17 @@ pub fn new_final_dict(py: Python<'_>) -> Bound<'_, PyDict> {
     PyDict::new(py)
 }
 
+/// A tuple built once while compiling a plan — a Struct's keyword-argument
+/// names, for example. It is machinery rather than decoded output, so it is
+/// built here under the same membrane but deliberately not counted.
+#[allow(clippy::disallowed_methods)]
+pub fn new_plan_tuple<'py>(
+    py: Python<'py>,
+    items: Vec<Bound<'py, PyAny>>,
+) -> PyResult<Bound<'py, PyTuple>> {
+    PyTuple::new(py, items)
+}
+
 /// Record a Struct instance built by the typed consumer. Construction itself
 /// is a vectorcall on the user's class, so only the tally lives here — the
 /// count exists so the probe can prove it observed the typed path, rather than

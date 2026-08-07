@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T04:30:22.484863+00:00",
+  "generated_at": "2026-08-07T04:37:35.545507+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -76,9 +76,9 @@
     "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
     "reference_implementation": "msgspec 0.21.1 (msgspec.json)",
     "counts": {
-      "supported": 10,
+      "supported": 11,
       "parity_rejects": 2,
-      "unsupported": 12,
+      "unsupported": 11,
       "silently_ignored": 3,
       "silently_wrong": 0
     },
@@ -146,8 +146,8 @@
       {
         "feature": "kw_only Structs",
         "tier": 1,
-        "status": "unsupported",
-        "detail": "review F-09: construction is always a positional vectorcall"
+        "status": "supported",
+        "detail": "review F-09, fixed: the plan carries a keyword-name tuple and the class is constructed through the keyword half of the vectorcall"
       },
       {
         "feature": "tagged unions",
@@ -248,12 +248,6 @@
     ],
     "known_gaps": [
       {
-        "feature": "kw_only Structs",
-        "tier": 1,
-        "status": "unsupported",
-        "detail": "review F-09: construction is always a positional vectorcall"
-      },
-      {
         "feature": "tagged unions",
         "tier": 1,
         "status": "unsupported",
@@ -347,18 +341,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.11,
-        "untyped_tree": 4.29,
-        "convert_only": 1.38,
+        "typed_direct": 5.07,
+        "untyped_tree": 4.33,
+        "convert_only": 1.39,
         "wrapper_tree_plus_convert": 5.81,
-        "incumbent_pipeline_python_toon_plus_convert": 106.9,
-        "msgspec_json_native": 2.15
+        "incumbent_pipeline_python_toon_plus_convert": 106.26,
+        "msgspec_json_native": 2.14
       },
       "encode_us": {
-        "typed_direct_whole": 2.31,
+        "typed_direct_whole": 2.28,
         "to_builtins_alone": 1.06,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 95.12,
-        "msgspec_json_native": 0.99
+        "incumbent_pipeline_to_builtins_plus_python_toon": 93.71,
+        "msgspec_json_native": 1.0
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -376,18 +370,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 18.2,
-        "untyped_tree": 15.48,
-        "convert_only": 5.19,
-        "wrapper_tree_plus_convert": 21.34,
-        "incumbent_pipeline_python_toon_plus_convert": 441.19,
-        "msgspec_json_native": 8.29
+        "typed_direct": 18.26,
+        "untyped_tree": 15.31,
+        "convert_only": 5.21,
+        "wrapper_tree_plus_convert": 21.24,
+        "incumbent_pipeline_python_toon_plus_convert": 439.69,
+        "msgspec_json_native": 8.32
       },
       "encode_us": {
-        "typed_direct_whole": 7.94,
-        "to_builtins_alone": 4.39,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 369.6,
-        "msgspec_json_native": 3.12
+        "typed_direct_whole": 7.72,
+        "to_builtins_alone": 4.41,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 428.52,
+        "msgspec_json_native": 3.53
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -405,18 +399,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 135.91,
-        "untyped_tree": 132.38,
-        "convert_only": 42.23,
-        "wrapper_tree_plus_convert": 175.63,
-        "incumbent_pipeline_python_toon_plus_convert": 3584.05,
-        "msgspec_json_native": 66.05
+        "typed_direct": 141.91,
+        "untyped_tree": 126.58,
+        "convert_only": 43.25,
+        "wrapper_tree_plus_convert": 174.72,
+        "incumbent_pipeline_python_toon_plus_convert": 3643.73,
+        "msgspec_json_native": 68.91
       },
       "encode_us": {
-        "typed_direct_whole": 62.34,
-        "to_builtins_alone": 44.03,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2971.96,
-        "msgspec_json_native": 22.69
+        "typed_direct_whole": 61.67,
+        "to_builtins_alone": 44.54,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2935.28,
+        "msgspec_json_native": 23.28
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -434,18 +428,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1216.2,
-        "untyped_tree": 1124.12,
-        "convert_only": 434.84,
-        "wrapper_tree_plus_convert": 1519.39,
-        "incumbent_pipeline_python_toon_plus_convert": 29575.56,
-        "msgspec_json_native": 630.97
+        "typed_direct": 1184.98,
+        "untyped_tree": 1121.87,
+        "convert_only": 457.87,
+        "wrapper_tree_plus_convert": 1569.08,
+        "incumbent_pipeline_python_toon_plus_convert": 30242.54,
+        "msgspec_json_native": 659.92
       },
       "encode_us": {
-        "typed_direct_whole": 499.81,
-        "to_builtins_alone": 444.13,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23717.01,
-        "msgspec_json_native": 174.68
+        "typed_direct_whole": 497.8,
+        "to_builtins_alone": 443.54,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23868.08,
+        "msgspec_json_native": 175.13
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -468,16 +462,16 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.57,
-        "toons_rust": 25.48,
-        "python_toon": 94.32,
+        "msgspec_toon": 4.63,
+        "toons_rust": 26.01,
+        "python_toon": 93.27,
         "msgspec_json_context": 1.24
       },
       "decode_us": {
-        "msgspec_toon": 4.38,
-        "toons_rust": 11.05,
-        "python_toon": 108.27,
-        "msgspec_json_context": 2.34
+        "msgspec_toon": 4.31,
+        "toons_rust": 11.02,
+        "python_toon": 108.56,
+        "msgspec_json_context": 2.31
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -493,16 +487,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 16.06,
-        "toons_rust": 100.92,
-        "python_toon": 367.14,
-        "msgspec_json_context": 3.7
+        "msgspec_toon": 16.16,
+        "toons_rust": 104.07,
+        "python_toon": 369.02,
+        "msgspec_json_context": 3.77
       },
       "decode_us": {
-        "msgspec_toon": 15.82,
-        "toons_rust": 43.77,
-        "python_toon": 434.44,
-        "msgspec_json_context": 9.49
+        "msgspec_toon": 15.56,
+        "toons_rust": 44.22,
+        "python_toon": 438.05,
+        "msgspec_json_context": 9.41
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -518,16 +512,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 123.54,
-        "toons_rust": 780.6,
-        "python_toon": 2903.58,
-        "msgspec_json_context": 28.41
+        "msgspec_toon": 123.55,
+        "toons_rust": 780.16,
+        "python_toon": 2884.08,
+        "msgspec_json_context": 28.8
       },
       "decode_us": {
-        "msgspec_toon": 125.88,
-        "toons_rust": 359.04,
-        "python_toon": 3545.48,
-        "msgspec_json_context": 82.43
+        "msgspec_toon": 124.06,
+        "toons_rust": 364.79,
+        "python_toon": 3542.99,
+        "msgspec_json_context": 82.57
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -543,16 +537,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 981.9,
-        "toons_rust": 6409.62,
-        "python_toon": 23584.45,
-        "msgspec_json_context": 217.37
+        "msgspec_toon": 984.32,
+        "toons_rust": 6435.61,
+        "python_toon": 23404.73,
+        "msgspec_json_context": 212.53
       },
       "decode_us": {
-        "msgspec_toon": 1157.34,
-        "toons_rust": 3017.36,
-        "python_toon": 29441.23,
-        "msgspec_json_context": 813.11
+        "msgspec_toon": 1130.74,
+        "toons_rust": 3074.79,
+        "python_toon": 29779.35,
+        "msgspec_json_context": 798.13
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1085,305 +1079,305 @@
     "results": [
       {
         "baseline_us": [
-          5.75,
-          5.95
+          5.71,
+          5.91
         ],
         "current_us": [
           5.05,
-          5.13
+          5.14
         ],
         "paired_ratios": [
-          0.87826,
-          0.86218
+          0.88441,
+          0.86971
         ],
-        "median_ratio": 0.8702228717573985,
-        "pair_spread_pp": 1.607599561563755,
-        "noise_floor_pp": 3.4782608695652195,
+        "median_ratio": 0.8770628309641706,
+        "pair_spread_pp": 1.4700958036632406,
+        "noise_floor_pp": 3.5026269702276736,
         "metric": "typed.decode_us.typed_direct@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          21.4,
-          22.03
+          21.3,
+          21.82
         ],
         "current_us": [
-          17.38,
-          17.83
+          17.54,
+          18.31
         ],
         "paired_ratios": [
-          0.81215,
-          0.80935
+          0.82347,
+          0.83914
         ],
-        "median_ratio": 0.8107502089334424,
-        "pair_spread_pp": 0.27986475536758704,
-        "noise_floor_pp": 2.943925233644862,
+        "median_ratio": 0.8313062917683307,
+        "pair_spread_pp": 1.5664226729149688,
+        "noise_floor_pp": 4.3899657924743485,
         "metric": "typed.decode_us.typed_direct@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          164.54,
-          174.47
+          167.19,
+          163.64
         ],
         "current_us": [
-          136.25,
-          137.26
+          133.04,
+          137.62
         ],
         "paired_ratios": [
-          0.82807,
-          0.78673
+          0.79574,
+          0.84099
         ],
-        "median_ratio": 0.807395817644086,
-        "pair_spread_pp": 4.134061218964513,
-        "noise_floor_pp": 6.0350066853045,
+        "median_ratio": 0.8183668972411229,
+        "pair_spread_pp": 4.525105029898146,
+        "noise_floor_pp": 3.442573662056536,
         "metric": "typed.decode_us.typed_direct@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1542.12,
-          1486.88
+          1468.06,
+          1509.58
         ],
         "current_us": [
-          1207.91,
-          1211.97
+          1189.01,
+          1223.24
         ],
         "paired_ratios": [
-          0.78328,
-          0.81511
+          0.80992,
+          0.81032
         ],
-        "median_ratio": 0.7991941769394257,
-        "pair_spread_pp": 3.183062815063298,
-        "noise_floor_pp": 3.715161949854706,
+        "median_ratio": 0.8101186574174195,
+        "pair_spread_pp": 0.03988886124774993,
+        "noise_floor_pp": 2.878865610886372,
         "metric": "typed.decode_us.typed_direct@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          2.43,
-          2.51
+          2.42,
+          2.46
         ],
         "current_us": [
-          2.33,
-          2.35
+          2.29,
+          2.3
         ],
         "paired_ratios": [
-          0.95885,
-          0.93625
+          0.94628,
+          0.93496
         ],
-        "median_ratio": 0.9475513583525979,
-        "pair_spread_pp": 2.2592756545832926,
-        "noise_floor_pp": 3.2921810699588328,
+        "median_ratio": 0.9406201706645165,
+        "pair_spread_pp": 1.1321642142041344,
+        "noise_floor_pp": 1.6528925619834656,
         "metric": "typed.encode_us.typed_direct_whole@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          8.17,
-          8.47
+          8.01,
+          8.36
         ],
         "current_us": [
-          7.9,
-          8.0
+          7.82,
+          7.82
         ],
         "paired_ratios": [
-          0.96695,
-          0.94451
+          0.97628,
+          0.93541
         ],
-        "median_ratio": 0.9557311499005057,
-        "pair_spread_pp": 2.2442228962758715,
-        "noise_floor_pp": 3.6719706242350103,
+        "median_ratio": 0.9558431745007736,
+        "pair_spread_pp": 4.087295187236051,
+        "noise_floor_pp": 4.369538077403234,
         "metric": "typed.encode_us.typed_direct_whole@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          62.65,
-          64.68
+          61.83,
+          63.06
         ],
         "current_us": [
-          61.63,
-          62.58
+          60.3,
+          60.25
         ],
         "paired_ratios": [
-          0.98372,
-          0.96753
+          0.97525,
+          0.95544
         ],
-        "median_ratio": 0.9756257708771674,
-        "pair_spread_pp": 1.6186606689400196,
-        "noise_floor_pp": 3.240223463687153,
+        "median_ratio": 0.9653469974530391,
+        "pair_spread_pp": 1.9815466520413771,
+        "noise_floor_pp": 1.9893255701115997,
         "metric": "typed.encode_us.typed_direct_whole@512",
-        "verdict": "BELOW NOISE \u2014 not a result"
+        "verdict": "resolved"
       },
       {
         "baseline_us": [
-          512.3,
-          518.36
+          497.96,
+          511.21
         ],
         "current_us": [
-          497.68,
-          500.21
+          491.24,
+          487.37
         ],
         "paired_ratios": [
-          0.97146,
-          0.96499
+          0.9865,
+          0.95337
         ],
-        "median_ratio": 0.9682238790857944,
-        "pair_spread_pp": 0.6476309757359355,
-        "noise_floor_pp": 1.1829006441538281,
+        "median_ratio": 0.9699352423241573,
+        "pair_spread_pp": 3.313939566335722,
+        "noise_floor_pp": 2.6608562936782043,
         "metric": "typed.encode_us.typed_direct_whole@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          4.85,
-          4.87
+          4.84,
+          4.94
         ],
         "current_us": [
-          4.6,
-          4.63
+          4.49,
+          4.65
         ],
         "paired_ratios": [
-          0.94845,
-          0.95072
+          0.92769,
+          0.9413
         ],
-        "median_ratio": 0.9495861470395224,
-        "pair_spread_pp": 0.22650775841994708,
-        "noise_floor_pp": 0.6521739130434856,
+        "median_ratio": 0.9344907484859638,
+        "pair_spread_pp": 1.3609596145481184,
+        "noise_floor_pp": 3.563474387527843,
         "metric": "codecs.encode_us.msgspec_toon@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          16.92,
-          17.05
+          16.85,
+          17.53
         ],
         "current_us": [
-          16.16,
-          16.13
+          16.04,
+          15.91
         ],
         "paired_ratios": [
-          0.95508,
-          0.94604
+          0.95193,
+          0.90759
         ],
-        "median_ratio": 0.9505618990176299,
-        "pair_spread_pp": 0.9041686598309839,
-        "noise_floor_pp": 0.768321513002368,
+        "median_ratio": 0.929757888553916,
+        "pair_spread_pp": 4.434178965774649,
+        "noise_floor_pp": 4.035608308605343,
         "metric": "codecs.encode_us.msgspec_toon@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          127.28,
-          131.71
+          130.85,
+          130.98
         ],
         "current_us": [
-          123.19,
-          122.63
+          119.73,
+          122.34
         ],
         "paired_ratios": [
-          0.96787,
-          0.93106
+          0.91502,
+          0.93404
         ],
-        "median_ratio": 0.9494633927574823,
-        "pair_spread_pp": 3.680545835681426,
-        "noise_floor_pp": 3.4805153991200655,
+        "median_ratio": 0.9245264629538252,
+        "pair_spread_pp": 1.9018535384150104,
+        "noise_floor_pp": 2.179904785767972,
         "metric": "codecs.encode_us.msgspec_toon@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1025.05,
-          1024.76
+          1012.46,
+          1031.45
         ],
         "current_us": [
-          966.74,
-          984.1
+          957.81,
+          961.6
         ],
         "paired_ratios": [
-          0.94311,
-          0.96032
+          0.94602,
+          0.93228
         ],
-        "median_ratio": 0.9517186934788144,
-        "pair_spread_pp": 1.7207446954702,
-        "noise_floor_pp": 1.795725841487883,
+        "median_ratio": 0.9391511795985326,
+        "pair_spread_pp": 1.3742758634750163,
+        "noise_floor_pp": 1.8756296545048734,
         "metric": "codecs.encode_us.msgspec_toon@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          4.9,
-          5.01
+          4.86,
+          4.9
         ],
         "current_us": [
-          4.31,
-          4.41
+          4.38,
+          4.35
         ],
         "paired_ratios": [
-          0.87959,
-          0.88024
+          0.90123,
+          0.88776
         ],
-        "median_ratio": 0.8799156788463889,
-        "pair_spread_pp": 0.06476842233901214,
-        "noise_floor_pp": 2.3201856148491906,
+        "median_ratio": 0.8944948349710253,
+        "pair_spread_pp": 1.347946586041826,
+        "noise_floor_pp": 0.8230452674897082,
         "metric": "codecs.decode_us.msgspec_toon@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          18.4,
-          18.54
+          18.29,
+          18.36
         ],
         "current_us": [
-          15.73,
-          15.62
+          15.63,
+          15.44
         ],
         "paired_ratios": [
-          0.85489,
-          0.8425
+          0.85457,
+          0.84096
         ],
-        "median_ratio": 0.8486970006097276,
-        "pair_spread_pp": 1.23886074761973,
-        "noise_floor_pp": 0.7608695652173925,
+        "median_ratio": 0.8477619709569023,
+        "pair_spread_pp": 1.3606730584828641,
+        "noise_floor_pp": 1.2305699481865329,
         "metric": "codecs.decode_us.msgspec_toon@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          155.4,
-          156.66
+          156.75,
+          154.74
         ],
         "current_us": [
-          122.28,
-          127.79
+          124.08,
+          125.23
         ],
         "paired_ratios": [
-          0.78687,
-          0.81572
+          0.79158,
+          0.80929
         ],
-        "median_ratio": 0.8012940746184714,
-        "pair_spread_pp": 2.8842975491769063,
-        "noise_floor_pp": 4.506051684658163,
+        "median_ratio": 0.8004359774970579,
+        "pair_spread_pp": 1.7714060257273623,
+        "noise_floor_pp": 1.2989530825901374,
         "metric": "codecs.decode_us.msgspec_toon@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1429.99,
-          1411.88
+          1402.11,
+          1418.35
         ],
         "current_us": [
-          1152.24,
-          1161.0
+          1129.64,
+          1139.52
         ],
         "paired_ratios": [
-          0.80577,
-          0.82231
+          0.80567,
+          0.80341
         ],
-        "median_ratio": 0.8140378586809707,
-        "pair_spread_pp": 1.6539972356731436,
-        "noise_floor_pp": 1.2826869139020314,
+        "median_ratio": 0.8045419340732307,
+        "pair_spread_pp": 0.22590364758581227,
+        "noise_floor_pp": 1.15825434523682,
         "metric": "codecs.decode_us.msgspec_toon@4096",
         "verdict": "resolved"
       }
@@ -1543,7 +1537,6 @@
   "known_divergences_and_gaps": [
     "G4 fails: whole direct encode does not beat msgspec.to_builtins alone (2.2x at 16 records, ~10% gap at 4096 after optimizations E1/E2). Cause: public stable-ABI attribute reads versus msgspec's private C slot reads. This is the canvas risk R-02 outcome, reported rather than masked; candidate E3 remains open in the optimization ledger.",
     "Non-finite float encoding raises EncodeError (msgspec.json parity); no 4.1 fixture exercises the alternative null mapping, so the prior-art question stands resolved-by-absence for this corpus.",
-    "unsupported: kw_only Structs (tier 1) \u2014 review F-09: construction is always a positional vectorcall",
     "unsupported: tagged unions (tier 1)",
     "unsupported: array_like Structs (tier 1)",
     "unsupported: strict=False scalar coercion (tier 1) \u2014 review F-06: `strict` reaches duplicate handling but not `convert_scalar`",

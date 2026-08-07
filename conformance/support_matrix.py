@@ -202,10 +202,11 @@ MATRIX: tuple[SupportEntry, ...] = (
     SupportEntry(
         "kw_only Structs",
         1,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b"x: 1", type=KeywordOnly),
         lambda: msgspec.json.decode(b'{"x":1}', type=KeywordOnly),
-        "review F-09: construction is always a positional vectorcall",
+        "review F-09, fixed: the plan carries a keyword-name tuple and the class is "
+        "constructed through the keyword half of the vectorcall",
     ),
     SupportEntry(
         "tagged unions",

@@ -33,7 +33,7 @@ evidence in `conformance/report.json` — never as assertions.
 | vs the real incumbent pipeline | 19–51× faster | `bench_typed.py` incumbent rows |
 | Token efficiency (T1) | **pass**: canonical TOON = 0.61–0.64× JSON tokens on record payloads; incumbents = 1.25× JSON | `bench_tokens.py` |
 | Tab-delimiter folklore (T2) | **measured false** at noise level; published as a finding | report `token_efficiency.findings` |
-| Type-support boundaries | **generated, not asserted**: 10 supported, 2 parity-rejects, 12 unsupported, 3 silently ignored, **0 silently wrong**. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
+| Type-support boundaries | **generated, not asserted**: 11 supported, 2 parity-rejects, 11 unsupported, 3 inert, 0 silently wrong. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
 | G4 encode vs `to_builtins` alone | **fail, honestly reported**: 2.2× at 16 records, ~10% at 4096. Stable-ABI `getattr` vs msgspec's private C slot reads (canvas risk R-02) | report `known_divergences_and_gaps` |
 | Optimizations | 6 adopted, re-qualified under the F-12 harness: typed decode −13→−20%, untyped decode −10→−20%, codec encode −6→−8% — all above the session noise floor. Typed encode at 16/64 records is **below noise and reported as unresolved** | `benches/optimization-ledger.json`, report `speed_ab_latest` |
 | A/B rigor | **alternating `B C C B` blocks**; every block published, and rows whose change is under the same-build noise floor (1.7–8.8 pp) are labelled not-a-result | `benches/ab.py`, `benches/ab-latest.json` |

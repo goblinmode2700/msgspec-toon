@@ -7,6 +7,7 @@ this point — including all Rust code — sees only PlanSpec/FieldSpec.
 
 from __future__ import annotations
 
+import inspect
 from functools import lru_cache
 from typing import Any
 
@@ -21,6 +22,23 @@ _NODEFAULT = msgspec.NODEFAULT
 @lru_cache(maxsize=512)
 def compile_plan(annotation: Any) -> PlanSpec:
     return _lower(mi.type_info(annotation))
+
+
+def _is_keyword_only(cls: type) -> bool:
+    """Whether the Struct must be constructed with keyword arguments.
+
+    `kw_only=True` reorders `__struct_fields__` so required fields come first,
+    and the generated constructor takes keyword-only parameters — a positional
+    vectorcall then fails with "Extra positional arguments provided" (review
+    F-09). msgspec publishes the flag on neither `StructConfig` nor
+    `msgspec.inspect`, so the constructor signature is the source of truth. Any
+    keyword-only parameter is enough: passing every argument by keyword is
+    valid for ordinary parameters too, so one branch covers partial cases.
+    """
+    return any(
+        parameter.kind is inspect.Parameter.KEYWORD_ONLY
+        for parameter in inspect.signature(cls).parameters.values()
+    )
 
 
 def _lower_mapping_key(info: mi.Type) -> PlanSpec:
@@ -99,6 +117,7 @@ def _lower(info: mi.Type) -> PlanSpec:
                 tag_value=tag,
                 array_like=array_like,
                 forbid_unknown_fields=forbid_unknown_fields,
+                keyword_only=_is_keyword_only(cls),
             )
         case _:
             return PlanSpec("custom", python_type=getattr(info, "cls", None))

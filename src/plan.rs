@@ -34,6 +34,10 @@ pub struct StructPlan {
     pub fields: Vec<FieldPlan>,
     pub by_wire: FxHashMap<Vec<u8>, usize>,
     pub forbid_unknown: bool,
+    /// Present when the class must be constructed with keyword arguments: the
+    /// field names in constructor order, ready to hand to a vectorcall. The
+    /// ordinary case keeps `None` and the positional fast path.
+    pub keyword_names: Option<Py<pyo3::types::PyTuple>>,
 }
 
 pub struct FieldPlan {
@@ -149,11 +153,21 @@ impl CompiledPlan {
                     });
                 }
                 let forbid_unknown = spec.getattr("forbid_unknown_fields")?.extract::<bool>()?;
+                let keyword_names = if spec.getattr("keyword_only")?.extract::<bool>()? {
+                    let names = fields
+                        .iter()
+                        .map(|field| field.python_name.bind(py).clone().into_any())
+                        .collect();
+                    Some(crate::containers::new_plan_tuple(py, names)?.unbind())
+                } else {
+                    None
+                };
                 PlanKind::Struct(Box::new(StructPlan {
                     class,
                     fields,
                     by_wire,
                     forbid_unknown,
+                    keyword_names,
                 }))
             }
             _ => {

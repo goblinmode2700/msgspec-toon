@@ -52,4 +52,9 @@ class PlanSpec:
     tag_value: Any = None
     array_like: bool = False
     forbid_unknown_fields: bool = False
+    #: The class must be constructed with keyword arguments (`kw_only=True`,
+    #: or any keyword-only field). msgspec exposes this on neither
+    #: `StructConfig` nor `msgspec.inspect`, so the plan compiler reads the
+    #: constructor signature and records the answer here.
+    keyword_only: bool = False
     constraints: tuple[tuple[str, Any], ...] = ()

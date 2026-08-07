@@ -214,7 +214,7 @@ the parity items around it.
 - [ ] F-06 differential-test and implement `strict=False` Tier 0 coercions.
 - [x] F-07 distinguish booleans from integer literals.
 - [x] F-08 implement fixed tuples.
-- [ ] F-09 support `kw_only` Struct construction on a cold branch.
+- [x] F-09 support `kw_only` Struct construction on a cold branch.
 - [ ] F-10 implement or reject `order` values explicitly.
 - [x] F-13 reject unsupported mapping key plans during decoder construction.
 
@@ -392,3 +392,49 @@ A/B                         typed decode -13.0/-18.9/-19.3/-20.1% — the Sequen
                             indirection costs nothing measurable on the hot path
 matrix                      10 supported, 2 parity-rejects, 12 unsupported, 3 inert, 0 silently wrong
 ```
+
+#### Checkpoint 7 — F-09 kw_only Structs
+
+Hypothesis: construction is always a positional vectorcall, so a `kw_only` class fails
+with "Extra positional arguments provided"; giving the plan a cached keyword-name tuple
+fixes it without touching the ordinary path.
+
+Confirmed, with one obstacle the review did not mention: **msgspec publishes `kw_only`
+nowhere the membrane can see it** — not on `StructConfig` (which exposes `frozen`, `eq`,
+`array_like`, `forbid_unknown_fields` and nine others) and not on `msgspec.inspect`. The
+constructor signature is the source of truth, so `_plan.py` reads
+`inspect.signature(cls)` and records a `keyword_only` flag in the IR. Any keyword-only
+parameter triggers it, since passing every argument by keyword is valid for ordinary
+parameters too — one branch covers partial cases rather than modelling them separately.
+
+The plan then carries a names tuple built **once at compile time**, and construction
+picks the half of the vectorcall to use:
+
+```text
+ordinary class   nargs = len(values), kwnames = null      (unchanged hot path)
+kw_only class    nargs = 0,           kwnames = names     (cold branch)
+```
+
+Verified: simple, defaulted, nested, tabular-array rows (which exercise the construction
+path once per row), encode round-trip, and missing-required — all matching
+`msgspec.json`.
+
+The keyword-name tuple is built through `containers.rs` like everything else, via a
+`new_plan_tuple` constructor documented as machinery rather than decoded output, so the
+membrane keeps its "every PyTuple::new lives here" property and G2 counts stay honest.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 83 Python tests, clean
+make g2                     G2 still zero builtin containers
+A/B                         typed decode -12.3/-16.9/-18.2/-19.0%, all resolved — the
+                            Option check per constructed Struct costs nothing measurable
+matrix                      11 supported, 2 parity-rejects, 11 unsupported, 3 inert, 0 silently wrong
+```
+
+A test-authoring note for whoever writes the next differential test: this file uses
+`from __future__ import annotations`, so a Struct annotated with a class defined *inside*
+a test function fails with `NameError` at decode time — msgspec cannot resolve the string
+annotation in a function scope. Define such classes at module level.

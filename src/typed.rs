@@ -322,12 +322,20 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
         // Vectorcall the Struct class: no argument tuple per constructed row.
         let pointers: smallvec::SmallVec<[*mut pyo3::ffi::PyObject; 16]> =
             arguments.iter().map(|argument| argument.as_ptr()).collect();
+        // A kw_only class rejects positional arguments, so its plan carries the
+        // field names and every value goes in the keyword half of the call: zero
+        // positional, one names tuple built once at plan-compile time. Ordinary
+        // classes keep the positional path with a null kwnames (review F-09).
+        let (positional_count, keyword_names) = match &plan.keyword_names {
+            Some(names) => (0, names.as_ptr()),
+            None => (pointers.len(), std::ptr::null_mut()),
+        };
         let raw = unsafe {
             pyo3::ffi::PyObject_Vectorcall(
                 plan.class.as_ptr(),
                 pointers.as_ptr(),
-                pointers.len(),
-                std::ptr::null_mut(),
+                positional_count,
+                keyword_names,
             )
         };
         arguments.clear();

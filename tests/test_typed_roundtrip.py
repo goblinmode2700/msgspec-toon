@@ -115,6 +115,19 @@ def test_str_input_decodes() -> None:
     assert value.workers[1].pid == 80916
 
 
+class KeywordInner(msgspec.Struct, kw_only=True, frozen=True):
+    value: int
+
+
+class KeywordOuter(msgspec.Struct, kw_only=True, frozen=True):
+    """Module scope on purpose: `from __future__ import annotations` turns
+    `inner: KeywordInner` into a string, and msgspec cannot resolve a class
+    defined inside a test function."""
+
+    inner: KeywordInner
+    count: int = 3
+
+
 def test_fixed_tuples_decode_by_position() -> None:
     """A fixed tuple's length is part of its type, not of the document."""
     assert toon.decode(b"[2]: 1,x", type=tuple[int, str]) == (1, "x")
@@ -141,3 +154,30 @@ def test_fixed_tuples_nest_and_round_trip() -> None:
 
     nested = toon.decode(b"[2]:\n  - [2]: 1,a\n  - [2]: 2,b", type=list[tuple[int, str]])
     assert nested == [(1, "a"), (2, "b")]
+
+
+def test_keyword_only_structs_construct() -> None:
+    """kw_only reorders fields and forbids positional construction."""
+
+    class Settings(msgspec.Struct, kw_only=True):
+        required: int
+        optional: str = "default"
+
+    assert toon.decode(b"required: 1", type=Settings) == msgspec.json.decode(
+        b'{"required":1}', type=Settings
+    )
+    assert toon.decode(b"required: 1\noptional: z", type=Settings) == Settings(
+        required=1, optional="z"
+    )
+    # The construction path is per row, so tabular arrays exercise it repeatedly.
+    assert toon.decode(b"[2]{required,optional}:\n  1,p\n  2,q", type=list[Settings]) == [
+        Settings(required=1, optional="p"),
+        Settings(required=2, optional="q"),
+    ]
+    with pytest.raises(toon.ValidationError):
+        toon.decode(b"optional: z", type=Settings)
+
+
+def test_keyword_only_structs_nest_and_round_trip() -> None:
+    original = KeywordOuter(inner=KeywordInner(value=2))
+    assert toon.decode(toon.encode(original), type=KeywordOuter) == original
