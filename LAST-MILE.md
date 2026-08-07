@@ -213,7 +213,7 @@ the parity items around it.
 - [ ] F-04 preserve exact cell columns without adding an intermediate tree.
 - [ ] F-06 differential-test and implement `strict=False` Tier 0 coercions.
 - [x] F-07 distinguish booleans from integer literals.
-- [ ] F-08 implement fixed tuples.
+- [x] F-08 implement fixed tuples.
 - [ ] F-09 support `kw_only` Struct construction on a cold branch.
 - [ ] F-10 implement or reject `order` values explicitly.
 - [x] F-13 reject unsupported mapping key plans during decoder construction.
@@ -357,3 +357,38 @@ Note on the checkpoint-4 below-noise rows: in this quieter session, typed encode
 and 64 records resolved (-5.3%, -7.1%) against noise floors of 1.7pp and 0.4pp. Whether a
 ~5% delta resolves is a property of the session, not a fixed fact about the codec. Both
 runs are in the artifacts; neither supersedes the other.
+
+#### Checkpoint 6 — F-08 fixed tuples
+
+Hypothesis: the plan compiler already emits `tuple_fixed` and Rust lowers every unknown
+kind to `Custom`, so the missing piece is not parsing but the frame model — a sequence
+frame holds one uniform item plan and a fixed tuple needs one plan per position.
+
+Confirmed. Rather than special-case tuples, the frame now names *where a sequence finds
+its next element's plan*:
+
+```text
+SequencePlan::Uniform(plan)      list[T], tuple[T, ...]   — same answer every time
+SequencePlan::ByPosition(plans)  tuple[A, B, C]           — answers by index, and runs out
+```
+
+Running out is the whole point: it makes length a property of the type rather than of the
+document. One helper turns "no plan for the next element" into a validation error when the
+frame is a saturated fixed tuple, and an internal fault otherwise — so an over-long tuple
+reports a type error instead of an internal one. Length is also checked when the frame
+closes, which catches the short case.
+
+Verified against `msgspec.json`: `[2]: 1,x` → `(1, "x")`; wrong length in either
+direction rejected; `[2]: x,1` rejected because position selects the plan. Nested
+(`list[tuple[int, str]]`) and Struct-field tuples round-trip.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 81 Python tests, clean
+make g2                     G2 still zero builtin containers
+A/B                         typed decode -13.0/-18.9/-19.3/-20.1% — the SequencePlan
+                            indirection costs nothing measurable on the hot path
+matrix                      10 supported, 2 parity-rejects, 12 unsupported, 3 inert, 0 silently wrong
+```

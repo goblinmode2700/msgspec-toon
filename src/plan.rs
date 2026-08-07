@@ -15,6 +15,9 @@ pub enum PlanKind {
     Str,
     List(Box<CompiledPlan>),
     TupleVar(Box<CompiledPlan>),
+    /// `tuple[A, B, C]`: one plan per position, and the length is part of the
+    /// type rather than a property of the document.
+    TupleFixed(Vec<CompiledPlan>),
     Dict(Box<CompiledPlan>, Box<CompiledPlan>),
     Struct(Box<StructPlan>),
     Union(Box<UnionPlan>),
@@ -77,6 +80,13 @@ impl CompiledPlan {
             "tuple_var" => {
                 let item = Self::lower(py, &spec.getattr("item")?, unset)?;
                 PlanKind::TupleVar(Box::new(item))
+            }
+            "tuple_fixed" => {
+                let mut plans = Vec::new();
+                for item in spec.getattr("items")?.try_iter()? {
+                    plans.push(Self::lower(py, &item?, unset)?);
+                }
+                PlanKind::TupleFixed(plans)
             }
             "dict" => {
                 let key = Self::lower(py, &spec.getattr("key")?, unset)?;

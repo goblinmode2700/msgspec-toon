@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import msgspec
 import msgspec_toon as toon
+import pytest
 
 
 class Metadata(msgspec.Struct, frozen=True):
@@ -112,3 +113,31 @@ def test_unknown_fields_are_skipped() -> None:
 def test_str_input_decodes() -> None:
     value = toon.decode(TEXT.decode(), type=Document)
     assert value.workers[1].pid == 80916
+
+
+def test_fixed_tuples_decode_by_position() -> None:
+    """A fixed tuple's length is part of its type, not of the document."""
+    assert toon.decode(b"[2]: 1,x", type=tuple[int, str]) == (1, "x")
+    assert msgspec.json.decode(b'[1,"x"]', type=tuple[int, str]) == (1, "x")
+
+    for wrong in (b"[1]: 1", b"[3]: 1,x,2"):
+        with pytest.raises(toon.ValidationError):
+            toon.decode(wrong, type=tuple[int, str])
+
+    # Position selects the plan, so a value valid at one index can be invalid
+    # at another.
+    with pytest.raises(toon.ValidationError):
+        toon.decode(b"[2]: x,1", type=tuple[int, str])
+
+
+def test_fixed_tuples_nest_and_round_trip() -> None:
+    class Point(msgspec.Struct, frozen=True):
+        at: tuple[int, int]
+        label: tuple[str, int]
+
+    value = Point(at=(1, 2), label=("a", 3))
+    encoded = toon.encode(value)
+    assert toon.decode(encoded, type=Point) == value
+
+    nested = toon.decode(b"[2]:\n  - [2]: 1,a\n  - [2]: 2,b", type=list[tuple[int, str]])
+    assert nested == [(1, "a"), (2, "b")]

@@ -186,10 +186,18 @@ MATRIX: tuple[SupportEntry, ...] = (
     SupportEntry(
         "fixed-length tuple",
         1,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b"[2]: 1,x", type=tuple[int, str]),
         lambda: msgspec.json.decode(b'[1,"x"]', type=tuple[int, str]),
-        "review F-08: the plan compiler emits `tuple_fixed`, which Rust lowers as Custom",
+        "review F-08, fixed: one plan per position, and a length mismatch is a type error",
+    ),
+    SupportEntry(
+        "fixed-length tuple rejects a wrong length",
+        1,
+        PARITY_REJECTS,
+        lambda: toon.decode(b"[3]: 1,x,2", type=tuple[int, str]),
+        lambda: msgspec.json.decode(b'[1,"x",2]', type=tuple[int, str]),
+        "",
     ),
     SupportEntry(
         "kw_only Structs",

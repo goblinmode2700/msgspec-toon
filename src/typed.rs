@@ -17,6 +17,31 @@ use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_toke
 use crate::scalar::unescape;
 use crate::untyped::UntypedConsumer;
 
+/// Where a sequence frame finds the plan for its next element. `list[T]` and
+/// `tuple[T, ...]` answer the same plan every time; `tuple[A, B, C]` answers by
+/// position and runs out, which is what makes its length a type error rather
+/// than a document property.
+enum SequencePlan<'plan> {
+    Uniform(&'plan CompiledPlan),
+    ByPosition(&'plan [CompiledPlan]),
+}
+
+impl<'plan> SequencePlan<'plan> {
+    fn at(&self, index: usize) -> Option<&'plan CompiledPlan> {
+        match self {
+            Self::Uniform(plan) => Some(plan),
+            Self::ByPosition(plans) => plans.get(index),
+        }
+    }
+
+    fn expected_length(&self) -> Option<usize> {
+        match self {
+            Self::Uniform(_) => None,
+            Self::ByPosition(plans) => Some(plans.len()),
+        }
+    }
+}
+
 enum Frame<'py, 'plan> {
     Struct {
         plan: &'plan StructPlan,
@@ -26,7 +51,7 @@ enum Frame<'py, 'plan> {
     },
     List {
         items: Vec<Bound<'py, PyAny>>,
-        item: &'plan CompiledPlan,
+        item: SequencePlan<'plan>,
         as_tuple: bool,
     },
     Dict {
@@ -112,9 +137,26 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                 ..
             }) => Some(&plan.fields[*index].value),
             Some(Frame::Struct { .. }) => None,
-            Some(Frame::List { item, .. }) => Some(item),
+            Some(Frame::List { items, item, .. }) => item.at(items.len()),
             Some(Frame::Dict { value, .. }) => Some(value),
             None => Some(self.root),
+        }
+    }
+
+    /// The plan for the next value, or the fault that explains its absence.
+    /// A saturated fixed tuple has no plan for another element — that is a
+    /// length violation the caller should see, not an internal inconsistency.
+    fn expected_plan_or_fault(&self, at: Position) -> Result<&'plan CompiledPlan, Fault> {
+        if let Some(plan) = self.expected_plan() {
+            return Ok(plan);
+        }
+        match self.stack.last() {
+            Some(Frame::List { items, item, .. })
+                if item.expected_length().is_some_and(|len| items.len() >= len) =>
+            {
+                Err(Fault::validation_at(FaultCode::TypeMismatch, at))
+            }
+            _ => Err(Fault::syntax_at(FaultCode::Internal, at)),
         }
     }
 
@@ -241,6 +283,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             }
             PlanKind::List(_)
             | PlanKind::TupleVar(_)
+            | PlanKind::TupleFixed(_)
             | PlanKind::Dict(_, _)
             | PlanKind::Struct(_) => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
         }
@@ -405,10 +448,7 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.skip_depth = 1;
             return Ok(());
         }
-        let expected = self
-            .expected_plan()
-            .ok_or(Fault::syntax_at(FaultCode::Internal, at))?
-            .resolve_container();
+        let expected = self.expected_plan_or_fault(at)?.resolve_container();
         match &expected.kind {
             PlanKind::Struct(plan) => {
                 // A struct opening directly under an array frame starts a
@@ -565,15 +605,12 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.skip_depth = 1;
             return Ok(());
         }
-        let expected = self
-            .expected_plan()
-            .ok_or(Fault::syntax_at(FaultCode::Internal, at))?
-            .resolve_container();
+        let expected = self.expected_plan_or_fault(at)?.resolve_container();
         match &expected.kind {
             PlanKind::List(item) => {
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
-                    item,
+                    item: SequencePlan::Uniform(item),
                     as_tuple: false,
                 });
                 self.row_memos.push(RowMemo::default());
@@ -582,7 +619,18 @@ impl Consumer for TypedConsumer<'_, '_> {
             PlanKind::TupleVar(item) => {
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
-                    item,
+                    item: SequencePlan::Uniform(item),
+                    as_tuple: true,
+                });
+                self.row_memos.push(RowMemo::default());
+                Ok(())
+            }
+            PlanKind::TupleFixed(plans) => {
+                // The length is known from the type, so the reservation comes
+                // from the plan and never from the document's declared count.
+                self.stack.push(Frame::List {
+                    items: Vec::with_capacity(plans.len()),
+                    item: SequencePlan::ByPosition(plans),
                     as_tuple: true,
                 });
                 self.row_memos.push(RowMemo::default());
@@ -610,9 +658,14 @@ impl Consumer for TypedConsumer<'_, '_> {
         }
         match self.stack.pop() {
             Some(Frame::List {
-                items, as_tuple, ..
+                items,
+                item,
+                as_tuple,
             }) => {
                 self.row_memos.pop();
+                if item.expected_length().is_some_and(|len| items.len() != len) {
+                    return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                }
                 let value = if as_tuple {
                     match new_final_tuple(self.py, items) {
                         Ok(tuple) => tuple.into_any(),
@@ -643,9 +696,7 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.clear_top_skip();
             return Ok(());
         }
-        let expected = self
-            .expected_plan()
-            .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+        let expected = self.expected_plan_or_fault(at)?;
         let value = self.convert_scalar(expected, token, at)?;
         self.place(value, at)
     }
