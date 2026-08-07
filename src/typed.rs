@@ -206,7 +206,18 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                     Err(err) => return Err(self.internal(err, at)),
                 };
                 for candidate in values {
-                    match value.eq(candidate.bind(py)) {
+                    let candidate = candidate.bind(py);
+                    // Category before equality. Python's `True == 1` is true and
+                    // `bool` subclasses `int`, so equality alone lets a boolean
+                    // satisfy `Literal[1]` — which msgspec rejects with
+                    // "Expected `int`, got `bool`" (review F-07). Comparing the
+                    // exact types first restores that boundary; msgspec permits
+                    // only None, int, and str in a Literal, so there is no
+                    // widening case this rejects wrongly.
+                    if !value.get_type().is(candidate.get_type()) {
+                        continue;
+                    }
+                    match value.eq(candidate) {
                         Ok(true) => return Ok(value),
                         Ok(false) => {}
                         Err(err) => return Err(self.internal(err, at)),

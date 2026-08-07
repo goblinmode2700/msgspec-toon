@@ -34,6 +34,9 @@ import msgspec_toon as toon
 # CHECKERS; nothing branches on these strings.
 
 SUPPORTED = "supported"
+# Both implementations reject the document. That is parity, not a gap: the
+# matrix has to be able to say "we are correct to refuse this".
+PARITY_REJECTS = "parity_rejects"
 UNSUPPORTED = "unsupported"
 SILENTLY_IGNORED = "silently_ignored"
 SILENTLY_WRONG = "silently_wrong"
@@ -237,20 +240,41 @@ MATRIX: tuple[SupportEntry, ...] = (
         "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted",
     ),
     SupportEntry(
-        "Literal[int] membership",
+        "Literal[int]",
         1,
-        SILENTLY_WRONG,
+        SUPPORTED,
+        lambda: toon.decode(b"2", type=Literal[1, 2]),
+        lambda: msgspec.json.decode(b"2", type=Literal[1, 2]),
+        "",
+    ),
+    SupportEntry(
+        "Literal with mixed member types",
+        1,
+        UNSUPPORTED,
+        lambda: toon.decode(b"1", type=Literal["a", 1]),
+        lambda: msgspec.json.decode(b"1", type=Literal["a", 1]),
+        "not our defect and not fixable behind the membrane: msgspec.inspect sorts a "
+        "Literal's members and raises TypeError on mixed types, so the plan compiler "
+        "never sees the annotation, while msgspec.json decodes it without inspect",
+    ),
+    SupportEntry(
+        "Literal[int] rejects a boolean",
+        1,
+        PARITY_REJECTS,
         lambda: toon.decode(b"true", type=Literal[1]),
         lambda: msgspec.json.decode(b"true", type=Literal[1]),
-        "review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]",
+        "review F-07, fixed: Python equality makes True == 1, so membership now compares "
+        "the exact scalar category first",
     ),
     SupportEntry(
         "dict[int, T] and other non-string keys",
         1,
-        SILENTLY_WRONG,
+        UNSUPPORTED,
         lambda: toon.decode(b"1: 2", type=dict[int, int]),
         lambda: msgspec.json.decode(b'{"1":2}', type=dict[int, int]),
-        "review F-13: the key plan is compiled and ignored; keys stay strings",
+        "review F-13, downgraded from silently wrong: the key plan was compiled and "
+        "dropped, so keys stayed strings. Now the Decoder refuses the annotation at "
+        "construction instead of returning {'1': 2} where msgspec returns {1: 2}",
     ),
     # --- Tier 2: absent -----------------------------------------------------
     SupportEntry(
@@ -338,6 +362,15 @@ def check_supported(entry: SupportEntry) -> None:
         )
 
 
+def check_parity_rejects(entry: SupportEntry) -> None:
+    ours_error = _raised(entry.ours)
+    reference_error = _raised(entry.reference)
+    assert ours_error is not None, f"{entry.feature}: declared a rejection but succeeded"
+    assert reference_error is not None, (
+        f"{entry.feature}: msgspec.json accepts this, so rejecting it is a gap, not parity"
+    )
+
+
 def check_unsupported(entry: SupportEntry) -> None:
     assert _raised(entry.ours) is not None, (
         f"{entry.feature}: declared unsupported but succeeded — update the matrix"
@@ -368,6 +401,7 @@ def check_silently_wrong(entry: SupportEntry) -> None:
 
 CHECKERS: dict[str, Callable[[SupportEntry], None]] = {
     SUPPORTED: check_supported,
+    PARITY_REJECTS: check_parity_rejects,
     UNSUPPORTED: check_unsupported,
     SILENTLY_IGNORED: check_silently_ignored,
     SILENTLY_WRONG: check_silently_wrong,
@@ -385,7 +419,8 @@ def as_report() -> dict[str, Any]:
         }
         for entry in MATRIX
     ]
-    gaps = [entry for entry in entries if entry["status"] != SUPPORTED]
+    matching = {SUPPORTED, PARITY_REJECTS}
+    gaps = [entry for entry in entries if entry["status"] not in matching]
     return {
         "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
         "reference_implementation": f"msgspec {msgspec.__version__} (msgspec.json)",

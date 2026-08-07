@@ -23,6 +23,26 @@ def compile_plan(annotation: Any) -> PlanSpec:
     return _lower(mi.type_info(annotation))
 
 
+def _lower_mapping_key(info: mi.Type) -> PlanSpec:
+    """Only `str` keys decode correctly, so only `str` keys compile.
+
+    The typed consumer builds every mapping key as a Python string, and the key
+    plan reached Rust but was never applied: `dict[int, int]` decoded to
+    `{"1": 2}` while `msgspec.json` returns `{1: 2}` (review F-13). A wrong
+    value returned silently is worse than a refusal, and the earliest place to
+    refuse is where the annotation is first seen — so this raises when the
+    Decoder is constructed, not when a document happens to contain a key.
+    """
+    match info:
+        case mi.StrType():
+            return _lower(info)
+        case _:
+            raise TypeError(
+                "msgspec-toon supports only str-keyed mappings; "
+                f"{type(info).__name__} keys are not implemented"
+            )
+
+
 def _lower(info: mi.Type) -> PlanSpec:
     match info:
         case mi.AnyType():
@@ -44,7 +64,9 @@ def _lower(info: mi.Type) -> PlanSpec:
         case mi.TupleType(item_types=items):
             return PlanSpec("tuple_fixed", python_type=tuple, items=tuple(map(_lower, items)))
         case mi.DictType(key_type=key, value_type=value):
-            return PlanSpec("dict", python_type=dict, key=_lower(key), value=_lower(value))
+            return PlanSpec(
+                "dict", python_type=dict, key=_lower_mapping_key(key), value=_lower(value)
+            )
         case mi.UnionType(types=items):
             return PlanSpec("union", items=tuple(map(_lower, items)))
         case mi.LiteralType(values=values):

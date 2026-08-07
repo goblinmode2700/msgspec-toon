@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T04:13:55.627782+00:00",
+  "generated_at": "2026-08-07T04:22:47.281129+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -76,10 +76,11 @@
     "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
     "reference_implementation": "msgspec 0.21.1 (msgspec.json)",
     "counts": {
-      "supported": 8,
-      "unsupported": 11,
+      "supported": 9,
+      "parity_rejects": 1,
+      "unsupported": 13,
       "silently_ignored": 3,
-      "silently_wrong": 2
+      "silently_wrong": 0
     },
     "entries": [
       {
@@ -173,16 +174,28 @@
         "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
       },
       {
-        "feature": "Literal[int] membership",
+        "feature": "Literal[int]",
         "tier": 1,
-        "status": "silently_wrong",
-        "detail": "review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]"
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "Literal with mixed member types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect"
+      },
+      {
+        "feature": "Literal[int] rejects a boolean",
+        "tier": 1,
+        "status": "parity_rejects",
+        "detail": "review F-07, fixed: Python equality makes True == 1, so membership now compares the exact scalar category first"
       },
       {
         "feature": "dict[int, T] and other non-string keys",
         "tier": 1,
-        "status": "silently_wrong",
-        "detail": "review F-13: the key plan is compiled and ignored; keys stay strings"
+        "status": "unsupported",
+        "detail": "review F-13, downgraded from silently wrong: the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}"
       },
       {
         "feature": "enum members",
@@ -271,16 +284,16 @@
         "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
       },
       {
-        "feature": "Literal[int] membership",
+        "feature": "Literal with mixed member types",
         "tier": 1,
-        "status": "silently_wrong",
-        "detail": "review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]"
+        "status": "unsupported",
+        "detail": "not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect"
       },
       {
         "feature": "dict[int, T] and other non-string keys",
         "tier": 1,
-        "status": "silently_wrong",
-        "detail": "review F-13: the key plan is compiled and ignored; keys stay strings"
+        "status": "unsupported",
+        "detail": "review F-13, downgraded from silently wrong: the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}"
       },
       {
         "feature": "enum members",
@@ -334,18 +347,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.16,
-        "untyped_tree": 4.32,
-        "convert_only": 1.38,
-        "wrapper_tree_plus_convert": 5.74,
-        "incumbent_pipeline_python_toon_plus_convert": 110.24,
-        "msgspec_json_native": 2.19
+        "typed_direct": 5.2,
+        "untyped_tree": 4.37,
+        "convert_only": 1.39,
+        "wrapper_tree_plus_convert": 5.87,
+        "incumbent_pipeline_python_toon_plus_convert": 109.03,
+        "msgspec_json_native": 2.17
       },
       "encode_us": {
-        "typed_direct_whole": 2.29,
-        "to_builtins_alone": 1.07,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 96.0,
-        "msgspec_json_native": 1.02
+        "typed_direct_whole": 2.27,
+        "to_builtins_alone": 1.03,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 94.83,
+        "msgspec_json_native": 1.0
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -363,18 +376,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 18.36,
-        "untyped_tree": 15.41,
-        "convert_only": 5.22,
-        "wrapper_tree_plus_convert": 21.06,
-        "incumbent_pipeline_python_toon_plus_convert": 445.96,
-        "msgspec_json_native": 8.19
+        "typed_direct": 18.37,
+        "untyped_tree": 15.82,
+        "convert_only": 5.27,
+        "wrapper_tree_plus_convert": 21.48,
+        "incumbent_pipeline_python_toon_plus_convert": 441.82,
+        "msgspec_json_native": 8.3
       },
       "encode_us": {
-        "typed_direct_whole": 7.78,
-        "to_builtins_alone": 4.44,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 369.83,
-        "msgspec_json_native": 3.08
+        "typed_direct_whole": 7.92,
+        "to_builtins_alone": 4.28,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 371.19,
+        "msgspec_json_native": 3.14
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -392,18 +405,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 137.22,
-        "untyped_tree": 129.56,
-        "convert_only": 42.08,
-        "wrapper_tree_plus_convert": 175.4,
-        "incumbent_pipeline_python_toon_plus_convert": 3667.78,
-        "msgspec_json_native": 66.29
+        "typed_direct": 138.24,
+        "untyped_tree": 131.38,
+        "convert_only": 41.93,
+        "wrapper_tree_plus_convert": 173.07,
+        "incumbent_pipeline_python_toon_plus_convert": 3588.9,
+        "msgspec_json_native": 67.59
       },
       "encode_us": {
-        "typed_direct_whole": 60.28,
-        "to_builtins_alone": 43.75,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2935.99,
-        "msgspec_json_native": 22.94
+        "typed_direct_whole": 60.48,
+        "to_builtins_alone": 43.37,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2937.27,
+        "msgspec_json_native": 22.88
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -421,18 +434,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1226.62,
-        "untyped_tree": 1126.6,
-        "convert_only": 435.21,
-        "wrapper_tree_plus_convert": 1535.99,
-        "incumbent_pipeline_python_toon_plus_convert": 29960.5,
-        "msgspec_json_native": 648.99
+        "typed_direct": 1209.14,
+        "untyped_tree": 1142.18,
+        "convert_only": 439.5,
+        "wrapper_tree_plus_convert": 1531.22,
+        "incumbent_pipeline_python_toon_plus_convert": 29604.54,
+        "msgspec_json_native": 645.83
       },
       "encode_us": {
-        "typed_direct_whole": 488.36,
-        "to_builtins_alone": 445.34,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23723.17,
-        "msgspec_json_native": 173.27
+        "typed_direct_whole": 487.78,
+        "to_builtins_alone": 438.34,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23501.35,
+        "msgspec_json_native": 173.11
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -455,16 +468,16 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.48,
-        "toons_rust": 25.97,
-        "python_toon": 93.32,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.57,
+        "toons_rust": 26.02,
+        "python_toon": 93.03,
+        "msgspec_json_context": 1.23
       },
       "decode_us": {
-        "msgspec_toon": 4.38,
+        "msgspec_toon": 4.34,
         "toons_rust": 11.31,
-        "python_toon": 108.95,
-        "msgspec_json_context": 2.28
+        "python_toon": 107.75,
+        "msgspec_json_context": 2.31
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -480,16 +493,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.97,
-        "toons_rust": 101.68,
-        "python_toon": 362.41,
-        "msgspec_json_context": 3.72
+        "msgspec_toon": 15.75,
+        "toons_rust": 100.95,
+        "python_toon": 365.91,
+        "msgspec_json_context": 3.73
       },
       "decode_us": {
-        "msgspec_toon": 15.3,
-        "toons_rust": 44.27,
-        "python_toon": 439.58,
-        "msgspec_json_context": 9.24
+        "msgspec_toon": 15.95,
+        "toons_rust": 43.8,
+        "python_toon": 436.39,
+        "msgspec_json_context": 9.28
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -505,16 +518,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 121.59,
-        "toons_rust": 803.2,
-        "python_toon": 2890.34,
-        "msgspec_json_context": 28.25
+        "msgspec_toon": 122.41,
+        "toons_rust": 806.82,
+        "python_toon": 2875.67,
+        "msgspec_json_context": 28.83
       },
       "decode_us": {
-        "msgspec_toon": 124.87,
-        "toons_rust": 359.31,
-        "python_toon": 3638.15,
-        "msgspec_json_context": 82.81
+        "msgspec_toon": 125.14,
+        "toons_rust": 362.53,
+        "python_toon": 3555.14,
+        "msgspec_json_context": 81.52
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -530,16 +543,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 961.94,
-        "toons_rust": 6582.0,
-        "python_toon": 23404.58,
-        "msgspec_json_context": 211.02
+        "msgspec_toon": 950.29,
+        "toons_rust": 6454.92,
+        "python_toon": 23255.15,
+        "msgspec_json_context": 213.2
       },
       "decode_us": {
-        "msgspec_toon": 1156.35,
-        "toons_rust": 3052.19,
-        "python_toon": 29795.25,
-        "msgspec_json_context": 819.14
+        "msgspec_toon": 1139.61,
+        "toons_rust": 3057.53,
+        "python_toon": 29356.88,
+        "msgspec_json_context": 796.79
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1064,10 +1077,6 @@
       "baseline",
       "current",
       "current",
-      "baseline",
-      "baseline",
-      "current",
-      "current",
       "baseline"
     ],
     "baseline_instrumented": true,
@@ -1076,401 +1085,305 @@
     "results": [
       {
         "baseline_us": [
-          5.78,
-          5.98,
-          5.98,
-          5.98
+          6.0,
+          6.01
         ],
         "current_us": [
-          5.04,
-          5.22,
-          5.13,
-          5.2
+          5.18,
+          5.14
         ],
         "paired_ratios": [
-          0.87197,
-          0.87291,
-          0.85786,
-          0.86957
+          0.86333,
+          0.85524
         ],
-        "median_ratio": 0.8707687678652023,
-        "pair_spread_pp": 1.5050167224080258,
-        "noise_floor_pp": 3.5714285714285587,
+        "median_ratio": 0.8592872989462008,
+        "pair_spread_pp": 0.8092068774265049,
+        "noise_floor_pp": 0.7782101167315147,
         "metric": "typed.decode_us.typed_direct@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          22.22,
-          21.98,
-          22.04,
-          21.98
+          21.88,
+          22.16
         ],
         "current_us": [
-          17.42,
-          17.64,
-          17.59,
-          18.3
+          18.02,
+          17.57
         ],
         "paired_ratios": [
-          0.78398,
-          0.80255,
-          0.79809,
-          0.83258
+          0.82358,
+          0.79287
         ],
-        "median_ratio": 0.8003210722831678,
-        "pair_spread_pp": 4.8596670404074,
-        "noise_floor_pp": 5.051664753157281,
+        "median_ratio": 0.808226608544143,
+        "pair_spread_pp": 3.071314488611987,
+        "noise_floor_pp": 2.5611838360842354,
         "metric": "typed.decode_us.typed_direct@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          169.01,
-          164.65,
-          167.51,
-          167.82
+          167.56,
+          165.21
         ],
         "current_us": [
-          135.08,
-          135.96,
-          136.19,
-          140.03
+          136.05,
+          133.69
         ],
         "paired_ratios": [
-          0.79924,
-          0.82575,
-          0.81303,
-          0.83441
+          0.81195,
+          0.80921
         ],
-        "median_ratio": 0.8193888411428334,
-        "pair_spread_pp": 3.5163262731218836,
-        "noise_floor_pp": 3.664495114006505,
+        "median_ratio": 0.8105802381710877,
+        "pair_spread_pp": 0.27354415379869934,
+        "noise_floor_pp": 1.7652778816665604,
         "metric": "typed.decode_us.typed_direct@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1417.03,
-          1497.71,
-          1531.89,
-          1541.51
+          1578.91,
+          1541.22
         ],
         "current_us": [
-          1191.54,
-          1218.57,
-          1214.24,
-          1211.34
+          1215.99,
+          1195.28
         ],
         "paired_ratios": [
-          0.84087,
-          0.81362,
-          0.79264,
-          0.78581
+          0.77015,
+          0.77554
         ],
-        "median_ratio": 0.8031319495512226,
-        "pair_spread_pp": 5.505749030307627,
-        "noise_floor_pp": 8.784570545436576,
+        "median_ratio": 0.7728433404715176,
+        "pair_spread_pp": 0.5396227402301501,
+        "noise_floor_pp": 2.445465280751624,
         "metric": "typed.decode_us.typed_direct@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
           2.42,
-          2.46,
-          2.47,
-          2.5
+          2.46
         ],
         "current_us": [
-          2.31,
-          2.24,
-          2.32,
-          2.38
+          2.3,
+          2.32
         ],
         "paired_ratios": [
-          0.95455,
-          0.91057,
-          0.93927,
-          0.952
+          0.95041,
+          0.94309
         ],
-        "median_ratio": 0.9456356275303643,
-        "pair_spread_pp": 4.397634885439761,
-        "noise_floor_pp": 6.249999999999978,
+        "median_ratio": 0.9467513270174024,
+        "pair_spread_pp": 0.7323792246186955,
+        "noise_floor_pp": 1.6528925619834656,
         "metric": "typed.encode_us.typed_direct_whole@16",
-        "verdict": "BELOW NOISE \u2014 not a result"
+        "verdict": "resolved"
       },
       {
         "baseline_us": [
-          8.15,
-          8.27,
-          8.48,
+          8.41,
           8.38
         ],
         "current_us": [
-          7.83,
-          7.9,
-          8.07,
-          8.22
+          7.81,
+          7.79
         ],
         "paired_ratios": [
-          0.96074,
-          0.95526,
-          0.95165,
-          0.98091
+          0.92866,
+          0.92959
         ],
-        "median_ratio": 0.9579980860676108,
-        "pair_spread_pp": 2.92559778448237,
-        "noise_floor_pp": 4.980842911877392,
+        "median_ratio": 0.9291253167754037,
+        "pair_spread_pp": 0.0937910601937153,
+        "noise_floor_pp": 0.35799522673030104,
         "metric": "typed.encode_us.typed_direct_whole@64",
-        "verdict": "BELOW NOISE \u2014 not a result"
+        "verdict": "resolved"
       },
       {
         "baseline_us": [
-          64.33,
-          65.07,
-          64.53,
-          66.57
+          64.35,
+          63.46
         ],
         "current_us": [
-          61.78,
-          60.59,
-          62.29,
-          62.88
+          61.48,
+          60.09
         ],
         "paired_ratios": [
-          0.96036,
-          0.93115,
-          0.96529,
-          0.94457
+          0.9554,
+          0.9469
         ],
-        "median_ratio": 0.9524651332026652,
-        "pair_spread_pp": 3.413639511488409,
-        "noise_floor_pp": 3.7795015679154886,
+        "median_ratio": 0.9511479188598635,
+        "pair_spread_pp": 0.8504473080583996,
+        "noise_floor_pp": 2.313196871359624,
         "metric": "typed.encode_us.typed_direct_whole@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          507.96,
-          518.32,
-          519.9,
-          522.27
+          516.19,
+          523.07
         ],
         "current_us": [
-          488.41,
-          489.25,
-          496.08,
-          495.98
+          494.55,
+          491.68
         ],
         "paired_ratios": [
-          0.96151,
-          0.94391,
-          0.95418,
-          0.94966
+          0.95808,
+          0.93999
         ],
-        "median_ratio": 0.9519227745107688,
-        "pair_spread_pp": 1.7597761525083855,
-        "noise_floor_pp": 2.817150956768244,
+        "median_ratio": 0.9490331818594592,
+        "pair_spread_pp": 1.8088540483022664,
+        "noise_floor_pp": 1.3328425579728354,
         "metric": "typed.encode_us.typed_direct_whole@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          4.92,
-          5.03,
-          4.99,
-          4.9
+          4.9,
+          5.03
         ],
         "current_us": [
-          4.58,
           4.59,
-          4.53,
-          4.53
+          4.56
         ],
         "paired_ratios": [
-          0.93089,
-          0.91252,
-          0.90782,
-          0.92449
+          0.93673,
+          0.90656
         ],
-        "median_ratio": 0.9185073234064998,
-        "pair_spread_pp": 2.3078677680564375,
+        "median_ratio": 0.9216476650302268,
+        "pair_spread_pp": 3.0174057694648426,
         "noise_floor_pp": 2.6530612244897833,
         "metric": "codecs.encode_us.msgspec_toon@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          17.12,
-          17.25,
-          17.36,
+          17.1,
           17.21
         ],
         "current_us": [
-          15.89,
-          15.74,
-          16.39,
-          16.44
+          16.22,
+          16.0
         ],
         "paired_ratios": [
-          0.92815,
-          0.91246,
-          0.94412,
-          0.95526
+          0.94854,
+          0.92969
         ],
-        "median_ratio": 0.9361393147853052,
-        "pair_spread_pp": 4.27948024825473,
-        "noise_floor_pp": 4.447268106734437,
+        "median_ratio": 0.9391150256039089,
+        "pair_spread_pp": 1.8845972183994641,
+        "noise_floor_pp": 1.374999999999993,
         "metric": "codecs.encode_us.msgspec_toon@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          131.38,
-          131.01,
-          133.22,
-          133.05
+          131.4,
+          131.2
         ],
         "current_us": [
-          121.15,
-          120.65,
-          121.35,
-          122.0
+          123.72,
+          123.02
         ],
         "paired_ratios": [
-          0.92213,
-          0.92092,
-          0.9109,
-          0.91695
+          0.94155,
+          0.93765
         ],
-        "median_ratio": 0.9189352913067128,
-        "pair_spread_pp": 1.1235002637003388,
-        "noise_floor_pp": 1.6868941302190743,
+        "median_ratio": 0.9396024752199577,
+        "pair_spread_pp": 0.3900072391134768,
+        "noise_floor_pp": 0.569013168590482,
         "metric": "codecs.encode_us.msgspec_toon@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1020.84,
-          1048.75,
-          1038.19,
-          1036.47
+          1041.78,
+          1024.41
         ],
         "current_us": [
-          952.25,
-          959.13,
-          976.84,
-          974.84
+          978.43,
+          974.44
         ],
         "paired_ratios": [
-          0.93281,
-          0.91455,
-          0.94091,
-          0.94054
+          0.93919,
+          0.95122
         ],
-        "median_ratio": 0.9366743967353115,
-        "pair_spread_pp": 2.6360882475151226,
-        "noise_floor_pp": 2.734022961482707,
+        "median_ratio": 0.9452056593546632,
+        "pair_spread_pp": 1.203008658738114,
+        "noise_floor_pp": 1.695610156089833,
         "metric": "codecs.encode_us.msgspec_toon@4096",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          4.83,
-          4.94,
-          5.01,
-          4.9
+          4.97,
+          4.89
         ],
         "current_us": [
-          4.39,
-          4.41,
-          4.36,
+          4.33,
           4.42
         ],
         "paired_ratios": [
-          0.9089,
-          0.89271,
-          0.87026,
-          0.90204
+          0.87123,
+          0.90389
         ],
-        "median_ratio": 0.897376683466909,
-        "pair_spread_pp": 3.8643210473462752,
-        "noise_floor_pp": 3.7267080745341463,
+        "median_ratio": 0.8875564223788539,
+        "pair_spread_pp": 3.26581163874865,
+        "noise_floor_pp": 2.0785219399538146,
         "metric": "codecs.decode_us.msgspec_toon@16",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          18.55,
-          18.84,
-          18.81,
-          18.54
+          18.3,
+          18.55
         ],
         "current_us": [
-          15.72,
-          15.58,
-          15.29,
-          15.75
+          15.87,
+          15.83
         ],
         "paired_ratios": [
-          0.84744,
-          0.82696,
-          0.81287,
-          0.84951
+          0.86721,
+          0.85337
         ],
-        "median_ratio": 0.8372016298407358,
-        "pair_spread_pp": 3.664906603077278,
-        "noise_floor_pp": 3.00850228907783,
+        "median_ratio": 0.8602911934956474,
+        "pair_spread_pp": 1.3843842516901517,
+        "noise_floor_pp": 1.3661202185792254,
         "metric": "codecs.decode_us.msgspec_toon@64",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          154.62,
-          156.61,
-          154.51,
-          155.32
+          153.79,
+          156.38
         ],
         "current_us": [
-          123.68,
-          124.61,
-          120.62,
-          124.7
+          126.27,
+          124.42
         ],
         "paired_ratios": [
-          0.7999,
-          0.79567,
-          0.78066,
-          0.80286
+          0.82105,
+          0.79563
         ],
-        "median_ratio": 0.7977836475186728,
-        "pair_spread_pp": 2.2197168612235973,
-        "noise_floor_pp": 3.382523627922396,
+        "median_ratio": 0.808340362047725,
+        "pair_spread_pp": 2.542864582457105,
+        "noise_floor_pp": 1.6841147018661795,
         "metric": "codecs.decode_us.msgspec_toon@512",
         "verdict": "resolved"
       },
       {
         "baseline_us": [
-          1425.57,
-          1436.63,
-          1440.68,
-          1448.05
+          1412.27,
+          1418.42
         ],
         "current_us": [
-          1139.89,
-          1164.1,
-          1121.34,
-          1170.7
+          1142.98,
+          1189.55
         ],
         "paired_ratios": [
-          0.7996,
-          0.8103,
-          0.77834,
-          0.80847
+          0.80932,
+          0.83864
         ],
-        "median_ratio": 0.8040347621532011,
-        "pair_spread_pp": 3.1958319242429423,
-        "noise_floor_pp": 4.401876326537901,
+        "median_ratio": 0.8239827854786913,
+        "pair_spread_pp": 2.932324335713621,
+        "noise_floor_pp": 4.074436998022701,
         "metric": "codecs.decode_us.msgspec_toon@4096",
         "verdict": "resolved"
       }
@@ -1637,8 +1550,8 @@
     "unsupported: strict=False scalar coercion (tier 1) \u2014 review F-06: `strict` reaches duplicate handling but not `convert_scalar`",
     "unsupported: recursive Struct types (tier 1) \u2014 the plan compiler recurses until RecursionError instead of erroring clearly",
     "silently_ignored: constraints (msgspec.Meta) (tier 1) \u2014 parsed by the plan compiler and never enforced: a value msgspec rejects is accepted",
-    "silently_wrong: Literal[int] membership (tier 1) \u2014 review F-07: Python equality makes True == 1, so a bool satisfies Literal[1]",
-    "silently_wrong: dict[int, T] and other non-string keys (tier 1) \u2014 review F-13: the key plan is compiled and ignored; keys stay strings",
+    "unsupported: Literal with mixed member types (tier 1) \u2014 not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect",
+    "unsupported: dict[int, T] and other non-string keys (tier 1) \u2014 review F-13, downgraded from silently wrong: the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}",
     "unsupported: enum members (tier 2)",
     "unsupported: datetime (tier 2)",
     "unsupported: UUID (tier 2)",

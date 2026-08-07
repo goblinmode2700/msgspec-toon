@@ -204,13 +204,19 @@ tokens                      unchanged; canonical bytes untouched
 
 ### C. Typed correctness
 
+Reordered on the severity ranking this project now publishes: `silently_wrong` outranks
+`unsupported`, because a rejection is visible to a caller and a wrong value is not. F-07
+and F-13 were the only two silent divergences, so they went first. F-04 stays queued —
+it is error-message precision on a hot path, which is lower value and higher risk than
+the parity items around it.
+
 - [ ] F-04 preserve exact cell columns without adding an intermediate tree.
 - [ ] F-06 differential-test and implement `strict=False` Tier 0 coercions.
-- [ ] F-07 distinguish booleans from integer literals.
+- [x] F-07 distinguish booleans from integer literals.
 - [ ] F-08 implement fixed tuples.
 - [ ] F-09 support `kw_only` Struct construction on a cold branch.
 - [ ] F-10 implement or reject `order` values explicitly.
-- [ ] F-13 reject unsupported mapping key plans during decoder construction.
+- [x] F-13 reject unsupported mapping key plans during decoder construction.
 
 Exit: supported behavior matches `msgspec==0.21.1`. Unsupported behavior fails loudly.
 
@@ -306,3 +312,48 @@ the full spread among a build's blocks, which is both simpler and harder to fool
 Note for whoever reads the earlier checkpoints: the deltas recorded there came from
 single-order runs. The decode figures reproduce under the new instrument; treat the
 small encode figures in checkpoints 1 and 2 as unresolved rather than as measurements.
+
+#### Checkpoint 5 — F-07 and F-13, the two silent divergences
+
+Hypothesis: both defects return a wrong value where `msgspec.json` either rejects or
+returns something else, and both are cold-path, so both can be repaired without touching
+the challenge shape's throughput.
+
+Confirmed. `silently_wrong` is now **0** in the support matrix.
+
+- **F-07.** `Literal[1]` accepted `true` because membership used Python equality and
+  `True == 1`. Membership now compares the exact scalar category first. msgspec permits
+  only None/int/str in a `Literal`, so there is no widening case this wrongly rejects —
+  verified against `msgspec.json`, which answers "Expected `int`, got `bool`".
+- **F-13.** `dict[int, int]` returned `{"1": 2}` where msgspec returns `{1: 2}`. The key
+  plan was compiled and dropped. The plan compiler now refuses a non-`str` key plan with
+  a `TypeError` when the **Decoder is constructed**, not when a document happens to
+  contain a key — the earliest point the annotation is visible. It downgrades from
+  `silently_wrong` to `unsupported`, which is the honest state until keys are typed.
+
+Found while fixing F-07, and not previously known: **`Literal` with mixed member types is
+unsupported for a reason outside this codebase.** `msgspec.inspect` sorts a Literal's
+members, so `Literal["a", 1]` raises `TypeError: '<' not supported between instances of
+'int' and 'str'` before the plan compiler sees anything — while `msgspec.json` decodes it
+happily, because its own decoder does not go through `inspect`. AD-003 confines us to
+`inspect`, so this cannot be fixed behind the membrane. It is now a matrix entry with
+that explanation rather than a mystery.
+
+A new matrix status was needed: `parity_rejects`, for "both implementations refuse this".
+Without it the matrix could not express that rejecting `true` for `Literal[1]` is now
+*correct*, and a `supported` entry cannot be a rejection.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 78 Python tests, clean
+matrix                      9 supported, 1 parity-rejects, 13 unsupported, 3 inert, 0 silently wrong
+A/B (4 blocks, quiet run)   every row resolved; typed decode -14.1/-19.2/-18.9/-22.7%,
+                            untyped decode -11.2/-14.0/-19.2/-17.6%, encode -4.9 to -7.8%
+```
+
+Note on the checkpoint-4 below-noise rows: in this quieter session, typed encode at 16
+and 64 records resolved (-5.3%, -7.1%) against noise floors of 1.7pp and 0.4pp. Whether a
+~5% delta resolves is a property of the session, not a fixed fact about the codec. Both
+runs are in the artifacts; neither supersedes the other.
