@@ -74,6 +74,21 @@ struct RowMemo {
     disabled: bool,
 }
 
+impl RowMemo {
+    /// A memo caches wire-name→field-index resolutions, which stay valid only
+    /// while every row resolves against one plan. A fixed tuple gives each
+    /// position its own plan, so an index recorded from one row can name a
+    /// different field in the next — two Structs sharing field names in
+    /// opposite declaration order silently swap values. Such a frame never
+    /// memoizes; the rule lives here so no call site can forget it.
+    fn for_sequence(item: &SequencePlan<'_>) -> Self {
+        Self {
+            disabled: matches!(item, SequencePlan::ByPosition(_)),
+            ..Self::default()
+        }
+    }
+}
+
 pub struct TypedConsumer<'py, 'plan> {
     py: Python<'py>,
     root: &'plan CompiledPlan,
@@ -616,32 +631,35 @@ impl Consumer for TypedConsumer<'_, '_> {
         let expected = self.expected_plan_or_fault(at)?.resolve_container();
         match &expected.kind {
             PlanKind::List(item) => {
+                let item = SequencePlan::Uniform(item);
+                self.row_memos.push(RowMemo::for_sequence(&item));
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
-                    item: SequencePlan::Uniform(item),
+                    item,
                     as_tuple: false,
                 });
-                self.row_memos.push(RowMemo::default());
                 Ok(())
             }
             PlanKind::TupleVar(item) => {
+                let item = SequencePlan::Uniform(item);
+                self.row_memos.push(RowMemo::for_sequence(&item));
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
-                    item: SequencePlan::Uniform(item),
+                    item,
                     as_tuple: true,
                 });
-                self.row_memos.push(RowMemo::default());
                 Ok(())
             }
             PlanKind::TupleFixed(plans) => {
                 // The length is known from the type, so the reservation comes
                 // from the plan and never from the document's declared count.
+                let item = SequencePlan::ByPosition(plans);
+                self.row_memos.push(RowMemo::for_sequence(&item));
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(plans.len()),
-                    item: SequencePlan::ByPosition(plans),
+                    item,
                     as_tuple: true,
                 });
-                self.row_memos.push(RowMemo::default());
                 Ok(())
             }
             PlanKind::Any => self.begin_any(AnyEvent::StartArray(declared_len), at, None),

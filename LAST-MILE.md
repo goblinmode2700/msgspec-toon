@@ -210,6 +210,18 @@ and F-13 were the only two silent divergences, so they went first. F-04 stays qu
 it is error-message precision on a hot path, which is lower value and higher risk than
 the parity items around it.
 
+- [x] **C-01 a row memo is never shared across positions with different plans.** Found while
+      reviewing the D5 candidate from the external round, but pre-existing since D1 landed and
+      **shipped wrong in v0.3.0**. The memo replays the first row's wire-name→field-index
+      resolutions positionally; a fixed tuple gives every position its own plan, so
+      `tuple[Ascending, Descending]` — two Structs sharing field names in opposite declaration
+      order — silently swapped the values of every row after the first. Byte comparison did not
+      catch it because the *key names* match; only the indices differ. `msgspec.json` returns
+      `Descending(y=4, x=3)`, we returned `Descending(y=3, x=4)`. A wrong value, not a refusal,
+      which is the top of this project's severity order. Fixed by `RowMemo::for_sequence`, which
+      refuses to memoize a `ByPosition` frame — the rule lives in one constructor so no call
+      site can forget it. Regression test asserts against `msgspec.json` and was confirmed to
+      fail on the unfixed build. Corpus 538/538, lock matches, `make ab` resolved no slowdown.
 - [ ] **C-00 enforce constraints (`msgspec.Meta`).** No lettered finding — the adversarial
       review logged it only as "parsed but not enforced" — but it is the **last silent
       divergence in the codec**: `Annotated[int, Meta(ge=10)]` reaches the plan IR and is

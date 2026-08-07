@@ -27,6 +27,26 @@ TEXT = b"""workers[2]{pid,provider,metadata{alias,region}}:
   80916,claude,worker-b,east"""
 
 
+class Ascending(msgspec.Struct, frozen=True):
+    x: int
+    y: int
+
+
+class Descending(msgspec.Struct, frozen=True):
+    """`Ascending`'s field names in the opposite declaration order."""
+
+    y: int
+    x: int
+
+
+class TuplePair(msgspec.Struct, frozen=True):
+    pair: tuple[Ascending, Descending]
+
+
+class TupleTriple(msgspec.Struct, frozen=True):
+    triple: tuple[Ascending, Ascending, Descending]
+
+
 def test_vertical_slice() -> None:
     value = toon.decode(TEXT, type=Document)
     assert isinstance(value, Document)
@@ -181,3 +201,31 @@ def test_keyword_only_structs_construct() -> None:
 def test_keyword_only_structs_nest_and_round_trip() -> None:
     original = KeywordOuter(inner=KeywordInner(value=2))
     assert toon.decode(toon.encode(original), type=KeywordOuter) == original
+
+
+def test_tuple_positions_do_not_share_a_row_memo() -> None:
+    """Each position of a fixed tuple carries its own plan.
+
+    The row memo replays the first row's wire-name to field-index
+    resolutions positionally. Two Structs that share field names in opposite
+    declaration order resolve the same name to different indices, so a memo
+    shared across positions silently swaps the values of every later row —
+    a wrong answer, not a refusal. `msgspec.json` is the oracle.
+    """
+    reference = msgspec.json.decode(b'{"pair":[{"x":1,"y":2},{"x":3,"y":4}]}', type=TuplePair)
+    assert reference == TuplePair(pair=(Ascending(x=1, y=2), Descending(y=4, x=3)))
+
+    # Tabular rows: one header, so every row emits an identical key sequence.
+    assert toon.decode(b"pair[2]{x,y}:\n  1,2\n  3,4", type=TuplePair) == reference
+    # List form reaches the same memo by a different route.
+    assert (
+        toon.decode(b"pair[2]:\n  - x: 1\n    y: 2\n  - x: 3\n    y: 4", type=TuplePair)
+        == reference
+    )
+
+    # The divergence appears only at position 3, after two rows agreed.
+    assert toon.decode(
+        b"triple[3]{x,y}:\n  1,2\n  3,4\n  5,6", type=TupleTriple
+    ) == msgspec.json.decode(
+        b'{"triple":[{"x":1,"y":2},{"x":3,"y":4},{"x":5,"y":6}]}', type=TupleTriple
+    )
