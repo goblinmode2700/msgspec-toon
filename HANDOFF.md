@@ -1,8 +1,13 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated: 2026-08-07, at v0.2.0. Read CLAUDE.md (or AGENTS.md, same file) first;
-this document is the delta: what is done, what is open, and what the next round —
-a **review sweep** — should attack._
+_Last updated after the v0.2.0 adversarial review. Read CLAUDE.md (or AGENTS.md, same
+file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
+
+## Next action
+
+The adversarial review is complete. Use `/last-mile` to execute the ordered queue in
+`LAST-MILE.md`. Start with F-01, F-02, and F-03. These defects let hostile inputs cause
+a native panic or process exit 139. Preserve 538/538 conformance and all protected gates.
 
 ## The goal, precisely
 
@@ -36,8 +41,9 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 
 ## Open items (tracked, not forgotten)
 
-1. **Review sweep — the next round's job.** This codebase was written fast under
-   fixture-driven iteration. Nobody has adversarially reviewed it. Priority targets:
+1. **Adversarial review sweep — complete.** The durable findings are in
+   `docs/adversarial-review-v0.2.0.md`. The executable queue is in `LAST-MILE.md`.
+   The review covered:
    - `src/typed.rs` — the D1 row-memo state machine (cursor/complete/disabled
      transitions across nested structs, skip subtrees, Any subtrees, memo push/pop
      pairing with List frames). Most subtle code in the repo.

@@ -19,12 +19,22 @@ zero-intermediate-tree invariant (G2), or payload-safe errors for either metric.
 
 Read **`HANDOFF.md`** before doing anything — it is the authoritative state-of-the-world:
 what is proven at `v0.2.0` (538/538 corpus, G2/G3/G5/T1 pass, G4 honest miss), the open
-items, and the invariants that must not regress. **The next round is a review sweep**:
-adversarial review of the hot-path code written under fixture-driven iteration
-(`src/typed.rs` row memo, the `unsafe`/`unchecked` sites, non-strict semantics beyond
-corpus coverage, error-position arithmetic, A/B harness rigor) — HANDOFF.md §Open-items
-item 1 has the precise target list. Fixes must keep `make check`, the corpus run, and
-the G2/G3/G5 gates green; perf-relevant changes need same-session A/B via `make ab`.
+items, and the invariants that must not regress. The adversarial review is complete in
+`docs/adversarial-review-v0.2.0.md`. It found three P0 containment defects and a bounded
+correctness, evidence, and efficiency queue. **The next round is the last-mile loop in
+`LAST-MILE.md`.** Use `/last-mile` for iterative work. Fixes must keep `make check`, the
+corpus run, and G2/G3/G5 green. Performance changes require same-session A/B.
+
+### Agent continuation contract
+
+- Read `LAST-MILE.md` before code changes.
+- Select the first unblocked queue item unless the user names another item.
+- Use one falsifiable hypothesis and one focused change per checkpoint.
+- Reject changes that regress conformance, G2, G3, G5, or payload safety.
+- Keep canonical bytes stable unless the official corpus requires a change.
+- Update generated evidence and the handoff before each checkpoint commit.
+- Continue until a documented stop condition occurs.
+- Do not create another orchestration harness.
 
 **Public name is `msgspec-toon`.** The local directory name ("toon-millennium-challenge")
 is a working title only and must not leak into anything published: if creating a GitHub
