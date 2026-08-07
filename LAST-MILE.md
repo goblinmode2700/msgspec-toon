@@ -290,7 +290,12 @@ writer. Perturbing the key separator moved no locked byte count until `irregular
 added to the payload matrix. If you add an encoder path, ask which locked payload
 exercises it.
 
-## Known gate state: `make ab` is RED, deliberately
+## Resolved at v0.3.0: the ~2% encode regression was accepted into the baseline
+
+_Historical. The guard now points at v0.3.0, which contains this regression, so `make ab`
+is green again. Kept because the reasoning is the precedent for the next one._
+
+## The ~2% encode regression, and why it was accepted rather than fixed
 
 `typed encode@512` is **+2.1% slower than v0.2.0** (MDE 1.4%, reproduced at double power),
 and a focused 16-block run put `typed encode@4096` at **+2.42%** (MDE 1.98%, significant).
