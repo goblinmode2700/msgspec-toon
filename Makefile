@@ -15,7 +15,10 @@ COOLDOWN_DAYS := 14
 # that baseline by 15-20%. Re-cut GUARD at every release or it decays into the
 # same blind spot.
 BASELINE_TAG := v0.1.0-conformant
-GUARD_TAG := v0.2.0
+# Derived, never hardcoded: a guard pinned by hand silently ages into the blind
+# spot it exists to prevent. `benches/ab.py` re-derives this and refuses to gate
+# against a guard built from an older tag.
+GUARD_TAG := $(shell git tag -l 'v*' --sort=-v:refname | head -1)
 
 .PHONY: lint typecheck test check build bench report audit relock baseline guard ab ab-story g2 efficiency
 
@@ -79,6 +82,8 @@ guard:
 	uv pip install --python .venv-guard/bin/python target/guard-wheels/*.whl \
 		python-toon==0.1.3 toons pytest
 	git worktree remove --force .guard-src
+	echo "$(GUARD_TAG)" > .venv-guard/GUARD_TAG
+	@echo "guard built from $(GUARD_TAG)"
 
 # The gate: exits non-zero when a metric is significantly slower than the
 # latest release and the slowdown reproduces. Needs .venv-guard and takes

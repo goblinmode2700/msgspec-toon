@@ -44,6 +44,13 @@ DEFAULT_TARGET_SECONDS = 0.05
 #: calibrate.
 LOOPS_ENV = "MSGSPEC_TOON_LOOPS"
 
+#: When set, `measure` runs only the named metric and reports zero for the rest.
+#: The A/B harness measures one metric per block but calls a sampler that
+#: computes them all — without this, every typed-encode block also times the
+#: python-toon incumbent at ~30ms a call, which is the whole cost of the block.
+#: Only that harness sets it; a full benchmark run leaves it unset.
+ONLY_ENV = "MSGSPEC_TOON_ONLY_METRIC"
+
 
 @dataclass(frozen=True, slots=True)
 class Timing:
@@ -75,6 +82,7 @@ def _injected_loops() -> dict[str, int]:
 
 
 _LOOPS: dict[str, int] = _injected_loops()
+_ONLY: str | None = os.environ.get(ONLY_ENV) or None
 #: Loop counts this process chose, reported back when calibrating.
 CALIBRATED: dict[str, int] = {}
 
@@ -115,6 +123,9 @@ def measure(
     stable across processes — the same metric must carry the same name in every
     worker or they will not be measuring the same amount of work.
     """
+    if _ONLY is not None and name != _ONLY:
+        return Timing(microseconds=0.0, loops=0, samples=0)
+
     fn()  # warm caches, plans, and any lazily built state
 
     loops = _LOOPS.get(name)

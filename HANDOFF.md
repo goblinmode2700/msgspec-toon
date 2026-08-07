@@ -44,6 +44,13 @@ Wire options: `delimiter` (`","`/`"\t"`/`"|"`), `indent`, `indent_size` — exac
 The old AD-005 blanket prohibition was amended on corpus evidence (see
 `openspec/specs/toon-encoding/spec.md`).
 
+> **`make ab` is currently RED and that is expected.** `typed encode` is ~2% slower than
+> the v0.2.0 guard across sizes (significant at 512 and, at 16 blocks per side, at 4096).
+> It is real, it is this round's, and it is *not* explained by the logic added — reverting
+> the two encode-path changes leaves +1.38%, and both run five times per encode. The
+> likely cause is binary layout from the new modules. See "Known gate state" in
+> `LAST-MILE.md` for the three legitimate ways out; weakening the gate is not one of them.
+
 ## Open items (tracked, not forgotten)
 
 1. **G2 evidence — rebuilt (F-05).** Counters moved behind the non-default `alloc-stats`
@@ -131,7 +138,9 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
   the optimization round bought, reported and never gated. `.venv-guard` (latest release)
   is the *gate*: `make ab` exits non-zero on a slowdown that reproduces. A distant baseline
   cannot police a regression — measured, a 24% slowdown reads as +2.2% against the story
-  baseline. Re-cut the guard at every release.
+  baseline. **The guard tag is derived from the latest release, and the gate refuses to run
+  against a guard built from an older one**, so "re-cut it at every release" is a check
+  rather than a promise: after tagging, run `make guard`.
 - **Token and byte counts are locked** in `conformance/efficiency.lock.json`. Any change in
   either direction fails `tests/test_efficiency_lock.py`; update it deliberately and say in
   the commit why the counts moved. After ANY change: corpus zero failures,

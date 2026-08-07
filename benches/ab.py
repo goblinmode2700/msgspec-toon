@@ -80,16 +80,20 @@ T_CRITICAL_95 = {
 }
 T_CRITICAL_LARGE = 1.960
 
-#: (bench module, section, metric key, human label).
+#: (bench module, result section, result key, sampler metric name, label).
+#: The sampler's metric name is listed, not derived from the result key: they
+#: differ for half of these, and deriving it produced blocks that measured
+#: nothing and reported a mean of zero.
 METRICS = (
-    ("bench_typed", "decode_us", "typed_direct", "typed decode"),
-    ("bench_typed", "encode_us", "typed_direct_whole", "typed encode"),
-    ("bench_codecs", "decode_us", "msgspec_toon", "untyped decode"),
-    ("bench_codecs", "encode_us", "msgspec_toon", "untyped encode"),
+    ("bench_typed", "decode_us", "typed_direct", "decode.typed_direct", "typed decode"),
+    ("bench_typed", "encode_us", "typed_direct_whole", "encode.typed_direct", "typed encode"),
+    ("bench_codecs", "decode_us", "msgspec_toon", "decode.msgspec_toon", "untyped decode"),
+    ("bench_codecs", "encode_us", "msgspec_toon", "encode.msgspec_toon", "untyped encode"),
 )
 
 #: One block: one bench module's worker-side sampler at one size, reporting the
-#: single metric the block exists to measure.
+#: single metric the block exists to measure. `MSGSPEC_TOON_ONLY_METRIC` stops
+#: the sampler from also timing every metric the block will discard.
 PROBE = r"""
 import json, sys
 sys.path.insert(0, "benches")
@@ -101,6 +105,41 @@ print(json.dumps({
     "instrumented": hasattr(_native, "alloc_stats"),
 }))
 """
+
+
+def latest_release_tag() -> str | None:
+    """The tag the guard must be built from, derived rather than remembered."""
+    proc = subprocess.run(
+        ["git", "tag", "-l", "v*", "--sort=-v:refname"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    tags = [line for line in proc.stdout.splitlines() if line.strip()]
+    return tags[0] if tags else None
+
+
+def require_current_guard(venv: str) -> None:
+    """Refuse to gate against a guard built from an older release.
+
+    The guard's whole job is to sit close enough to the current build that a
+    regression shows up. A guard left at an old tag decays into exactly the
+    blind spot it exists to prevent — measured once already: a 24% slowdown
+    against a baseline trailing by 15-20% read as a 2% difference. So the tag
+    is checked, not promised.
+    """
+    latest = latest_release_tag()
+    if latest is None:
+        return
+    marker = REPO / venv / "GUARD_TAG"
+    built_from = marker.read_text().strip() if marker.exists() else None
+    if built_from != latest:
+        raise SystemExit(
+            f"{venv} was built from {built_from or 'an unrecorded tag'}, but the latest "
+            f"release is {latest}. A stale guard cannot detect a regression — run "
+            f"`make guard`."
+        )
 
 
 def t_critical(degrees_of_freedom: int) -> float:
@@ -120,6 +159,11 @@ def compare(baseline: list[float], current: list[float]) -> dict:
     needs beside it to mean anything.
     """
     baseline_mean, current_mean = statistics.fmean(baseline), statistics.fmean(current)
+    if baseline_mean <= 0 or current_mean <= 0:
+        raise SystemExit(
+            "a block reported zero: the sampler metric name does not match anything the "
+            "bench module measures, so nothing was timed"
+        )
     if len(baseline) < 2 or len(current) < 2:
         return {
             "change_pct": (current_mean / baseline_mean - 1) * 100,
@@ -144,6 +188,7 @@ def run_block(
     records: int,
     section: str,
     metric: str,
+    sampler_metric: str,
     is_baseline: bool,
 ) -> dict:
     """Run one block.
@@ -157,6 +202,7 @@ def run_block(
         target = "guard" if "guard" in str(python) else "baseline"
         raise SystemExit(f"missing interpreter {python} — run `make {target}` first")
     environment = dict(os.environ)
+    environment["MSGSPEC_TOON_ONLY_METRIC"] = sampler_metric
     if is_baseline:
         environment["MSGSPEC_TOON_MEASURE_INSTRUMENTATION"] = "1"
     proc = subprocess.run(
@@ -179,13 +225,16 @@ def measure_metric(
     records: int,
     section: str,
     metric: str,
+    sampler_metric: str,
 ) -> tuple[dict, dict[str, list[float]], bool]:
     """Run the full alternating sequence for one metric and test it."""
     samples: dict[str, list[float]] = {BASELINE: [], CURRENT: []}
     instrumented = False
     for side in sequence:
         python = baseline_python if side == BASELINE else CURRENT_PYTHON
-        block = run_block(python, module, records, section, metric, side == BASELINE)
+        block = run_block(
+            python, module, records, section, metric, sampler_metric, side == BASELINE
+        )
         samples[side].append(block["value"])
         instrumented |= side == BASELINE and block["instrumented"]
     return compare(samples[BASELINE], samples[CURRENT]), samples, instrumented
@@ -201,11 +250,22 @@ def main() -> None:
     )
     parser.add_argument("--rounds", type=int, default=2, help="B C C B rounds per metric")
     parser.add_argument(
+        "--only",
+        default=None,
+        choices=[label for *_, label in METRICS],
+        help="measure one metric, for putting power on a single question",
+    )
+    parser.add_argument(
         "--no-gate",
         action="store_true",
         help="report only; do not exit non-zero on a significant slowdown",
     )
     arguments = parser.parse_args()
+
+    # Only the gating run needs a current guard; a story or ad-hoc comparison is
+    # deliberately pointed at an old build.
+    if not arguments.no_gate and "guard" in arguments.baseline_venv:
+        require_current_guard(arguments.baseline_venv)
 
     baseline_python = REPO / arguments.baseline_venv / "bin" / "python"
     sequence = list(ROUND_PATTERN) * arguments.rounds
@@ -214,11 +274,13 @@ def main() -> None:
     regressions = []
 
     print(f"{'metric':<28} {'change':>9}  {'MDE':>7}   verdict")
-    for module, section, metric, label in METRICS:
+    for module, section, metric, sampler_metric, label in METRICS:
+        if arguments.only and arguments.only != label:
+            continue
         for records in arguments.records:
             name = f"{label}@{records}"
             test, samples, instrumented = measure_metric(
-                baseline_python, sequence, module, records, section, metric
+                baseline_python, sequence, module, records, section, metric, sampler_metric
             )
             baseline_instrumented |= instrumented
             slower = test["significant"] and test["change_pct"] > 0
@@ -233,7 +295,7 @@ def main() -> None:
                 # and came back "no significant difference" at three.
                 print(f"{name:<28} {test['change_pct']:>+8.1f}%  confirming at 2x blocks...")
                 confirmation, _, _ = measure_metric(
-                    baseline_python, sequence * 2, module, records, section, metric
+                    baseline_python, sequence * 2, module, records, section, metric, sampler_metric
                 )
                 slower = confirmation["significant"] and confirmation["change_pct"] > 0
 

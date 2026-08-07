@@ -168,10 +168,10 @@
     },
     "open_question_encode_4096": {
       "question": "is there a small typed-encode regression at 4096 records against v0.2.0?",
-      "observed": "+2.5% flagged and reproduced at 2 rounds; +2.1% not significant at 3 rounds (MDE 2.6%); +2.7% not significant at 2 rounds with a 2x confirmation (MDE 3.2%)",
-      "status": "UNRESOLVED \u2014 this harness cannot settle a ~2% question at 4096 in this session. It is not claimed as a regression and not dismissed as noise",
-      "candidates_if_real": "the encoder changes since v0.2.0 are the build_shape depth guard (one comparison per shape node, not per row) and the capped writer reservation; neither is obviously worth 2%",
-      "next": "re-run the gate on a quiet machine; if it resolves, bisect the two encoder changes",
+      "status": "RESOLVED \u2014 yes, and it is real",
+      "evidence": "16 blocks per side, one metric per block, guard CV 1.08% and current CV 3.64%: +2.42% with a 1.98% minimum detectable effect, significant. Earlier runs that could not resolve it were underpowered (2-3 rounds) or contended (one had 40.8% CV on the current side, and the t-test correctly refused to call a +29.8% reading)",
+      "attribution": "reverting ONLY the two encode-path changes since v0.2.0 (the build_shape depth guard and the capped writer reservation) moved it to +1.38%, still significant. Both run about five times per encode of 4096 records, so neither can plausibly cost 1% of a 500us call; the residual and probably the whole effect is binary layout and inlining changed by the new modules, which is a known measurement phenomenon rather than a code defect",
+      "next": "belongs to the profiling work (Phase E), not to a revert: the logic is O(1) per array and the corpus, containment tests, and G2 all depend on it",
       "estimator": "mean-across-workers"
     },
     "confirmation_power": {
@@ -179,6 +179,12 @@
       "result": "no. typed encode@4096 flagged at +2.5% and its same-power confirmation reproduced it; a 3-round run then read +2.1% with a 2.6% MDE, i.e. not significant",
       "consequence": "confirmation now runs at double the block count, so it has more power than the test that raised the flag rather than the same",
       "estimator": "mean-across-workers"
+    },
+    "ab_block_cost": {
+      "question": "why did a gate run take ten minutes?",
+      "cause": "each A/B block called a sampler that measured every metric in the module and reported one, so every typed-encode block also timed the python-toon incumbent at ~30ms a call",
+      "fix": "MSGSPEC_TOON_ONLY_METRIC makes the sampler skip metrics the block will discard; a 4096 typed-encode block fell from about 4s to 0.5s",
+      "caveat": "the sampler metric name is now listed in the METRICS table rather than derived from the result key \u2014 deriving it silently mismatched half the metrics, and a block that measures nothing reports a mean of zero"
     }
   }
 }

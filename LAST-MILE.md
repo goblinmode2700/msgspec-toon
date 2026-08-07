@@ -247,6 +247,23 @@ Exit: each adopted optimization has a frozen-baseline A/B result and all protect
 - [ ] Add CI checks for wheels, syscall restrictions, conformance, and smoke benchmarks.
 - [ ] Archive completed OpenSpec changes after their deferred tasks close.
 
+## The guard baseline: enforced, not promised
+
+`make ab` gates against `.venv-guard`, built from the **latest release tag**, which the
+Makefile derives (`git tag -l 'v*' --sort=-v:refname | head -1`) rather than hardcodes.
+`make guard` records the tag it built into `.venv-guard/GUARD_TAG`, and the gate refuses
+to run when that marker does not match the latest tag:
+
+```text
+.venv-guard was built from v0.2.0, but the latest release is v0.3.0.
+A stale guard cannot detect a regression — run `make guard`.
+```
+
+**After cutting any release tag, run `make guard`.** The check turns forgetting into a
+loud failure instead of a silent blind spot — which is the failure this project already
+measured once: a 24% slowdown against a baseline trailing by 15-20% read as a 2%
+difference and passed.
+
 ## Efficiency lock: how to update it
 
 `conformance/efficiency.lock.json` records what this codec's output costs — bytes and
@@ -272,6 +289,29 @@ object-of-objects become *keyed* tabular blocks; neither reaches the `key: value
 writer. Perturbing the key separator moved no locked byte count until `irregular` was
 added to the payload matrix. If you add an encoder path, ask which locked payload
 exercises it.
+
+## Known gate state: `make ab` is RED, deliberately
+
+`typed encode@512` is **+2.1% slower than v0.2.0** (MDE 1.4%, reproduced at double power),
+and a focused 16-block run put `typed encode@4096` at **+2.42%** (MDE 1.98%, significant).
+The regression is real and it is this round's.
+
+What it is not: attributable to the logic added. Reverting only the two encode-path changes
+since v0.2.0 — the `build_shape` depth guard and the capped writer reservation — moved
+4096 from +2.42% to +1.38%, still significant. Both run about five times per encode of 4096
+records, so neither can cost 1% of a 500 µs call. The residual, and probably the whole
+effect, is binary layout and inlining changed by the new modules. That is a known
+measurement phenomenon, not a defect with a line number.
+
+**Do not resolve this by weakening the gate.** The three legitimate moves are:
+
+1. Cut a release that includes this round and re-cut the guard from it. The regression is
+   then accepted into the baseline explicitly, which is what a release-to-release gate is
+   for. Requires a release decision.
+2. Take it as the first Phase E profiling question — the flamegraph pass has never run, and
+   "2% of encode moved and the logic did not" is a good place to point it.
+3. Revert the containment guards, which is not an option: the corpus, the containment
+   tests, and G2 all depend on them.
 
 ## Stop conditions
 
