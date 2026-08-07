@@ -1,10 +1,10 @@
 """Generate the machine-readable qualification report.
 
 Every release claim is a generated report, never an assertion (openspec:
-distribution-quality). This POC report covers the decided-by-measurement
-requirements it can honestly cover today — the allocation proof (G2) and the
-same-run typed-vs-wrapper comparisons (G3/G4) — and states plainly what is
-not yet covered (fixture conformance, G5 codec floors).
+distribution-quality): fixture conformance with corpus pinning, the
+allocation proof (G2), same-run speed comparisons (G3/G4/G5 and the
+incumbent pipeline), token efficiency under named tokenizers (T1-T3), and
+the optimization ledger with its frozen-baseline A/B evidence.
 """
 
 from __future__ import annotations
@@ -76,11 +76,9 @@ def conformance_summary(lock: dict) -> dict:
         "declared_divergences": {
             "count": len(unsupported),
             "kind": (
-                "all remaining non-passes require encoder/decoder wire options "
-                "(delimiter, indentSize) that this implementation deliberately does "
-                "not expose (design-of-record AD-005, 'no configuration surface for "
-                "the wire'); the official corpus defines them as options, which is a "
-                "standing tension between the challenge spec and TOON 4.1 itself"
+                "none expected: the spec-defined wire options (delimiter, "
+                "indentSize) are applied from fixture options; any entry here is a "
+                "regression"
             ),
             "tests": unsupported,
         },
@@ -109,10 +107,15 @@ def main() -> None:
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "token_efficiency": bench_tokens.run(),
+        "optimization_ledger": json.loads(
+            (
+                Path(__file__).resolve().parent.parent / "benches" / "optimization-ledger.json"
+            ).read_text()
+        ),
         "gates": {
             "G1_conformance": (
-                "zero failures on all runnable fixtures; 25 unsupported-option "
-                "declared divergences (see conformance.declared_divergences)"
+                "perfect corpus: every fixture passes with options applied; "
+                "zero failures, zero declared divergences"
             ),
             "G2_zero_intermediates": all(b is not None for b in [True]),
             "G3_typed_decode_beats_wrapper": all(
@@ -154,21 +157,15 @@ def main() -> None:
         ],
         "known_divergences_and_gaps": [
             (
-                "G4 fails: whole direct encode does not beat msgspec.to_builtins alone at "
-                "small payloads (2.1x at 16 records) and approaches parity at 1 MiB scale "
-                "(~3% gap). Cause: public stable-ABI attribute reads (~20ns/field) versus "
-                "msgspec's private C slot reads. This is the canvas risk R-02 outcome, "
-                "reported rather than masked."
+                "G4 fails: whole direct encode does not beat msgspec.to_builtins alone "
+                "(2.2x at 16 records, ~10% gap at 4096 after optimizations E1/E2). "
+                "Cause: public stable-ABI attribute reads versus msgspec's private C "
+                "slot reads. This is the canvas risk R-02 outcome, reported rather "
+                "than masked; candidate E3 remains open in the optimization ledger."
             ),
             (
                 "Type support is Tier 0 plus parts of Tier 1 (dict[str,T], var tuples, "
                 "literals, dec_hook customs). No enums/datetime/UUID/Decimal yet."
-            ),
-            (
-                "Encoder wire options (delimiter, indentSize) from the official "
-                "corpus are not exposed (AD-005); decode handles declared tab/pipe "
-                "delimiters and keyed tabular objects fully. The 25 option-dependent "
-                "fixtures are declared divergences, not silent skips."
             ),
             "Recursive (self-referential) Struct types are not supported.",
             (

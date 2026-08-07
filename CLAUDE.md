@@ -97,6 +97,21 @@ Optional, renames, defaults) → Tier 1 (tuples, dicts, literals, tagged unions,
 constraints) → Tier 2 (enums, datetime, UUID, Decimal, dataclasses, dec_hook). Document
 the matrix; don't claim msgspec.json parity early.
 
+## Status (2026-08-07): optimized, token-measured, perfect corpus
+
+Since the section below was written, the `optimize-speed-and-token-efficiency` change
+landed (23/24 tasks): **G1 is now a perfect 538/538 corpus score with zero declared
+divergences** (spec-defined wire options `delimiter`/`indent`/`indent_size` implemented —
+the AD-005 amendment is in the toon-encoding spec); **token efficiency is measured**
+(`make`-able via `benches/bench_tokens.py`, tiktoken o200k_base: canonical TOON =
+0.61–0.64× JSON tokens on the challenge shape, incumbents = 1.25× JSON; the tab-delimiter
+folklore measured at noise level and published as a finding); **six speed candidates
+adopted with same-session A/B proof** against the frozen `v0.1.0-conformant` baseline
+(`make baseline` + `benches/ab.py`): typed decode −15→−24%, untyped decode −10→−21%,
+encode −4→−8%. Ledger with hypotheses, deltas, and open candidates (E3, formal profiling)
+in `benches/optimization-ledger.json`, embedded in the report. G4 remains the honest R-02
+miss (~10% at 4096 after E1/E2). Tag: `v0.2.0`.
+
 ## Status (2026-08-06): Phases 0–2 executed; conformance measured
 
 Evidence: `conformance/report.json` (regenerate with `make report`). All measurements

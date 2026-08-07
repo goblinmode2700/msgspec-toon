@@ -1,0 +1,97 @@
+{
+  "baseline": {
+    "tag": "v0.1.0-conformant",
+    "harness": "benches/ab.py — both wheels rebuilt and run back to back in one session on the same machine; figures are min-of-autoranged-batches microseconds and per-row deltas from ab-latest.json at each adoption commit"
+  },
+  "candidates": [
+    {
+      "id": "E1",
+      "target": "encode scalar dispatch",
+      "hypothesis": "exact-type pointer compares beat a chain of limited-API type-check calls per cell",
+      "status": "adopted",
+      "commit": "perf: E1 type-pointer dispatch + E2 row capacity reservation",
+      "ab_delta": {
+        "typed_encode": ["-4.6% @16", "-2.2% @64", "-4.5% @512", "-5.3% @4096"],
+        "untyped_encode": ["-7.9% @16", "-5.2% @64", "-5.9% @512", "-6.5% @4096"]
+      },
+      "note": "measured together with E2; also recovered the +14-15% typed-encode regression that the wire-options plumbing introduced (caught by the A/B harness on its first run)"
+    },
+    {
+      "id": "E2",
+      "target": "encode output buffer",
+      "hypothesis": "one up-front capacity reservation for tabular rows removes growth-doubling copies",
+      "status": "adopted",
+      "commit": "perf: E1 type-pointer dispatch + E2 row capacity reservation",
+      "ab_delta": {
+        "combined_with": "E1"
+      }
+    },
+    {
+      "id": "P1",
+      "target": "row cell splitting",
+      "hypothesis": "quote-free rows (the overwhelming majority) can split on a plain memchr scan instead of byte-at-a-time quote tracking",
+      "status": "adopted",
+      "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
+      "ab_delta": {
+        "combined_with": "D1+D2+D3, see D1 row"
+      }
+    },
+    {
+      "id": "D2",
+      "target": "decode row buffers",
+      "hypothesis": "reusing one cells buffer across rows removes an allocation per row",
+      "status": "adopted",
+      "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
+      "ab_delta": {
+        "combined_with": "D1+P1+D3, see D1 row"
+      }
+    },
+    {
+      "id": "D3",
+      "target": "untyped decode key strings",
+      "hypothesis": "tabular rows repeat the same few keys; one cached PyString per column beats one fresh PyString per cell row (O(rows*cols) -> O(cols) allocations)",
+      "status": "adopted",
+      "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
+      "ab_delta": {
+        "untyped_decode": ["-10.5% @16", "-16.0% @64", "-21.0% @512", "-18.4% @4096"]
+      },
+      "note": "this also sped up the G3 wrapper baseline (which uses our untyped decoder), thinning typed decode's margin at 64 records to noise level in one run — resolved by implementing D1's typed-side memo rather than rejecting a genuine improvement; G3 re-verified passing at every size afterwards"
+    },
+    {
+      "id": "D1",
+      "target": "typed decode field resolution",
+      "hypothesis": "rows of one array repeat an identical key-event sequence; record the first row's wire-name->index resolutions and replay them positionally (byte compare instead of hash per cell), with FxHash replacing SipHash for the fallback map",
+      "status": "adopted",
+      "commit": "perf: decode candidates P1+D2+D3+D1 adopted",
+      "ab_delta": {
+        "typed_decode": ["-14.7% @16", "-20.8% @64", "-17.3% @512", "-23.6% @4096"]
+      }
+    },
+    {
+      "id": "D4",
+      "target": "decode scalar UTF-8 revalidation",
+      "hypothesis": "borrowed scalar slices need no per-cell UTF-8 revalidation after document-level validation",
+      "status": "already-implemented-at-baseline",
+      "note": "pyval.rs used unchecked conversions from the first implementation; no separate measurement possible"
+    },
+    {
+      "id": "E3",
+      "target": "fused per-row byte templates",
+      "hypothesis": "precomputed indent+delimiter templates per shape reduce writer calls per row",
+      "status": "not-attempted",
+      "note": "deferred: remaining encode gap vs to_builtins is getattr-bound (R-02), and E1/E2 already recovered the options regression; candidate remains open with its hypothesis intact"
+    },
+    {
+      "id": "G4x",
+      "target": "whole typed encode vs msgspec.to_builtins alone",
+      "hypothesis": "E1-E3 together might close G4 at large payloads",
+      "status": "measured-outcome",
+      "note": "G4 still fails: 2.36us vs 1.05us at 16 records, 494us vs 447us (~10% gap) at 4096. The floor remains public stable-ABI attribute reads vs msgspec's private C slot reads (canvas risk R-02). Reported, not masked."
+    }
+  ],
+  "token_findings": {
+    "T1": "PASS — canonical TOON is 0.61-0.64x compact JSON tokens (o200k_base) on the uniform-record ladder; 0.80x on string-heavy; 0.65x on numeric-heavy",
+    "incumbents": "both v3.0-era codecs cost 1.25x JSON tokens on the challenge shape — worse than the format they replace",
+    "T2": "the tab-delimiter folklore does not hold under o200k_base: differences are within a few tokens per ten thousand either way (tab wins marginally on numeric-heavy, loses one header token elsewhere); losing points published per the requirement"
+  }
+}
