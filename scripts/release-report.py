@@ -9,6 +9,7 @@ the optimization ledger with its frozen-baseline A/B evidence.
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import platform
 import sys
@@ -93,7 +94,7 @@ def main() -> None:
     codec_benchmarks = [bench_codecs.run(records) for records in bench_codecs.LADDER]
     report = {
         "generated_at": datetime.now(UTC).isoformat(),
-        "distribution": "msgspec-toon 0.0.1 (proof of concept)",
+        "distribution": (f"msgspec-toon {importlib.metadata.version('msgspec-toon')}"),
         "environment": {
             "python": sys.version.split()[0],
             "msgspec": msgspec.__version__,

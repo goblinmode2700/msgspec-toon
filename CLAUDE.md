@@ -1,13 +1,30 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file guides coding agents working in this repository (`AGENTS.md` is a symlink to
+this file so Codex and other agents read the same context).
 
-## What this project is
+## The goal, precisely
 
-`msgspec_toon` — a native TOON 4.1 codec for Python whose typed path decodes TOON text
-**directly into `msgspec.Struct` instances without materializing an intermediate dict/list
-tree**, and encodes Structs without `msgspec.to_builtins`. Equivalently: make `msgspec.toon`
-exist and behave like `msgspec.json`, not like the wrapper-shaped `msgspec.toml`.
+Build the **most token-efficient and fastest TOON 4.1 codec for Python**, natively
+integrated with **msgspec==0.21.1** (exact pin): the typed path decodes TOON text
+**directly into `msgspec.Struct` instances with zero intermediate dict/list tree**, and
+encodes Structs by direct field reads, never `msgspec.to_builtins`. Equivalently: make
+`msgspec.toon` exist and behave like `msgspec.json`, not like the wrapper-shaped
+`msgspec.toml`. Both metrics are gated and published as generated evidence
+(`conformance/report.json`): tokens under named tokenizers (tiktoken `o200k_base`) and
+speed as same-run ladders plus frozen-baseline A/B. Never trade conformance, the
+zero-intermediate-tree invariant (G2), or payload-safe errors for either metric.
+
+## Current state and next round
+
+Read **`HANDOFF.md`** before doing anything — it is the authoritative state-of-the-world:
+what is proven at `v0.2.0` (538/538 corpus, G2/G3/G5/T1 pass, G4 honest miss), the open
+items, and the invariants that must not regress. **The next round is a review sweep**:
+adversarial review of the hot-path code written under fixture-driven iteration
+(`src/typed.rs` row memo, the `unsafe`/`unchecked` sites, non-strict semantics beyond
+corpus coverage, error-position arithmetic, A/B harness rigor) — HANDOFF.md §Open-items
+item 1 has the precise target list. Fixes must keep `make check`, the corpus run, and
+the G2/G3/G5 gates green; perf-relevant changes need same-session A/B via `make ab`.
 
 **Public name is `msgspec-toon`.** The local directory name ("toon-millennium-challenge")
 is a working title only and must not leak into anything published: if creating a GitHub

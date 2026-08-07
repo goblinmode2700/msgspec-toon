@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T02:29:23.278086+00:00",
-  "distribution": "msgspec-toon 0.0.1 (proof of concept)",
+  "generated_at": "2026-08-07T02:37:14.375735+00:00",
+  "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
     "msgspec": "0.21.1",
@@ -8,7 +8,7 @@
     "machine": "arm64"
   },
   "measured_versions": {
-    "msgspec-toon": "0.0.1",
+    "msgspec-toon": "0.2.0",
     "msgspec": "0.21.1",
     "python-toon": "0.1.3",
     "toons": "0.7.0",
@@ -63,18 +63,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.13,
-        "untyped_tree": 4.34,
-        "convert_only": 1.38,
-        "wrapper_tree_plus_convert": 5.78,
-        "incumbent_pipeline_python_toon_plus_convert": 110.78,
-        "msgspec_json_native": 2.21
+        "typed_direct": 5.05,
+        "untyped_tree": 4.21,
+        "convert_only": 1.37,
+        "wrapper_tree_plus_convert": 5.7,
+        "incumbent_pipeline_python_toon_plus_convert": 106.14,
+        "msgspec_json_native": 2.17
       },
       "encode_us": {
-        "typed_direct_whole": 2.3,
-        "to_builtins_alone": 1.05,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 94.75,
-        "msgspec_json_native": 0.99
+        "typed_direct_whole": 2.26,
+        "to_builtins_alone": 1.04,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 92.4,
+        "msgspec_json_native": 0.98
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -92,18 +92,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.85,
-        "untyped_tree": 15.68,
-        "convert_only": 5.24,
-        "wrapper_tree_plus_convert": 20.62,
-        "incumbent_pipeline_python_toon_plus_convert": 446.17,
-        "msgspec_json_native": 8.31
+        "typed_direct": 17.31,
+        "untyped_tree": 15.36,
+        "convert_only": 5.14,
+        "wrapper_tree_plus_convert": 20.64,
+        "incumbent_pipeline_python_toon_plus_convert": 434.28,
+        "msgspec_json_native": 8.18
       },
       "encode_us": {
-        "typed_direct_whole": 7.79,
-        "to_builtins_alone": 4.36,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 371.64,
-        "msgspec_json_native": 3.13
+        "typed_direct_whole": 7.59,
+        "to_builtins_alone": 4.3,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 359.78,
+        "msgspec_json_native": 3.01
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -121,18 +121,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 136.5,
-        "untyped_tree": 128.25,
-        "convert_only": 42.84,
-        "wrapper_tree_plus_convert": 172.44,
-        "incumbent_pipeline_python_toon_plus_convert": 3658.71,
-        "msgspec_json_native": 67.26
+        "typed_direct": 136.35,
+        "untyped_tree": 126.08,
+        "convert_only": 42.17,
+        "wrapper_tree_plus_convert": 171.26,
+        "incumbent_pipeline_python_toon_plus_convert": 3546.5,
+        "msgspec_json_native": 65.91
       },
       "encode_us": {
-        "typed_direct_whole": 60.55,
-        "to_builtins_alone": 42.99,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2960.08,
-        "msgspec_json_native": 23.14
+        "typed_direct_whole": 58.21,
+        "to_builtins_alone": 42.53,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2880.96,
+        "msgspec_json_native": 22.73
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -150,18 +150,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1205.4,
-        "untyped_tree": 1127.97,
-        "convert_only": 439.47,
-        "wrapper_tree_plus_convert": 1523.56,
-        "incumbent_pipeline_python_toon_plus_convert": 30012.83,
-        "msgspec_json_native": 656.92
+        "typed_direct": 1184.38,
+        "untyped_tree": 1099.88,
+        "convert_only": 438.37,
+        "wrapper_tree_plus_convert": 1501.37,
+        "incumbent_pipeline_python_toon_plus_convert": 29261.9,
+        "msgspec_json_native": 639.66
       },
       "encode_us": {
-        "typed_direct_whole": 496.19,
-        "to_builtins_alone": 438.98,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23775.71,
-        "msgspec_json_native": 174.47
+        "typed_direct_whole": 482.03,
+        "to_builtins_alone": 437.64,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23392.23,
+        "msgspec_json_native": 171.44
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -184,16 +184,16 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.63,
-        "toons_rust": 26.49,
-        "python_toon": 93.16,
-        "msgspec_json_context": 1.21
+        "msgspec_toon": 4.52,
+        "toons_rust": 25.76,
+        "python_toon": 92.14,
+        "msgspec_json_context": 1.19
       },
       "decode_us": {
-        "msgspec_toon": 4.41,
-        "toons_rust": 11.32,
-        "python_toon": 109.1,
-        "msgspec_json_context": 2.33
+        "msgspec_toon": 4.33,
+        "toons_rust": 10.96,
+        "python_toon": 105.65,
+        "msgspec_json_context": 2.32
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -209,16 +209,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.84,
-        "toons_rust": 100.69,
-        "python_toon": 364.31,
-        "msgspec_json_context": 3.7
+        "msgspec_toon": 15.39,
+        "toons_rust": 98.37,
+        "python_toon": 363.56,
+        "msgspec_json_context": 3.72
       },
       "decode_us": {
-        "msgspec_toon": 15.63,
-        "toons_rust": 44.8,
-        "python_toon": 442.31,
-        "msgspec_json_context": 9.5
+        "msgspec_toon": 15.65,
+        "toons_rust": 43.04,
+        "python_toon": 425.37,
+        "msgspec_json_context": 9.46
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -234,16 +234,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 220.73,
-        "toons_rust": 1434.75,
-        "python_toon": 5237.72,
-        "msgspec_json_context": 52.42
+        "msgspec_toon": 119.16,
+        "toons_rust": 787.8,
+        "python_toon": 2849.69,
+        "msgspec_json_context": 28.69
       },
       "decode_us": {
-        "msgspec_toon": 222.22,
-        "toons_rust": 596.91,
-        "python_toon": 6437.82,
-        "msgspec_json_context": 173.35
+        "msgspec_toon": 124.47,
+        "toons_rust": 351.81,
+        "python_toon": 3498.76,
+        "msgspec_json_context": 81.27
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -259,16 +259,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 1519.98,
-        "toons_rust": 9915.61,
-        "python_toon": 42528.67,
-        "msgspec_json_context": 396.19
+        "msgspec_toon": 959.87,
+        "toons_rust": 6297.66,
+        "python_toon": 22962.45,
+        "msgspec_json_context": 214.74
       },
       "decode_us": {
-        "msgspec_toon": 1159.9,
-        "toons_rust": 3197.35,
-        "python_toon": 29846.6,
-        "msgspec_json_context": 813.75
+        "msgspec_toon": 1122.79,
+        "toons_rust": 2959.83,
+        "python_toon": 28739.58,
+        "msgspec_json_context": 791.12
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
