@@ -28,7 +28,7 @@ import msgspec_toon as toon
 import toon as python_toon
 from _timing import DEFAULT_WORKERS, measure, methodology
 from _workers import across_workers
-from payloads import Document, document, toon_text
+from payloads import Document, document, keyed_document, keyed_toon_text, toon_text
 
 LADDER = (16, 64, 512, 4096)
 
@@ -38,6 +38,7 @@ def sample_run(records: int) -> dict[str, Any]:
     the mean across workers — a gate decided per worker would report whichever
     process got lucky."""
     text = toon_text(records)
+    keyed_text = keyed_toon_text(records)
     doc = document(records)
     json_bytes = msgspec.json.encode(doc)
 
@@ -49,9 +50,11 @@ def sample_run(records: int) -> dict[str, Any]:
     # The incumbent pipeline round-trips its own (fallback-form) text.
     incumbent_text = python_toon.encode(msgspec.to_builtins(doc))
     assert msgspec.convert(python_toon.decode(incumbent_text), Document) == doc
+    assert untyped_decoder.decode(keyed_text) == keyed_document(records)
 
     typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
     untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
+    keyed_decode = measure("decode.keyed_document", lambda: untyped_decoder.decode(keyed_text)).us
     wrapper_decode = measure(
         "decode.wrapper", lambda: msgspec.convert(untyped_decoder.decode(text), Document)
     ).us
@@ -77,6 +80,7 @@ def sample_run(records: int) -> dict[str, Any]:
         "decode_us": {
             "typed_direct": typed_decode,
             "untyped_tree": untyped_decode,
+            "keyed_document": keyed_decode,
             "convert_only": convert_only,
             "wrapper_tree_plus_convert": wrapper_decode,
             "incumbent_pipeline_python_toon_plus_convert": incumbent_decode,

@@ -87,6 +87,7 @@ T_CRITICAL_LARGE = 1.960
 METRICS = (
     ("bench_typed", "decode_us", "typed_direct", "decode.typed_direct", "typed decode"),
     ("bench_typed", "encode_us", "typed_direct_whole", "encode.typed_direct", "typed encode"),
+    ("bench_typed", "decode_us", "keyed_document", "decode.keyed_document", "keyed decode"),
     ("bench_codecs", "decode_us", "msgspec_toon", "decode.msgspec_toon", "untyped decode"),
     ("bench_codecs", "encode_us", "msgspec_toon", "encode.msgspec_toon", "untyped encode"),
 )

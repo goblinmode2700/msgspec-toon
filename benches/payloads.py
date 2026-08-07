@@ -109,6 +109,31 @@ def irregular_tree(records: int) -> dict:
     return tree
 
 
+def keyed_document(records: int) -> dict:
+    """A uniform object-of-objects, which the encoder emits as a *keyed*
+    tabular block: one header, then `key: cells` per row.
+
+    Every other payload on the speed ladder is an array, whose rows carry no
+    keys of their own. Keyed rows are the only shape where the strict-mode
+    duplicate-key set grows with the row count, so the cost of resolving that
+    set is invisible to the rest of the ladder — a linear scan over it is
+    O(rows^2) here and O(1) everywhere else the ladder looks.
+    """
+    return {
+        f"host-{index}": {
+            "pid": 20000 + index,
+            "provider": "claude",
+            "region": REGIONS[index % 4],
+        }
+        for index in range(records)
+    }
+
+
+def keyed_toon_text(records: int) -> bytes:
+    rows = "\n".join(f"  host-{i}: {20000 + i},claude,{REGIONS[i % 4]}" for i in range(records))
+    return (f"[{records}:]{{pid,provider,region}}:\n{rows}").encode()
+
+
 def token_payload_matrix() -> list[tuple[str, int, Any]]:
     cases: list[tuple[str, int, Any]] = []
     for records in TOKEN_LADDER:
