@@ -79,6 +79,34 @@ def _translate_fault(exc: _native.NativeFault) -> BaseException:
     )
 
 
+#: Encoder options msgspec defines that this codec has not implemented. Each
+#: names the values msgspec accepts and the subset that behaves correctly here.
+#: Silent acceptance is not compatibility (review F-10): a caller who passes
+#: `order="sorted"` and receives insertion order has been given a wrong answer,
+#: so an unimplemented value fails instead of being dropped. The domain check
+#: runs first, so a value msgspec would reject raises the same ValueError it
+#: raises — the difference between "not a thing" and "not yet" stays visible.
+_ENCODER_OPTIONS: Final = (
+    ("order", frozenset({None, "deterministic", "sorted"}), frozenset({None})),
+    ("decimal_format", frozenset({"string", "number"}), frozenset({"string"})),
+    ("uuid_format", frozenset({"canonical", "hex"}), frozenset({"canonical"})),
+)
+
+
+def _check_encoder_options(**values: Any) -> None:
+    for name, accepted, implemented in _ENCODER_OPTIONS:
+        value = values[name]
+        hashable = isinstance(value, str) or value is None
+        if not hashable or value not in accepted:
+            spelled = ", ".join(sorted(repr(item) for item in accepted))
+            raise ValueError(f"`{name}` must be one of {{{spelled}}}, got {value!r}")
+        if value not in implemented:
+            raise NotImplementedError(
+                f"msgspec-toon does not implement `{name}={value!r}` yet; "
+                f"only {min(repr(item) for item in implemented)} is supported"
+            )
+
+
 class Encoder:
     __slots__ = ("_native",)
 
@@ -86,12 +114,13 @@ class Encoder:
         self,
         *,
         enc_hook: Callable[[Any], Any] | None = None,
-        decimal_format: str | Callable[[Any], Any] = "string",
+        decimal_format: str = "string",
         uuid_format: str = "canonical",
         order: str | None = None,
         delimiter: str = ",",
         indent: int = 2,
     ) -> None:
+        _check_encoder_options(order=order, decimal_format=decimal_format, uuid_format=uuid_format)
         self._native = _native.Encoder(
             enc_hook=enc_hook,
             plan_source=encode_plan_for,

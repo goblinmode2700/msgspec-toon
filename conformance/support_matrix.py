@@ -330,20 +330,23 @@ MATRIX: tuple[SupportEntry, ...] = (
     SupportEntry(
         "encode(order=...)",
         1,
-        SILENTLY_IGNORED,
+        UNSUPPORTED,
         lambda: toon.encode({"b": 1, "a": 2}, order="sorted"),
         lambda: msgspec.json.encode({"b": 1, "a": 2}, order="sorted"),
-        "review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, "
-        "which msgspec rejects with ValueError",
+        "review F-10, downgraded from silently ignored: an unimplemented value now raises "
+        "NotImplementedError instead of returning insertion order. A value msgspec itself "
+        "rejects still raises the same ValueError",
     ),
     SupportEntry(
         "Encoder(decimal_format=..., uuid_format=...)",
         2,
-        SILENTLY_IGNORED,
+        UNSUPPORTED,
         lambda: toon.Encoder(decimal_format="number", uuid_format="hex").encode({"a": 1}),
         lambda: msgspec.json.Encoder(decimal_format="number", uuid_format="hex").encode({"a": 1}),
-        "accepted by the Encoder constructor and dropped; the encode() function rejects the "
-        "same names with TypeError, so the two entry points disagree",
+        "downgraded from silently ignored: non-default values now raise. The review recorded "
+        "these as accepted by the constructor but rejected by encode(); that split is "
+        "msgspec's own surface — msgspec.json.encode() also refuses them — so it is parity, "
+        "not a defect",
     ),
 )
 

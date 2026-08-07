@@ -147,3 +147,32 @@ def test_invalid_options_are_refused() -> None:
         toon.encode({"a": 1}, delimiter=";")
     with pytest.raises(TypeError):
         toon.encode({"a": 1}, indent=0)
+
+
+def test_unimplemented_encoder_options_fail_loudly() -> None:
+    """Silent acceptance is not compatibility (review F-10).
+
+    A caller who asks for sorted keys and receives insertion order has been
+    given a wrong answer. The domain check runs first, so a value msgspec
+    itself rejects still raises ValueError — "not a thing" and "not yet" stay
+    distinguishable.
+    """
+    for option in ("order", "decimal_format", "uuid_format"):
+        with pytest.raises(ValueError, match=f"`{option}` must be one of"):
+            toon.Encoder(**{option: "nonsense"})
+
+    for option, value in (("order", "sorted"), ("order", "deterministic")):
+        with pytest.raises(NotImplementedError, match=option):
+            toon.Encoder(**{option: value})
+    with pytest.raises(NotImplementedError):
+        toon.encode({"a": 1}, order="sorted")
+    with pytest.raises(NotImplementedError):
+        toon.Encoder(decimal_format="number")
+
+    # Defaults stay silent, including when spelled out.
+    assert (
+        toon.Encoder(order=None, decimal_format="string", uuid_format="canonical").encode(
+            {"b": 1, "a": 2}
+        )
+        == b"b: 1\na: 2"
+    )

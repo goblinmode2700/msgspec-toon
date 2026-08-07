@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T04:37:35.545507+00:00",
+  "generated_at": "2026-08-07T04:40:39.075002+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -78,8 +78,8 @@
     "counts": {
       "supported": 11,
       "parity_rejects": 2,
-      "unsupported": 11,
-      "silently_ignored": 3,
+      "unsupported": 13,
+      "silently_ignored": 1,
       "silently_wrong": 0
     },
     "entries": [
@@ -236,14 +236,14 @@
       {
         "feature": "encode(order=...)",
         "tier": 1,
-        "status": "silently_ignored",
-        "detail": "review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError"
+        "status": "unsupported",
+        "detail": "review F-10, downgraded from silently ignored: an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError"
       },
       {
         "feature": "Encoder(decimal_format=..., uuid_format=...)",
         "tier": 2,
-        "status": "silently_ignored",
-        "detail": "accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
+        "status": "unsupported",
+        "detail": "downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
       }
     ],
     "known_gaps": [
@@ -322,14 +322,14 @@
       {
         "feature": "encode(order=...)",
         "tier": 1,
-        "status": "silently_ignored",
-        "detail": "review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError"
+        "status": "unsupported",
+        "detail": "review F-10, downgraded from silently ignored: an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError"
       },
       {
         "feature": "Encoder(decimal_format=..., uuid_format=...)",
         "tier": 2,
-        "status": "silently_ignored",
-        "detail": "accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
+        "status": "unsupported",
+        "detail": "downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
       }
     ],
     "severity_note": "`silently_wrong` and `silently_ignored` outrank `unsupported`: a rejection is visible to a caller, a wrong value is not."
@@ -341,18 +341,18 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.07,
-        "untyped_tree": 4.33,
-        "convert_only": 1.39,
-        "wrapper_tree_plus_convert": 5.81,
-        "incumbent_pipeline_python_toon_plus_convert": 106.26,
-        "msgspec_json_native": 2.14
+        "typed_direct": 5.01,
+        "untyped_tree": 4.15,
+        "convert_only": 1.35,
+        "wrapper_tree_plus_convert": 5.7,
+        "incumbent_pipeline_python_toon_plus_convert": 106.42,
+        "msgspec_json_native": 2.18
       },
       "encode_us": {
-        "typed_direct_whole": 2.28,
-        "to_builtins_alone": 1.06,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 93.71,
-        "msgspec_json_native": 1.0
+        "typed_direct_whole": 2.26,
+        "to_builtins_alone": 1.05,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 91.71,
+        "msgspec_json_native": 1.02
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -370,18 +370,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 18.26,
-        "untyped_tree": 15.31,
-        "convert_only": 5.21,
-        "wrapper_tree_plus_convert": 21.24,
-        "incumbent_pipeline_python_toon_plus_convert": 439.69,
-        "msgspec_json_native": 8.32
+        "typed_direct": 17.96,
+        "untyped_tree": 15.15,
+        "convert_only": 5.12,
+        "wrapper_tree_plus_convert": 20.76,
+        "incumbent_pipeline_python_toon_plus_convert": 428.01,
+        "msgspec_json_native": 8.14
       },
       "encode_us": {
-        "typed_direct_whole": 7.72,
-        "to_builtins_alone": 4.41,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 428.52,
-        "msgspec_json_native": 3.53
+        "typed_direct_whole": 7.63,
+        "to_builtins_alone": 4.39,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 357.53,
+        "msgspec_json_native": 3.01
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -399,18 +399,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 141.91,
-        "untyped_tree": 126.58,
-        "convert_only": 43.25,
-        "wrapper_tree_plus_convert": 174.72,
-        "incumbent_pipeline_python_toon_plus_convert": 3643.73,
-        "msgspec_json_native": 68.91
+        "typed_direct": 135.65,
+        "untyped_tree": 123.73,
+        "convert_only": 41.58,
+        "wrapper_tree_plus_convert": 166.52,
+        "incumbent_pipeline_python_toon_plus_convert": 3557.96,
+        "msgspec_json_native": 66.85
       },
       "encode_us": {
-        "typed_direct_whole": 61.67,
-        "to_builtins_alone": 44.54,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2935.28,
-        "msgspec_json_native": 23.28
+        "typed_direct_whole": 59.81,
+        "to_builtins_alone": 43.79,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2917.48,
+        "msgspec_json_native": 22.99
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -428,18 +428,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1184.98,
-        "untyped_tree": 1121.87,
-        "convert_only": 457.87,
-        "wrapper_tree_plus_convert": 1569.08,
-        "incumbent_pipeline_python_toon_plus_convert": 30242.54,
-        "msgspec_json_native": 659.92
+        "typed_direct": 1195.48,
+        "untyped_tree": 1102.75,
+        "convert_only": 426.7,
+        "wrapper_tree_plus_convert": 1479.37,
+        "incumbent_pipeline_python_toon_plus_convert": 29365.44,
+        "msgspec_json_native": 634.61
       },
       "encode_us": {
-        "typed_direct_whole": 497.8,
-        "to_builtins_alone": 443.54,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23868.08,
-        "msgspec_json_native": 175.13
+        "typed_direct_whole": 467.92,
+        "to_builtins_alone": 440.0,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23104.55,
+        "msgspec_json_native": 171.83
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -462,15 +462,15 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.63,
-        "toons_rust": 26.01,
-        "python_toon": 93.27,
-        "msgspec_json_context": 1.24
+        "msgspec_toon": 4.47,
+        "toons_rust": 25.77,
+        "python_toon": 92.23,
+        "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.31,
-        "toons_rust": 11.02,
-        "python_toon": 108.56,
+        "msgspec_toon": 4.2,
+        "toons_rust": 10.81,
+        "python_toon": 106.81,
         "msgspec_json_context": 2.31
       },
       "gates": {
@@ -487,16 +487,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 16.16,
-        "toons_rust": 104.07,
-        "python_toon": 369.02,
-        "msgspec_json_context": 3.77
+        "msgspec_toon": 15.58,
+        "toons_rust": 98.98,
+        "python_toon": 357.8,
+        "msgspec_json_context": 3.72
       },
       "decode_us": {
-        "msgspec_toon": 15.56,
-        "toons_rust": 44.22,
-        "python_toon": 438.05,
-        "msgspec_json_context": 9.41
+        "msgspec_toon": 14.99,
+        "toons_rust": 43.29,
+        "python_toon": 428.36,
+        "msgspec_json_context": 9.44
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -512,16 +512,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 123.55,
-        "toons_rust": 780.16,
-        "python_toon": 2884.08,
-        "msgspec_json_context": 28.8
+        "msgspec_toon": 118.9,
+        "toons_rust": 789.16,
+        "python_toon": 2872.89,
+        "msgspec_json_context": 28.89
       },
       "decode_us": {
-        "msgspec_toon": 124.06,
-        "toons_rust": 364.79,
-        "python_toon": 3542.99,
-        "msgspec_json_context": 82.57
+        "msgspec_toon": 123.62,
+        "toons_rust": 359.66,
+        "python_toon": 3503.84,
+        "msgspec_json_context": 82.16
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -537,16 +537,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 984.32,
-        "toons_rust": 6435.61,
-        "python_toon": 23404.73,
-        "msgspec_json_context": 212.53
+        "msgspec_toon": 953.31,
+        "toons_rust": 6258.36,
+        "python_toon": 23038.18,
+        "msgspec_json_context": 210.8
       },
       "decode_us": {
-        "msgspec_toon": 1130.74,
-        "toons_rust": 3074.79,
-        "python_toon": 29779.35,
-        "msgspec_json_context": 798.13
+        "msgspec_toon": 1109.27,
+        "toons_rust": 2975.02,
+        "python_toon": 29143.17,
+        "msgspec_json_context": 807.6
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1549,7 +1549,7 @@
     "unsupported: UUID (tier 2)",
     "unsupported: Decimal (tier 2)",
     "unsupported: dataclasses (tier 2)",
-    "silently_ignored: encode(order=...) (tier 1) \u2014 review F-10: accepted and never passed to Rust; even `order='garbage'` is accepted, which msgspec rejects with ValueError",
-    "silently_ignored: Encoder(decimal_format=..., uuid_format=...) (tier 2) \u2014 accepted by the Encoder constructor and dropped; the encode() function rejects the same names with TypeError, so the two entry points disagree"
+    "unsupported: encode(order=...) (tier 1) \u2014 review F-10, downgraded from silently ignored: an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError",
+    "unsupported: Encoder(decimal_format=..., uuid_format=...) (tier 2) \u2014 downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
   ]
 }

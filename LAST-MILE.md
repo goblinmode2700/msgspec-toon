@@ -215,7 +215,7 @@ the parity items around it.
 - [x] F-07 distinguish booleans from integer literals.
 - [x] F-08 implement fixed tuples.
 - [x] F-09 support `kw_only` Struct construction on a cold branch.
-- [ ] F-10 implement or reject `order` values explicitly.
+- [x] F-10 implement or reject `order` values explicitly.
 - [x] F-13 reject unsupported mapping key plans during decoder construction.
 
 Exit: supported behavior matches `msgspec==0.21.1`. Unsupported behavior fails loudly.
@@ -438,3 +438,47 @@ A test-authoring note for whoever writes the next differential test: this file u
 `from __future__ import annotations`, so a Struct annotated with a class defined *inside*
 a test function fails with `NameError` at decode time — msgspec cannot resolve the string
 annotation in a function scope. Define such classes at module level.
+
+#### Checkpoint 8 — F-10 and the inert format options
+
+Hypothesis: three encoder options are accepted and dropped, so a caller who asks for
+sorted keys gets insertion order and never learns it. Rejecting an unimplemented value is
+strictly better than answering wrongly, and cheaper than implementing key ordering that
+nothing in the token or speed story needs.
+
+Done as a single option table rather than three near-identical checks:
+
+```text
+option           msgspec accepts                     implemented here
+order            None, 'deterministic', 'sorted'     None
+decimal_format   'string', 'number'                  'string'
+uuid_format      'canonical', 'hex'                  'canonical'
+```
+
+The domain check runs first, so a value msgspec itself rejects raises the same
+`ValueError` it raises, and only a *valid but unimplemented* value raises
+`NotImplementedError`. "Not a thing" and "not yet" stay distinguishable to a caller.
+Defaults remain silent, including when spelled out explicitly.
+
+**A correction to the review, and to my own earlier matrix entry.** The review recorded
+`decimal_format`/`uuid_format` as "accepted by the Encoder constructor, rejected by
+`encode()` — the two entry points disagree", and I copied that framing into the matrix.
+It is wrong: `msgspec.json.encode()` also refuses those names (`TypeError: Extra keyword
+arguments provided`) because they are Encoder-only in msgspec too. Our surface *matches*
+msgspec there. The matrix entry now says so.
+
+`silently_ignored` drops from 3 to **1**. The survivor is **constraints
+(`msgspec.Meta`)**: `Annotated[int, Meta(ge=10)]` is parsed by the plan compiler, carried
+into the IR, and never enforced, so a value msgspec rejects is accepted. That is the last
+silent divergence in the codec and it is not covered by any lettered review finding —
+whoever picks it up should treat it as the next correctness item, ahead of F-04.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 84 Python tests, clean
+matrix                      11 supported, 2 parity-rejects, 13 unsupported, 1 inert, 0 silently wrong
+```
+
+No Rust changed, so no A/B was required or cited.
