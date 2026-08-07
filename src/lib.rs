@@ -1,6 +1,5 @@
 //! PyO3 boundary for msgspec_toon._native.
 
-use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use pyo3::create_exception;
@@ -8,6 +7,7 @@ use pyo3::exceptions::{PyException, PyTypeError};
 use pyo3::prelude::*;
 use pyo3::types::{PyByteArray, PyBytes, PyString};
 
+pub mod containers;
 pub mod encode;
 pub mod error;
 pub mod event;
@@ -222,19 +222,19 @@ impl Encoder {
     }
 }
 
-/// Intermediate builtin-container allocation counters (the G2 evidence).
+/// The G2 evidence surface, present only in an `alloc-stats` build. Absent
+/// from the release wheel by construction, so a benchmark can never measure a
+/// counter and a report can never read one from an uninstrumented build.
+#[cfg(feature = "alloc-stats")]
 #[pyfunction]
-fn alloc_stats() -> (u64, u64) {
-    (
-        pyval::INTERMEDIATE_DICTS.load(Ordering::Relaxed),
-        pyval::INTERMEDIATE_LISTS.load(Ordering::Relaxed),
-    )
+fn alloc_stats(py: Python<'_>) -> PyResult<Bound<'_, pyo3::types::PyDict>> {
+    containers::snapshot_dict(py)
 }
 
+#[cfg(feature = "alloc-stats")]
 #[pyfunction]
 fn reset_alloc_stats() {
-    pyval::INTERMEDIATE_DICTS.store(0, Ordering::Relaxed);
-    pyval::INTERMEDIATE_LISTS.store(0, Ordering::Relaxed);
+    containers::reset();
 }
 
 #[pymodule]
@@ -242,7 +242,10 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<Decoder>()?;
     module.add_class::<Encoder>()?;
     module.add("NativeFault", module.py().get_type::<NativeFault>())?;
-    module.add_function(wrap_pyfunction!(alloc_stats, module)?)?;
-    module.add_function(wrap_pyfunction!(reset_alloc_stats, module)?)?;
+    #[cfg(feature = "alloc-stats")]
+    {
+        module.add_function(wrap_pyfunction!(alloc_stats, module)?)?;
+        module.add_function(wrap_pyfunction!(reset_alloc_stats, module)?)?;
+    }
     Ok(())
 }

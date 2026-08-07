@@ -1,0 +1,28 @@
+{
+  "payload_records": 64,
+  "build": "alloc-stats (instrumented; never the benchmarked wheel)",
+  "counter_semantics": {
+    "builtin_dicts": "dict built by the untyped builder",
+    "builtin_lists": "list built by the untyped builder",
+    "final_lists": "list or tuple the target type declared",
+    "final_dicts": "dict the target type declared",
+    "final_structs": "Struct instance constructed by the typed consumer"
+  },
+  "typed": {
+    "builtin_dicts": 0,
+    "builtin_lists": 0,
+    "final_lists": 1,
+    "final_dicts": 0,
+    "final_structs": 129
+  },
+  "wrapper": {
+    "builtin_dicts": 129,
+    "builtin_lists": 1,
+    "final_lists": 0,
+    "final_dicts": 0,
+    "final_structs": 0
+  },
+  "gate_G2_zero_builtin_containers": true,
+  "probe_observed_the_typed_path": true,
+  "note": "An `Any` field asks for a builtin tree; containers inside an `Any` subtree are requested output and are not a G2 violation. See tests/test_typed_allocations.py for that case."
+}

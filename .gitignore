@@ -9,5 +9,6 @@ dist/
 .DS_Store
 python/msgspec_toon/*.so
 .venv-baseline/
+.venv-g2/
 .baseline-src/
 benches/ab-latest.json

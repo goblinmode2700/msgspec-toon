@@ -101,12 +101,73 @@ Design notes for the next agent:
 
 ### B. Evidence repairs
 
-- [ ] F-05 replace release-wheel allocation counters with independent test instrumentation.
-- [ ] Rerun G3 and G5 without atomic counter bias.
+- [x] F-05 replace release-wheel allocation counters with independent test instrumentation.
+- [x] Rerun G3 and G5 without atomic counter bias.
+- [x] F-21 (new) refuse to publish a measurement from a stale or instrumented build.
 - [ ] F-11 generate the known-gap report from one maintained support matrix.
 - [ ] F-12 alternate A/B blocks and publish raw repetitions plus spread.
 
 Exit: each performance and G2 claim has independent, same-session evidence.
+
+#### Checkpoint 2 — F-05 and F-21
+
+Hypothesis: the counters were (a) not independent — a zero proved only that the
+untyped consumer's call sites went unused — and (b) not free, costing one atomic per
+container on the wrapper side of G3 and the untyped side of G5.
+
+(a) CONFIRMED and repaired. (b) FALSIFIED, and the falsification is the more useful
+result: measured instrumented-vs-clean at the same commit, every row placed the *clean*
+build 0.4–3.6% slower, which cannot be an effect of removing work. The counter cost is
+below this harness's resolution, so the published G3/G5 margins were never materially
+inflated by it. The sign-consistent penalty on whichever side ran second independently
+reproduces F-12 — run order is worth 1–3%, larger than the effect under test.
+
+What replaced the counters:
+
+- `src/containers.rs` is now the only module that constructs a Python container, and
+  `clippy.toml` fails the build on `PyDict::new`/`PyList::new`/`PyTuple::new` anywhere
+  else. A zero is therefore a statement about the codec rather than about one consumer.
+  The lint immediately earned its keep by catching the stats dict in `lib.rs`.
+- Counters are behind the non-default `alloc-stats` feature. `make g2` builds an
+  instrumented wheel into `.venv-g2` and writes `conformance/allocation-proof.json`;
+  the release report reads that artifact and refuses to fabricate it.
+- Every assertion is two-sided. Typed decode of the 64-record payload: 0 builtin dicts,
+  0 builtin lists, **129 Structs and 1 final list** — a zero alone would also hold if
+  nothing had been decoded. Wrapper: 129 builtin dicts, 1 builtin list, 0 Structs.
+- An `Any` subtree builds builtin containers on purpose; that case is now a named test,
+  so G2 means "no tree nobody asked for" rather than "no tree".
+
+**F-21, found while measuring F-05 and worth the next agent's attention.** `.venv`
+installs this project *editable*, so `uv run` imports
+`python/msgspec_toon/_native.abi3.so` and any `uv pip install` of a freshly built wheel
+is shadowed — and undone by the next re-sync. The first instrumented-vs-clean A/B I ran
+this session compared the new instrumented build against a **stale** editable `.so` from
+the previous checkpoint, and looked perfectly plausible. Repairs:
+
+- `make build` now runs `maturin develop --release`, writing the release abi3 build to
+  the path that is actually imported.
+- `benches/build_freshness.py` refuses to publish a number when the editable extension is
+  older than `src/*.rs` or when the build carries counters. Both branches are verified to
+  fire, not assumed.
+- The check applies to the editable artifact only: `.venv-baseline` and `.venv-g2` are
+  pinned to other revisions on purpose. `ab.py` records `baseline_instrumented` /
+  `current_instrumented` in its artifact instead — and the frozen `v0.1.0-conformant`
+  baseline *does* carry the counters, which is now visible in every A/B it produces.
+
+```text
+gate                        result
+────                        ──────
+corpus                      538/538, zero divergences
+make check                  33 Rust + 50 Python tests (4 G2 tests skip; they run in make g2)
+make g2                     4/4, G2 pass, probe_observed_the_typed_path true
+G3                          PASS at 16/64/512/4096
+G5                          PASS both directions, every size
+G4                          FAIL, unchanged (the known R-02 miss)
+A/B typed decode            -11.7 / -19.7 / -15.1 / -20.8 %
+A/B untyped decode          -11.8 / -14.9 / -21.4 / -18.1 %
+A/B encode (whole/codec)    -2.5 → -5.3 % / -4.6 → -7.9 %
+tokens                      unchanged; canonical bytes untouched
+```
 
 ### C. Typed correctness
 

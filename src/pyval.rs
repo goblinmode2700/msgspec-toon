@@ -1,28 +1,14 @@
-//! Scalar tokens to final Python values, and the allocation counters used by
-//! the no-intermediate-tree proof (requirements G2).
-
-use std::sync::atomic::{AtomicU64, Ordering};
+//! Scalar tokens to final Python values.
+//!
+//! Container construction and the G2 counters live in `containers.rs`: a
+//! counter attached to one consumer's call sites cannot prove anything about
+//! the codec as a whole.
 
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyString};
 
 use crate::event::ScalarToken;
 use crate::scalar::unescape;
-
-/// Builtin containers created while decoding into a *discardable* tree.
-/// The typed consumer never increments these; the untyped consumer counts
-/// every dict/list it builds. Final containers requested by the target type
-/// (e.g. a `list[Worker]`) are not intermediate and are not counted.
-pub static INTERMEDIATE_DICTS: AtomicU64 = AtomicU64::new(0);
-pub static INTERMEDIATE_LISTS: AtomicU64 = AtomicU64::new(0);
-
-pub fn count_dict() {
-    INTERMEDIATE_DICTS.fetch_add(1, Ordering::Relaxed);
-}
-
-pub fn count_list() {
-    INTERMEDIATE_LISTS.fetch_add(1, Ordering::Relaxed);
-}
 
 pub fn int_from_digits<'py>(py: Python<'py>, digits: &[u8]) -> PyResult<Bound<'py, PyAny>> {
     // The token is validated ASCII digits (with optional sign).

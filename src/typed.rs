@@ -6,8 +6,9 @@
 //! wire keys to values. No discardable dict/list tree exists at any point.
 
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyDict, PyList, PyTuple};
+use pyo3::types::{PyBool, PyDict};
 
+use crate::containers::{count_struct_instance, new_final_dict, new_final_list, new_final_tuple};
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
@@ -277,6 +278,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
         };
         arguments.clear();
         self.arguments_scratch = arguments;
+        count_struct_instance();
         unsafe { Bound::from_owned_ptr_or_err(py, raw) }.map_err(|err| self.internal(err, at))
     }
 
@@ -419,7 +421,7 @@ impl Consumer for TypedConsumer<'_, '_> {
             }
             PlanKind::Dict(_, value) => {
                 self.stack.push(Frame::Dict {
-                    map: PyDict::new(self.py),
+                    map: new_final_dict(self.py),
                     pending: None,
                     value,
                 });
@@ -601,14 +603,14 @@ impl Consumer for TypedConsumer<'_, '_> {
             }) => {
                 self.row_memos.pop();
                 let value = if as_tuple {
-                    match PyTuple::new(self.py, items) {
+                    match new_final_tuple(self.py, items) {
                         Ok(tuple) => tuple.into_any(),
                         Err(err) => return Err(self.internal(err, at)),
                     }
                 } else {
-                    // The final list requested by the target type — not an
-                    // intermediate container, deliberately not counted.
-                    match PyList::new(self.py, items) {
+                    // The sequence the target type asked for, counted as final
+                    // output rather than an intermediate container.
+                    match new_final_list(self.py, items) {
                         Ok(list) => list.into_any(),
                         Err(err) => return Err(self.internal(err, at)),
                     }

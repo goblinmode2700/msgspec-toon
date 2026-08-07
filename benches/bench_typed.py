@@ -22,6 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
 import msgspec_toon as toon
 import toon as python_toon

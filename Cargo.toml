@@ -23,6 +23,9 @@ rustc-hash = "2.1.3"
 [features]
 default = []
 extension-module = ["pyo3/extension-module"]
+# Test-only allocation counters for the G2 proof (`make g2`). Never enabled in
+# a released or benchmarked wheel: instrumentation must not appear in a timing.
+alloc-stats = []
 
 [profile.release]
 lto = "thin"

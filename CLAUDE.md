@@ -150,8 +150,11 @@ entry points.
   strict-error fixtures 83/84 — every non-pass is one of 25 tests requiring encoder
   wire options (`delimiter`, `indentSize`) that AD-005 deliberately does not expose;
   they are published as declared divergences. Run: `uv run python conformance/run.py`.
-- **G2 PASS** — typed decode allocates zero intermediate dicts/lists (wrapper: 129
-  dicts on the same document). Counters in `_native.alloc_stats()`.
+- **G2 PASS** — typed decode allocates zero builtin dicts/lists while building 129
+  Structs and 1 final list on the same document (wrapper: 129 builtin dicts). Counters
+  live behind the non-default `alloc-stats` feature in `src/containers.rs`, the only
+  module permitted to construct a Python container (`clippy.toml` enforces it). Run
+  `make g2`; the release wheel carries no instrumentation.
 - **G3 PASS at every size** — typed decode beats untyped + `msgspec.convert`.
 - **G5 PASS at every size, both directions** — 2–6.5x faster than `toons` 0.7.0,
   ~20x faster than `python-toon` 0.1.3, with output 2.9x smaller than both (their

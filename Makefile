@@ -9,13 +9,14 @@ COOLDOWN_DAYS := 14
 
 BASELINE_TAG := v0.1.0-conformant
 
-.PHONY: lint typecheck test check build bench report audit relock baseline ab
+.PHONY: lint typecheck test check build bench report audit relock baseline ab g2
 
 lint:
 	uv run --no-sync ruff check .
 	uv run --no-sync ruff format --check .
 	cargo fmt --check
 	cargo clippy --all-targets -- -D warnings
+	cargo clippy --all-targets --features alloc-stats -- -D warnings
 
 typecheck:
 	uv run --no-sync mypy python/msgspec_toon
@@ -28,12 +29,15 @@ test:
 # separate target, run in CI and before releases.
 check: lint typecheck test
 
-# Build the release wheel and install it — benchmarks measure this wheel,
-# never an unoptimized development build.
+# Build the release extension into the environment that is actually imported.
+# `.venv` installs this project editable, so `uv run` resolves
+# `python/msgspec_toon/_native.abi3.so` and a separately pip-installed wheel is
+# shadowed (and undone by the next re-sync). `maturin develop --release` writes
+# the release abi3 build to that path, so what runs is what was measured.
+# `benches/build_freshness.py` enforces it rather than trusting it.
 build:
 	rm -f target/wheels/*.whl
-	uv run --no-sync maturin build --release
-	uv pip install --force-reinstall --no-deps target/wheels/*.whl
+	uv run --no-sync maturin develop --release
 
 bench: build
 	uv run --no-sync python benches/bench_codecs.py
@@ -57,6 +61,18 @@ baseline:
 
 ab:
 	uv run --no-sync python benches/ab.py
+
+# The G2 proof runs against an instrumented wheel in its own environment, so
+# the release wheel every benchmark measures stays free of counters. Same
+# separation as `make baseline`: a second venv, never the working one.
+g2:
+	rm -rf .venv-g2 target/g2-wheels
+	uv venv .venv-g2 --python 3.13
+	uv run --no-sync maturin build --release --features alloc-stats -o target/g2-wheels
+	uv pip install --python .venv-g2/bin/python target/g2-wheels/*.whl \
+		msgspec==0.21.1 python-toon==0.1.3 toons pytest
+	.venv-g2/bin/python -m pytest tests/test_typed_allocations.py -q
+	.venv-g2/bin/python scripts/allocation-proof.py
 
 # Python needs no date plumbing: [tool.uv] exclude-newer = "14 days" makes
 # every uv resolution rolling-compliant on its own. This target just

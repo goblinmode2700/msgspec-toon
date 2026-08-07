@@ -5,11 +5,12 @@ file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-Phase A of `LAST-MILE.md` is done: F-01, F-02, and F-03 are fixed, with subprocess
-regression tests (`tests/test_containment.py`) that reproduce the old panic and exit-139
-inputs. **Next is Phase B, evidence repairs — start with F-05** (an independent,
-test-only G2 probe; the release counters both weaken the zero-tree proof and bias the
-wrapper side of G3/G5), then F-11 and F-12. Use `/last-mile`.
+Phase A is done (containment: F-01/F-02/F-03) and Phase B is half done (F-05 independent
+G2 instrumentation, plus F-21 found while measuring it). **Next: F-11** (generate the
+known-gap list from one maintained support matrix — the report still carries a freehand
+summary that omits fixed tuples, `kw_only`, `Literal[int]`/bool, inert `order`, and the
+rest), then **F-12** (alternating A/B blocks and published spread — this session measured
+run order at 1–3%, which is larger than several published deltas). Use `/last-mile`.
 
 ## The goal, precisely
 
@@ -27,7 +28,7 @@ evidence in `conformance/report.json` — never as assertions.
 | claim | state | evidence |
 |---|---|---|
 | TOON 4.1 conformance | **538/538 fixtures, zero divergences** (corpus pinned+hash-locked at toon-format/spec v4.1.1) | `conformance/run.py`, `fixtures.lock.json` |
-| G2 no intermediate tree | **pass** (0 dicts/lists typed; wrapper builds 129) | `_native.alloc_stats()`, `tests/test_typed_allocations.py` |
+| G2 no intermediate tree | **pass, two-sided** (typed: 0 builtin dicts/lists, 129 Structs + 1 final list; wrapper: 129 builtin dicts) | `make g2` → `conformance/allocation-proof.json`, `tests/test_typed_allocations.py` |
 | G3 typed beats wrapper | **pass at 16/64/512/4096 records** | `bench_typed.py` |
 | G5 codec floor | **pass both directions**: 2–6.5× faster than `toons` 0.7.0, ~20× vs `python-toon` 0.1.3 | `bench_codecs.py` |
 | vs the real incumbent pipeline | 19–51× faster | `bench_typed.py` incumbent rows |
@@ -43,12 +44,24 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 
 ## Open items (tracked, not forgotten)
 
-0. **Containment (P0) — closed.** A declared count no longer sizes an allocation, and one
+1. **G2 evidence — rebuilt (F-05).** Counters moved behind the non-default `alloc-stats`
+   feature and into `src/containers.rs`, the only module allowed to construct a Python
+   container (enforced by `clippy.toml`, not by convention). `make g2` builds the
+   instrumented wheel into `.venv-g2` and generates the proof artifact; the release
+   report reads it and refuses to fabricate it. Measured: removing the counters from
+   release changed nothing outside noise, so the older G3/G5 margins stand.
+2. **Build identity — enforced (F-21, new).** `.venv` is an *editable* install, so
+   `uv run` imports `python/msgspec_toon/_native.abi3.so`, and a pip-installed wheel is
+   shadowed. `make build` is now `maturin develop --release`, and
+   `benches/build_freshness.py` refuses to publish a number from a stale or instrumented
+   extension. This bit for real: one A/B this session silently measured the previous
+   checkpoint's binary.
+3. **Containment (P0) — closed.** A declared count no longer sizes an allocation, and one
    shared nesting ceiling (`src/limits.rs`, `MAX_NESTING_DEPTH`) now bounds indentation,
    header field groups, encoder writing, and encoder shape discovery. Depth is a hard
    fault in both strict and non-strict mode. Both OpenSpec capabilities state the limit.
    Same-session A/B showed no cost. The remaining review queue is Phase B onward.
-1. **Adversarial review sweep — complete.** The durable findings are in
+4. **Adversarial review sweep — complete.** The durable findings are in
    `docs/adversarial-review-v0.2.0.md`. The executable queue is in `LAST-MILE.md`.
    The review covered:
    - `src/typed.rs` — the D1 row-memo state machine (cursor/complete/disabled
@@ -69,31 +82,31 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
    - Payload-safety audit: grep every `format!`/error message for payload-derived
      content (AD-007). Tests cover sentinels; a reviewer should cover the negative
      space.
-2. **E3 (fused row templates)** — unattempted encode candidate; hypothesis in
+5. **E3 (fused row templates)** — unattempted encode candidate; hypothesis in
    `benches/optimization-ledger.json`. G4's remaining ~10% gap at 4096 is the target.
-3. **Formal profiling** (change task 4.1) — candidates were chosen by inspection and
+6. **Formal profiling** (change task 4.1) — candidates were chosen by inspection and
    validated by A/B; a flamegraph pass may reveal candidates nobody guessed.
-4. **pyo3 cooldown pin** — `=0.29.0` lifts when 0.29.2 ages past 14 days
+7. **pyo3 cooldown pin** — `=0.29.0` lifts when 0.29.2 ages past 14 days
    (~2026-08-19); `make audit` confirms. Then `cargo update -p pyo3` + full re-test.
-5. **Typed support ladder** — Tier 1 gaps (tagged unions, `array_like`,
+8. **Typed support ladder** — Tier 1 gaps (tagged unions, `array_like`,
    `forbid_unknown_fields` is done, constraints are parsed but NOT enforced) and all
    of Tier 2 (enums, datetime, UUID, Decimal, dataclasses). `decimal_format`/
    `uuid_format` params are accepted but inert — either implement or fail loudly.
-6. **Keyed tabular in the typed path** — decode works via Dict frames for
+9. **Keyed tabular in the typed path** — decode works via Dict frames for
    `dict[str, Struct]`; the D1 memo doesn't cover keyed rows (hash path). Minor.
-7. **Recursive Struct types** — will infinitely recurse in the plan compiler. Detect
+10. **Recursive Struct types** — will infinitely recurse in the plan compiler. Detect
    and error cleanly, or support.
-8. **openspec changes** — `refine-benchmarks-and-tooling` (16/18) and
+11. **openspec changes** — `refine-benchmarks-and-tooling` (16/18) and
    `optimize-speed-and-token-efficiency` (23/24) remain open with only
    deferred/time-gated tasks; archive them (`openspec archive`) when their stragglers
    close. Main specs are already synced.
-9. **Wheel matrix + CI** — only local macOS arm64 wheels exist. The canvas §17
+12. **Wheel matrix + CI** — only local macOS arm64 wheels exist. The canvas §17
    Phase 6 (abi3 wheels for 5 platforms, syscall checks, CI) is untouched.
 
 ## Invariants — do not regress these
 
-- **No intermediate tree** in the typed path (G2 counters must stay 0), no
-  `to_builtins` anywhere in encode.
+- **No intermediate tree** in the typed path (`make g2`: zero builtin containers for a
+  target with no `Any`), no `to_builtins` anywhere in encode.
 - **Errors never carry payload** (AD-007): coordinates + static templates only.
 - **Default output byte-identical** across encoder instances; only spec-defined,
   wire-declared options exist.
@@ -101,8 +114,9 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
   `python/msgspec_toon/_plan.py`.
 - **14-day dependency cooldown**: uv enforces natively (`tool.uv.exclude-newer`);
   Rust via pin + `make audit`. Overrides need a commit-message justification.
-- **Every perf claim is same-session A/B** vs the frozen baseline; every corpus claim
-  is a fresh `conformance/run.py` run. After ANY change: corpus zero failures,
+- **Every perf claim is same-session A/B** vs the frozen baseline, on a build
+  `benches/build_freshness.py` has verified is current and uninstrumented; every corpus
+  claim is a fresh `conformance/run.py` run. After ANY change: corpus zero failures,
   G2/G3/G5 green, 75 unit tests green (`make check`).
 - Parser modules must not import PyO3 (canvas AD-002).
 
@@ -111,7 +125,8 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 ```bash
 uv sync && uv run maturin build --release && \
   uv pip install --force-reinstall --no-deps target/wheels/*.whl   # build+install
-make check        # lint (ruff, rustfmt, clippy -D warnings) + mypy strict + all tests
+make check        # lint (ruff, rustfmt, clippy -D warnings, both feature sets) + mypy + tests
+make g2           # instrumented build in .venv-g2: the G2 proof and its artifact
 make bench        # bench_codecs + bench_typed (release wheel, rebuilds first)
 uv run python benches/bench_tokens.py                              # token gates
 uv run python conformance/run.py                                   # 538-test corpus

@@ -20,32 +20,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "benches"))
 
 import bench_codecs
 import bench_tokens
+import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
-import msgspec_toon as toon
 from _timing import methodology
 from bench_typed import run
 from msgspec_toon import _native
-from payloads import Document, toon_text
 
 
 def allocation_proof() -> dict:
-    text = toon_text(64)
-    decoder = toon.Decoder(Document)
-    _native.reset_alloc_stats()
-    decoder.decode(text)
-    typed_dicts, typed_lists = _native.alloc_stats()
+    """Read the G2 evidence; refuse to fabricate it.
 
-    _native.reset_alloc_stats()
-    tree = toon.decode(text)
-    wrapper_dicts, wrapper_lists = _native.alloc_stats()
-    msgspec.convert(tree, Document)
-
-    return {
-        "payload_records": 64,
-        "typed": {"intermediate_dicts": typed_dicts, "intermediate_lists": typed_lists},
-        "wrapper": {"intermediate_dicts": wrapper_dicts, "intermediate_lists": wrapper_lists},
-        "gate_G2_zero_intermediates": typed_dicts == 0 and typed_lists == 0,
-    }
+    The counters exist only in an `alloc-stats` build (`make g2`), which is
+    deliberately not the wheel this report benchmarks — instrumentation in a
+    timed wheel would tax the wrapper side of G3/G5 with one atomic per
+    container and quietly flatter the typed path.
+    """
+    proof_path = Path(__file__).resolve().parent.parent / "conformance" / "allocation-proof.json"
+    if not proof_path.exists():
+        return {"status": "NOT RUN — execute `make g2` first"}
+    proof = json.loads(proof_path.read_text())
+    if hasattr(_native, "alloc_stats"):
+        proof["warning"] = (
+            "this report was generated against an instrumented wheel; "
+            "its timings are not release-representative"
+        )
+    return proof
 
 
 def conformance_summary(lock: dict) -> dict:
@@ -118,7 +117,7 @@ def main() -> None:
                 "perfect corpus: every fixture passes with options applied; "
                 "zero failures, zero declared divergences"
             ),
-            "G2_zero_intermediates": all(b is not None for b in [True]),
+            "G2_zero_intermediates": None,  # replaced below from the G2 artifact
             "G3_typed_decode_beats_wrapper": all(
                 b["gates"]["G3_typed_decode_beats_wrapper"] for b in benchmarks
             ),
@@ -135,7 +134,11 @@ def main() -> None:
                 and b["gates"]["typed_beats_incumbent_pipeline_encode"]
                 for b in benchmarks
             ),
-            "G6_wheel_parity": "measurements taken on the installed abi3 release wheel",
+            "G6_wheel_parity": (
+                "measurements taken on the release abi3 extension in the environment "
+                "that actually imports it; benches/build_freshness.py refuses to "
+                "publish a number from a stale or alloc-stats build"
+            ),
         },
         "benchmark_caveats": [
             (
@@ -176,9 +179,12 @@ def main() -> None:
             ),
         ],
     }
-    report["gates"]["G2_zero_intermediates"] = report["allocation_proof"][
-        "gate_G2_zero_intermediates"
-    ]
+    # G2 comes from the instrumented build's artifact; an absent artifact is
+    # reported as such rather than defaulting to a pass.
+    report["gates"]["G2_zero_builtin_containers"] = report["allocation_proof"].get(
+        "gate_G2_zero_builtin_containers", "NOT RUN — execute `make g2`"
+    )
+    del report["gates"]["G2_zero_intermediates"]
     out = Path(__file__).resolve().parent.parent / "conformance" / "report.json"
     out.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))

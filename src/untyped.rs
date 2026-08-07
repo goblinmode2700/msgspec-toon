@@ -1,16 +1,19 @@
 //! The untyped consumer: builds ordinary dict/list values for `type=Any`.
 //!
-//! Every dict and list it creates is counted as an intermediate container so
-//! the wrapper-vs-typed allocation comparison is measurable (G2).
+//! Its containers are the builtin tree: requested output when the caller asked
+//! for `Any`, and the intermediate tree the wrapper pipeline pays for when the
+//! caller wanted a Struct. Both are built through `containers.rs`, which is
+//! what makes the G2 count independent of this module.
 
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyString};
+use pyo3::types::{PyDict, PyString};
 use rustc_hash::FxHashMap;
 
+use crate::containers::{new_builtin_dict, new_builtin_list};
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
-use crate::pyval::{count_dict, count_list, scalar_to_py};
+use crate::pyval::scalar_to_py;
 
 enum Builder<'py> {
     Dict {
@@ -93,9 +96,8 @@ impl<'py> UntypedConsumer<'py> {
 
 impl Consumer for UntypedConsumer<'_> {
     fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
-        count_dict();
         self.stack.push(Builder::Dict {
-            map: PyDict::new(self.py),
+            map: new_builtin_dict(self.py),
             pending_key: None,
         });
         Ok(())
@@ -129,8 +131,8 @@ impl Consumer for UntypedConsumer<'_> {
     fn end_array(&mut self, at: Position) -> Result<(), Fault> {
         match self.stack.pop() {
             Some(Builder::List { items }) => {
-                count_list();
-                let list = PyList::new(self.py, items).map_err(|err| self.internal(err, at))?;
+                let list =
+                    new_builtin_list(self.py, items).map_err(|err| self.internal(err, at))?;
                 self.place(list.into_any(), at)
             }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),

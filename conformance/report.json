@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T03:22:04.810763+00:00",
+  "generated_at": "2026-08-07T03:49:16.014892+00:00",
   "distribution": "msgspec-toon 0.2.0",
   "environment": {
     "python": "3.13.1",
@@ -46,15 +46,31 @@
   },
   "allocation_proof": {
     "payload_records": 64,
+    "build": "alloc-stats (instrumented; never the benchmarked wheel)",
+    "counter_semantics": {
+      "builtin_dicts": "dict built by the untyped builder",
+      "builtin_lists": "list built by the untyped builder",
+      "final_lists": "list or tuple the target type declared",
+      "final_dicts": "dict the target type declared",
+      "final_structs": "Struct instance constructed by the typed consumer"
+    },
     "typed": {
-      "intermediate_dicts": 0,
-      "intermediate_lists": 0
+      "builtin_dicts": 0,
+      "builtin_lists": 0,
+      "final_lists": 1,
+      "final_dicts": 0,
+      "final_structs": 129
     },
     "wrapper": {
-      "intermediate_dicts": 129,
-      "intermediate_lists": 1
+      "builtin_dicts": 129,
+      "builtin_lists": 1,
+      "final_lists": 0,
+      "final_dicts": 0,
+      "final_structs": 0
     },
-    "gate_G2_zero_intermediates": true
+    "gate_G2_zero_builtin_containers": true,
+    "probe_observed_the_typed_path": true,
+    "note": "An `Any` field asks for a builtin tree; containers inside an `Any` subtree are requested output and are not a G2 violation. See tests/test_typed_allocations.py for that case."
   },
   "benchmarks_typed_same_run": [
     {
@@ -63,17 +79,17 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 5.15,
-        "untyped_tree": 4.38,
-        "convert_only": 1.41,
-        "wrapper_tree_plus_convert": 5.86,
-        "incumbent_pipeline_python_toon_plus_convert": 108.52,
-        "msgspec_json_native": 2.2
+        "typed_direct": 5.06,
+        "untyped_tree": 4.27,
+        "convert_only": 1.38,
+        "wrapper_tree_plus_convert": 5.7,
+        "incumbent_pipeline_python_toon_plus_convert": 107.19,
+        "msgspec_json_native": 2.16
       },
       "encode_us": {
-        "typed_direct_whole": 2.31,
-        "to_builtins_alone": 1.08,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 94.25,
+        "typed_direct_whole": 2.26,
+        "to_builtins_alone": 1.05,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 94.31,
         "msgspec_json_native": 1.01
       },
       "gates": {
@@ -92,18 +108,18 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 17.85,
-        "untyped_tree": 15.69,
-        "convert_only": 5.3,
-        "wrapper_tree_plus_convert": 21.03,
-        "incumbent_pipeline_python_toon_plus_convert": 439.08,
-        "msgspec_json_native": 8.31
+        "typed_direct": 17.75,
+        "untyped_tree": 15.45,
+        "convert_only": 5.18,
+        "wrapper_tree_plus_convert": 20.78,
+        "incumbent_pipeline_python_toon_plus_convert": 435.21,
+        "msgspec_json_native": 8.29
       },
       "encode_us": {
-        "typed_direct_whole": 7.7,
-        "to_builtins_alone": 4.44,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 368.92,
-        "msgspec_json_native": 3.04
+        "typed_direct_whole": 7.67,
+        "to_builtins_alone": 4.33,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 369.85,
+        "msgspec_json_native": 3.12
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -121,18 +137,18 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 138.73,
-        "untyped_tree": 128.94,
-        "convert_only": 42.81,
-        "wrapper_tree_plus_convert": 177.54,
-        "incumbent_pipeline_python_toon_plus_convert": 3599.12,
-        "msgspec_json_native": 67.23
+        "typed_direct": 134.15,
+        "untyped_tree": 128.62,
+        "convert_only": 41.45,
+        "wrapper_tree_plus_convert": 171.26,
+        "incumbent_pipeline_python_toon_plus_convert": 3574.9,
+        "msgspec_json_native": 67.22
       },
       "encode_us": {
-        "typed_direct_whole": 61.07,
-        "to_builtins_alone": 43.44,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 2921.87,
-        "msgspec_json_native": 22.82
+        "typed_direct_whole": 60.94,
+        "to_builtins_alone": 43.39,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 2946.14,
+        "msgspec_json_native": 23.42
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -150,18 +166,18 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1215.92,
-        "untyped_tree": 1130.1,
-        "convert_only": 442.26,
-        "wrapper_tree_plus_convert": 1529.71,
-        "incumbent_pipeline_python_toon_plus_convert": 29637.48,
-        "msgspec_json_native": 647.62
+        "typed_direct": 1182.09,
+        "untyped_tree": 1120.8,
+        "convert_only": 433.3,
+        "wrapper_tree_plus_convert": 1520.45,
+        "incumbent_pipeline_python_toon_plus_convert": 29831.75,
+        "msgspec_json_native": 646.44
       },
       "encode_us": {
-        "typed_direct_whole": 503.21,
-        "to_builtins_alone": 439.76,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 23719.9,
-        "msgspec_json_native": 174.2
+        "typed_direct_whole": 483.68,
+        "to_builtins_alone": 435.65,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 23837.13,
+        "msgspec_json_native": 182.25
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -184,16 +200,16 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.51,
-        "toons_rust": 26.12,
-        "python_toon": 93.3,
+        "msgspec_toon": 4.49,
+        "toons_rust": 26.53,
+        "python_toon": 94.03,
         "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.41,
-        "toons_rust": 10.95,
-        "python_toon": 107.7,
-        "msgspec_json_context": 2.34
+        "msgspec_toon": 4.36,
+        "toons_rust": 11.11,
+        "python_toon": 108.04,
+        "msgspec_json_context": 2.33
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -209,16 +225,16 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 16.02,
-        "toons_rust": 102.96,
-        "python_toon": 363.75,
-        "msgspec_json_context": 3.73
+        "msgspec_toon": 15.8,
+        "toons_rust": 98.47,
+        "python_toon": 368.79,
+        "msgspec_json_context": 3.69
       },
       "decode_us": {
-        "msgspec_toon": 15.65,
-        "toons_rust": 44.4,
-        "python_toon": 438.04,
-        "msgspec_json_context": 9.59
+        "msgspec_toon": 15.34,
+        "toons_rust": 43.99,
+        "python_toon": 434.34,
+        "msgspec_json_context": 9.58
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -234,16 +250,16 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 123.6,
-        "toons_rust": 796.02,
-        "python_toon": 2889.39,
-        "msgspec_json_context": 28.94
+        "msgspec_toon": 121.15,
+        "toons_rust": 788.12,
+        "python_toon": 2909.29,
+        "msgspec_json_context": 29.04
       },
       "decode_us": {
-        "msgspec_toon": 123.27,
-        "toons_rust": 361.56,
-        "python_toon": 3572.29,
-        "msgspec_json_context": 83.08
+        "msgspec_toon": 122.03,
+        "toons_rust": 356.71,
+        "python_toon": 3568.33,
+        "msgspec_json_context": 81.83
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -259,16 +275,16 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 983.87,
-        "toons_rust": 6481.19,
-        "python_toon": 23269.92,
-        "msgspec_json_context": 212.8
+        "msgspec_toon": 961.42,
+        "toons_rust": 6489.59,
+        "python_toon": 23561.24,
+        "msgspec_json_context": 212.64
       },
       "decode_us": {
-        "msgspec_toon": 1149.11,
-        "toons_rust": 3002.1,
-        "python_toon": 29375.75,
-        "msgspec_json_context": 792.23
+        "msgspec_toon": 1123.86,
+        "toons_rust": 3007.66,
+        "python_toon": 29208.65,
+        "msgspec_json_context": 794.82
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -784,7 +800,8 @@
   "optimization_ledger": {
     "baseline": {
       "tag": "v0.1.0-conformant",
-      "harness": "benches/ab.py \u2014 both wheels rebuilt and run back to back in one session on the same machine; figures are min-of-autoranged-batches microseconds and per-row deltas from ab-latest.json at each adoption commit"
+      "harness": "benches/ab.py \u2014 both wheels rebuilt and run back to back in one session on the same machine; figures are min-of-autoranged-batches microseconds and per-row deltas from ab-latest.json at each adoption commit",
+      "instrumentation": "the frozen v0.1.0-conformant wheel carries the alloc-stats counters in release; they became test-only at F-05. ab.py records baseline_instrumented/current_instrumented in ab-latest.json so a reader can see which side had them"
     },
     "candidates": [
       {
@@ -896,16 +913,26 @@
       "T1": "PASS \u2014 canonical TOON is 0.61-0.64x compact JSON tokens (o200k_base) on the uniform-record ladder; 0.80x on string-heavy; 0.65x on numeric-heavy",
       "incumbents": "both v3.0-era codecs cost 1.25x JSON tokens on the challenge shape \u2014 worse than the format they replace",
       "T2": "the tab-delimiter folklore does not hold under o200k_base: differences are within a few tokens per ten thousand either way (tab wins marginally on numeric-heavy, loses one header token elsewhere); losing points published per the requirement"
+    },
+    "measurements": {
+      "instrumentation_cost": {
+        "question": "what did the release-wheel G2 counters cost the sides that carried them?",
+        "method": "benches/ab.py --baseline-venv .venv-g2 \u2014 instrumented vs clean, same commit, same session",
+        "result": "not resolvable by this harness: every row placed the CLEAN build 0.4-3.6% slower, which cannot be a real effect of removing work",
+        "conclusion": "the counters were a proof-quality defect, not a measurable speed defect; the published G3/G5 margins were not materially inflated by them",
+        "artifact": "benches/ab-instrumentation-cost.json",
+        "follow_on": "the sign-consistent penalty on the second-run side independently reproduces F-12: baseline always runs first, and run order is worth 1-3% \u2014 larger than the effect under test"
+      }
     }
   },
   "gates": {
     "G1_conformance": "perfect corpus: every fixture passes with options applied; zero failures, zero declared divergences",
-    "G2_zero_intermediates": true,
     "G3_typed_decode_beats_wrapper": true,
     "G4_whole_encode_beats_to_builtins_alone": false,
     "G5_codec_floor": true,
     "typed_beats_incumbent_pipeline": true,
-    "G6_wheel_parity": "measurements taken on the installed abi3 release wheel"
+    "G6_wheel_parity": "measurements taken on the release abi3 extension in the environment that actually imports it; benches/build_freshness.py refuses to publish a number from a stale or alloc-stats build",
+    "G2_zero_builtin_containers": true
   },
   "benchmark_caveats": [
     "Each codec round-trips its own encoded bytes: the incumbents predate TOON 4.x and emit the fallback list form (no nested field groups), so they parse roughly 2.9x more bytes for the same value. Byte sizes are published per row; that difference is the real-world comparison, not an unfair one.",
