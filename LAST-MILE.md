@@ -337,7 +337,7 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] **P4b native decode-plan reuse:** port msgspec's compiled-Struct-metadata pattern;
       retain opaque native plans behind the existing 512-entry annotation cache, not codec
       wrapper objects.
-- [ ] **P4c native encode-plan reuse:** remove repeated functional plan compilation without
+- [x] **P4c native encode-plan reuse — REJECTED:** remove repeated functional plan compilation without
       a wrapper-object cache or unbounded global class map.
 - [ ] **H6 family-wise A/B confirmation — DEFERRED:** 54 rows make isolated alpha-0.05 decisions a
       multiple-comparison family. Two full runs flagged different untouched encode metrics,
@@ -466,6 +466,21 @@ paths: typed encode **-3.0/-4.4/-5.3/-4.2%**, entry encode
 16/64/512/4096 records. Functional encode was unchanged at 16 (-1.3%, MDE 1.8%) and faster
 at 64/512/4096 (**-2.4/-4.6/-4.7%**). Evidence is retained in
 `benches/ab-e8-*-encode.json`. Adopted.
+
+#### Checkpoint 16 — P4c native encode-plan reuse rejected
+
+Hypothesis: functional encode recompiles enough immutable Struct field/shape metadata that
+retaining an opaque native `Arc<EncodePlan>` behind the existing 512-entry Python class cache
+will resolve the small-payload premium without caching Encoder objects or adding an unbounded
+global class map.
+
+Falsified. The candidate moved native field interning and static-shape compilation behind the
+bounded cache while leaving each Encoder's writer, hooks, options, and encountered-class map
+local. A same-session three-round comparison used an immutable checkpoint-15 wheel as the
+baseline, so E8 was present on both sides. Functional encode moved **-1.8/-2.1/+0.3/+0.0%**
+at 16/64/512/4096 records; every row was below its MDE and reported no significant
+difference. The candidate and its cache test were removed. The functional encode floor is
+therefore elsewhere; do not re-spend native encode-plan compilation without a new profile.
 
 ### F. Distribution finish
 

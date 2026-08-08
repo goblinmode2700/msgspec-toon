@@ -46,10 +46,12 @@ continuation. The ordered queue is now:
    skip numeric-state tracking. The >100k differential oracle stayed exact; same-session
    A/B resolved typed encode 3.0–5.3%, entry encode 16.5–17.1%, and untyped encode
    2.7–4.0% faster across 16/64/512/4096 records.
-7. **NEXT: resolve encode plan compilation without a wrapper-object/global-class cache.**
-   The prior-art findings are recorded in
+7. **P4c encode-plan reuse — REJECTED.** An opaque native plan behind the existing
+   512-entry class cache was source-isolated against checkpoint 15. Functional encode
+   moved -1.8/-2.1/+0.3/+0.0%; none resolved. The remaining compilation is not the
+   functional encode floor. The prior-art boundary remains recorded in
    `docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
-8. **Then attempt the remaining profiled native candidates in order:** quote-free
+8. **NEXT: attempt the remaining profiled native candidates in order:** quote-free
    `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
 9. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a

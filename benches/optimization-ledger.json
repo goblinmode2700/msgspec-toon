@@ -293,6 +293,12 @@
       "method": "port serde_toon_format's first-byte analysis split while retaining a full wire-syntax scan; validate against the existing 107841-case differential oracle and compare the affected encode surfaces to the v0.4.0 guard for three B-C-C-B rounds",
       "result": "zero differential divergences. Across 16/64/512/4096 records: typed encode -3.0/-4.4/-5.3/-4.2%, entry encode -16.5/-16.7/-17.1/-17.1%, untyped encode -2.7/-3.1/-4.0/-3.2%. Functional encode was no significant difference at 16 (-1.3%, MDE 1.8%) and faster at 64/512/4096 (-2.4/-4.6/-4.7%).",
       "ruling": "ADOPTED. This is a bounded native specialization derived from prior art, not a grammar change. Corpus 538/538, 36 Rust tests, 119 Python tests, payload safety, and G2 remained green."
+    },
+    "functional_encode_native_plan_P4c": {
+      "question": "can functional Struct encode reuse immutable native field and static-shape metadata behind the existing bounded class cache?",
+      "method": "cache an opaque Arc<EncodePlan> in the existing 512-entry Python LRU, retain local Encoder writer/hook/runtime state, and compare with an immutable checkpoint-15 wheel for three B-C-C-B rounds",
+      "result": "functional encode moved -1.8/-2.1/+0.3/+0.0% at 16/64/512/4096 records; no row was significant (MDE 5.1/2.2/1.6/1.6%).",
+      "ruling": "REJECTED and reverted. Python already cached PlanSpec lowering, and the remaining native field/shape compilation does not materially move whole-call cost. Do not retry without a new measured mechanism."
     }
   },
   "harness_findings": {
