@@ -61,9 +61,13 @@ continuation. The ordered queue is now:
     rotated insertion order. Baseline cost is stable at 5.5–5.8 us/row from 4 through 512
     rows; source inspection confirms nested linear key membership. `toon-rust` independently
     uses `IndexMap::contains_key` for this check.
-11. **NEXT:** replace only first-row membership with Python dict hashing, then require a
-    wide-row win and no regression on the canonical five-column encode ladders.
-12. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+11. **E9 hashed dict membership — ADOPTED.** Later rows now probe the first row's actual
+    key objects through `PyDict_Contains`, exactly preserving TOON 4.1's same-set/order-may-
+    vary rule. Wide dict encode improved 58–68%; ordinary untyped encode improved 31–37%;
+    typed Struct encode was parity-to-faster.
+12. **NEXT:** the bounded profiled native queue is exhausted. Run the final generated
+    report/exit audit; do not invent another candidate without a new profile mechanism.
+13. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 

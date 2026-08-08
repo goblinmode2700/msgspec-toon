@@ -702,7 +702,7 @@ fn build_shape<'py>(
             let Ok(text) = key.cast::<PyString>() else {
                 return Ok(None);
             };
-            first_keys.push(text.to_str()?.to_string());
+            first_keys.push((text.to_str()?.to_string(), key.clone().unbind()));
         }
         for row in rows.iter().skip(1) {
             let Ok(map) = row.cast::<PyDict>() else {
@@ -712,23 +712,18 @@ fn build_shape<'py>(
                 return Ok(None);
             }
             // Same key set is enough; the column pass fetches by name and
-            // bails if any key is absent.
-            for key in map.keys() {
-                let Ok(text) = key.cast::<PyString>() else {
-                    return Ok(None);
-                };
-                let text = text.to_str()?;
-                if !first_keys.iter().any(|expected| expected == text) {
+            // bails if any key is absent. With equal lengths, hashed
+            // membership for every first-row key also proves there is no
+            // extra key. Per-row encounter order may differ (TOON 4.1 §9.3).
+            for (_, key) in &first_keys {
+                if !map.contains(key.bind(py))? {
                     return Ok(None);
                 }
             }
         }
         first_keys
             .into_iter()
-            .map(|key| {
-                let key_obj = PyString::new(py, &key).into_any().unbind();
-                (key, Access::Item(key_obj))
-            })
+            .map(|(key, key_obj)| (key, Access::Item(key_obj)))
             .collect()
     } else {
         return Ok(None);

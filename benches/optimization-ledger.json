@@ -317,6 +317,12 @@
       "method": "rotate later-row insertion order, verify canonical tabular roundtrip, and measure encode across ten workers at 4/8/16/64/512 rows",
       "result": "22.72/44.38/88.30/355.39/2944.27us, or 5.52-5.75us per row. Source contains nested per-row-key linear scans of first_keys. toon-rust 2136cb1 independently uses IndexMap::contains_key for the equivalent v3 check.",
       "ruling": "DIAGNOSTIC ADOPTED. Attempt hashed first-row membership next; retain only if the wide row wins without regressing the canonical five-column ladders."
+    },
+    "hashed_dictionary_membership_E9": {
+      "question": "can equal-length later rows prove TOON 4.1 key-set equality by hashing the first row's key objects instead of linearly scanning copied strings?",
+      "method": "reuse first-row Python key objects, check every one with PyDict_Contains in each later row, lock varying-order and same-width-different-set behavior, then compare with the immutable checkpoint-19 wheel",
+      "result": "wide dict encode improved -58.1/-61.9/-66.9/-67.9/-67.4% at 4/8/16/64/512 rows. Untyped encode improved -31.5/-37.2/-37.1/-36.9% at 16/64/512/4096. Typed Struct encode was parity-to-faster.",
+      "ruling": "ADOPTED. The official TOON 4.1 spec requires the same key set while permitting per-row order variation; equal lengths plus membership of every first-row key is equivalent. Corpus 538/538, 36 Rust tests, 121 Python tests, payload safety, and G2 remained green."
     }
   },
   "harness_findings": {

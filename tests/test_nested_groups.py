@@ -40,6 +40,20 @@ def test_dicts_with_uniform_shape_are_tabular_too() -> None:
     assert toon.decode(encoded) == {"rows": rows}
 
 
+def test_uniform_dict_key_order_may_vary_but_header_uses_first_row() -> None:
+    rows = [{"b": 1, "a": 2}, {"a": 3, "b": 4}]
+    encoded = toon.encode(rows)
+    assert encoded.splitlines()[0] == b"[2]{b,a}:"
+    assert toon.decode(encoded) == [{"b": 1, "a": 2}, {"b": 4, "a": 3}]
+
+
+def test_same_width_different_key_set_falls_back() -> None:
+    rows = [{"a": 1, "b": 2}, {"a": 3, "c": 4}]
+    encoded = toon.encode(rows)
+    assert encoded.splitlines()[0] == b"[2]:"
+    assert toon.decode(encoded) == rows
+
+
 def test_mixed_column_falls_back_to_list_form() -> None:
     rows = [
         {"id": 1, "meta": {"x": "a"}},

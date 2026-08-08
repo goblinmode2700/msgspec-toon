@@ -179,3 +179,9 @@ the loop was still running.
 and zero `silently_ignored`; the gate's resolution floor is published; and every
 candidate in the bounded queue above is either adopted with same-session evidence or
 rejected with its falsifier recorded. Further work again requires a new objective.
+
+**Status at checkpoint 20: EXIT MET.** Functional decode plan reuse, E8 first-byte
+quoting, D8 cold `Any` forwarding, and E9 hashed dictionary membership were adopted with
+same-session evidence. Functional encode-plan reuse and D7 combined cell scanning were
+rejected and reverted. The generated support matrix remains at zero `silently_wrong` and
+zero `silently_ignored`; the H3 floor remains published. The bounded round is closed.

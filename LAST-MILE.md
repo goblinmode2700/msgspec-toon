@@ -353,7 +353,7 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] **D8 cold Any forwarding:** avoid constructing/forwarding an `AnyEvent` when no
       `Any` subtree is active. Falsifier: Any/dec-hook behavior changes, G2 moves, or typed
       decode cannot resolve a win.
-- [ ] **E9 wide-dictionary shape:** add the diagnostic payload first, then replace the
+- [x] **E9 wide-dictionary shape:** add the diagnostic payload first, then replace the
       per-key linear search with first-row map membership only if wide rows expose the
       predicted `O(rows * columns^2)` cost without regressing the canonical five-column
       ladder.
@@ -531,6 +531,23 @@ uses owned `Vec<char>` tokens and values; its v3 grammar and `i64/u64/f64` numbe
 TOON 4.1, G2, and Python-precision integers. Its tabular detector does provide direct E9
 prior art: first-row keys live in `IndexMap` and later rows use `contains_key`. The detailed
 verdict is in `docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
+
+#### Checkpoint 20 — E9 hashed dictionary membership
+
+The TOON 4.1 specification supplied by the owner confirms the precise rule: every row object
+must have the same key set, order per object may vary, and header order comes from the first
+object (§9.3). With equal dict lengths, probing every first-row key in each later dict proves
+set equality. The candidate therefore stores the first row's actual Python key objects,
+checks them with `PyDict_Contains`, and reuses them as column accessors. It removes the nested
+UTF-8 extraction/string-comparison scan without changing eligibility or canonical order.
+
+Against the immutable checkpoint-19 wheel, three-round A/B measured wide dict encode
+**-58.1/-61.9/-66.9/-67.9/-67.4%** at 4/8/16/64/512 rows. The canonical untyped encode
+ladder also improved **-31.5/-37.2/-37.1/-36.9%** at 16/64/512/4096. Typed Struct encode,
+which does not use dict membership, was parity at 16 and faster by 1.7–3.3% at the larger
+sizes; no control regressed. Two focused tests lock varying insertion order and equal-width
+different-key fallback. All 36 Rust tests, 121 Python tests, 538/538 corpus, payload safety,
+and G2 passed. Evidence: `benches/ab-e9-*.json`. Adopted.
 
 ### F. Distribution finish
 
