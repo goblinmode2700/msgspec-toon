@@ -189,6 +189,62 @@ pub fn unescape(inner: &[u8], escaped: bool) -> Cow<'_, [u8]> {
 }
 
 /// Find the first occurrence of `needle` outside quoted spans.
+/// The first structural mark on a line: the first unquoted `[` (a possible
+/// header) or the first unquoted `:` (a possible entry separator), whichever
+/// comes first (optimization P3). The first mark decides the line class on
+/// its own — a colon before any bracket is never a header, a bracket before
+/// any colon starts one — so the scan stops there instead of walking the
+/// whole line, and the dominant `key: value` line class stops at its colon.
+/// The other mark is reported `None` and, where a fall-through path still
+/// needs the colon after a bracket, `resolved_colon` completes the scan from
+/// the bracket. The quote-state machine is `find_unquoted`'s own.
+pub struct LineMarks {
+    pub bracket: Option<usize>,
+    pub colon: Option<usize>,
+}
+
+pub fn scan_line_marks(content: &[u8]) -> LineMarks {
+    let mut in_quote = false;
+    let mut index = 0;
+    while index < content.len() {
+        let byte = content[index];
+        if in_quote {
+            if byte == b'\\' {
+                index += 1;
+            } else if byte == b'"' {
+                in_quote = false;
+            }
+        } else if byte == b'"' {
+            in_quote = true;
+        } else if byte == b'[' {
+            return LineMarks {
+                bracket: Some(index),
+                colon: None,
+            };
+        } else if byte == b':' {
+            return LineMarks {
+                bracket: None,
+                colon: Some(index),
+            };
+        }
+        index += 1;
+    }
+    LineMarks {
+        bracket: None,
+        colon: None,
+    }
+}
+
+/// The line's first unquoted colon, given its marks: either the scan stopped
+/// at it, or it stopped at an earlier bracket and the colon (if any) lies
+/// beyond — the bracket position is outside any quote, so the completion
+/// scan starts there with a clean quote state.
+pub fn resolved_colon(content: &[u8], marks: &LineMarks) -> Option<usize> {
+    marks
+        .colon
+        .or_else(|| find_unquoted(content, b':', marks.bracket?))
+}
+
 pub fn find_unquoted(content: &[u8], needle: u8, from: usize) -> Option<usize> {
     let mut index = from;
     let mut in_quote = false;
@@ -444,5 +500,110 @@ mod p2_differential {
         }
         assert!(checked > 100_000, "differential was too small: {checked}");
         println!("P2 differential: {checked} tokens, zero divergences");
+    }
+}
+
+#[cfg(test)]
+mod p3_differential {
+    use super::*;
+
+    /// The reference the fused scanner must agree with: two independent
+    /// quote-aware searches, exactly what the implementation P3 replaced did.
+    fn naive_marks(content: &[u8]) -> (Option<usize>, Option<usize>) {
+        (
+            find_unquoted(content, b'[', 0),
+            find_unquoted(content, b':', 0),
+        )
+    }
+
+    /// `scan_line_marks` stops at whichever structural mark comes first and
+    /// reports only that one, on the claim that the first unquoted mark
+    /// decides the line class by itself. That claim is what this checks: the
+    /// mark it reports must be the earlier of the two the naive scan finds,
+    /// and `resolved_colon` must recover the true colon in every case.
+    #[test]
+    fn fused_scan_agrees_with_two_independent_scans() {
+        const ALPHABET: &[u8] = b"a\"\\[]: -";
+        let mut checked = 0usize;
+        let mut content = Vec::new();
+        for length in 0..=5usize {
+            let mut indices = vec![0usize; length];
+            loop {
+                content.clear();
+                content.extend(indices.iter().map(|&i| ALPHABET[i]));
+                let marks = scan_line_marks(&content);
+                let (bracket, colon) = naive_marks(&content);
+
+                match (bracket, colon) {
+                    (Some(b), Some(c)) if b < c => {
+                        assert_eq!(marks.bracket, Some(b), "bracket-first {content:?}");
+                        assert_eq!(marks.colon, None, "must not report the later colon");
+                    }
+                    (Some(b), Some(c)) => {
+                        assert!(c < b, "equal positions are impossible");
+                        assert_eq!(marks.colon, Some(c), "colon-first {content:?}");
+                        assert_eq!(marks.bracket, None, "must not report the later bracket");
+                    }
+                    (Some(b), None) => assert_eq!(marks.bracket, Some(b), "{content:?}"),
+                    (None, Some(c)) => assert_eq!(marks.colon, Some(c), "{content:?}"),
+                    (None, None) => {
+                        assert_eq!(marks.bracket, None, "{content:?}");
+                        assert_eq!(marks.colon, None, "{content:?}");
+                    }
+                }
+
+                // The fall-through path must recover the colon the fused scan
+                // deliberately skipped past.
+                assert_eq!(
+                    resolved_colon(&content, &marks),
+                    colon,
+                    "resolved_colon lost the colon on {content:?}"
+                );
+
+                checked += 1;
+                let mut position = length;
+                loop {
+                    if position == 0 {
+                        break;
+                    }
+                    position -= 1;
+                    indices[position] += 1;
+                    if indices[position] < ALPHABET.len() {
+                        break;
+                    }
+                    indices[position] = 0;
+                    if position == 0 {
+                        break;
+                    }
+                }
+                if length == 0 || indices.iter().all(|&i| i == 0) {
+                    break;
+                }
+            }
+        }
+        for line in [
+            &br#""a:b"[2]{x}:"#[..],
+            br#""a[b": x"#,
+            br#"key[2]: a,b"#,
+            br#"key: []"#,
+            br#"- key: value"#,
+            br#"- [2]: 1,2"#,
+            br#"key: "quoted: colon""#,
+            br#""\"":"#,
+        ] {
+            let marks = scan_line_marks(line);
+            let (bracket, colon) = naive_marks(line);
+            assert_eq!(resolved_colon(line, &marks), colon, "{line:?}");
+            if let (Some(b), Some(c)) = (bracket, colon) {
+                if b < c {
+                    assert_eq!(marks.bracket, Some(b), "{line:?}");
+                } else {
+                    assert_eq!(marks.colon, Some(c), "{line:?}");
+                }
+            }
+            checked += 1;
+        }
+        assert!(checked > 30_000, "differential was too small: {checked}");
+        println!("P3 differential: {checked} lines, zero divergences");
     }
 }

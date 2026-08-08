@@ -17,7 +17,8 @@ use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
 use crate::scalar::{
-    classify_bare, find_unquoted, scan_quoted, split_cells, split_cells_into, trim_spaces, unescape,
+    LineMarks, classify_bare, find_unquoted, resolved_colon, scan_line_marks, scan_quoted,
+    split_cells, split_cells_into, trim_spaces, unescape,
 };
 use crate::scan::{Line, Lines};
 
@@ -50,7 +51,8 @@ pub fn parse<C: Consumer>(
         return expect_end(&mut lines);
     }
 
-    match parse_header(first.content, strict, at)? {
+    let marks = scan_line_marks(first.content);
+    match parse_header(first.content, &marks, strict, at)? {
         HeaderOutcome::Header(header) if header.key.is_none() => {
             lines.advance()?;
             parse_array_or_keyed_body(&mut lines, &header, 0, at, strict, consumer)?;
@@ -59,7 +61,7 @@ pub fn parse<C: Consumer>(
         HeaderOutcome::Header(_) => parse_root_object(&mut lines, strict, consumer, at),
         HeaderOutcome::Malformed(code) if strict => Err(Fault::syntax_at(code, at)),
         HeaderOutcome::Malformed(_) | HeaderOutcome::NotHeader => {
-            if entry_colon(first.content).is_some() {
+            if entry_colon(first.content, resolved_colon(first.content, &marks)).is_some() {
                 parse_root_object(&mut lines, strict, consumer, at)
             } else {
                 lines.advance()?;
@@ -90,9 +92,11 @@ fn expect_end(lines: &mut Lines<'_>) -> Result<(), Fault> {
 }
 
 /// The first unquoted colon that ends the line or is followed by a space —
-/// i.e. a key/value separator rather than a colon inside a bare value.
-fn entry_colon(content: &[u8]) -> Option<usize> {
-    let index = find_unquoted(content, b':', 0)?;
+/// i.e. a key/value separator rather than a colon inside a bare value. The
+/// caller supplies the colon position, found by whichever scan it already
+/// ran for the line (P3).
+fn entry_colon(content: &[u8], colon: Option<usize>) -> Option<usize> {
+    let index = colon?;
     (index + 1 == content.len() || content[index + 1] == b' ').then_some(index)
 }
 
@@ -132,7 +136,10 @@ fn parse_object_body<C: Consumer>(
     let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
 
     if let Some((content, at)) = first {
-        parse_entry(content, at, lines, depth, strict, consumer, &mut seen)?;
+        let marks = scan_line_marks(content);
+        parse_entry(
+            content, &marks, at, lines, depth, strict, consumer, &mut seen,
+        )?;
     }
     loop {
         let Some(line) = lines.peek()? else {
@@ -145,8 +152,10 @@ fn parse_object_body<C: Consumer>(
             return Err(Fault::syntax_at(FaultCode::DepthJump, line.position));
         }
         lines.advance()?;
+        let marks = scan_line_marks(line.content);
         parse_entry(
             line.content,
+            &marks,
             line.position,
             lines,
             depth,
@@ -160,6 +169,7 @@ fn parse_object_body<C: Consumer>(
 #[allow(clippy::too_many_arguments)]
 fn parse_entry<C: Consumer>(
     content: &[u8],
+    marks: &LineMarks,
     at: Position,
     lines: &mut Lines<'_>,
     depth: usize,
@@ -167,7 +177,7 @@ fn parse_entry<C: Consumer>(
     consumer: &mut C,
     seen: &mut FxHashSet<Vec<u8>>,
 ) -> Result<(), Fault> {
-    match parse_header(content, strict, at)? {
+    match parse_header(content, marks, strict, at)? {
         HeaderOutcome::Header(header) => {
             let key = header
                 .key
@@ -182,7 +192,7 @@ fn parse_entry<C: Consumer>(
         HeaderOutcome::Malformed(_) | HeaderOutcome::NotHeader => {}
     }
 
-    let Some(colon) = entry_colon(content) else {
+    let Some(colon) = entry_colon(content, resolved_colon(content, marks)) else {
         return Err(Fault::syntax_at(FaultCode::ExpectedKey, at));
     };
     let key = parse_string_token(trim_spaces(&content[..colon]), at)?;
@@ -375,7 +385,7 @@ fn parse_keyed_body<C: Consumer>(
     let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
     let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
     body_rows(lines, depth, strict, header.declared_len, |_, row| {
-        let Some(colon) = entry_colon(row.content) else {
+        let Some(colon) = entry_colon(row.content, find_unquoted(row.content, b':', 0)) else {
             // Non-strict decoders skip an entry-depth line without a colon.
             if strict {
                 return Err(Fault::syntax_at(FaultCode::ExpectedKey, row.position));
@@ -451,7 +461,8 @@ fn parse_list_item<C: Consumer>(
         return Ok(());
     }
 
-    match parse_header(item, strict, item_at)? {
+    let marks = scan_line_marks(item);
+    match parse_header(item, &marks, strict, item_at)? {
         HeaderOutcome::Header(header) if header.key.is_none() => {
             // An anonymous nested array item: `- [2]: 1,2` or block form.
             // A keyless fields-bearing or keyed header is not a valid item.
@@ -480,12 +491,21 @@ fn parse_list_item<C: Consumer>(
         HeaderOutcome::Malformed(_) | HeaderOutcome::NotHeader => {}
     }
 
-    if entry_colon(item).is_some() {
+    if entry_colon(item, resolved_colon(item, &marks)).is_some() {
         // An object item: first key/value on the dash line, the rest two
         // levels deeper (the `- ` prefix occupies one indent unit).
         consumer.start_object(item_at)?;
         let mut seen = FxHashSet::default();
-        parse_entry(item, item_at, lines, depth + 2, strict, consumer, &mut seen)?;
+        parse_entry(
+            item,
+            &marks,
+            item_at,
+            lines,
+            depth + 2,
+            strict,
+            consumer,
+            &mut seen,
+        )?;
         continue_object_item(lines, depth, strict, consumer, &mut seen)?;
         consumer.end_object(item_at)?;
         return Ok(());
@@ -513,8 +533,10 @@ fn continue_object_item<C: Consumer>(
             return Err(Fault::syntax_at(FaultCode::BlankLineInArray, line.position));
         }
         lines.advance()?;
+        let marks = scan_line_marks(line.content);
         parse_entry(
             line.content,
+            &marks,
             line.position,
             lines,
             depth + 2,

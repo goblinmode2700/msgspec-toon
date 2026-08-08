@@ -193,6 +193,15 @@
       "source": "external review round 2 (Fable 5), patch 05 of 8",
       "measurement": "entry encode vs the v0.3.0 guard: -12.0/-16.8/-13.0/-18.1/-18.2/-16.0% before, -17.1/-18.3/-19.9/-18.9/-21.2/-22.7% after, at 4/8/16/64/512/4096. R2-D adds 2 to 7 points, largest at the small end and at 4096.",
       "note": "Full detection is unchanged; only the scalar-first miss is settled earlier. Costs one extra iter().next() on dicts that do pass detection."
+    },
+    {
+      "id": "P3",
+      "target": "line classification in the parser (src/scalar.rs, header.rs, parser.rs)",
+      "hypothesis": "A plain `key: value` line paid up to three quote-aware scans - parse_header scanned the whole line for '[' (always a miss on this class), then for ':', then entry_colon scanned for ':' again - and `- key: value` list items paid a fourth. The first unquoted mark decides the class by itself, so one scan that stops at whichever mark comes first should replace all of them, and the dominant line class should stop at its colon instead of walking to end of line.",
+      "status": "adopted",
+      "source": "external review round 2 (Fable 5), patch 06 of 8",
+      "measurement": "entry decode vs the v0.3.0 guard, attributed by reverting P3 alone. Without P3: +3.0/-5.9/-42.1/-85.2% at 16/64/512/4096. With P3: -20.5/-33.4/-57.5/-89.1%. As a ratio - the only valid framing when the effects compound - P3 is worth -23/-29/-27/-26%, essentially flat across sizes, which is what a per-line constant-cost win should look like. The container's own estimate was -24% at 512.",
+      "note": "The large absolute numbers on this metric are mostly D6 from round 1, not P3: entry_document is a 4096-key root object, so the strict-mode duplicate-key set dominates it. Reading the two vs-guard deltas as a difference in points would have credited P3 with 4 points at 4096 instead of 26%. Correctness checked by a differential in src/scalar.rs: the fused scanner must report the earlier of the two marks two independent quote-aware scans find, and resolved_colon must recover the colon the fused scan skipped - 37,457 lines exhaustive to length 5 over the structural alphabet, plus quoted-key and list-item edge cases, zero divergences. The candidate's own falsification condition (tabular decode regressing from the extra branch) did not fire: untyped decode moved -3.2 to -7.3% faster and typed decode -5.7 to -9.4% faster."
     }
   ],
   "token_findings": {

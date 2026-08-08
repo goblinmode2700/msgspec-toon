@@ -8,7 +8,7 @@
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::StringToken;
 use crate::limits::MAX_NESTING_DEPTH;
-use crate::scalar::{find_unquoted, scan_quoted, trim_spaces};
+use crate::scalar::{LineMarks, find_unquoted, scan_quoted, trim_spaces};
 
 pub const DEFAULT_DELIMITER: u8 = b',';
 
@@ -56,13 +56,14 @@ pub enum HeaderOutcome<'a> {
 
 pub fn parse_header<'a>(
     content: &'a [u8],
+    marks: &LineMarks,
     strict: bool,
     at: Position,
 ) -> Result<HeaderOutcome<'a>, Fault> {
-    let Some(bracket_start) = find_unquoted(content, b'[', 0) else {
+    let Some(bracket_start) = marks.bracket else {
         return Ok(HeaderOutcome::NotHeader);
     };
-    if let Some(colon) = find_unquoted(content, b':', 0)
+    if let Some(colon) = marks.colon
         && colon < bracket_start
     {
         return Ok(HeaderOutcome::NotHeader);
@@ -328,18 +329,27 @@ fn token_bytes_eq(left: &StringToken<'_>, right: &StringToken<'_>) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scalar::scan_line_marks;
+
+    fn parse_header_scanned(
+        content: &[u8],
+        strict: bool,
+        at: Position,
+    ) -> Result<HeaderOutcome<'_>, Fault> {
+        parse_header(content, &scan_line_marks(content), strict, at)
+    }
 
     const AT: Position = Position { line: 1, column: 1 };
 
     fn header(content: &[u8]) -> Header<'_> {
-        match parse_header(content, true, AT).unwrap() {
+        match parse_header_scanned(content, true, AT).unwrap() {
             HeaderOutcome::Header(header) => header,
             other => panic!("expected header, got {other:?}"),
         }
     }
 
     fn malformed(content: &[u8]) -> FaultCode {
-        match parse_header(content, true, AT).unwrap() {
+        match parse_header_scanned(content, true, AT).unwrap() {
             HeaderOutcome::Malformed(code) => code,
             other => panic!("expected malformed, got {other:?}"),
         }
@@ -374,13 +384,13 @@ mod tests {
 
         let at_limit = deep(MAX_NESTING_DEPTH);
         assert!(matches!(
-            parse_header(&at_limit, true, AT).unwrap(),
+            parse_header_scanned(&at_limit, true, AT).unwrap(),
             HeaderOutcome::Header(_)
         ));
 
         let past_limit = deep(MAX_NESTING_DEPTH + 1);
         for strict in [true, false] {
-            let fault = parse_header(&past_limit, strict, AT).unwrap_err();
+            let fault = parse_header_scanned(&past_limit, strict, AT).unwrap_err();
             assert_eq!(fault.code, FaultCode::DepthLimit);
         }
     }
@@ -420,11 +430,11 @@ mod tests {
     #[test]
     fn plain_key_value_is_not_a_header() {
         assert!(matches!(
-            parse_header(b"name: value", true, AT).unwrap(),
+            parse_header_scanned(b"name: value", true, AT).unwrap(),
             HeaderOutcome::NotHeader
         ));
         assert!(matches!(
-            parse_header(b"note: see [1]", true, AT).unwrap(),
+            parse_header_scanned(b"note: see [1]", true, AT).unwrap(),
             HeaderOutcome::NotHeader
         ));
     }
