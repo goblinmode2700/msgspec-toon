@@ -185,3 +185,19 @@ quoting, D8 cold `Any` forwarding, and E9 hashed dictionary membership were adop
 same-session evidence. Functional encode-plan reuse and D7 combined cell scanning were
 rejected and reverted. The generated support matrix remains at zero `silently_wrong` and
 zero `silently_ignored`; the H3 floor remains published. The bounded round is closed.
+
+## Upstream G4 mechanism discovery (2026-08-08)
+
+The owner explicitly reopened one question after checkpoint 20: whether msgspec-internal
+Struct access could change G4. It can. An exact-source `msgspec==0.21.1` proof exposed the
+same field offsets used by msgspec's C encoders, and a disposable Rust build cached those
+offsets instead of calling `getattr` per leaf. Typed encode improved 25-30% from 16 through
+4096 records and beat `to_builtins` from 64 records upward. At 16 it remained 1.41 us versus
+1.09 us, so upstream access removes the slope gap but not the complete small-payload floor.
+
+This is mechanism evidence, not a production change. Raw offsets are private and the proof
+does not define free-threaded lifetime semantics. The adoptable route is a versioned
+upstream msgspec C capsule for a bulk borrowed Struct view. The full experiment and ruling
+are in `docs/implementation-spec/msgspec-upstream-struct-view-g4.md`. Further codec work
+requires either that supported upstream API or a separately stated objective for the
+remaining generic sequence/output setup cost.

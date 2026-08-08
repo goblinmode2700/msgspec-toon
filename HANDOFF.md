@@ -65,9 +65,17 @@ continuation. The ordered queue is now:
     key objects through `PyDict_Contains`, exactly preserving TOON 4.1's same-set/order-may-
     vary rule. Wide dict encode improved 58–68%; ordinary untyped encode improved 31–37%;
     typed Struct encode was parity-to-faster.
-12. **NEXT:** the bounded profiled native queue is exhausted. Run the final generated
-    report/exit audit; do not invent another candidate without a new profile mechanism.
-13. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+12. **G4 upstream mechanism proof — DONE, not shipped.** An exact-source msgspec 0.21.1
+    experiment replaced per-leaf public attribute lookup with the same cached native field
+    offsets used by msgspec's C encoders. Typed encode improved 25-30% from 16 through 4096
+    records and beat `to_builtins` from 64 upward; 16 still missed at 1.41 vs 1.09 us.
+    Wrapper and root-Struct setup explain only about 0.08 us. Raw offsets are not an API,
+    and the GIL-only proof does not settle free-threaded safety. See
+    `docs/implementation-spec/msgspec-upstream-struct-view-g4.md`.
+13. **NEXT:** pursue a versioned upstream msgspec bulk Struct-view capsule, or stop. Do not
+    copy msgspec/CPython private layouts into the abi3 wheel. The bounded in-repo native
+    queue remains exhausted; the residual small-payload floor has no adopted mechanism.
+14. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 
