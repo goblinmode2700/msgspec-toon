@@ -39,6 +39,11 @@ import os
 import pathlib
 import statistics
 import subprocess
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+from _timing import LOOPS_ENV
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 #: The gate measures against the latest release, not the distant frozen tag: a
@@ -101,11 +106,13 @@ PROBE = r"""
 import json, sys
 sys.path.insert(0, "benches")
 from msgspec_toon import _native
+import _timing
 module = __import__(sys.argv[1])
 result = module.sample_run(int(sys.argv[2]))
 print(json.dumps({
     "value": result[sys.argv[3]][sys.argv[4]],
     "instrumented": hasattr(_native, "alloc_stats"),
+    "calibrated": _timing.CALIBRATED,
 }))
 """
 
@@ -193,6 +200,7 @@ def run_block(
     metric: str,
     sampler_metric: str,
     is_baseline: bool,
+    loops: dict[str, int] | None = None,
 ) -> dict:
     """Run one block.
 
@@ -206,6 +214,8 @@ def run_block(
         raise SystemExit(f"missing interpreter {python} — run `make {target}` first")
     environment = dict(os.environ)
     environment["MSGSPEC_TOON_ONLY_METRIC"] = sampler_metric
+    if loops:
+        environment[LOOPS_ENV] = json.dumps(loops)
     if is_baseline:
         environment["MSGSPEC_TOON_MEASURE_INSTRUMENTATION"] = "1"
     proc = subprocess.run(
@@ -221,6 +231,38 @@ def run_block(
     return json.loads(proc.stdout.splitlines()[-1])
 
 
+def calibrate_metric(
+    baseline_python: pathlib.Path,
+    module: str,
+    records: int,
+    section: str,
+    metric: str,
+    sampler_metric: str,
+) -> dict[str, int]:
+    """One discarded block per side, whose only outputs are a warm interpreter
+    and the loop count both sides will then measure with.
+
+    Loop counts used to be chosen independently inside every block, by every
+    process. `_timing._calibrate` doubles from 1 until it reaches its target,
+    so two builds a few percent apart near a boundary land on counts that
+    differ by 2x — and then the two sides are no longer measuring the same
+    amount of work, which is the one thing an A/B comparison requires. A
+    freshly cut guard is additionally cold on its first run, and that run was
+    the one choosing its loop count: a guard built moments earlier was
+    observed calibrating to 256 loops at 323us where every later run agreed
+    on 512 loops at 127us.
+
+    The baseline's counts are the ones adopted, because the baseline is the
+    reference the comparison is against; what matters is only that both sides
+    use the same ones.
+    """
+    baseline_block = run_block(
+        baseline_python, module, records, section, metric, sampler_metric, True
+    )
+    run_block(CURRENT_PYTHON, module, records, section, metric, sampler_metric, False)
+    return baseline_block.get("calibrated") or {}
+
+
 def measure_metric(
     baseline_python: pathlib.Path,
     sequence: list[str],
@@ -233,10 +275,11 @@ def measure_metric(
     """Run the full alternating sequence for one metric and test it."""
     samples: dict[str, list[float]] = {BASELINE: [], CURRENT: []}
     instrumented = False
+    loops = calibrate_metric(baseline_python, module, records, section, metric, sampler_metric)
     for side in sequence:
         python = baseline_python if side == BASELINE else CURRENT_PYTHON
         block = run_block(
-            python, module, records, section, metric, sampler_metric, side == BASELINE
+            python, module, records, section, metric, sampler_metric, side == BASELINE, loops
         )
         samples[side].append(block["value"])
         instrumented |= side == BASELINE and block["instrumented"]
