@@ -1,5 +1,11 @@
 # msgspec-toon
 
+TOON (Token-Oriented Object Notation) is a line-oriented text format that
+reduces repeated keys in uniform JSON-shaped data.
+
+msgspec is a high-performance serialization and validation library whose typed
+`Struct` objects are a faster, lighter alternative to Pydantic models.
+
 `msgspec-toon` is a native TOON 4.1 codec for Python. It decodes TOON text
 directly into `msgspec.Struct` objects. It does not build an intermediate
 `dict` and `list` tree.
@@ -138,7 +144,7 @@ Older encoders can fall back to a larger entry form for the same data.
 
 ![Absolute token counts](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/token-counts.png)
 
-The generated [benchmark report](BENCHMARKS.md) publishes both axes:
+The generated [benchmark report](https://github.com/goblinmode2700/msgspec-toon/blob/main/BENCHMARKS.md) publishes both axes:
 
 - Direct encode, decode, and total time for each measured codec.
 - Absolute token counts, including compact JSON, under tiktoken `o200k_base`.
@@ -148,7 +154,9 @@ uses more tokens than compact JSON for the measured irregular shapes.
 
 All timing rows come from one session and one release build. The estimator is
 the mean across ten independent worker processes. It never reports the minimum.
-The raw evidence is in [`conformance/report.json`](conformance/report.json).
+The raw evidence is in the
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
+file.
 
 ## Conformance and safety
 
@@ -159,9 +167,11 @@ The raw evidence is in [`conformance/report.json`](conformance/report.json).
 - Malformed input must return an error. It must not panic or terminate Python.
 - Canonical output is byte-locked by tests.
 
-The generated support matrix in `conformance/report.json` lists supported,
-rejected, and not-yet-supported msgspec features. Unsupported behavior fails
-clearly. It does not silently return a different value.
+The generated support matrix in the
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
+file lists supported, rejected, and not-yet-supported msgspec features.
+Unsupported behavior fails clearly. It does not silently return a different
+value.
 
 ## Optional msgspec Struct fast path
 
@@ -205,4 +215,4 @@ make public-report                      # raw JSON, R charts, and BENCHMARKS.md
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/goblinmode2700/msgspec-toon/blob/main/LICENSE)

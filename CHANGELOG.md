@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0b2
+
+Release and documentation polish.
+
+- Fix PyPI links to benchmark, conformance, and license files.
+- Explain TOON and msgspec before the usage guide.
+- Publish wheels for Linux, macOS, and Windows on x86-64 and ARM64.
+- Publish CPython 3.14 free-threaded wheels alongside the CPython 3.13 ABI3 wheels.
+
 ## 0.1.0b1
 
 First public beta.
