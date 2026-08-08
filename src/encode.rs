@@ -1094,12 +1094,21 @@ fn needs_quote(text: &str, delimiter: u8) -> bool {
     {
         return true;
     }
+    let forces_quote =
+        |byte: u8| byte == delimiter || matches!(byte, b':' | b'"' | b'\\') || byte < 0x20;
+    // Ported from the first-byte split in serde_toon_format's string
+    // analyzer (E8). Most payload strings begin with an ordinary letter; a
+    // byte outside the numeric-like alphabet proves the whole token cannot be
+    // mistaken for a number, so that common path only scans for wire syntax.
+    if !matches!(bytes[0], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-') {
+        return bytes.iter().copied().any(forces_quote);
+    }
     let sign_prefixed = matches!(bytes[0], b'+' | b'-');
     let mut any_digit = false;
     let mut all_numeric_ish = true;
     for (position, &byte) in bytes.iter().enumerate() {
         // `\n`, `\r`, and `\t` are all below 0x20.
-        if byte == delimiter || matches!(byte, b':' | b'"' | b'\\') || byte < 0x20 {
+        if forces_quote(byte) {
             return true;
         }
         if position == 0 && sign_prefixed {

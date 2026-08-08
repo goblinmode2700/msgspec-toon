@@ -287,6 +287,12 @@
       "method": "port msgspec 0.21.1's compiled Struct metadata pattern: cache an opaque native CompiledPlan behind the existing 512-entry annotation LRU, then clone its Arc into each Decoder; compare functional decode to the v0.4.0 guard for three B-C-C-B rounds",
       "result": "typed Decoder construction fell from about 3.36us to 0.21us. Functional decode moved -40.0% at 16 records, -15.7% at 64, and -4.5% at 512; -3.0% at 4096 was below the run's 3.2% MDE.",
       "ruling": "ADOPTED. No Decoder object is cached. The same bounded annotation cache owns both the public PlanSpec and opaque native compiled plan; each decode still uses local consumer/parser state. Two full ladders flagged different unreachable encode rows; neither repeated across full runs or survived a longer focused control, exposing the 54-row gate's family-wise false-positive problem (H6), not a stable candidate regression."
+    },
+    "encode_first_byte_quote_split_E8": {
+      "question": "can strings with a nonnumeric first byte skip numeric-state tracking in needs_quote without changing canonical bytes?",
+      "method": "port serde_toon_format's first-byte analysis split while retaining a full wire-syntax scan; validate against the existing 107841-case differential oracle and compare the affected encode surfaces to the v0.4.0 guard for three B-C-C-B rounds",
+      "result": "zero differential divergences. Across 16/64/512/4096 records: typed encode -3.0/-4.4/-5.3/-4.2%, entry encode -16.5/-16.7/-17.1/-17.1%, untyped encode -2.7/-3.1/-4.0/-3.2%. Functional encode was no significant difference at 16 (-1.3%, MDE 1.8%) and faster at 64/512/4096 (-2.4/-4.6/-4.7%).",
+      "ruling": "ADOPTED. This is a bounded native specialization derived from prior art, not a grammar change. Corpus 538/538, 36 Rust tests, 119 Python tests, payload safety, and G2 remained green."
     }
   },
   "harness_findings": {

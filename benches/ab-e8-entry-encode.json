@@ -1,0 +1,136 @@
+{
+  "records": [
+    16,
+    64,
+    512,
+    4096
+  ],
+  "baseline_venv": ".venv-guard",
+  "current_venv": ".venv",
+  "gated": false,
+  "block_sequence": [
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline"
+  ],
+  "baseline_instrumented": false,
+  "canary": {
+    "metric": "entry encode@16",
+    "reads_us": [
+      3.4,
+      3.46,
+      3.39
+    ],
+    "spread_pct": 2.064896755162237,
+    "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+  },
+  "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
+  "results": [
+    {
+      "metric": "entry encode@16",
+      "baseline_us": [
+        3.39,
+        3.42,
+        3.44,
+        3.53,
+        3.48,
+        3.41
+      ],
+      "current_us": [
+        2.92,
+        2.88,
+        2.87,
+        2.87,
+        2.85,
+        2.87
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -16.49733913884857,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.497453565964881
+    },
+    {
+      "metric": "entry encode@64",
+      "baseline_us": [
+        12.62,
+        12.41,
+        12.58,
+        12.53,
+        12.38,
+        12.71
+      ],
+      "current_us": [
+        10.26,
+        10.27,
+        10.34,
+        10.67,
+        10.38,
+        10.71
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -16.748637511630996,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.7172083011519024
+    },
+    {
+      "metric": "entry encode@512",
+      "baseline_us": [
+        97.99,
+        101.41,
+        99.36,
+        97.52,
+        99.82,
+        98.71
+      ],
+      "current_us": [
+        81.82,
+        82.21,
+        83.27,
+        82.85,
+        82.02,
+        80.72
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -17.13488340814714,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.5195330433903562
+    },
+    {
+      "metric": "entry encode@4096",
+      "baseline_us": [
+        799.33,
+        796.8,
+        780.12,
+        781.33,
+        794.27,
+        784.21
+      ],
+      "current_us": [
+        660.46,
+        640.48,
+        659.67,
+        654.12,
+        655.97,
+        655.24
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "change_pct": -17.105357617935578,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.279770485928801
+    }
+  ]
+}
+

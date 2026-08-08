@@ -339,11 +339,12 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
       wrapper objects.
 - [ ] **P4c native encode-plan reuse:** remove repeated functional plan compilation without
       a wrapper-object cache or unbounded global class map.
-- [ ] **H6 family-wise A/B confirmation:** 54 rows make isolated alpha-0.05 decisions a
+- [ ] **H6 family-wise A/B confirmation — DEFERRED:** 54 rows make isolated alpha-0.05 decisions a
       multiple-comparison family. Two full runs flagged different untouched encode metrics,
-      and neither survived a longer focused control. Replace solo confirmation with a
-      family-wise procedure whose false-positive rate and power are published.
-- [ ] **E8 quoting specialization:** branch once on the first byte so strings that cannot
+      and neither survived a longer focused control. Do not hand-roll this analysis in the
+      benchmark harness. Preserve raw blocks and use an established bulk statistical tool
+      with a predeclared family-wise procedure if the owner reopens it.
+- [x] **E8 quoting specialization:** branch once on the first byte so strings that cannot
       be numeric-like skip numeric-state tracking. Falsifier: the existing >100k quoting
       differential moves or the typed/untyped encode ladder cannot resolve a win.
 - [ ] **D7 one-pass quote-free cells:** use a combined quote/delimiter search so the
@@ -435,16 +436,36 @@ they are not themselves cached. The full survey and adopt/reject boundary are re
 Typed Decoder construction fell from about **3.36 us to 0.21 us**. A same-session three-round
 guard A/B (`benches/ab-p4b-decode.json`) measured functional decode **-40.0% at 16** records,
 **-15.7% at 64**, and **-4.5% at 512**. At 4096, -3.0% was just below that run's 3.2% MDE.
-After H6 repairs the guard, apply the same compiled-metadata principle to encode without
-introducing a global wrapper cache.
+Apply the same compiled-metadata principle to encode without introducing a global wrapper
+cache. H6 is deferred; focused same-session A/B remains the candidate acceptance evidence.
 
 The full guard exposed a harness defect rather than a stable codec regression. One ladder
 failed on typed encode@64 (+3.0%); a six-round focused control measured -0.2%. A second full
 ladder did not repeat that row, but failed on functional encode@4096 (+4.8%); its six-round
 focused control reported +2.9% with a 7.2% MDE. These encode paths cannot reach the decode
 plan, and no flagged row repeated across full runs. With the expanded 54-row family, the
-alpha-0.05 plus solo-confirmation policy is no longer adequate. H6 is next; both controls are
-retained as `benches/ab-p4b-*-control.json`.
+alpha-0.05 plus solo-confirmation policy is no longer adequate. Both controls are retained as
+`benches/ab-p4b-*-control.json`; H6 is deferred to raw-data bulk analysis with established
+statistical tooling, not another hand-written Python statistics layer.
+
+#### Checkpoint 15 — E8 first-byte quoting specialization
+
+Hypothesis: most emitted strings start with an ordinary nonnumeric byte. Splitting that path
+before numeric-state tracking, as `serde_toon_format` does, should remove work from the hot
+`needs_quote` scan without changing canonical bytes.
+
+Confirmed. The port remains conservative for this codec's accepted numeric-like spellings:
+only a first byte outside `0-9 . e E + -` bypasses numeric tracking, while delimiter, control,
+colon, quote, and backslash checks still scan the full string. The existing differential
+oracle checked **107,841 string/delimiter pairs with zero divergences**; all 36 Rust tests,
+119 Python tests, the 538/538 corpus, payload-safety tests, and G2 passed.
+
+Three-round same-session focused A/B resolved improvements at every size for the reusable
+paths: typed encode **-3.0/-4.4/-5.3/-4.2%**, entry encode
+**-16.5/-16.7/-17.1/-17.1%**, and untyped encode **-2.7/-3.1/-4.0/-3.2%** at
+16/64/512/4096 records. Functional encode was unchanged at 16 (-1.3%, MDE 1.8%) and faster
+at 64/512/4096 (**-2.4/-4.6/-4.7%**). Evidence is retained in
+`benches/ab-e8-*-encode.json`. Adopted.
 
 ### F. Distribution finish
 
