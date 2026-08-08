@@ -1,33 +1,34 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after external review rounds 1 and 2 (unreleased, on top of v0.3.0). Read CLAUDE.md (or AGENTS.md, same
+_Last updated at v0.4.0. Read CLAUDE.md (or AGENTS.md, same
 file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-**Two external review rounds have landed on top of v0.3.0 and are unreleased.** Round 1:
-four optimizations adopted, one rejected. Round 2: eight patches, all adopted, plus the
-token evidence extended and Target 1 closed against the spec. Everything is green across 42
-A/B metrics with no reproduced slowdown, but **nothing is tagged** — cut a release and
-re-cut the guard before further perf work, or the next round measures against a stale
-baseline.
+**v0.4.0 is cut, the guard is re-cut from it, and every gate is green.** It carries two
+external review rounds: round 1 (four optimizations adopted, one rejected) and round 2
+(eight patches adopted, the token evidence extended, the tabular-fallback questions closed
+against the spec). 42 A/B metrics, no reproduced slowdown.
 
-After that the correctness queue is unchanged and is now the whole remaining job:
-**C-00 constraint enforcement** (`Annotated[int, Meta(ge=10)]` is parsed into the plan IR
-and never applied, so a value `msgspec.json` rejects is accepted — the last silent
-divergence), then **F-06** (`strict=False` scalar coercion, which is what makes
-model-emitted TOON usable, not merely a parity item), then **F-04**.
+**The remaining job is correctness, not speed.** In order:
 
-Perf leads that are known-dead, so round 3 does not re-spend them: the plan-cache mutex
-(~17ns of a ~500ns fixed cost), per-call buffer reuse and the `PyBytes` copy (a ~114ns
-scalar-root floor, and the copy is not removable under abi3 — `_PyBytes_Resize` is not
-stable ABI). Still open: E4 (iterate `PyList` without collecting `Val::Seq`).
+1. **C-00 constraint enforcement.** `Annotated[int, Meta(ge=10)]` reaches the plan IR and
+   is never applied, so a value `msgspec.json` rejects is silently accepted. The last
+   silent divergence in the codec.
+2. **F-06 `strict=False` scalar coercion.** Filed as a parity gap; it is better understood
+   as the feature that makes *model-emitted* TOON usable, since a model writing `"42"`
+   where an `int` is declared is the likeliest failure and strict mode rejects it outright.
+3. **F-04** cell-accurate error columns.
+
+Perf leads that are **known dead** — do not re-spend them: the plan-cache mutex (~17ns of
+a ~500ns fixed cost), per-call buffer reuse and the `PyBytes` copy (a ~114ns scalar-root
+floor; the copy is not removable under abi3 because `_PyBytes_Resize` is not stable ABI),
+and `msgspec.structs.astuple` for encode field reads (measured 9–10 points *slower* at
+every size). Still open: **E4** (iterate `PyList` without collecting `Val::Seq`). **G4 at
+16/64 has no known mechanism left** — see its row below.
 
 `conformance/support_matrix.py` is both the work list and the acceptance test. Use
 `/last-mile`.
-
-The review bundles on the Desktop (`msgspec-toon-review-bundle`, `-v2`) are snapshots of
-`58ba1a7` and `5a15d19` and are both **stale** — regenerate before sending anywhere again.
 
 ## The goal, precisely
 
@@ -40,7 +41,7 @@ are measured: **tokens** (tiktoken `o200k_base`, `benches/bench_tokens.py`) and
 plus a frozen-baseline A/B harness `benches/ab.py`). Claims exist only as generated
 evidence in `conformance/report.json` — never as assertions.
 
-## Where things stand (verified on the current tree, unreleased)
+## Where things stand (all verified at v0.4.0)
 
 | claim | state | evidence |
 |---|---|---|
@@ -59,7 +60,7 @@ evidence in `conformance/report.json` — never as assertions.
 | Optimizations | 6 adopted, re-qualified under the significance-tested harness against `v0.1.0-conformant`: **all 16 metrics resolve as faster** — typed decode −14.3/−17.0/−16.9/−18.1%, untyped decode −11.8/−15.5/−18.2/−17.6%, typed encode −6.4/−6.7/−6.2/−3.4%, untyped encode −8.6/−6.6/−7.2/−6.3%. The two encode rows F-12 could not resolve now resolve | `benches/optimization-ledger.json`, report `speed_ab.baseline` |
 | A/B rigor | **mean across 10 worker processes** (never a minimum); one metric per block, alternating `B C C B`, t-test at alpha 0.95, per-row minimum detectable effect; a slowdown must reproduce at double power to fail | `benches/ab.py`, `benches/ab-guard.json`, `benches/ab-baseline.json` |
 | Regression gates | **token/byte lock** (any drift fails) and **speed gate vs the latest release** (a reproduced slowdown exits non-zero). Both proven to fire by deliberate perturbation | `conformance/efficiency.lock.json`, `make ab` |
-| Release + guard | **v0.3.0 tagged; `.venv-guard` built from it. The tree is now AHEAD of the guard by one adopted review round** — `make ab` reports wins, not parity, which is the expected state before a release is cut. `GUARD_TAG` is derived from the latest tag, and the gate refuses a guard built from an older one | `git tag`, `.venv-guard/GUARD_TAG` |
+| Release + guard | **v0.4.0 tagged; `.venv-guard` re-cut from it; `make ab` green at parity across 42 metrics**. `GUARD_TAG` is derived from the latest tag, and the gate refuses a guard built from an older one | `git tag`, `.venv-guard/GUARD_TAG` |
 | External review round 2 | **8 patches, all adopted, all on measurement.** vs the v0.3.0 guard on the full 42-metric ladder: entry decode −24.8/−33.2/−58.6/−89.1% at 16/64/512/4096, entry encode −21 to −23%, typed decode −5.8 to −9.3%, typed encode −7.7 to −14.7%, untyped decode −4.0 to −8.8%. Two new metrics (`entry decode`/`entry encode`) and two new ladder sizes (4, 8) landed *before* the candidates that needed them | ledger (R2-B, R2-C, R2-D, P3), `docs/token-shape-guidance.md` |
 | External review round 1 | **4 adopted, 1 rejected, all on measurement.** vs the v0.3.0 guard: typed decode −6.0/−9.0/−7.2/−7.7%, typed encode −13.9/−14.9/−15.8/−16.6%, untyped decode −2.7/−2.6/−7.4/−5.2%, untyped encode −7.0/−7.8/−7.4/−7.5%, and keyed decode −19.3/−51.9/−88.4% at 64/512/4096 | `benches/optimization-ledger.json` (D6, P2, E5, D5 adopted; E7 rejected) |
 
