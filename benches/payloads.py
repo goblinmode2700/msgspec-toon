@@ -134,6 +134,35 @@ def keyed_toon_text(records: int) -> bytes:
     return (f"[{records}:]{{pid,provider,region}}:\n{rows}").encode()
 
 
+#: One sentence long enough that a `key: value` line's cost is dominated by
+#: its value bytes rather than its key. Entry lines this shape are what the
+#: line classifier walks in full when deciding header-vs-entry.
+ENTRY_SENTENCE = (
+    "the deployment completed without incident and latency stayed within "
+    "the agreed budget across all monitored endpoints"
+)
+
+
+def entry_document(records: int) -> dict:
+    """An object the encoder can only write entry by entry, with long values.
+
+    Every array payload on the ladder is tabular and the keyed payload's rows
+    are cells, so no metric exercised the `key: value` entry writer or the
+    entry line classifier at document scale — the same class of blindness the
+    keyed payload fixed for duplicate keys. Values alternate between long
+    strings and small non-uniform objects: the mixed kinds keep the object
+    ineligible for keyed tabular form in both directions, and the long values
+    make line length matter, which is where a per-line scan's cost lives.
+    """
+    tree: dict = {}
+    for index in range(records):
+        if index % 3 == 2:
+            tree[f"note_{index}"] = {"text": f"{ENTRY_SENTENCE} {index}", "priority": index % 5}
+        else:
+            tree[f"status_{index}"] = f"{ENTRY_SENTENCE} during window {index}"
+    return tree
+
+
 def token_payload_matrix() -> list[tuple[str, int, Any]]:
     cases: list[tuple[str, int, Any]] = []
     for records in TOKEN_LADDER:

@@ -28,9 +28,9 @@ import msgspec_toon as toon
 import toon as python_toon
 from _timing import DEFAULT_WORKERS, measure, methodology
 from _workers import across_workers
-from payloads import Document, document, keyed_document, keyed_toon_text, toon_text
+from payloads import Document, document, entry_document, keyed_document, keyed_toon_text, toon_text
 
-LADDER = (16, 64, 512, 4096)
+LADDER = (4, 8, 16, 64, 512, 4096)
 
 
 def sample_run(records: int) -> dict[str, Any]:
@@ -40,6 +40,7 @@ def sample_run(records: int) -> dict[str, Any]:
     text = toon_text(records)
     keyed_text = keyed_toon_text(records)
     doc = document(records)
+    entry_doc = entry_document(records)
     json_bytes = msgspec.json.encode(doc)
 
     typed_decoder = toon.Decoder(Document)
@@ -55,6 +56,10 @@ def sample_run(records: int) -> dict[str, Any]:
     typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
     untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
     keyed_decode = measure("decode.keyed_document", lambda: untyped_decoder.decode(keyed_text)).us
+    entry_text = encoder.encode(entry_doc)
+    assert untyped_decoder.decode(entry_text) == entry_doc
+    entry_decode = measure("decode.entry_document", lambda: untyped_decoder.decode(entry_text)).us
+    entry_encode = measure("encode.entry_document", lambda: encoder.encode(entry_doc)).us
     wrapper_decode = measure(
         "decode.wrapper", lambda: msgspec.convert(untyped_decoder.decode(text), Document)
     ).us
@@ -81,6 +86,7 @@ def sample_run(records: int) -> dict[str, Any]:
             "typed_direct": typed_decode,
             "untyped_tree": untyped_decode,
             "keyed_document": keyed_decode,
+            "entry_document": entry_decode,
             "convert_only": convert_only,
             "wrapper_tree_plus_convert": wrapper_decode,
             "incumbent_pipeline_python_toon_plus_convert": incumbent_decode,
@@ -88,6 +94,7 @@ def sample_run(records: int) -> dict[str, Any]:
         },
         "encode_us": {
             "typed_direct_whole": typed_encode,
+            "entry_document": entry_encode,
             "to_builtins_alone": to_builtins_only,
             "incumbent_pipeline_to_builtins_plus_python_toon": incumbent_encode,
             "msgspec_json_native": json_native_encode,

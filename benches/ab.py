@@ -88,6 +88,8 @@ METRICS = (
     ("bench_typed", "decode_us", "typed_direct", "decode.typed_direct", "typed decode"),
     ("bench_typed", "encode_us", "typed_direct_whole", "encode.typed_direct", "typed encode"),
     ("bench_typed", "decode_us", "keyed_document", "decode.keyed_document", "keyed decode"),
+    ("bench_typed", "decode_us", "entry_document", "decode.entry_document", "entry decode"),
+    ("bench_typed", "encode_us", "entry_document", "encode.entry_document", "entry encode"),
     ("bench_codecs", "decode_us", "msgspec_toon", "decode.msgspec_toon", "untyped decode"),
     ("bench_codecs", "encode_us", "msgspec_toon", "encode.msgspec_toon", "untyped encode"),
 )
@@ -243,7 +245,11 @@ def measure_metric(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--records", type=int, nargs="+", default=[16, 64, 512, 4096])
+    # 4 and 8 exist because the workload analysis (ROUND-2-DIRECTION.md) says
+    # tool results are tens of records; the ladder previously started at 16
+    # and equal-weighted sizes the use case rarely sees. Added, not re-weighted:
+    # every prior size still runs.
+    parser.add_argument("--records", type=int, nargs="+", default=[4, 8, 16, 64, 512, 4096])
     parser.add_argument(
         "--baseline-venv",
         default=DEFAULT_BASELINE_VENV,
