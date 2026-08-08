@@ -156,63 +156,33 @@
         }
       }
     },
-    "numeric-heavy@16": {
+    "string-heavy@64": {
       "json_compact": {
-        "bytes": 1079,
+        "bytes": 17520,
         "tokens": {
-          "o200k_base": 485,
-          "cl100k_base": 484
+          "o200k_base": 3204,
+          "cl100k_base": 3203
         }
       },
       "toon_comma": {
-        "bytes": 525,
+        "bytes": 14288,
         "tokens": {
-          "o200k_base": 319,
-          "cl100k_base": 318
+          "o200k_base": 2573,
+          "cl100k_base": 2573
         }
       },
       "toon_tab": {
-        "bytes": 526,
+        "bytes": 14289,
         "tokens": {
-          "o200k_base": 317,
-          "cl100k_base": 316
+          "o200k_base": 2574,
+          "cl100k_base": 2574
         }
       },
       "toon_pipe": {
-        "bytes": 526,
+        "bytes": 14289,
         "tokens": {
-          "o200k_base": 337,
-          "cl100k_base": 337
-        }
-      }
-    },
-    "irregular@16": {
-      "json_compact": {
-        "bytes": 791,
-        "tokens": {
-          "o200k_base": 310,
-          "cl100k_base": 293
-        }
-      },
-      "toon_comma": {
-        "bytes": 727,
-        "tokens": {
-          "o200k_base": 359,
-          "cl100k_base": 359
-        }
-      },
-      "toon_tab": {
-        "bytes": 728,
-        "tokens": {
-          "o200k_base": 353,
-          "cl100k_base": 353
-        }
-      },
-      "toon_pipe": {
-        "bytes": 728,
-        "tokens": {
-          "o200k_base": 360,
-          "cl100k_base": 360
+          "o200k_base": 2574,
+          "cl100k_base": 2574
         }
       }
     },
@@ -246,6 +216,96 @@
         }
       }
     },
+    "string-heavy@4096": {
+      "json_compact": {
+        "bytes": 1143564,
+        "tokens": {
+          "o200k_base": 214092,
+          "cl100k_base": 214091
+        }
+      },
+      "toon_comma": {
+        "bytes": 934702,
+        "tokens": {
+          "o200k_base": 173142,
+          "cl100k_base": 173142
+        }
+      },
+      "toon_tab": {
+        "bytes": 934703,
+        "tokens": {
+          "o200k_base": 173143,
+          "cl100k_base": 173143
+        }
+      },
+      "toon_pipe": {
+        "bytes": 934703,
+        "tokens": {
+          "o200k_base": 173143,
+          "cl100k_base": 173143
+        }
+      }
+    },
+    "numeric-heavy@16": {
+      "json_compact": {
+        "bytes": 1079,
+        "tokens": {
+          "o200k_base": 485,
+          "cl100k_base": 484
+        }
+      },
+      "toon_comma": {
+        "bytes": 525,
+        "tokens": {
+          "o200k_base": 319,
+          "cl100k_base": 318
+        }
+      },
+      "toon_tab": {
+        "bytes": 526,
+        "tokens": {
+          "o200k_base": 317,
+          "cl100k_base": 316
+        }
+      },
+      "toon_pipe": {
+        "bytes": 526,
+        "tokens": {
+          "o200k_base": 337,
+          "cl100k_base": 337
+        }
+      }
+    },
+    "numeric-heavy@64": {
+      "json_compact": {
+        "bytes": 4326,
+        "tokens": {
+          "o200k_base": 1961,
+          "cl100k_base": 1960
+        }
+      },
+      "toon_comma": {
+        "bytes": 2044,
+        "tokens": {
+          "o200k_base": 1267,
+          "cl100k_base": 1266
+        }
+      },
+      "toon_tab": {
+        "bytes": 2045,
+        "tokens": {
+          "o200k_base": 1265,
+          "cl100k_base": 1264
+        }
+      },
+      "toon_pipe": {
+        "bytes": 2045,
+        "tokens": {
+          "o200k_base": 1333,
+          "cl100k_base": 1333
+        }
+      }
+    },
     "numeric-heavy@512": {
       "json_compact": {
         "bytes": 35010,
@@ -276,6 +336,96 @@
         }
       }
     },
+    "numeric-heavy@4096": {
+      "json_compact": {
+        "bytes": 286925,
+        "tokens": {
+          "o200k_base": 130561,
+          "cl100k_base": 130560
+        }
+      },
+      "toon_comma": {
+        "bytes": 139493,
+        "tokens": {
+          "o200k_base": 85516,
+          "cl100k_base": 85515
+        }
+      },
+      "toon_tab": {
+        "bytes": 139494,
+        "tokens": {
+          "o200k_base": 85514,
+          "cl100k_base": 85513
+        }
+      },
+      "toon_pipe": {
+        "bytes": 139494,
+        "tokens": {
+          "o200k_base": 89614,
+          "cl100k_base": 89614
+        }
+      }
+    },
+    "irregular@16": {
+      "json_compact": {
+        "bytes": 791,
+        "tokens": {
+          "o200k_base": 310,
+          "cl100k_base": 293
+        }
+      },
+      "toon_comma": {
+        "bytes": 727,
+        "tokens": {
+          "o200k_base": 359,
+          "cl100k_base": 359
+        }
+      },
+      "toon_tab": {
+        "bytes": 728,
+        "tokens": {
+          "o200k_base": 353,
+          "cl100k_base": 353
+        }
+      },
+      "toon_pipe": {
+        "bytes": 728,
+        "tokens": {
+          "o200k_base": 360,
+          "cl100k_base": 360
+        }
+      }
+    },
+    "irregular@64": {
+      "json_compact": {
+        "bytes": 2862,
+        "tokens": {
+          "o200k_base": 1078,
+          "cl100k_base": 1013
+        }
+      },
+      "toon_comma": {
+        "bytes": 2678,
+        "tokens": {
+          "o200k_base": 1271,
+          "cl100k_base": 1271
+        }
+      },
+      "toon_tab": {
+        "bytes": 2679,
+        "tokens": {
+          "o200k_base": 1265,
+          "cl100k_base": 1265
+        }
+      },
+      "toon_pipe": {
+        "bytes": 2679,
+        "tokens": {
+          "o200k_base": 1272,
+          "cl100k_base": 1272
+        }
+      }
+    },
     "irregular@512": {
       "json_compact": {
         "bytes": 23387,
@@ -303,6 +453,36 @@
         "tokens": {
           "o200k_base": 9790,
           "cl100k_base": 9790
+        }
+      }
+    },
+    "irregular@4096": {
+      "json_compact": {
+        "bytes": 197784,
+        "tokens": {
+          "o200k_base": 75129,
+          "cl100k_base": 71032
+        }
+      },
+      "toon_comma": {
+        "bytes": 187520,
+        "tokens": {
+          "o200k_base": 87418,
+          "cl100k_base": 87418
+        }
+      },
+      "toon_tab": {
+        "bytes": 187521,
+        "tokens": {
+          "o200k_base": 87412,
+          "cl100k_base": 87412
+        }
+      },
+      "toon_pipe": {
+        "bytes": 187521,
+        "tokens": {
+          "o200k_base": 87419,
+          "cl100k_base": 87419
         }
       }
     }

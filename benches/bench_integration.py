@@ -7,7 +7,8 @@ its data starts and ends as compact JSON:
 * python-toon performs the same work through its Python API.
 * the ``toon`` command performs encode and decode in two child processes.
 
-All rows use the repository timing implementation and its ten-worker mean.
+Rows cross four payload shapes and four sizes. All rows use the repository
+timing implementation and its ten-worker mean.
 """
 
 from __future__ import annotations
@@ -25,9 +26,10 @@ import msgspec_toon
 import toon as python_toon
 from _timing import DEFAULT_WORKERS, measure
 from _workers import across_workers
-from payloads import document
+from payloads import COMPARATIVE_LADDER, COMPARATIVE_SHAPES, comparative_tree
 
-LADDER = (16, 64, 512)
+LADDER = COMPARATIVE_LADDER
+SHAPES = COMPARATIVE_SHAPES
 TOON_CLI = Path(sys.prefix) / "bin" / "toon"
 
 
@@ -58,8 +60,8 @@ def _toon_cli_roundtrip(json_bytes: bytes) -> bytes:
     ).stdout.strip()
 
 
-def sample_run(records: int) -> dict[str, Any]:
-    json_bytes = msgspec.json.encode(msgspec.to_builtins(document(records)))
+def sample_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
+    json_bytes = msgspec.json.encode(comparative_tree(shape, records))
     expected = msgspec.json.decode(json_bytes)
 
     for result in (
@@ -70,6 +72,7 @@ def sample_run(records: int) -> dict[str, Any]:
         assert msgspec.json.decode(result) == expected
 
     return {
+        "shape": shape,
         "records": records,
         "input_json_bytes": len(json_bytes),
         "roundtrip_us": {
@@ -88,15 +91,23 @@ def sample_run(records: int) -> dict[str, Any]:
     }
 
 
-def run(records: int, *, workers: int = DEFAULT_WORKERS) -> dict[str, Any]:
-    merged, spread = across_workers("bench_integration", "sample_run", [records], workers=workers)
+def run(
+    records: int,
+    *,
+    shape: str = "uniform-records",
+    workers: int = DEFAULT_WORKERS,
+) -> dict[str, Any]:
+    merged, spread = across_workers(
+        "bench_integration", "sample_run", [records, shape], workers=workers
+    )
     merged["worker_spread_pct"] = spread
     return merged
 
 
 def main() -> None:
-    for records in LADDER:
-        print(run(records))
+    for shape in SHAPES:
+        for records in LADDER:
+            print(run(records, shape=shape))
 
 
 if __name__ == "__main__":

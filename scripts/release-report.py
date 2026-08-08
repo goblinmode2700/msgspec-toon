@@ -106,9 +106,15 @@ def main() -> None:
         (Path(__file__).resolve().parent.parent / "conformance" / "fixtures.lock.json").read_text()
     )
     benchmarks = [run(records) for records in (16, 64, 512, 4096)]
-    codec_benchmarks = [bench_codecs.run(records) for records in bench_codecs.LADDER]
+    codec_benchmarks = [
+        bench_codecs.run(records, shape=shape)
+        for shape in bench_codecs.SHAPES
+        for records in bench_codecs.LADDER
+    ]
     integration_benchmarks = [
-        bench_integration.run(records) for records in bench_integration.LADDER
+        bench_integration.run(records, shape=shape)
+        for shape in bench_integration.SHAPES
+        for records in bench_integration.LADDER
     ]
     report = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -170,11 +176,8 @@ def main() -> None:
         },
         "benchmark_caveats": [
             (
-                "Each codec round-trips its own encoded bytes: the incumbents predate "
-                "TOON 4.x and emit the fallback list form (no nested field groups), so "
-                "they parse roughly 2.9x more bytes for the same value. Byte sizes are "
-                "published per row; that difference is the real-world comparison, not "
-                "an unfair one."
+                "Each codec round-trips its own encoded bytes. Output sizes vary by "
+                "payload shape and codec. Each row publishes those byte counts."
             ),
             (
                 "The incumbent pipeline rows (to_builtins + python-toon encode; "

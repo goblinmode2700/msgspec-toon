@@ -134,16 +134,17 @@ Older encoders can fall back to a larger entry form for the same data.
 
 ## Tokens and speed
 
-![Speed and token quadrant](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/v0.1.0-beta.1/docs/assets/benchmarks/efficiency-quadrant.png)
+![Codec elapsed times](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/codec-times.png)
+
+![Absolute token counts](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/token-counts.png)
 
 The generated [benchmark report](BENCHMARKS.md) publishes both axes:
 
-- conversion speed against the measured TOON alternatives;
-- token count against compact JSON under tiktoken `o200k_base`.
+- Direct encode, decode, and total time for each measured codec.
+- Absolute token counts, including compact JSON, under tiktoken `o200k_base`.
 
-Uniform nested records land in the faster-and-fewer-tokens quadrant. Irregular
-documents do not. Canonical TOON costs more tokens than compact JSON for the
-measured irregular shapes, so the report keeps those losing points visible.
+The report crosses four payload shapes with four record counts. Canonical TOON
+uses more tokens than compact JSON for the measured irregular shapes.
 
 All timing rows come from one session and one release build. The estimator is
 the mean across ten independent worker processes. It never reports the minimum.
