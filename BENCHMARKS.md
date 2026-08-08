@@ -15,9 +15,9 @@ The chart shows encode, decode, and total elapsed time. Every value is a direct 
 | Codec | Encode (µs) | Decode (µs) | Total (µs) |
 |---|---:|---:|---:|
 | msgspec-toon | 566.85 | 1,118.16 |  1,685.01 |
+| msgspec JSON | 214.78 | 857.44 |  1,072.22 |
 | toons (Rust) | 7,258.10 | 3,118.85 |  10,376.95 |
 | python-toon | 23,842.26 | 30,570.48 |  54,412.74 |
-| msgspec JSON | 214.78 | 857.44 |  1,072.22 |
 
 ## End-to-end time
 

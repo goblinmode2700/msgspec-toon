@@ -63,8 +63,8 @@ mean_ci <- function(values) {
 shape_levels <- c("uniform-records", "string-heavy", "numeric-heavy", "irregular")
 record_levels <- c("16", "64", "512", "4096")
 
-codec_ids <- c("msgspec_toon", "toons_rust", "python_toon", "msgspec_json_context")
-codec_labels <- c("msgspec-toon", "toons (Rust)", "python-toon", "msgspec JSON")
+codec_ids <- c("msgspec_toon", "msgspec_json_context", "toons_rust", "python_toon")
+codec_labels <- c("msgspec-toon", "msgspec JSON", "toons (Rust)", "python-toon")
 phase_ids <- c("encode", "decode", "total")
 
 codec_times <- do.call(rbind, lapply(report$benchmarks_codecs_same_run, function(row) {
@@ -94,7 +94,7 @@ codec_times <- do.call(rbind, lapply(report$benchmarks_codecs_same_run, function
 codec_times$shape <- factor(codec_times$shape, levels = shape_levels)
 codec_times$records <- factor(codec_times$records, levels = record_levels)
 codec_times$codec <- factor(codec_times$codec, levels = rev(codec_labels))
-codec_times$phase <- factor(codec_times$phase, levels = phase_ids)
+codec_times$phase <- factor(codec_times$phase, levels = rev(phase_ids))
 
 phase_position <- position_dodge(width = 0.78)
 p_codec_times <- ggplot(codec_times, aes(mean_us, codec, fill = phase)) +
@@ -110,6 +110,7 @@ p_codec_times <- ggplot(codec_times, aes(mean_us, codec, fill = phase)) +
   facet_grid(rows = vars(shape), cols = vars(records), scales = "free_x") +
   scale_fill_manual(
     values = c(encode = blue, decode = sky, total = orange),
+    breaks = phase_ids,
     labels = c(encode = "encode", decode = "decode", total = "total")
   ) +
   scale_x_continuous(labels = label_number(big.mark = ","), expand = expansion(mult = c(0, 0.05))) +
@@ -168,7 +169,12 @@ integration_times$pipeline <- factor(
 )
 
 p_integration_times <- ggplot(integration_times, aes(mean_us, pipeline)) +
-  geom_col(fill = mauve, width = 0.68) +
+  geom_segment(
+    aes(x = 1, xend = mean_us, yend = pipeline),
+    colour = mauve,
+    linewidth = 10,
+    lineend = "butt"
+  ) +
   geom_errorbar(
     aes(xmin = lower_us, xmax = upper_us),
     orientation = "y",
@@ -177,7 +183,7 @@ p_integration_times <- ggplot(integration_times, aes(mean_us, pipeline)) +
     linewidth = 0.35
   ) +
   facet_grid(rows = vars(shape), cols = vars(records), scales = "free_x") +
-  scale_x_continuous(labels = label_number(big.mark = ","), expand = expansion(mult = c(0, 0.05))) +
+  scale_x_log10(labels = label_number(big.mark = ",")) +
   labs(
     title = "JSON to TOON to JSON time",
     subtitle = "The CLI measurement includes two process launches.",
@@ -186,7 +192,7 @@ p_integration_times <- ggplot(integration_times, aes(mean_us, pipeline)) +
     caption = paste0(
       "Each value is the arithmetic mean across ",
       report$evidence_methodology$workers,
-      " worker processes. Each record-count column has its own linear time scale."
+      " worker processes. The logarithmic bars start at 1 microsecond."
     )
   ) +
   theme_report() +
@@ -226,15 +232,24 @@ token_counts <- do.call(rbind, lapply(report$token_efficiency$rows, function(row
 token_counts$shape <- factor(token_counts$shape, levels = shape_levels)
 token_counts$records <- factor(token_counts$records, levels = record_levels)
 token_counts$format <- factor(token_counts$format, levels = rev(token_format_labels))
+json_reference <- token_counts[token_counts$format == "compact JSON", ]
 
 p_token_counts <- ggplot(token_counts, aes(tokens, format)) +
   geom_col(aes(fill = format == "compact JSON"), width = 0.68, show.legend = FALSE) +
+  geom_vline(
+    data = json_reference,
+    aes(xintercept = tokens),
+    inherit.aes = FALSE,
+    colour = wine,
+    linetype = "dashed",
+    linewidth = 0.55
+  ) +
   facet_grid(rows = vars(shape), cols = vars(records), scales = "free_x") +
   scale_fill_manual(values = c(`TRUE` = wine, `FALSE` = green)) +
   scale_x_continuous(labels = label_number(big.mark = ","), expand = expansion(mult = c(0, 0.05))) +
   labs(
     title = "Token count by shape, size, and wire format",
-    subtitle = "Compact JSON is wine. TOON formats are green.",
+    subtitle = "The dashed line marks compact JSON in each facet.",
     x = paste0(report$token_efficiency$tokenizers$primary, " tokens"),
     y = NULL,
     caption = paste0(
