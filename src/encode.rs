@@ -551,6 +551,15 @@ fn keyed_shape<'py>(
     if map.len() < 2 {
         return Ok(None);
     }
+    // Most probed objects are plain configs whose first value is a scalar.
+    // Settling that case before the two vectors below exist keeps the probe
+    // allocation-free on the common miss (optimization R2-D).
+    if let Some((_, first_item)) = map.iter().next()
+        && !(first_item.is_instance_of::<PyDict>()
+            || first_item.is_instance(ctx.struct_base.bind(py))?)
+    {
+        return Ok(None);
+    }
     let mut entries = Vec::with_capacity(map.len());
     let mut rows = Vec::with_capacity(map.len());
     for (key, item) in map.iter() {

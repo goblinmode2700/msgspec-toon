@@ -184,6 +184,15 @@
       "source": "external review round 2 (Fable 5), patch 04 of 8",
       "measurement": "entry encode vs the v0.3.0 guard: -8.2/-11.4/-18.8/-10.2/-10.1/-9.1% before, -12.0/-16.8/-13.0/-18.1/-18.2/-16.0% after, at 4/8/16/64/512/4096. R2-C adds roughly 4 to 8 points. The @16 before-reading carried a 28% MDE and is not a usable comparison point.",
       "note": "EntryText::{Wire(&str borrowed from the plan inside the Val), Object(Bound<PyString>)} reads the text at write time. Costs one to_str per dict key at write time and an incref per held key object; both measured cheaper than the copy they replace."
+    },
+    {
+      "id": "R2-D",
+      "target": "keyed-tabular probe allocation (src/encode.rs)",
+      "hypothesis": "Every dict with two or more entries is probed for keyed tabular form, and the probe allocated two Vecs before looking at a single value. Most probed objects are plain configs whose first value is a scalar, which disqualifies them immediately; a first-item peek should settle that case allocation-free.",
+      "status": "adopted",
+      "source": "external review round 2 (Fable 5), patch 05 of 8",
+      "measurement": "entry encode vs the v0.3.0 guard: -12.0/-16.8/-13.0/-18.1/-18.2/-16.0% before, -17.1/-18.3/-19.9/-18.9/-21.2/-22.7% after, at 4/8/16/64/512/4096. R2-D adds 2 to 7 points, largest at the small end and at 4096.",
+      "note": "Full detection is unchanged; only the scalar-first miss is settled earlier. Costs one extra iter().next() on dicts that do pass detection."
     }
   ],
   "token_findings": {
