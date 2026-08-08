@@ -403,6 +403,8 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     /// Route an event into the untyped sub-consumer while inside an `Any`
     /// subtree; returns true when the event was consumed.
+    #[cold]
+    #[inline(never)]
     fn any_forward(&mut self, event: AnyEvent<'_>, at: Position) -> Result<bool, Fault> {
         let Some((sub, depth)) = self.any_sub.as_mut() else {
             return Ok(false);
@@ -521,7 +523,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn start_object(&mut self, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::StartObject, at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::StartObject, at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {
@@ -573,7 +577,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::Key(key), at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::Key(key), at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {
@@ -672,7 +678,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn end_object(&mut self, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::EndObject, at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::EndObject, at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {
@@ -706,7 +714,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn start_array(&mut self, declared_len: usize, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::StartArray(declared_len), at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::StartArray(declared_len), at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {
@@ -764,7 +774,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn end_array(&mut self, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::EndArray, at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::EndArray, at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {
@@ -806,7 +818,9 @@ impl Consumer for TypedConsumer<'_, '_> {
     }
 
     fn scalar(&mut self, token: ScalarToken<'_>, at: Position) -> Result<(), Fault> {
-        if self.any_forward(AnyEvent::Scalar(token), at)? {
+        if self.any_sub.is_some() {
+            let consumed = self.any_forward(AnyEvent::Scalar(token), at)?;
+            debug_assert!(consumed);
             return Ok(());
         }
         if self.skip_depth > 0 {

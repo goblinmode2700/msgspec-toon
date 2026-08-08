@@ -54,8 +54,12 @@ continuation. The ordered queue is now:
 8. **D7 quote-free cell scan — REJECTED.** A combined `memchr2` quote/delimiter scan was
    equivalent across 411,771 generated rows, but typed and entry decode stayed at parity;
    untyped decode trended slower. The prior two-pass common path remains.
-9. **NEXT:** attempt absent-`Any` forwarding, then measured wide-dictionary membership.
-10. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+9. **D8 absent-`Any` forwarding — ADOPTED.** Guarding before `AnyEvent` construction and
+   outlining the forwarding routine as cold improved typed decode 7.1–10.0% at every size.
+   Full support/containment tests, corpus, payload safety, and G2 stayed green.
+10. **NEXT:** add the wide-dictionary diagnostic, then attempt hashed first-row membership
+    only if it exposes the predicted quadratic shape cost.
+11. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 

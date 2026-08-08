@@ -350,7 +350,7 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] **D7 one-pass quote-free cells — REJECTED:** use a combined quote/delimiter search so the
       common quote-free row is scanned once. Falsifier: quoted-heavy control regresses or
       the typed/untyped decode ladder cannot resolve a win.
-- [ ] **D8 cold Any forwarding:** avoid constructing/forwarding an `AnyEvent` when no
+- [x] **D8 cold Any forwarding:** avoid constructing/forwarding an `AnyEvent` when no
       `Any` subtree is active. Falsifier: Any/dec-hook behavior changes, G2 moves, or typed
       decode cannot resolve a win.
 - [ ] **E9 wide-dictionary shape:** add the diagnostic payload first, then replace the
@@ -496,6 +496,21 @@ same-session A/B found no significant improvement on typed or entry decode. Type
 and entry was -0.5/-0.6/-0.2/+0.3%. Untyped trended slower at
 **+7.0/+2.5/+2.6/+0.8%**, also below each row's MDE. The stated falsifier fired, so both
 implementation and oracle were removed. Evidence remains in `benches/ab-d7-*-decode.json`.
+
+#### Checkpoint 18 — D8 cold `Any` forwarding
+
+Hypothesis: the typed consumer's ordinary schema path pays a call and event-dispatch shape
+for every parser event even though `any_sub` is almost always `None`. Guarding before
+constructing `AnyEvent` and outlining `any_forward` as cold/noinline should reduce hot-path
+code and branches while preserving the existing untyped sub-consumer for actual `Any` and
+`dec_hook` subtrees.
+
+Confirmed. Six event methods now test `any_sub.is_some()` before constructing an event;
+the existing forwarding state machine is unchanged behind the cold branch. Same-session
+three-round A/B measured typed decode **-9.0/-10.0/-9.3/-7.1%** at
+16/64/512/4096 records, with MDEs of 0.8–1.3%. All 36 Rust tests, 119 Python tests
+(including support, containment, `Any`, and hook cases), the 538/538 corpus, payload-safety
+checks, and G2 passed. Evidence: `benches/ab-d8-typed-decode.json`. Adopted.
 
 ### F. Distribution finish
 
