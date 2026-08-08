@@ -138,6 +138,21 @@ make report                    # regenerate conformance/report.json
 make audit                     # dependency-age cooldown check (network)
 ```
 
+To build the optional upstream Struct-access fast path in an isolated environment:
+
+```bash
+make fastpath-build            # patched msgspec + msgspec-toon release wheels
+make fastpath-check            # protected tests and corpus through the capsule path
+make fastpath-bench            # same-binary capsule/fallback measurement
+make fastpath-gates            # normal G3/G4 ladder; G4 currently exits nonzero at 4-64
+.venv-fastpath/bin/python      # run Python with the activated build
+```
+
+This profile fetches the hash-pinned msgspec 0.21.1 source, applies the preserved public
+C-API patch, and installs both wheels into `.venv-fastpath`. It does not modify `.venv`,
+the lockfile, or the published `msgspec==0.21.1` requirement. `fastpath-build` exits if the
+Encoder does not report the `capsule` backend.
+
 Truth lives in `openspec/specs/` (requirements, validated), `docs/` (the design of
 record), `HANDOFF.md` (current state + open items), and `conformance/report.json`
 (the evidence). Contributor context for coding agents is in `CLAUDE.md` /

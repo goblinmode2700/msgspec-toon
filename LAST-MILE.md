@@ -569,10 +569,14 @@ ran the capsule producer tests and a same-object concurrent mutation/encode stre
 the GIL disabled. The stock fallback A/B found no reproduced slowdown, although `ab.py`
 failed only when constructing an output filename from the supplied absolute venv paths.
 
-Ruling: preserve the upstream patch and consumer branch, but do not merge a dormant fast
-path into main while the required stock `msgspec==0.21.1` cannot activate it. Upstream
-acceptance plus a new exact pin is the activation gate. The bounded local optimization loop
-is stopped again.
+Ruling at checkpoint 21 was to preserve the upstream patch and consumer branch without
+merging a dormant path. The owner subsequently requested a runnable activation workflow.
+Main therefore contains the optional consumer, while ordinary stock-0.21.1 builds retain
+the attribute fallback. `make fastpath-build` owns a separate `.venv-fastpath`, fetches the
+exact msgspec source commit, applies the repository patch, installs both release wheels,
+and fails unless the Encoder reports `capsule`. Upstream acceptance plus a new exact pin
+remains the production-default activation gate. The bounded local optimization loop is
+stopped again.
 
 ### F. Distribution finish
 

@@ -132,7 +132,9 @@ artifact is claimed for that run.
 The statement “whether upstream msgspec can eliminate the gap is unmeasured” is closed.
 The unsafe mechanism proof recovered 25-30%; the production-quality capsule path recovers
 14-22% and closes G4 from 512 records upward. It does not close the fixed-cost miss at
-4-64 records. The candidate is preserved and validated, but main remains on public
+4-64 records. Main contains the optional consumer, but ordinary builds remain on public
 attribute access because the exact required `msgspec==0.21.1` release does not provide the
-capsule. Activation requires upstream acceptance and a new pinned msgspec release; copying
-the private layout or shipping a patched dependency remains rejected.
+capsule. The opt-in `make fastpath-build` workflow creates an isolated patched-msgspec
+environment and asserts capsule activation; it does not change the published dependency.
+Default activation still requires upstream acceptance and a new pinned msgspec release.
+Copying the private layout into this wheel remains rejected.

@@ -11,5 +11,6 @@ python/msgspec_toon/*.so
 .venv-baseline/
 .venv-g2/
 .venv-guard/
+.venv-fastpath/
 .baseline-src/
 benches/ab-latest.json

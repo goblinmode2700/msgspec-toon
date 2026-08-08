@@ -67,13 +67,14 @@ continuation. The ordered queue is now:
     typed Struct encode was parity-to-faster.
 12. **G4 upstream mechanism proof — DONE, not shipped.** The disposable raw-offset proof
     improved typed encode 25-30% and beat `to_builtins` from 64 records upward.
-13. **G4 upstream capsule shot — DONE, preserved, not activated.** A versioned msgspec
+13. **G4 upstream capsule shot — DONE, preserved, opt-in workflow active.** A versioned msgspec
     PyCapsule patch (`6391020`) and optional Rust consumer (`aa27f5e`, branch
     `g4-upstream-capsule`) define class/order/lifetime/unset/free-threaded semantics. The
     safe path improves 14-22% and beats `to_builtins` at 512/4096, not 4-64. Both capsule
     and stock fallback pass `make check`, 538/538, and G2; CPython 3.14t concurrent mutation
-    testing passes with the GIL disabled. The exact stock 0.21.1 pin has no capsule, so main
-    correctly remains unchanged. See
+    testing passes with the GIL disabled. Main now contains the optional consumer, but the
+    exact stock 0.21.1 pin still selects `attribute`; `make fastpath-build` creates an
+    isolated patched dependency and asserts that the same source selects `capsule`. See
     `docs/implementation-spec/msgspec-upstream-struct-view-g4.md` and its preserved patch.
 14. **NEXT:** upstream the msgspec patch, or stop. Do not copy msgspec/CPython private
     layouts into the abi3 wheel. No in-repository mechanism closes the residual 4-64 floor.
@@ -240,6 +241,10 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
 
 ```bash
 uv sync && make build   # maturin develop --release into the env that actually imports it
+make fastpath-build # isolated patched-msgspec build; asserts the capsule backend is active
+make fastpath-check # lint/typecheck/Rust tests + Python tests/corpus through that build
+make fastpath-bench # same-binary capsule-vs-fallback measurement
+make fastpath-gates # normal typed G3/G4 ladder; currently fails G4 at 4-64
 make check        # lint (ruff, rustfmt, clippy -D warnings, both feature sets) + mypy + tests
 make g2           # instrumented build in .venv-g2: the G2 proof and its artifact
 make guard        # build the gate baseline (latest release) into .venv-guard

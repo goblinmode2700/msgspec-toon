@@ -206,6 +206,8 @@ The versioned-capsule shot is now implemented and validated as two preserved com
 production-quality path acquires strong references under object critical sections and was
 tested on CPython 3.14t with the GIL disabled. It improves Struct encode by 14-22% over the
 attribute fallback and beats `to_builtins` at 512 and 4096 records, but not at 4-64. Main
-does not activate it: the exact stock `msgspec==0.21.1` pin has no capsule. The next external
-action is upstream review of the preserved patch; the remaining small-payload floor still
-has no in-repository mechanism.
+contains the optional consumer, while the exact stock `msgspec==0.21.1` pin continues to
+select public attribute access. `make fastpath-build` creates a separate, hash-pinned
+patched-msgspec environment and fails unless the capsule path activates. Published wheels
+remain stock-compatible; the next external action is upstream review of the preserved
+patch, and the remaining small-payload floor still has no in-repository mechanism.
