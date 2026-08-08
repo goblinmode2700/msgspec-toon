@@ -1,0 +1,207 @@
+# msgspec-toon
+
+`msgspec-toon` is a native TOON 4.1 codec for Python. It decodes TOON text
+directly into `msgspec.Struct` objects. It does not build an intermediate
+`dict` and `list` tree.
+
+Use it when tabular data must fit in a language model context window, but the
+application still needs typed Python objects and fast in-process conversion.
+
+> This is a beta release. The project passes the pinned TOON 4.1.1 corpus, but
+> it does not yet support every type that `msgspec.json` supports.
+
+## Install
+
+The first public beta is available from GitHub:
+
+```bash
+uv add "msgspec-toon @ git+https://github.com/goblinmode2700/msgspec-toon@v0.1.0-beta.1"
+```
+
+The package requires Python 3.13 or newer. Its only runtime dependency is the
+exact pin `msgspec==0.21.1`. Benchmark codecs and tokenizers are optional
+development dependencies. They are not installed with the library.
+
+## Decode TOON into a Struct
+
+```python
+import msgspec
+import msgspec_toon as toon
+
+
+class Metadata(msgspec.Struct, frozen=True):
+    alias: str
+    region: str
+
+
+class Worker(msgspec.Struct, frozen=True):
+    pid: int
+    provider: str
+    metadata: Metadata
+
+
+class Document(msgspec.Struct, frozen=True):
+    workers: list[Worker]
+
+
+wire = b"""workers[2]{pid,provider,metadata{alias,region}}:
+  9007199254740993,claude,worker-a,west
+  80916,claude,worker-b,east"""
+
+decoder = toon.Decoder(Document)
+document = decoder.decode(wire)
+
+assert isinstance(document, Document)
+assert document.workers[0].pid == 9007199254740993
+assert toon.encode(document) == wire
+```
+
+The parser uses the target type while it reads the input. It constructs the
+final Struct objects directly. The G2 allocation proof records zero temporary
+built-in dictionaries and lists for this path.
+
+## Read and write TOON files
+
+The codec accepts `bytes`, `bytearray`, `memoryview`, or `str`. Encoding returns
+`bytes`, so normal Python file APIs work without an adapter.
+
+```python
+from pathlib import Path
+
+import msgspec_toon as toon
+
+
+source = Path("workers.toon")
+target = Path("workers-copy.toon")
+
+decoder = toon.Decoder(Document)
+encoder = toon.Encoder()
+
+value = decoder.decode(source.read_bytes())
+target.write_bytes(encoder.encode(value))
+```
+
+The conversion itself does not open files, sockets, or subprocesses. Your
+application controls all I/O.
+
+## Use untyped values
+
+Omit `type` when you need normal Python dictionaries and lists:
+
+```python
+value = toon.decode(b"name: ada\nactive: true")
+wire = toon.encode(value)
+```
+
+The public surface follows `msgspec.json` where support exists:
+
+- `encode` and `decode`
+- reusable `Encoder` and `Decoder`
+- `enc_hook` and `dec_hook`
+- strict decoding by default
+- msgspec-compatible encode, decode, and validation errors
+
+TOON wire options are explicit:
+
+```python
+toon.encode(value, delimiter="\t", indent=1)
+toon.decode(wire, indent_size=1)
+```
+
+## Why not wrap another TOON codec?
+
+A wrapper must first convert a Struct into built-in containers. Typed decode
+must parse a built-in tree and then call `msgspec.convert`. Those extra trees
+can cost more than the codec work.
+
+| Project | Format target | Typed msgspec path | Integration model |
+|---|---|---|---|
+| **msgspec-toon** | TOON 4.1.1 corpus | Direct Struct encode and decode | Native, in process |
+| [`toon-rust`](https://github.com/toon-format/toon-rust) | TOON 3.0 | No Python msgspec path | Rust library and CLI |
+| `toons` 0.7.0 | Earlier TOON grammar | Built-in tree | Python Rust extension |
+| `python-toon` 0.1.3 | Earlier TOON grammar | `to_builtins` / `convert` | Pure Python and CLI |
+
+TOON 4 nested field groups are important. They let a uniform nested record use
+one tabular header:
+
+```text
+workers[2]{pid,provider,metadata{alias,region}}:
+  20324,claude,worker-a,west
+  80916,claude,worker-b,east
+```
+
+Older encoders can fall back to a larger entry form for the same data.
+
+## Tokens and speed
+
+![Speed and token quadrant](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/v0.1.0-beta.1/docs/assets/benchmarks/efficiency-quadrant.png)
+
+The generated [benchmark report](BENCHMARKS.md) publishes both axes:
+
+- conversion speed against the measured TOON alternatives;
+- token count against compact JSON under tiktoken `o200k_base`.
+
+Uniform nested records land in the faster-and-fewer-tokens quadrant. Irregular
+documents do not. Canonical TOON costs more tokens than compact JSON for the
+measured irregular shapes, so the report keeps those losing points visible.
+
+All timing rows come from one session and one release build. The estimator is
+the mean across ten independent worker processes. It never reports the minimum.
+The raw evidence is in [`conformance/report.json`](conformance/report.json).
+
+## Conformance and safety
+
+- All 538 pinned TOON 4.1.1 fixtures pass in both directions.
+- Typed decode creates no intermediate built-in container tree.
+- Integers keep Python precision and do not route through `float`.
+- Errors contain coordinates and static messages, never input payload text.
+- Malformed input must return an error. It must not panic or terminate Python.
+- Canonical output is byte-locked by tests.
+
+The generated support matrix in `conformance/report.json` lists supported,
+rejected, and not-yet-supported msgspec features. Unsupported behavior fails
+clearly. It does not silently return a different value.
+
+## Optional msgspec Struct fast path
+
+The stock package reads Struct fields through msgspec's public Python
+attributes. This is the compatible path for `msgspec==0.21.1`.
+
+The repository also contains a versioned Struct-access capsule proposal for
+msgspec. You can build the same codec against that patch in an isolated
+environment:
+
+```bash
+make fastpath-build
+make fastpath-check
+make fastpath-bench
+.venv-fastpath/bin/python
+```
+
+This workflow fetches a hash-pinned msgspec commit, applies the preserved patch,
+and builds both release wheels. It does not modify the normal `.venv`. The build
+fails unless the capsule path is active. Published wheels do not depend on the
+unreleased API.
+
+## Develop and reproduce
+
+Use `uv` for all Python environment work:
+
+```bash
+uv sync --locked                         # library and developer tools
+make build                              # release extension in .venv
+make check                              # Rust and Python checks
+uv run python conformance/run.py        # pinned 538-fixture corpus
+make g2                                 # allocation proof in a separate build
+
+uv sync --group bench --locked           # opt in to benchmark packages
+make bench                              # same-run codec and typed ladders
+make public-report                      # raw JSON, R charts, and BENCHMARKS.md
+```
+
+`make public-report` uses the host `Rscript`, `ggplot2`, `jsonlite`, and
+`scales`. It does not install R or add R packages to the Python environment.
+
+## License
+
+[MIT](LICENSE)

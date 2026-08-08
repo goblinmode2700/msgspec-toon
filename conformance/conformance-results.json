@@ -1,0 +1,5409 @@
+{
+  "summary": {
+    "corpus": {
+      "tag": "v4.1.1",
+      "commit": "62f16b369408180f1faf1cba7da1b46d1f336f12",
+      "tree_sha256": "fab1b09695cea627bb6f2f5791dd930023fb65c1d5ddae268dd006506f612c81",
+      "total_tests": 538
+    },
+    "decode": {
+      "total": 359,
+      "pass": 359,
+      "fail": 0,
+      "unsupported_option": 0,
+      "fail_nonstrict_only": 0
+    },
+    "encode": {
+      "total": 179,
+      "pass": 179,
+      "fail": 0,
+      "unsupported_option": 0
+    },
+    "strict_error_fixtures": {
+      "total": 84,
+      "pass": 84
+    }
+  },
+  "results": [
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 0,
+      "name": "parses list arrays for non-uniform objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 1,
+      "name": "parses list arrays with empty items",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 2,
+      "name": "parses list arrays with deeply nested objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 3,
+      "name": "parses list arrays containing objects with nested properties",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 4,
+      "name": "parses list items whose first field is a tabular array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 5,
+      "name": "parses single-field list-item object with tabular array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 6,
+      "name": "parses objects containing arrays (including empty arrays) in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 7,
+      "name": "parses arrays of arrays within objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 8,
+      "name": "parses nested arrays of primitives",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 9,
+      "name": "parses quoted strings and mixed lengths in nested arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 10,
+      "name": "parses empty inner arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 11,
+      "name": "parses mixed-length inner arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 12,
+      "name": "parses root-level primitive array inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 13,
+      "name": "parses root-level array of uniform objects in tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 14,
+      "name": "parses root-level array of non-uniform objects in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 15,
+      "name": "parses root-level array mixing primitive, object, and array of objects in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 16,
+      "name": "parses root-level array of arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 17,
+      "name": "parses empty root-level array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 18,
+      "name": "parses complex mixed object with arrays and nested objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 19,
+      "name": "parses arrays mixing primitives, objects, and strings in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 20,
+      "name": "parses arrays mixing objects and arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 21,
+      "name": "parses quoted key with list-form array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 22,
+      "name": "accepts bare bracket pair as empty inner array list item",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 23,
+      "name": "keeps every list item when the count mismatches in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-nested.json",
+      "index": 24,
+      "name": "throws on a non-list-item line at item depth",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 0,
+      "name": "parses string arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 1,
+      "name": "parses number arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 2,
+      "name": "parses mixed primitive arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 3,
+      "name": "parses empty arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 4,
+      "name": "parses single-item array with empty string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 5,
+      "name": "parses multi-item array with empty string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 6,
+      "name": "parses whitespace-only strings in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 7,
+      "name": "parses strings with delimiters in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 8,
+      "name": "parses strings that look like primitives when quoted",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 9,
+      "name": "parses strings with structural tokens in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 10,
+      "name": "parses quoted key with inline array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 11,
+      "name": "parses quoted empty string key with inline array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 12,
+      "name": "parses quoted key containing brackets with inline array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 13,
+      "name": "parses quoted key containing a colon with inline array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 14,
+      "name": "parses quoted key with empty array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 15,
+      "name": "parses quoted empty string key with empty array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 16,
+      "name": "decodes canonical empty array key: []",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 17,
+      "name": "decodes canonical empty array with quoted key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-primitive.json",
+      "index": 18,
+      "name": "decodes canonical empty array with empty-string key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 0,
+      "name": "parses tabular arrays of uniform objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 1,
+      "name": "parses nulls and quoted values in tabular rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 2,
+      "name": "parses quoted colon in tabular row as data",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 3,
+      "name": "parses quoted header keys in tabular arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 4,
+      "name": "parses quoted key with tabular array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 5,
+      "name": "parses quoted empty string key with tabular array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 6,
+      "name": "terminates a tabular scope at a dedented key-value line",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 7,
+      "name": "treats a key-value line at header depth whose value contains the active delimiter as end of rows, not a row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 8,
+      "name": "parses nested field groups into nested objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 9,
+      "name": "parses sibling nested field groups by depth-first cell assignment",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 10,
+      "name": "parses nested field groups recursively without a depth cap",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 11,
+      "name": "parses nested field groups with the pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 12,
+      "name": "matches braces outside quoted names only when parsing field entries",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 13,
+      "name": "parses quoted subfield names inside nested field groups",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 14,
+      "name": "applies LWW for duplicate field names in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 15,
+      "name": "applies LWW when a bare field and a nested group share a name in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 16,
+      "name": "accepts a field name outside the encoder unquoted-key pattern",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "arrays-tabular.json",
+      "index": 17,
+      "name": "keeps every row when the count mismatches in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 0,
+      "name": "throws on blank line inside list array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 1,
+      "name": "throws on blank line inside tabular array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 2,
+      "name": "throws on blank line between keyed entry rows",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 3,
+      "name": "throws on multiple blank lines inside array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 4,
+      "name": "throws on blank line with spaces inside array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 5,
+      "name": "throws on blank line in nested list array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 6,
+      "name": "accepts blank line between root-level fields",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 7,
+      "name": "accepts whitespace-only line at non-multiple indent as blank in strict mode",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 8,
+      "name": "accepts trailing newline at end of file",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 9,
+      "name": "accepts multiple trailing newlines",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 10,
+      "name": "accepts blank line after array ends",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 11,
+      "name": "accepts blank line between nested object fields",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 12,
+      "name": "ignores blank lines inside list array when strict=false",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 13,
+      "name": "ignores blank lines inside tabular array when strict=false",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 14,
+      "name": "ignores multiple blank lines in arrays when strict=false",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 15,
+      "name": "throws on blank line between list items after nested tabular rows",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 16,
+      "name": "throws on blank line between a list item's fields",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 17,
+      "name": "throws on blank line inside the last list item's fields",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 18,
+      "name": "accepts blank line between header and first list item",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 19,
+      "name": "accepts blank line between header and first tabular row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "blank-lines.json",
+      "index": 20,
+      "name": "accepts blank line between header and first entry row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 0,
+      "name": "strips comment line between tabular rows without terminating rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 1,
+      "name": "strips comment line between header and first row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 2,
+      "name": "strips comment line whose indentation is not a multiple of indentSize",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 3,
+      "name": "strips outdented comment inside nested object scope without closing it",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 4,
+      "name": "strips comment inside list array without counting as item",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 5,
+      "name": "strips comment before root array header",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 6,
+      "name": "strips comment containing an unterminated quote without unescaping",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 7,
+      "name": "decodes document of only comments to empty object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 8,
+      "name": "decodes comments and blank lines only to empty object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 9,
+      "name": "decodes a hash-leading root line as a comment, yielding an empty object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 10,
+      "name": "throws when a stripped hash-leading row breaks the declared count",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 11,
+      "name": "drops hash-leading row silently in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 12,
+      "name": "throws on tab-indented hash line, which is not a comment",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 13,
+      "name": "decodes tab-indented hash row as data in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 14,
+      "name": "parses quoted hash-leading first cell as data, not comment",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 15,
+      "name": "parses hyphen list item with hash-leading token as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 16,
+      "name": "parses hash after key-value colon as string value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 17,
+      "name": "parses hash mid-value as data, not a trailing comment",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "comments.json",
+      "index": 18,
+      "name": "round-trips quoted hash-leading values in field and inline array positions",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 0,
+      "name": "parses primitive arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 1,
+      "name": "parses primitive arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 2,
+      "name": "parses tabular arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 3,
+      "name": "parses tabular arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 4,
+      "name": "parses nested arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 5,
+      "name": "parses nested arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 6,
+      "name": "parses nested arrays inside list items with default comma delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 7,
+      "name": "parses nested arrays inside list items with default comma delimiter when parent uses pipe",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 8,
+      "name": "parses root-level array with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 9,
+      "name": "parses root-level array with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 10,
+      "name": "parses root-level array of objects with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 11,
+      "name": "parses root-level array of objects with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 12,
+      "name": "parses values containing tab delimiter when quoted",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 13,
+      "name": "parses values containing pipe delimiter when quoted",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 14,
+      "name": "does not split on commas when using tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 15,
+      "name": "does not split on commas when using pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 16,
+      "name": "parses tabular values containing comma with comma delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 17,
+      "name": "does not require quoting commas with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 18,
+      "name": "does not require quoting commas in object values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 19,
+      "name": "does not split object values on commas inside a tab-delimited scope",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 20,
+      "name": "parses quoted comma in object values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 21,
+      "name": "parses nested array values containing pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 22,
+      "name": "parses nested array values containing tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 23,
+      "name": "preserves quoted ambiguity with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 24,
+      "name": "preserves quoted ambiguity with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 25,
+      "name": "parses structural-looking strings when quoted with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 26,
+      "name": "parses structural-looking strings when quoted with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 27,
+      "name": "parses tabular headers with keys containing the active delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "delimiters.json",
+      "index": 28,
+      "name": "falls through to a key-value line on a header delimiter mismatch",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 0,
+      "name": "throws on object field with non-multiple indentation (3 spaces with indentSize 2)",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 1,
+      "name": "throws on list item with non-multiple indentation (3 spaces with indentSize 2)",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 2,
+      "name": "throws on non-multiple indentation with custom indentSize 4 (3 spaces)",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 3,
+      "name": "accepts correct indentation with custom indentSize (4 spaces with indentSize 4)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 4,
+      "name": "throws on tab character used in indentation",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 5,
+      "name": "throws on mixed tabs and spaces in indentation",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 6,
+      "name": "throws on tab at start of line",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 7,
+      "name": "accepts tabs in quoted string values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 8,
+      "name": "accepts tabs in quoted keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 9,
+      "name": "accepts tabs in quoted array elements",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 10,
+      "name": "accepts non-multiple indentation when strict=false",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 11,
+      "name": "accepts deeply nested non-multiples when strict=false",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 12,
+      "name": "throws on depth jump of more than one level",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 13,
+      "name": "throws on depth jump inside a nested object",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 14,
+      "name": "throws on over-indented line after a primitive field",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 15,
+      "name": "throws on a line indented one level under a primitive field",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 16,
+      "name": "throws on over-indented line inside a nested object",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 17,
+      "name": "throws on over-indented line after tabular rows",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "indentation-errors.json",
+      "index": 18,
+      "name": "throws on orphan scalar line under a primitive field",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 0,
+      "name": "parses number with trailing zeros in fractional part",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 1,
+      "name": "parses negative number with positive exponent",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 2,
+      "name": "parses lowercase exponent",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 3,
+      "name": "parses uppercase exponent with negative sign",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 4,
+      "name": "parses negative zero as zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 5,
+      "name": "parses negative zero with fractional part",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 6,
+      "name": "parses array with mixed numeric forms",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 7,
+      "name": "treats leading zero as string not number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 8,
+      "name": "parses very small exponent",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 9,
+      "name": "parses integer with positive exponent",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 10,
+      "name": "parses zero with exponent as number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 11,
+      "name": "parses negative zero with exponent as number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 12,
+      "name": "parses exponent notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 13,
+      "name": "parses exponent notation with uppercase E",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 14,
+      "name": "parses negative exponent notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 15,
+      "name": "treats unquoted leading-zero number as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 16,
+      "name": "treats unquoted multi-leading-zero as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 17,
+      "name": "treats unquoted octal-like as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 18,
+      "name": "treats leading-zeros in array as strings",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 19,
+      "name": "treats unquoted negative leading-zero number as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 20,
+      "name": "treats negative leading-zeros in array as strings",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 21,
+      "name": "treats bare fraction without integer part as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 22,
+      "name": "treats integer with trailing dot as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 23,
+      "name": "treats leading-plus integer as string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 24,
+      "name": "treats leading-plus tokens in array as strings",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 25,
+      "name": "parses positive exponent sign as number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 26,
+      "name": "treats Infinity and NaN tokens as strings",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "numbers.json",
+      "index": 27,
+      "name": "treats hex and underscore-separated tokens as strings",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 0,
+      "name": "parses keyed tabular objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 1,
+      "name": "parses a keyless keyed header as a root object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 2,
+      "name": "parses nested field groups in keyed headers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 3,
+      "name": "parses keyed headers with the pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 4,
+      "name": "parses keyed headers with the tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 5,
+      "name": "parses quoted entry keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 6,
+      "name": "parses a quoted entry key containing a colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 7,
+      "name": "treats a key-value line at the header's depth as a sibling after entries end",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 8,
+      "name": "treats key-value-shaped lines at entry depth as entry rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 9,
+      "name": "splits an entry row at its first unquoted colon before delimiter splitting",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 10,
+      "name": "decodes the cell token [] as a string, not an empty array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 11,
+      "name": "accepts a declared entry count of zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 12,
+      "name": "accepts a single entry row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 13,
+      "name": "parses quoted cells containing the active delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 14,
+      "name": "parses a keyed header on a hyphen line",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 15,
+      "name": "ignores comment lines between entry rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 16,
+      "name": "applies LWW for duplicate entry keys in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 17,
+      "name": "accepts entry keys outside the encoder unquoted-key pattern",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects-keyed.json",
+      "index": 18,
+      "name": "skips an entry-depth line without a colon in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 0,
+      "name": "parses objects with primitive values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 1,
+      "name": "parses null values in objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 2,
+      "name": "parses empty nested object header",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 3,
+      "name": "bare key: with no children decodes as empty object, not array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 4,
+      "name": "applies last-write-wins for duplicate sibling keys in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 5,
+      "name": "parses quoted object value with colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 6,
+      "name": "parses quoted object value with comma",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 7,
+      "name": "parses quoted object value with newline escape",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 8,
+      "name": "parses quoted object value with escaped quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 9,
+      "name": "parses quoted object value with leading/trailing spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 10,
+      "name": "parses quoted object value with only spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 11,
+      "name": "parses quoted string value that looks like true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 12,
+      "name": "parses quoted string value that looks like integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 13,
+      "name": "parses quoted string value that looks like negative decimal",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 14,
+      "name": "parses quoted object value shaped like an inline array header",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 15,
+      "name": "parses quoted object value shaped like a count-matching inline array header",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 16,
+      "name": "parses unquoted value shaped like an inline array header after the key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 17,
+      "name": "parses unquoted value shaped like a tabular array header after the key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 18,
+      "name": "parses quoted object value with bracket text and a later colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 19,
+      "name": "parses quoted key with colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 20,
+      "name": "decodes \\uXXXX in quoted key (U+0004 control character)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 21,
+      "name": "decodes \\uXXXX in quoted key (case-insensitive hex)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 22,
+      "name": "parses quoted key with brackets",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 23,
+      "name": "treats extra brackets after valid array segment as literal key (non-strict)",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 24,
+      "name": "treats bracket segment without a length as literal key (non-strict)",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 25,
+      "name": "treats non-integer bracket content as literal key (non-strict)",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 26,
+      "name": "treats text between bracket segment and colon as literal key (non-strict)",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 27,
+      "name": "parses quoted key with braces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 28,
+      "name": "parses quoted key with comma",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 29,
+      "name": "parses quoted key with spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 30,
+      "name": "parses quoted key with leading hyphen",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 31,
+      "name": "parses quoted key with leading and trailing spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 32,
+      "name": "parses quoted numeric key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 33,
+      "name": "parses quoted empty string key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 34,
+      "name": "parses dotted keys as identifiers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 35,
+      "name": "parses underscore-prefixed keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 36,
+      "name": "parses underscore-containing keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 37,
+      "name": "unescapes newline in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 38,
+      "name": "unescapes tab in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 39,
+      "name": "unescapes tab in key immediately followed by a colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 40,
+      "name": "unescapes quotes in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 41,
+      "name": "parses deeply nested objects with indentation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 42,
+      "name": "applies LWW for nested duplicate sibling keys in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 43,
+      "name": "applies LWW for duplicate keys within a list-item object in non-strict mode",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 44,
+      "name": "accepts unquoted key outside the encoder key pattern (hyphen)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 45,
+      "name": "accepts unquoted key outside the encoder key pattern (leading digit)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 46,
+      "name": "accepts unquoted hyphen-leading value in strict mode",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 47,
+      "name": "accepts unquoted colon-containing value in strict mode",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 48,
+      "name": "materializes __proto__ as an ordinary own key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 49,
+      "name": "materializes constructor and prototype as ordinary own keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 50,
+      "name": "materializes __proto__ opening a nested object as an ordinary own key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 51,
+      "name": "materializes quoted __proto__ key as an ordinary own key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 52,
+      "name": "materializes __proto__ tabular field name as ordinary own keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 53,
+      "name": "falls through to a key-value line when whitespace precedes the bracket segment",
+      "strict": false,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "objects.json",
+      "index": 54,
+      "name": "accepts a header key outside the encoder unquoted-key pattern",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 0,
+      "name": "parses safe unquoted string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 1,
+      "name": "parses unquoted string with underscore and numbers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 2,
+      "name": "parses empty quoted string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 3,
+      "name": "parses quoted string with newline escape",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 4,
+      "name": "parses quoted string with tab escape",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 5,
+      "name": "parses quoted string with carriage return escape",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 6,
+      "name": "parses quoted string with backslash escape",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 7,
+      "name": "parses quoted string with escaped quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 8,
+      "name": "decodes \\uXXXX escape (U+0004)",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 9,
+      "name": "decodes \\uXXXX with mixed-case hex digits",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 10,
+      "name": "parses Unicode string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 11,
+      "name": "parses Chinese characters",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 12,
+      "name": "parses emoji",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 13,
+      "name": "parses string with emoji and spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 14,
+      "name": "parses positive integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 15,
+      "name": "parses decimal number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 16,
+      "name": "parses negative integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 17,
+      "name": "parses true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 18,
+      "name": "parses false",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 19,
+      "name": "parses null",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 20,
+      "name": "respects ambiguity quoting for true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 21,
+      "name": "respects ambiguity quoting for false",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 22,
+      "name": "respects ambiguity quoting for null",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 23,
+      "name": "respects ambiguity quoting for integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 24,
+      "name": "respects ambiguity quoting for negative decimal",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 25,
+      "name": "respects ambiguity quoting for scientific notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 26,
+      "name": "respects ambiguity quoting for leading-zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "primitives.json",
+      "index": 27,
+      "name": "decodes supplementary scalar (U+1F680) in quoted string as literal UTF-8",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 0,
+      "name": "parses empty document as empty object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 1,
+      "name": "parses single primitive string at root as primitive",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 2,
+      "name": "parses single primitive number at root as primitive",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 3,
+      "name": "parses single primitive boolean at root as primitive",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 4,
+      "name": "parses literal [] at root as empty array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 5,
+      "name": "throws on trailing content after a root array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 6,
+      "name": "throws on trailing content after a keyed tabular root",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "root-form.json",
+      "index": 7,
+      "name": "throws on trailing content after a root empty array",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 0,
+      "name": "throws when inline values outnumber the declared length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 1,
+      "name": "throws when list items outnumber the declared length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 2,
+      "name": "throws on tabular row value count mismatch with header field count",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 3,
+      "name": "throws on tabular row count mismatch with header length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 4,
+      "name": "throws on invalid escape sequence",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 5,
+      "name": "throws on truncated unicode escape \\u00b",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 6,
+      "name": "throws on lone surrogate code point \\uD800",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 7,
+      "name": "throws on unterminated string",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 8,
+      "name": "throws on missing colon in key-value context",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 9,
+      "name": "throws on two primitives at root depth in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 10,
+      "name": "throws on row width mismatch when rows use a different delimiter than the active delimiter",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 11,
+      "name": "throws on mismatched delimiter between bracket and brace fields",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 12,
+      "name": "throws on extra brackets between bracket segment and colon in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 13,
+      "name": "throws on text between bracket segment and colon in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 14,
+      "name": "throws on non-integer bracket segment in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 15,
+      "name": "throws on duplicate sibling keys in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 16,
+      "name": "throws on array header missing colon",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 17,
+      "name": "throws when inline values fall short of the declared length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 18,
+      "name": "throws when list items fall short of the declared length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 19,
+      "name": "throws on bracket length with leading zeros in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 20,
+      "name": "throws on negative bracket length in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 21,
+      "name": "throws on decimal bracket length in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 22,
+      "name": "throws on bracket length with plus sign in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 23,
+      "name": "throws on bracket length in exponent form in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 24,
+      "name": "throws on whitespace between bracket segment and colon in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 25,
+      "name": "throws on whitespace between bracket segment and field list in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 26,
+      "name": "throws on nested duplicate sibling keys in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 27,
+      "name": "throws on duplicate keys within a list-item object in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 28,
+      "name": "throws on bracket segment without a length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 29,
+      "name": "throws on row cell count not matching the leaf-field count",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 30,
+      "name": "throws on empty field list in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 31,
+      "name": "throws on empty nested field group in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 32,
+      "name": "throws on unmatched brace in field list in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 33,
+      "name": "throws on duplicate field names at the same field-list level in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 34,
+      "name": "throws on entry row count mismatch with keyed header length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 35,
+      "name": "throws on entry row cell count not matching the leaf-field count",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 36,
+      "name": "throws on an entry row with no cells after the entry key",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 37,
+      "name": "throws on keyed header without a field list in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 38,
+      "name": "throws on keyed marker after the delimiter symbol in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 39,
+      "name": "throws on keyed marker with leading-zero length in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 40,
+      "name": "throws on whitespace before the keyed marker in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 41,
+      "name": "throws on explicit comma delimiter after the keyed marker in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 42,
+      "name": "throws on inline content after a keyed header colon in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 43,
+      "name": "throws on a line without an unquoted colon at entry depth in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 44,
+      "name": "throws on duplicate entry keys in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 45,
+      "name": "throws on a keyless keyed header as a list item in strict mode",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 46,
+      "name": "throws on inner array item count not matching its declared length",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 47,
+      "name": "throws on keyless array header in object field position",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 48,
+      "name": "throws on keyless array header after a depth-0 field",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 49,
+      "name": "throws on keyless fields-bearing header as list item",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 50,
+      "name": "throws on inline content after tabular header",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 51,
+      "name": "throws on inline content after root tabular header",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 52,
+      "name": "throws on whitespace between a key and its bracket segment",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 53,
+      "name": "throws on duplicate field names in a zero-row tabular header",
+      "strict": true,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 54,
+      "name": "throws on characters after a closing quote in non-strict mode",
+      "strict": false,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "validation-errors.json",
+      "index": 55,
+      "name": "throws on a bare token line inside an array scope in non-strict mode",
+      "strict": false,
+      "should_error": true,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 0,
+      "name": "tolerates spaces around commas in inline arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 1,
+      "name": "tolerates spaces around pipes in inline arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 2,
+      "name": "tolerates spaces around tabs in inline arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 3,
+      "name": "tolerates leading and trailing spaces in tabular row values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 4,
+      "name": "tolerates spaces around delimiters with quoted values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 5,
+      "name": "parses empty tokens as empty string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 6,
+      "name": "preserves NBSP-leading unquoted value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 7,
+      "name": "preserves NBSP around inline array tokens",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 8,
+      "name": "decodes CRLF line terminators",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 9,
+      "name": "decodes tabular rows with CRLF line terminators",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 10,
+      "name": "keeps an escaped carriage return inside a quoted value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 11,
+      "name": "treats a carriage-return-only line as blank",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 12,
+      "name": "strips a trailing carriage return at end of input",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 13,
+      "name": "strips a leading byte-order mark",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "decode",
+      "file": "whitespace.json",
+      "index": 14,
+      "name": "treats a hyphen followed by trailing spaces as the bare marker",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 0,
+      "name": "encodes nested arrays of primitives",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 1,
+      "name": "quotes strings containing delimiters in nested arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 2,
+      "name": "encodes empty inner arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 3,
+      "name": "encodes mixed-length inner arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 4,
+      "name": "encodes root-level primitive array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 5,
+      "name": "encodes root-level array of uniform objects in tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 6,
+      "name": "encodes root-level array of non-uniform objects in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 7,
+      "name": "encodes root-level array mixing primitive, object, and array of objects in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 8,
+      "name": "encodes root-level arrays of arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 9,
+      "name": "encodes empty root-level array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 10,
+      "name": "encodes complex nested structure",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 11,
+      "name": "uses list form for arrays mixing primitives and objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 12,
+      "name": "uses list form for arrays mixing objects and arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 13,
+      "name": "quotes hash-leading string as list item",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-nested.json",
+      "index": 14,
+      "name": "uses list form for a tabular-eligible array in list-item position",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 0,
+      "name": "uses list form for objects with different fields",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 1,
+      "name": "uses list form for objects with nested values",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 2,
+      "name": "preserves field order in list items - array first",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 3,
+      "name": "preserves field order in list items - primitive first",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 4,
+      "name": "uses list form for objects containing arrays of arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 5,
+      "name": "uses tabular form for nested uniform object arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 6,
+      "name": "uses list form for nested object arrays with mismatched keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 7,
+      "name": "uses list form for objects with multiple array fields",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 8,
+      "name": "uses list form for objects with only array fields",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 9,
+      "name": "encodes objects with empty arrays in list form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 10,
+      "name": "uses canonical encoding for multi-field list-item objects with tabular arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 11,
+      "name": "uses canonical encoding for single-field list-item tabular arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 12,
+      "name": "places empty arrays on hyphen line when first",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 13,
+      "name": "encodes empty object list items as bare hyphen",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 14,
+      "name": "uses field order from first object for tabular headers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 15,
+      "name": "uses list form when one object has nested field",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 16,
+      "name": "uses list form for arrays containing empty objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-objects.json",
+      "index": 17,
+      "name": "encodes a keyed-eligible object in a tabular column as a nested field group",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 0,
+      "name": "encodes string arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 1,
+      "name": "encodes number arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 2,
+      "name": "encodes mixed primitive arrays inline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 3,
+      "name": "encodes empty arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 4,
+      "name": "encodes empty string keys for inline arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 5,
+      "name": "encodes empty string keys for empty arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 6,
+      "name": "encodes empty string in single-item array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 7,
+      "name": "encodes empty string in multi-item array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 8,
+      "name": "encodes whitespace-only strings in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 9,
+      "name": "quotes array strings with comma",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 10,
+      "name": "quotes strings that look like booleans in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 11,
+      "name": "quotes strings with structural meanings in arrays",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-primitive.json",
+      "index": 12,
+      "name": "quotes hash-leading string in inline array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 0,
+      "name": "encodes arrays of uniform objects in tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 1,
+      "name": "encodes null values in tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 2,
+      "name": "quotes strings containing delimiters in tabular rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 3,
+      "name": "quotes ambiguous strings in tabular rows",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 4,
+      "name": "encodes tabular arrays with keys needing quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 5,
+      "name": "encodes tabular arrays with empty string keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 6,
+      "name": "quotes hash-leading string in tabular cell",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 7,
+      "name": "collapses a uniform nested object column into a nested field group",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 8,
+      "name": "collapses sibling nested field groups with depth-first row layout",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 9,
+      "name": "collapses nested field groups recursively without a depth cap",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 10,
+      "name": "uses the active delimiter inside nested field groups",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 11,
+      "name": "quotes subfield names inside nested field groups per key encoding",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 12,
+      "name": "falls back to list form when nested object keys differ per row",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 13,
+      "name": "falls back to list form when a column mixes null and objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 14,
+      "name": "falls back to list form when a nested object contains an array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "arrays-tabular.json",
+      "index": 15,
+      "name": "falls back to list form when a nested column contains an empty object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 0,
+      "name": "encodes primitive arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 1,
+      "name": "encodes primitive arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 2,
+      "name": "encodes primitive arrays with comma delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 3,
+      "name": "encodes tabular arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 4,
+      "name": "encodes tabular arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 5,
+      "name": "encodes nested arrays with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 6,
+      "name": "encodes nested arrays with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 7,
+      "name": "encodes root-level array with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 8,
+      "name": "encodes root-level array with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 9,
+      "name": "encodes root-level array of objects with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 10,
+      "name": "encodes root-level array of objects with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 11,
+      "name": "quotes strings containing tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 12,
+      "name": "quotes strings containing pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 13,
+      "name": "does not quote commas with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 14,
+      "name": "does not quote commas with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 15,
+      "name": "quotes tabular values containing comma delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 16,
+      "name": "does not quote commas in tabular values with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 17,
+      "name": "does not quote commas in object values with pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 18,
+      "name": "does not quote commas in object values with tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 19,
+      "name": "quotes nested array values containing pipe delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 20,
+      "name": "quotes nested array values containing tab delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "delimiters.json",
+      "index": 21,
+      "name": "preserves ambiguity quoting regardless of delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 0,
+      "name": "encodes objects of uniform objects in keyed tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 1,
+      "name": "encodes an eligible root object with a keyless keyed header",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 2,
+      "name": "collapses uniform nested object columns inside keyed headers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 3,
+      "name": "orders fields by the first entry value's encounter order",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 4,
+      "name": "uses the active delimiter in keyed headers and entry-row cells",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 5,
+      "name": "quotes entry keys per key encoding",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 6,
+      "name": "quotes entry-row cells containing the active delimiter",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 7,
+      "name": "keeps single-entry objects in nested form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 8,
+      "name": "keeps objects in nested form when entry values have differing key sets",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 9,
+      "name": "keeps objects in nested form when a value is primitive",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 10,
+      "name": "keeps objects in nested form when an entry value contains an array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 11,
+      "name": "emits a keyed header on the hyphen line when it is the first field of a list item",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects-keyed.json",
+      "index": 12,
+      "name": "never encodes an anonymous array element in keyed tabular form",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 0,
+      "name": "preserves key order in objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 1,
+      "name": "encodes null values in objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 2,
+      "name": "encodes empty objects as empty string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 3,
+      "name": "quotes string value with colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 4,
+      "name": "quotes string value with comma",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 5,
+      "name": "quotes string value with newline",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 6,
+      "name": "quotes string value with embedded quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 7,
+      "name": "quotes string value with leading space",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 8,
+      "name": "quotes string value with only spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 9,
+      "name": "quotes string value that looks like true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 10,
+      "name": "quotes string value that looks like number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 11,
+      "name": "quotes string value that looks like negative decimal",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 12,
+      "name": "quotes key with colon",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 13,
+      "name": "quotes key with brackets",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 14,
+      "name": "quotes key with braces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 15,
+      "name": "quotes key with comma",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 16,
+      "name": "quotes key with spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 17,
+      "name": "quotes key with leading hyphen",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 18,
+      "name": "quotes key with leading and trailing spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 19,
+      "name": "quotes numeric key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 20,
+      "name": "quotes empty string key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 21,
+      "name": "quotes non-ASCII key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 22,
+      "name": "quotes CJK key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 23,
+      "name": "escapes newline in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 24,
+      "name": "escapes tab in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 25,
+      "name": "escapes quotes in key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 26,
+      "name": "escapes U+0004 control character in key via \\uXXXX",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 27,
+      "name": "escapes U+001F control character in key via \\uXXXX",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 28,
+      "name": "encodes deeply nested objects",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 29,
+      "name": "encodes empty nested object",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 30,
+      "name": "encodes __proto__ own property as an ordinary key",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 31,
+      "name": "encodes constructor and prototype own properties as ordinary keys",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 32,
+      "name": "encodes __proto__ as a tabular field name",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "objects.json",
+      "index": 33,
+      "name": "quotes hash-leading string in object field value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 0,
+      "name": "encodes safe strings without quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 1,
+      "name": "encodes safe string with underscore and numbers",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 2,
+      "name": "quotes empty string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 3,
+      "name": "quotes string that looks like true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 4,
+      "name": "quotes string that looks like false",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 5,
+      "name": "quotes string that looks like null",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 6,
+      "name": "quotes string that looks like integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 7,
+      "name": "quotes string that looks like negative decimal",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 8,
+      "name": "quotes string that looks like scientific notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 9,
+      "name": "quotes string with leading zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 10,
+      "name": "escapes newline in string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 11,
+      "name": "escapes tab in string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 12,
+      "name": "escapes carriage return in string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 13,
+      "name": "encodes string with U+0004 control character via \\uXXXX",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 14,
+      "name": "escapes backslash in string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 15,
+      "name": "quotes string with array-like syntax",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 16,
+      "name": "quotes string starting with hyphen-space",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 17,
+      "name": "quotes single hyphen as object value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 18,
+      "name": "quotes string starting with hyphen as object value",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 19,
+      "name": "quotes single hyphen in array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 20,
+      "name": "quotes leading-hyphen string in array",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 21,
+      "name": "quotes string with bracket notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 22,
+      "name": "quotes string with brace notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 23,
+      "name": "encodes Unicode string without quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 24,
+      "name": "encodes Chinese characters without quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 25,
+      "name": "encodes emoji without quotes",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 26,
+      "name": "encodes string with emoji and spaces",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 27,
+      "name": "encodes emoji inside a quoted string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 28,
+      "name": "encodes positive integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 29,
+      "name": "encodes decimal number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 30,
+      "name": "encodes negative integer",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 31,
+      "name": "encodes zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 32,
+      "name": "encodes negative zero as zero",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 33,
+      "name": "encodes large integer without exponent notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 34,
+      "name": "encodes small decimal without exponent notation",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 35,
+      "name": "encodes large number",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 36,
+      "name": "encodes MAX_SAFE_INTEGER",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 37,
+      "name": "encodes repeating decimal with full precision",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 38,
+      "name": "encodes true",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 39,
+      "name": "encodes false",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 40,
+      "name": "encodes null",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 41,
+      "name": "quotes leading-plus numeric-like string",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 42,
+      "name": "quotes string equal to hash",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "primitives.json",
+      "index": 43,
+      "name": "quotes string starting with hash",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "whitespace.json",
+      "index": 0,
+      "name": "produces no trailing newline at end of output",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "whitespace.json",
+      "index": 1,
+      "name": "maintains proper indentation for nested structures",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "whitespace.json",
+      "index": 2,
+      "name": "respects custom indentSize option",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "category": "encode",
+      "file": "whitespace.json",
+      "index": 3,
+      "name": "leaves non-ASCII whitespace unquoted",
+      "strict": true,
+      "should_error": false,
+      "status": "pass",
+      "detail": ""
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Python containers are born in exactly one module (`src/containers.rs`), which
+# is what makes the G2 zero an independent statement about the codec instead of
+# a statement about one consumer's call sites. These lints are the enforcement:
+# a new `PyDict::new` anywhere else fails the build rather than silently opening
+# a hole in the proof. The membrane's own constructors carry a local allow.
+disallowed-methods = [
+  { path = "pyo3::types::PyDict::new", reason = "build it through src/containers.rs so the G2 counters see it" },
+  { path = "pyo3::types::PyList::new", reason = "build it through src/containers.rs so the G2 counters see it" },
+  { path = "pyo3::types::PyList::empty", reason = "build it through src/containers.rs so the G2 counters see it" },
+  { path = "pyo3::types::PyTuple::new", reason = "build it through src/containers.rs so the G2 counters see it" },
+  { path = "pyo3::types::PyTuple::empty", reason = "build it through src/containers.rs so the G2 counters see it" },
+]

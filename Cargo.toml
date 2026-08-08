@@ -1,0 +1,53 @@
+[package]
+name = "msgspec-toon-native"
+version = "0.1.0-beta.1"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+description = "Native TOON 4.1 codec for msgspec"
+repository = "https://github.com/goblinmode2700/msgspec-toon"
+homepage = "https://github.com/goblinmode2700/msgspec-toon"
+documentation = "https://github.com/goblinmode2700/msgspec-toon#readme"
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/LICENSE",
+    "/README.md",
+    "/pyproject.toml",
+    "/python/**",
+    "!/python/**/*.so",
+    "!/python/**/__pycache__/**",
+    "!/python/**/*.pyc",
+    "/src/**",
+]
+
+[lib]
+name = "_native"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Cooldown pin: 0.29.1 and 0.29.2 are younger than 14 days at lock time.
+# Cargo has no exclude-newer equivalent; `make audit` enforces the window
+# against Cargo.lock and says when the pin is eligible to lift.
+pyo3 = { version = "=0.29.0", features = ["abi3-py313"] }
+itoa = "1.0"
+memchr = "2.7"
+ryu = "1.0"
+smallvec = "1.15"
+rustc-hash = "2.1.3"
+
+[features]
+default = []
+extension-module = ["pyo3/extension-module"]
+# Test-only allocation counters for the G2 proof (`make g2`). Never enabled in
+# a released or benchmarked wheel: instrumentation must not appear in a timing.
+alloc-stats = []
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[profile.bench]
+inherits = "release"
+debug = true

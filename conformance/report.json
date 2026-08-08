@@ -1,0 +1,1983 @@
+{
+  "generated_at": "2026-08-08T09:23:32.631591+00:00",
+  "distribution": "msgspec-toon 0.1.0b1",
+  "environment": {
+    "python": "3.13.1",
+    "msgspec": "0.21.1",
+    "platform": "macOS-15.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "measured_versions": {
+    "msgspec-toon": "0.1.0b1",
+    "msgspec": "0.21.1",
+    "python-toon": "0.1.3",
+    "toons": "0.7.0",
+    "python": "3.13.1"
+  },
+  "timing_methodology": "estimator: mean-across-workers \u2014 the loop count is calibrated once, then 10 independent worker processes each discard their first sample as a warmup and report the mean of 3 samples; the published figure is the mean across workers, with the standard deviation across workers alongside it. The minimum is deliberately not used: it reports the best case the machine ever reached, not what a caller sees",
+  "evidence_methodology": {
+    "estimator": "mean-across-workers",
+    "workers": 10,
+    "samples_per_worker": 3,
+    "warmup": "each worker discards its own first sample; the calibration worker's samples are discarded entirely",
+    "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
+    "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
+    "minimum_detectable_effect": "performance changes use the separate same-session A/B gate; a change smaller than its measured resolution is not claimed as a win",
+    "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
+    "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py"
+  },
+  "conformance": {
+    "spec_version_target": "4.1.1",
+    "fixture_commit": "62f16b369408180f1faf1cba7da1b46d1f336f12",
+    "fixture_tag": "v4.1.1",
+    "fixture_tree_sha256": "fab1b09695cea627bb6f2f5791dd930023fb65c1d5ddae268dd006506f612c81",
+    "total_tests": 538,
+    "decode": {
+      "total": 359,
+      "pass": 359,
+      "fail": 0,
+      "unsupported_option": 0,
+      "fail_nonstrict_only": 0
+    },
+    "encode": {
+      "total": 179,
+      "pass": 179,
+      "fail": 0,
+      "unsupported_option": 0
+    },
+    "strict_error_fixtures": {
+      "total": 84,
+      "pass": 84
+    },
+    "declared_divergences": {
+      "count": 0,
+      "kind": "none expected: the spec-defined wire options (delimiter, indentSize) are applied from fixture options; any entry here is a regression",
+      "tests": []
+    }
+  },
+  "allocation_proof": {
+    "payload_records": 64,
+    "build": "alloc-stats (instrumented; never the benchmarked wheel)",
+    "counter_semantics": {
+      "builtin_dicts": "dict built by the untyped builder",
+      "builtin_lists": "list built by the untyped builder",
+      "final_lists": "list or tuple the target type declared",
+      "final_dicts": "dict the target type declared",
+      "final_structs": "Struct instance constructed by the typed consumer"
+    },
+    "typed": {
+      "builtin_dicts": 0,
+      "builtin_lists": 0,
+      "final_lists": 1,
+      "final_dicts": 0,
+      "final_structs": 129
+    },
+    "wrapper": {
+      "builtin_dicts": 129,
+      "builtin_lists": 1,
+      "final_lists": 0,
+      "final_dicts": 0,
+      "final_structs": 0
+    },
+    "gate_G2_zero_builtin_containers": true,
+    "probe_observed_the_typed_path": true,
+    "note": "An `Any` field asks for a builtin tree; containers inside an `Any` subtree are requested output and are not a G2 violation. See tests/test_typed_allocations.py for that case."
+  },
+  "support_matrix": {
+    "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
+    "reference_implementation": "msgspec 0.21.1 (msgspec.json)",
+    "counts": {
+      "supported": 12,
+      "parity_rejects": 2,
+      "unsupported": 13,
+      "silently_ignored": 0,
+      "silently_wrong": 0
+    },
+    "entries": [
+      {
+        "feature": "scalars (int, float, str, bool, null)",
+        "tier": 0,
+        "status": "supported",
+        "detail": "including integers beyond 2**53, which round-trip exactly"
+      },
+      {
+        "feature": "nested Structs in a tabular array",
+        "tier": 0,
+        "status": "supported",
+        "detail": "the challenge shape: nested field groups keep a record on one row"
+      },
+      {
+        "feature": "Optional and defaults",
+        "tier": 0,
+        "status": "supported",
+        "detail": "an omitted field takes its declared default"
+      },
+      {
+        "feature": "field renaming",
+        "tier": 0,
+        "status": "supported",
+        "detail": "rename policies are read through the plan compiler"
+      },
+      {
+        "feature": "dict[str, T]",
+        "tier": 1,
+        "status": "supported",
+        "detail": "string-keyed mappings only; see the dict[int, T] entry"
+      },
+      {
+        "feature": "variable-length tuple",
+        "tier": 1,
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "Literal[str]",
+        "tier": 1,
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "forbid_unknown_fields",
+        "tier": 1,
+        "status": "supported",
+        "detail": "the accepted document round-trips; both reject an unknown field (tests/test_api.py)"
+      },
+      {
+        "feature": "fixed-length tuple",
+        "tier": 1,
+        "status": "supported",
+        "detail": "one plan per position; a length mismatch is a type error"
+      },
+      {
+        "feature": "fixed-length tuple rejects a wrong length",
+        "tier": 1,
+        "status": "parity_rejects",
+        "detail": ""
+      },
+      {
+        "feature": "kw_only Structs",
+        "tier": 1,
+        "status": "supported",
+        "detail": "the plan carries a keyword-name tuple and the class is constructed through the keyword half of the vectorcall"
+      },
+      {
+        "feature": "tagged unions",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "array_like Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "strict=False scalar coercion",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "`strict` reaches duplicate handling but not `convert_scalar`"
+      },
+      {
+        "feature": "recursive Struct types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the plan compiler recurses until RecursionError instead of erroring clearly"
+      },
+      {
+        "feature": "constraints (msgspec.Meta)",
+        "tier": 1,
+        "status": "supported",
+        "detail": "numeric bounds and multiples, string length and patterns, and collection length constraints are enforced; accepted and rejected boundaries are differential-tested"
+      },
+      {
+        "feature": "Literal[int]",
+        "tier": 1,
+        "status": "supported",
+        "detail": ""
+      },
+      {
+        "feature": "Literal with mixed member types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect"
+      },
+      {
+        "feature": "Literal[int] rejects a boolean",
+        "tier": 1,
+        "status": "parity_rejects",
+        "detail": "Python equality makes True == 1, so membership now compares the exact scalar category first"
+      },
+      {
+        "feature": "dict[int, T] and other non-string keys",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}"
+      },
+      {
+        "feature": "enum members",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "datetime",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "UUID",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "Decimal",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "dataclasses",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "encode(order=...)",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError"
+      },
+      {
+        "feature": "Encoder(decimal_format=..., uuid_format=...)",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": "downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
+      }
+    ],
+    "known_gaps": [
+      {
+        "feature": "tagged unions",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "array_like Structs",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "strict=False scalar coercion",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "`strict` reaches duplicate handling but not `convert_scalar`"
+      },
+      {
+        "feature": "recursive Struct types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the plan compiler recurses until RecursionError instead of erroring clearly"
+      },
+      {
+        "feature": "Literal with mixed member types",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect"
+      },
+      {
+        "feature": "dict[int, T] and other non-string keys",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}"
+      },
+      {
+        "feature": "enum members",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "datetime",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "UUID",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "Decimal",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "dataclasses",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": ""
+      },
+      {
+        "feature": "encode(order=...)",
+        "tier": 1,
+        "status": "unsupported",
+        "detail": "an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError"
+      },
+      {
+        "feature": "Encoder(decimal_format=..., uuid_format=...)",
+        "tier": 2,
+        "status": "unsupported",
+        "detail": "downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
+      }
+    ],
+    "severity_note": "`silently_wrong` and `silently_ignored` outrank `unsupported`: a rejection is visible to a caller, a wrong value is not."
+  },
+  "benchmarks_typed_same_run": [
+    {
+      "records": 16,
+      "toon_bytes": 527,
+      "incumbent_pipeline_bytes": 1482,
+      "json_bytes": 1339,
+      "decode_us": {
+        "typed_direct": 4.47,
+        "functional": 4.86,
+        "untyped_tree": 4.25,
+        "keyed_document": 4.27,
+        "entry_document": 3.1,
+        "convert_only": 1.42,
+        "wrapper_tree_plus_convert": 5.78,
+        "incumbent_pipeline_python_toon_plus_convert": 111.66,
+        "msgspec_json_native": 2.24
+      },
+      "encode_us": {
+        "typed_direct_whole": 1.97,
+        "functional": 11.75,
+        "entry_document": 2.92,
+        "wide_dict_document": 29.19,
+        "to_builtins_alone": 1.07,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 98.26,
+        "msgspec_json_native": 1.02
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 1.13,
+        "decode_us.functional": 1.14,
+        "decode_us.untyped_tree": 1.38,
+        "decode_us.keyed_document": 1.35,
+        "decode_us.entry_document": 1.91,
+        "decode_us.convert_only": 2.49,
+        "decode_us.wrapper_tree_plus_convert": 1.47,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 2.79,
+        "decode_us.msgspec_json_native": 3.39,
+        "encode_us.typed_direct_whole": 1.55,
+        "encode_us.functional": 1.05,
+        "encode_us.entry_document": 1.64,
+        "encode_us.wide_dict_document": 3.59,
+        "encode_us.to_builtins_alone": 1.33,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 4.98,
+        "encode_us.msgspec_json_native": 0.81
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      }
+    },
+    {
+      "records": 64,
+      "toon_bytes": 1991,
+      "incumbent_pipeline_bytes": 5922,
+      "json_bytes": 5347,
+      "decode_us": {
+        "typed_direct": 15.06,
+        "functional": 15.56,
+        "untyped_tree": 15.58,
+        "keyed_document": 15.92,
+        "entry_document": 11.82,
+        "convert_only": 5.35,
+        "wrapper_tree_plus_convert": 20.56,
+        "incumbent_pipeline_python_toon_plus_convert": 452.31,
+        "msgspec_json_native": 8.5
+      },
+      "encode_us": {
+        "typed_direct_whole": 6.47,
+        "functional": 16.66,
+        "entry_document": 10.57,
+        "wide_dict_document": 114.85,
+        "to_builtins_alone": 4.49,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 381.02,
+        "msgspec_json_native": 3.11
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 3.46,
+        "decode_us.functional": 3.03,
+        "decode_us.untyped_tree": 10.53,
+        "decode_us.keyed_document": 0.47,
+        "decode_us.entry_document": 1.21,
+        "decode_us.convert_only": 0.93,
+        "decode_us.wrapper_tree_plus_convert": 0.62,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.43,
+        "decode_us.msgspec_json_native": 1.2,
+        "encode_us.typed_direct_whole": 1.13,
+        "encode_us.functional": 1.01,
+        "encode_us.entry_document": 1.06,
+        "encode_us.wide_dict_document": 3.34,
+        "encode_us.to_builtins_alone": 1.58,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.64,
+        "encode_us.msgspec_json_native": 1.37
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      }
+    },
+    {
+      "records": 512,
+      "toon_bytes": 16068,
+      "incumbent_pipeline_bytes": 47775,
+      "json_bytes": 43167,
+      "decode_us": {
+        "typed_direct": 124.15,
+        "functional": 120.2,
+        "untyped_tree": 127.59,
+        "keyed_document": 137.24,
+        "entry_document": 101.67,
+        "convert_only": 43.02,
+        "wrapper_tree_plus_convert": 174.73,
+        "incumbent_pipeline_python_toon_plus_convert": 3745.35,
+        "msgspec_json_native": 68.61
+      },
+      "encode_us": {
+        "typed_direct_whole": 50.69,
+        "functional": 62.76,
+        "entry_document": 84.84,
+        "wide_dict_document": 963.02,
+        "to_builtins_alone": 43.79,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3023.4,
+        "msgspec_json_native": 22.66
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 13.17,
+        "decode_us.functional": 1.23,
+        "decode_us.untyped_tree": 0.87,
+        "decode_us.keyed_document": 1.59,
+        "decode_us.entry_document": 5.59,
+        "decode_us.convert_only": 1.42,
+        "decode_us.wrapper_tree_plus_convert": 2.35,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 2.0,
+        "decode_us.msgspec_json_native": 4.98,
+        "encode_us.typed_direct_whole": 3.78,
+        "encode_us.functional": 3.36,
+        "encode_us.entry_document": 1.85,
+        "encode_us.wide_dict_document": 2.26,
+        "encode_us.to_builtins_alone": 1.11,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.61,
+        "encode_us.msgspec_json_native": 1.26
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": false,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      }
+    },
+    {
+      "records": 4096,
+      "toon_bytes": 132061,
+      "incumbent_pipeline_bytes": 385976,
+      "json_bytes": 349111,
+      "decode_us": {
+        "typed_direct": 1042.58,
+        "functional": 1045.61,
+        "untyped_tree": 1114.35,
+        "keyed_document": 1134.93,
+        "entry_document": 826.14,
+        "convert_only": 466.01,
+        "wrapper_tree_plus_convert": 1571.17,
+        "incumbent_pipeline_python_toon_plus_convert": 30580.42,
+        "msgspec_json_native": 663.68
+      },
+      "encode_us": {
+        "typed_direct_whole": 400.7,
+        "functional": 423.1,
+        "entry_document": 686.6,
+        "wide_dict_document": 8320.56,
+        "to_builtins_alone": 453.73,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24638.05,
+        "msgspec_json_native": 187.55
+      },
+      "notes": {
+        "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
+      },
+      "worker_spread_pct": {
+        "decode_us.typed_direct": 0.8,
+        "decode_us.functional": 1.02,
+        "decode_us.untyped_tree": 1.26,
+        "decode_us.keyed_document": 1.72,
+        "decode_us.entry_document": 0.53,
+        "decode_us.convert_only": 9.0,
+        "decode_us.wrapper_tree_plus_convert": 1.36,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.83,
+        "decode_us.msgspec_json_native": 2.8,
+        "encode_us.typed_direct_whole": 1.51,
+        "encode_us.functional": 2.04,
+        "encode_us.entry_document": 0.84,
+        "encode_us.wide_dict_document": 4.97,
+        "encode_us.to_builtins_alone": 0.96,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.13,
+        "encode_us.msgspec_json_native": 9.48
+      },
+      "gates": {
+        "G3_typed_decode_beats_wrapper": true,
+        "G4_whole_encode_beats_to_builtins_alone": true,
+        "typed_beats_incumbent_pipeline_decode": true,
+        "typed_beats_incumbent_pipeline_encode": true
+      }
+    }
+  ],
+  "benchmarks_codecs_same_run": [
+    {
+      "records": 16,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 527,
+        "toons_rust_fallback_3_0": 1482,
+        "python_toon_fallback": 1482,
+        "json_compact": 1339
+      },
+      "encode_us": {
+        "msgspec_toon": 2.97,
+        "toons_rust": 28.04,
+        "python_toon": 95.81,
+        "msgspec_json_context": 1.22
+      },
+      "decode_us": {
+        "msgspec_toon": 4.27,
+        "toons_rust": 11.46,
+        "python_toon": 111.02,
+        "msgspec_json_context": 2.39
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 2.82,
+        "encode_us.toons_rust": 3.93,
+        "encode_us.python_toon": 0.27,
+        "encode_us.msgspec_json_context": 1.4,
+        "decode_us.msgspec_toon": 1.12,
+        "decode_us.toons_rust": 0.79,
+        "decode_us.python_toon": 1.07,
+        "decode_us.msgspec_json_context": 1.44
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 64,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 1991,
+        "toons_rust_fallback_3_0": 5922,
+        "python_toon_fallback": 5922,
+        "json_compact": 5347
+      },
+      "encode_us": {
+        "msgspec_toon": 9.8,
+        "toons_rust": 108.17,
+        "python_toon": 394.24,
+        "msgspec_json_context": 3.92
+      },
+      "decode_us": {
+        "msgspec_toon": 15.8,
+        "toons_rust": 47.42,
+        "python_toon": 473.16,
+        "msgspec_json_context": 9.74
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 5.73,
+        "encode_us.toons_rust": 1.64,
+        "encode_us.python_toon": 5.24,
+        "encode_us.msgspec_json_context": 5.38,
+        "decode_us.msgspec_toon": 6.05,
+        "decode_us.toons_rust": 5.52,
+        "decode_us.python_toon": 11.38,
+        "decode_us.msgspec_json_context": 1.18
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 512,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 16068,
+        "toons_rust_fallback_3_0": 47775,
+        "python_toon_fallback": 47775,
+        "json_compact": 43167
+      },
+      "encode_us": {
+        "msgspec_toon": 72.82,
+        "toons_rust": 861.27,
+        "python_toon": 2976.77,
+        "msgspec_json_context": 28.13
+      },
+      "decode_us": {
+        "msgspec_toon": 125.25,
+        "toons_rust": 384.3,
+        "python_toon": 3685.32,
+        "msgspec_json_context": 87.11
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 1.32,
+        "encode_us.toons_rust": 3.44,
+        "encode_us.python_toon": 1.55,
+        "encode_us.msgspec_json_context": 1.77,
+        "decode_us.msgspec_toon": 1.17,
+        "decode_us.toons_rust": 1.99,
+        "decode_us.python_toon": 0.67,
+        "decode_us.msgspec_json_context": 1.47
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    },
+    {
+      "records": 4096,
+      "output_bytes": {
+        "msgspec_toon_tabular_4_1": 132061,
+        "toons_rust_fallback_3_0": 385976,
+        "python_toon_fallback": 385976,
+        "json_compact": 349111
+      },
+      "encode_us": {
+        "msgspec_toon": 565.22,
+        "toons_rust": 6787.11,
+        "python_toon": 23879.73,
+        "msgspec_json_context": 213.19
+      },
+      "decode_us": {
+        "msgspec_toon": 1115.75,
+        "toons_rust": 3146.93,
+        "python_toon": 30635.92,
+        "msgspec_json_context": 828.94
+      },
+      "worker_spread_pct": {
+        "encode_us.msgspec_toon": 1.36,
+        "encode_us.toons_rust": 1.63,
+        "encode_us.python_toon": 0.77,
+        "encode_us.msgspec_json_context": 0.84,
+        "decode_us.msgspec_toon": 0.85,
+        "decode_us.toons_rust": 1.31,
+        "decode_us.python_toon": 0.95,
+        "decode_us.msgspec_json_context": 0.87
+      },
+      "gates": {
+        "G5_encode_not_slower_than_toons": true,
+        "G5_decode_not_slower_than_toons": true
+      }
+    }
+  ],
+  "benchmarks_integration_same_run": [
+    {
+      "records": 16,
+      "input_json_bytes": 1339,
+      "roundtrip_us": {
+        "msgspec_toon_in_process": 19.92,
+        "python_toon_in_process": 215.97,
+        "python_toon_two_process_cli": 46324.3
+      },
+      "worker_spread_pct": {
+        "roundtrip_us.msgspec_toon_in_process": 1.35,
+        "roundtrip_us.python_toon_in_process": 0.9,
+        "roundtrip_us.python_toon_two_process_cli": 8.44
+      }
+    },
+    {
+      "records": 64,
+      "input_json_bytes": 5347,
+      "roundtrip_us": {
+        "msgspec_toon_in_process": 50.11,
+        "python_toon_in_process": 853.86,
+        "python_toon_two_process_cli": 45470.96
+      },
+      "worker_spread_pct": {
+        "roundtrip_us.msgspec_toon_in_process": 2.32,
+        "roundtrip_us.python_toon_in_process": 2.1,
+        "roundtrip_us.python_toon_two_process_cli": 1.37
+      }
+    },
+    {
+      "records": 512,
+      "input_json_bytes": 43167,
+      "roundtrip_us": {
+        "msgspec_toon_in_process": 334.66,
+        "python_toon_in_process": 6889.95,
+        "python_toon_two_process_cli": 52756.9
+      },
+      "worker_spread_pct": {
+        "roundtrip_us.msgspec_toon_in_process": 4.64,
+        "roundtrip_us.python_toon_in_process": 1.31,
+        "roundtrip_us.python_toon_two_process_cli": 1.28
+      }
+    }
+  ],
+  "token_efficiency": {
+    "tokenizers": {
+      "primary": "o200k_base",
+      "secondary": "cl100k_base",
+      "tiktoken_version": "0.13.0"
+    },
+    "rows": [
+      {
+        "shape": "uniform-records",
+        "records": 16,
+        "formats": {
+          "json_compact": {
+            "bytes": 1339,
+            "tokens": {
+              "o200k_base": 372,
+              "cl100k_base": 371
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 27.78
+          },
+          "toon_comma": {
+            "bytes": 527,
+            "tokens": {
+              "o200k_base": 238,
+              "cl100k_base": 238
+            },
+            "tokens_vs_json": 0.64,
+            "tokens_per_100_bytes": 45.16
+          },
+          "toon_tab": {
+            "bytes": 528,
+            "tokens": {
+              "o200k_base": 239,
+              "cl100k_base": 239
+            },
+            "tokens_vs_json": 0.642,
+            "tokens_per_100_bytes": 45.27
+          },
+          "toon_pipe": {
+            "bytes": 528,
+            "tokens": {
+              "o200k_base": 239,
+              "cl100k_base": 239
+            },
+            "tokens_vs_json": 0.642,
+            "tokens_per_100_bytes": 45.27
+          },
+          "toons_rust": {
+            "bytes": 1482,
+            "tokens": {
+              "o200k_base": 467,
+              "cl100k_base": 467
+            },
+            "tokens_vs_json": 1.255,
+            "tokens_per_100_bytes": 31.51
+          },
+          "python_toon": {
+            "bytes": 1482,
+            "tokens": {
+              "o200k_base": 467,
+              "cl100k_base": 467
+            },
+            "tokens_vs_json": 1.255,
+            "tokens_per_100_bytes": 31.51
+          },
+          "toon_comma_indent1": {
+            "bytes": 511,
+            "tokens": {
+              "o200k_base": 222,
+              "cl100k_base": 222
+            },
+            "tokens_vs_json": 0.597,
+            "tokens_per_100_bytes": 43.44
+          },
+          "toon_comma_indent4": {
+            "bytes": 559,
+            "tokens": {
+              "o200k_base": 238,
+              "cl100k_base": 238
+            },
+            "tokens_vs_json": 0.64,
+            "tokens_per_100_bytes": 42.58
+          }
+        }
+      },
+      {
+        "shape": "uniform-records",
+        "records": 64,
+        "formats": {
+          "json_compact": {
+            "bytes": 5347,
+            "tokens": {
+              "o200k_base": 1476,
+              "cl100k_base": 1475
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 27.6
+          },
+          "toon_comma": {
+            "bytes": 1991,
+            "tokens": {
+              "o200k_base": 910,
+              "cl100k_base": 910
+            },
+            "tokens_vs_json": 0.617,
+            "tokens_per_100_bytes": 45.71
+          },
+          "toon_tab": {
+            "bytes": 1992,
+            "tokens": {
+              "o200k_base": 911,
+              "cl100k_base": 911
+            },
+            "tokens_vs_json": 0.617,
+            "tokens_per_100_bytes": 45.73
+          },
+          "toon_pipe": {
+            "bytes": 1992,
+            "tokens": {
+              "o200k_base": 911,
+              "cl100k_base": 911
+            },
+            "tokens_vs_json": 0.617,
+            "tokens_per_100_bytes": 45.73
+          },
+          "toons_rust": {
+            "bytes": 5922,
+            "tokens": {
+              "o200k_base": 1859,
+              "cl100k_base": 1859
+            },
+            "tokens_vs_json": 1.259,
+            "tokens_per_100_bytes": 31.39
+          },
+          "python_toon": {
+            "bytes": 5922,
+            "tokens": {
+              "o200k_base": 1859,
+              "cl100k_base": 1859
+            },
+            "tokens_vs_json": 1.259,
+            "tokens_per_100_bytes": 31.39
+          },
+          "toon_comma_indent1": {
+            "bytes": 1927,
+            "tokens": {
+              "o200k_base": 846,
+              "cl100k_base": 846
+            },
+            "tokens_vs_json": 0.573,
+            "tokens_per_100_bytes": 43.9
+          },
+          "toon_comma_indent4": {
+            "bytes": 2119,
+            "tokens": {
+              "o200k_base": 910,
+              "cl100k_base": 910
+            },
+            "tokens_vs_json": 0.617,
+            "tokens_per_100_bytes": 42.94
+          }
+        }
+      },
+      {
+        "shape": "uniform-records",
+        "records": 512,
+        "formats": {
+          "json_compact": {
+            "bytes": 43167,
+            "tokens": {
+              "o200k_base": 11780,
+              "cl100k_base": 11779
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 27.29
+          },
+          "toon_comma": {
+            "bytes": 16068,
+            "tokens": {
+              "o200k_base": 7182,
+              "cl100k_base": 7182
+            },
+            "tokens_vs_json": 0.61,
+            "tokens_per_100_bytes": 44.7
+          },
+          "toon_tab": {
+            "bytes": 16069,
+            "tokens": {
+              "o200k_base": 7183,
+              "cl100k_base": 7183
+            },
+            "tokens_vs_json": 0.61,
+            "tokens_per_100_bytes": 44.7
+          },
+          "toon_pipe": {
+            "bytes": 16069,
+            "tokens": {
+              "o200k_base": 7183,
+              "cl100k_base": 7183
+            },
+            "tokens_vs_json": 0.61,
+            "tokens_per_100_bytes": 44.7
+          },
+          "toons_rust": {
+            "bytes": 47775,
+            "tokens": {
+              "o200k_base": 14851,
+              "cl100k_base": 14851
+            },
+            "tokens_vs_json": 1.261,
+            "tokens_per_100_bytes": 31.09
+          },
+          "python_toon": {
+            "bytes": 47775,
+            "tokens": {
+              "o200k_base": 14851,
+              "cl100k_base": 14851
+            },
+            "tokens_vs_json": 1.261,
+            "tokens_per_100_bytes": 31.09
+          },
+          "toon_comma_indent1": {
+            "bytes": 15556,
+            "tokens": {
+              "o200k_base": 6670,
+              "cl100k_base": 6670
+            },
+            "tokens_vs_json": 0.566,
+            "tokens_per_100_bytes": 42.88
+          },
+          "toon_comma_indent4": {
+            "bytes": 17092,
+            "tokens": {
+              "o200k_base": 7182,
+              "cl100k_base": 7182
+            },
+            "tokens_vs_json": 0.61,
+            "tokens_per_100_bytes": 42.02
+          }
+        }
+      },
+      {
+        "shape": "uniform-records",
+        "records": 4096,
+        "formats": {
+          "json_compact": {
+            "bytes": 349111,
+            "tokens": {
+              "o200k_base": 97308,
+              "cl100k_base": 97307
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 27.87
+          },
+          "toon_comma": {
+            "bytes": 132061,
+            "tokens": {
+              "o200k_base": 60455,
+              "cl100k_base": 60455
+            },
+            "tokens_vs_json": 0.621,
+            "tokens_per_100_bytes": 45.78
+          },
+          "toon_tab": {
+            "bytes": 132062,
+            "tokens": {
+              "o200k_base": 60456,
+              "cl100k_base": 60456
+            },
+            "tokens_vs_json": 0.621,
+            "tokens_per_100_bytes": 45.78
+          },
+          "toon_pipe": {
+            "bytes": 132062,
+            "tokens": {
+              "o200k_base": 60456,
+              "cl100k_base": 60456
+            },
+            "tokens_vs_json": 0.621,
+            "tokens_per_100_bytes": 45.78
+          },
+          "toons_rust": {
+            "bytes": 385976,
+            "tokens": {
+              "o200k_base": 121884,
+              "cl100k_base": 121884
+            },
+            "tokens_vs_json": 1.253,
+            "tokens_per_100_bytes": 31.58
+          },
+          "python_toon": {
+            "bytes": 385976,
+            "tokens": {
+              "o200k_base": 121884,
+              "cl100k_base": 121884
+            },
+            "tokens_vs_json": 1.253,
+            "tokens_per_100_bytes": 31.58
+          },
+          "toon_comma_indent1": {
+            "bytes": 127965,
+            "tokens": {
+              "o200k_base": 56359,
+              "cl100k_base": 56359
+            },
+            "tokens_vs_json": 0.579,
+            "tokens_per_100_bytes": 44.04
+          },
+          "toon_comma_indent4": {
+            "bytes": 140253,
+            "tokens": {
+              "o200k_base": 60455,
+              "cl100k_base": 60455
+            },
+            "tokens_vs_json": 0.621,
+            "tokens_per_100_bytes": 43.1
+          }
+        }
+      },
+      {
+        "shape": "string-heavy",
+        "records": 16,
+        "formats": {
+          "json_compact": {
+            "bytes": 4368,
+            "tokens": {
+              "o200k_base": 804,
+              "cl100k_base": 803
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 18.41
+          },
+          "toon_comma": {
+            "bytes": 3584,
+            "tokens": {
+              "o200k_base": 653,
+              "cl100k_base": 653
+            },
+            "tokens_vs_json": 0.812,
+            "tokens_per_100_bytes": 18.22
+          },
+          "toon_tab": {
+            "bytes": 3585,
+            "tokens": {
+              "o200k_base": 654,
+              "cl100k_base": 654
+            },
+            "tokens_vs_json": 0.813,
+            "tokens_per_100_bytes": 18.24
+          },
+          "toon_pipe": {
+            "bytes": 3585,
+            "tokens": {
+              "o200k_base": 654,
+              "cl100k_base": 654
+            },
+            "tokens_vs_json": 0.813,
+            "tokens_per_100_bytes": 18.24
+          },
+          "toons_rust": {
+            "bytes": 4479,
+            "tokens": {
+              "o200k_base": 883,
+              "cl100k_base": 883
+            },
+            "tokens_vs_json": 1.098,
+            "tokens_per_100_bytes": 19.71
+          },
+          "python_toon": {
+            "bytes": 4479,
+            "tokens": {
+              "o200k_base": 883,
+              "cl100k_base": 883
+            },
+            "tokens_vs_json": 1.098,
+            "tokens_per_100_bytes": 19.71
+          },
+          "toon_comma_indent1": {
+            "bytes": 3568,
+            "tokens": {
+              "o200k_base": 637,
+              "cl100k_base": 637
+            },
+            "tokens_vs_json": 0.792,
+            "tokens_per_100_bytes": 17.85
+          },
+          "toon_comma_indent4": {
+            "bytes": 3616,
+            "tokens": {
+              "o200k_base": 653,
+              "cl100k_base": 653
+            },
+            "tokens_vs_json": 0.812,
+            "tokens_per_100_bytes": 18.06
+          }
+        }
+      },
+      {
+        "shape": "numeric-heavy",
+        "records": 16,
+        "formats": {
+          "json_compact": {
+            "bytes": 1079,
+            "tokens": {
+              "o200k_base": 485,
+              "cl100k_base": 484
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 44.95
+          },
+          "toon_comma": {
+            "bytes": 525,
+            "tokens": {
+              "o200k_base": 319,
+              "cl100k_base": 318
+            },
+            "tokens_vs_json": 0.658,
+            "tokens_per_100_bytes": 60.76
+          },
+          "toon_tab": {
+            "bytes": 526,
+            "tokens": {
+              "o200k_base": 317,
+              "cl100k_base": 316
+            },
+            "tokens_vs_json": 0.654,
+            "tokens_per_100_bytes": 60.27
+          },
+          "toon_pipe": {
+            "bytes": 526,
+            "tokens": {
+              "o200k_base": 337,
+              "cl100k_base": 337
+            },
+            "tokens_vs_json": 0.695,
+            "tokens_per_100_bytes": 64.07
+          },
+          "toons_rust": {
+            "bytes": 525,
+            "tokens": {
+              "o200k_base": 319,
+              "cl100k_base": 318
+            },
+            "tokens_vs_json": 0.658,
+            "tokens_per_100_bytes": 60.76
+          },
+          "python_toon": {
+            "bytes": 526,
+            "tokens": {
+              "o200k_base": 320,
+              "cl100k_base": 319
+            },
+            "tokens_vs_json": 0.66,
+            "tokens_per_100_bytes": 60.84
+          },
+          "toon_comma_indent1": {
+            "bytes": 509,
+            "tokens": {
+              "o200k_base": 303,
+              "cl100k_base": 302
+            },
+            "tokens_vs_json": 0.625,
+            "tokens_per_100_bytes": 59.53
+          },
+          "toon_comma_indent4": {
+            "bytes": 557,
+            "tokens": {
+              "o200k_base": 319,
+              "cl100k_base": 318
+            },
+            "tokens_vs_json": 0.658,
+            "tokens_per_100_bytes": 57.27
+          }
+        }
+      },
+      {
+        "shape": "irregular",
+        "records": 16,
+        "formats": {
+          "json_compact": {
+            "bytes": 791,
+            "tokens": {
+              "o200k_base": 310,
+              "cl100k_base": 293
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 39.19
+          },
+          "toon_comma": {
+            "bytes": 727,
+            "tokens": {
+              "o200k_base": 359,
+              "cl100k_base": 359
+            },
+            "tokens_vs_json": 1.158,
+            "tokens_per_100_bytes": 49.38
+          },
+          "toon_tab": {
+            "bytes": 728,
+            "tokens": {
+              "o200k_base": 353,
+              "cl100k_base": 353
+            },
+            "tokens_vs_json": 1.139,
+            "tokens_per_100_bytes": 48.49
+          },
+          "toon_pipe": {
+            "bytes": 728,
+            "tokens": {
+              "o200k_base": 360,
+              "cl100k_base": 360
+            },
+            "tokens_vs_json": 1.161,
+            "tokens_per_100_bytes": 49.45
+          },
+          "toons_rust": {
+            "bytes": 711,
+            "tokens": {
+              "o200k_base": 351,
+              "cl100k_base": 351
+            },
+            "tokens_vs_json": 1.132,
+            "tokens_per_100_bytes": 49.37
+          },
+          "python_toon": {
+            "bytes": 711,
+            "tokens": {
+              "o200k_base": 351,
+              "cl100k_base": 351
+            },
+            "tokens_vs_json": 1.132,
+            "tokens_per_100_bytes": 49.37
+          },
+          "toon_comma_indent1": {
+            "bytes": 687,
+            "tokens": {
+              "o200k_base": 319,
+              "cl100k_base": 319
+            },
+            "tokens_vs_json": 1.029,
+            "tokens_per_100_bytes": 46.43
+          },
+          "toon_comma_indent4": {
+            "bytes": 807,
+            "tokens": {
+              "o200k_base": 359,
+              "cl100k_base": 359
+            },
+            "tokens_vs_json": 1.158,
+            "tokens_per_100_bytes": 44.49
+          }
+        }
+      },
+      {
+        "shape": "string-heavy",
+        "records": 512,
+        "formats": {
+          "json_compact": {
+            "bytes": 141508,
+            "tokens": {
+              "o200k_base": 25604,
+              "cl100k_base": 25603
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 18.09
+          },
+          "toon_comma": {
+            "bytes": 115429,
+            "tokens": {
+              "o200k_base": 20493,
+              "cl100k_base": 20493
+            },
+            "tokens_vs_json": 0.8,
+            "tokens_per_100_bytes": 17.75
+          },
+          "toon_tab": {
+            "bytes": 115430,
+            "tokens": {
+              "o200k_base": 20494,
+              "cl100k_base": 20494
+            },
+            "tokens_vs_json": 0.8,
+            "tokens_per_100_bytes": 17.75
+          },
+          "toon_pipe": {
+            "bytes": 115430,
+            "tokens": {
+              "o200k_base": 20494,
+              "cl100k_base": 20494
+            },
+            "tokens_vs_json": 0.8,
+            "tokens_per_100_bytes": 17.75
+          },
+          "toons_rust": {
+            "bytes": 145092,
+            "tokens": {
+              "o200k_base": 28163,
+              "cl100k_base": 28163
+            },
+            "tokens_vs_json": 1.1,
+            "tokens_per_100_bytes": 19.41
+          },
+          "python_toon": {
+            "bytes": 145092,
+            "tokens": {
+              "o200k_base": 28163,
+              "cl100k_base": 28163
+            },
+            "tokens_vs_json": 1.1,
+            "tokens_per_100_bytes": 19.41
+          },
+          "toon_comma_indent1": {
+            "bytes": 114917,
+            "tokens": {
+              "o200k_base": 19981,
+              "cl100k_base": 19981
+            },
+            "tokens_vs_json": 0.78,
+            "tokens_per_100_bytes": 17.39
+          },
+          "toon_comma_indent4": {
+            "bytes": 116453,
+            "tokens": {
+              "o200k_base": 20493,
+              "cl100k_base": 20493
+            },
+            "tokens_vs_json": 0.8,
+            "tokens_per_100_bytes": 17.6
+          }
+        }
+      },
+      {
+        "shape": "numeric-heavy",
+        "records": 512,
+        "formats": {
+          "json_compact": {
+            "bytes": 35010,
+            "tokens": {
+              "o200k_base": 15873,
+              "cl100k_base": 15872
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 45.34
+          },
+          "toon_comma": {
+            "bytes": 16601,
+            "tokens": {
+              "o200k_base": 10251,
+              "cl100k_base": 10250
+            },
+            "tokens_vs_json": 0.646,
+            "tokens_per_100_bytes": 61.75
+          },
+          "toon_tab": {
+            "bytes": 16602,
+            "tokens": {
+              "o200k_base": 10249,
+              "cl100k_base": 10248
+            },
+            "tokens_vs_json": 0.646,
+            "tokens_per_100_bytes": 61.73
+          },
+          "toon_pipe": {
+            "bytes": 16602,
+            "tokens": {
+              "o200k_base": 10765,
+              "cl100k_base": 10765
+            },
+            "tokens_vs_json": 0.678,
+            "tokens_per_100_bytes": 64.84
+          },
+          "toons_rust": {
+            "bytes": 16601,
+            "tokens": {
+              "o200k_base": 10251,
+              "cl100k_base": 10250
+            },
+            "tokens_vs_json": 0.646,
+            "tokens_per_100_bytes": 61.75
+          },
+          "python_toon": {
+            "bytes": 16602,
+            "tokens": {
+              "o200k_base": 10252,
+              "cl100k_base": 10251
+            },
+            "tokens_vs_json": 0.646,
+            "tokens_per_100_bytes": 61.75
+          },
+          "toon_comma_indent1": {
+            "bytes": 16089,
+            "tokens": {
+              "o200k_base": 9739,
+              "cl100k_base": 9738
+            },
+            "tokens_vs_json": 0.614,
+            "tokens_per_100_bytes": 60.53
+          },
+          "toon_comma_indent4": {
+            "bytes": 17625,
+            "tokens": {
+              "o200k_base": 10251,
+              "cl100k_base": 10250
+            },
+            "tokens_vs_json": 0.646,
+            "tokens_per_100_bytes": 58.16
+          }
+        }
+      },
+      {
+        "shape": "irregular",
+        "records": 512,
+        "formats": {
+          "json_compact": {
+            "bytes": 23387,
+            "tokens": {
+              "o200k_base": 8252,
+              "cl100k_base": 7739
+            },
+            "tokens_vs_json": 1.0,
+            "tokens_per_100_bytes": 35.28
+          },
+          "toon_comma": {
+            "bytes": 22083,
+            "tokens": {
+              "o200k_base": 9789,
+              "cl100k_base": 9789
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.33
+          },
+          "toon_tab": {
+            "bytes": 22084,
+            "tokens": {
+              "o200k_base": 9783,
+              "cl100k_base": 9783
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.3
+          },
+          "toon_pipe": {
+            "bytes": 22084,
+            "tokens": {
+              "o200k_base": 9790,
+              "cl100k_base": 9790
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 44.33
+          },
+          "toons_rust": {
+            "bytes": 21571,
+            "tokens": {
+              "o200k_base": 9533,
+              "cl100k_base": 9533
+            },
+            "tokens_vs_json": 1.155,
+            "tokens_per_100_bytes": 44.19
+          },
+          "python_toon": {
+            "bytes": 21571,
+            "tokens": {
+              "o200k_base": 9533,
+              "cl100k_base": 9533
+            },
+            "tokens_vs_json": 1.155,
+            "tokens_per_100_bytes": 44.19
+          },
+          "toon_comma_indent1": {
+            "bytes": 20803,
+            "tokens": {
+              "o200k_base": 8509,
+              "cl100k_base": 8509
+            },
+            "tokens_vs_json": 1.031,
+            "tokens_per_100_bytes": 40.9
+          },
+          "toon_comma_indent4": {
+            "bytes": 24643,
+            "tokens": {
+              "o200k_base": 9789,
+              "cl100k_base": 9789
+            },
+            "tokens_vs_json": 1.186,
+            "tokens_per_100_bytes": 39.72
+          }
+        }
+      }
+    ],
+    "gates": {
+      "T1_toon_comma_le_json_on_uniform_records": true,
+      "T2_published": true
+    },
+    "findings": {
+      "indent_axis": [
+        {
+          "shape": "uniform-records",
+          "records": 16,
+          "tokens_vs_json_by_indent": {
+            "1": 0.597,
+            "2": 0.64,
+            "4": 0.64
+          }
+        },
+        {
+          "shape": "uniform-records",
+          "records": 64,
+          "tokens_vs_json_by_indent": {
+            "1": 0.573,
+            "2": 0.617,
+            "4": 0.617
+          }
+        },
+        {
+          "shape": "uniform-records",
+          "records": 512,
+          "tokens_vs_json_by_indent": {
+            "1": 0.566,
+            "2": 0.61,
+            "4": 0.61
+          }
+        },
+        {
+          "shape": "uniform-records",
+          "records": 4096,
+          "tokens_vs_json_by_indent": {
+            "1": 0.579,
+            "2": 0.621,
+            "4": 0.621
+          }
+        },
+        {
+          "shape": "string-heavy",
+          "records": 16,
+          "tokens_vs_json_by_indent": {
+            "1": 0.792,
+            "2": 0.812,
+            "4": 0.812
+          }
+        },
+        {
+          "shape": "numeric-heavy",
+          "records": 16,
+          "tokens_vs_json_by_indent": {
+            "1": 0.625,
+            "2": 0.658,
+            "4": 0.658
+          }
+        },
+        {
+          "shape": "irregular",
+          "records": 16,
+          "tokens_vs_json_by_indent": {
+            "1": 1.029,
+            "2": 1.158,
+            "4": 1.158
+          }
+        },
+        {
+          "shape": "string-heavy",
+          "records": 512,
+          "tokens_vs_json_by_indent": {
+            "1": 0.78,
+            "2": 0.8,
+            "4": 0.8
+          }
+        },
+        {
+          "shape": "numeric-heavy",
+          "records": 512,
+          "tokens_vs_json_by_indent": {
+            "1": 0.614,
+            "2": 0.646,
+            "4": 0.646
+          }
+        },
+        {
+          "shape": "irregular",
+          "records": 512,
+          "tokens_vs_json_by_indent": {
+            "1": 1.031,
+            "2": 1.186,
+            "4": 1.186
+          }
+        }
+      ],
+      "indent_note": "indent=1 saves tokens on every shape: ~4 points on the tabular ladder (a single leading space merges into the first cell's token where two spaces cost their own token per row) and 13-15 points on irregular shapes, where indentation is a large share of the syntax. indent=4 costs bytes but is token-identical to indent=2 (space runs merge). None of this changes the fact that the token advantage is a property of the tabular forms specifically, not of TOON: irregular shapes cost more tokens than compact JSON at every measured indent, indent=1 included.",
+      "irregular_costs_more_tokens_than_json_at_every_indent": true,
+      "tab_beats_comma_everywhere": false,
+      "tab_losing_points": [
+        "uniform-records#16: tab=239 comma=238",
+        "uniform-records#64: tab=911 comma=910",
+        "uniform-records#512: tab=7183 comma=7182",
+        "uniform-records#4096: tab=60456 comma=60455",
+        "string-heavy#16: tab=654 comma=653",
+        "string-heavy#512: tab=20494 comma=20493"
+      ],
+      "note": "The tab-saves-tokens folklore does not hold under o200k_base on these shapes: differences are within a few tokens per ten thousand in either direction (tab wins marginally on numeric-heavy payloads, loses by one header token elsewhere)."
+    }
+  },
+  "efficiency_lock": {
+    "versions": {
+      "tiktoken": "0.13.0",
+      "msgspec": "0.21.1",
+      "encodings": "o200k_base,cl100k_base"
+    },
+    "payloads": {
+      "uniform-records@16": {
+        "json_compact": {
+          "bytes": 1339,
+          "tokens": {
+            "o200k_base": 372,
+            "cl100k_base": 371
+          }
+        },
+        "toon_comma": {
+          "bytes": 527,
+          "tokens": {
+            "o200k_base": 238,
+            "cl100k_base": 238
+          }
+        },
+        "toon_tab": {
+          "bytes": 528,
+          "tokens": {
+            "o200k_base": 239,
+            "cl100k_base": 239
+          }
+        },
+        "toon_pipe": {
+          "bytes": 528,
+          "tokens": {
+            "o200k_base": 239,
+            "cl100k_base": 239
+          }
+        }
+      },
+      "uniform-records@64": {
+        "json_compact": {
+          "bytes": 5347,
+          "tokens": {
+            "o200k_base": 1476,
+            "cl100k_base": 1475
+          }
+        },
+        "toon_comma": {
+          "bytes": 1991,
+          "tokens": {
+            "o200k_base": 910,
+            "cl100k_base": 910
+          }
+        },
+        "toon_tab": {
+          "bytes": 1992,
+          "tokens": {
+            "o200k_base": 911,
+            "cl100k_base": 911
+          }
+        },
+        "toon_pipe": {
+          "bytes": 1992,
+          "tokens": {
+            "o200k_base": 911,
+            "cl100k_base": 911
+          }
+        }
+      },
+      "uniform-records@512": {
+        "json_compact": {
+          "bytes": 43167,
+          "tokens": {
+            "o200k_base": 11780,
+            "cl100k_base": 11779
+          }
+        },
+        "toon_comma": {
+          "bytes": 16068,
+          "tokens": {
+            "o200k_base": 7182,
+            "cl100k_base": 7182
+          }
+        },
+        "toon_tab": {
+          "bytes": 16069,
+          "tokens": {
+            "o200k_base": 7183,
+            "cl100k_base": 7183
+          }
+        },
+        "toon_pipe": {
+          "bytes": 16069,
+          "tokens": {
+            "o200k_base": 7183,
+            "cl100k_base": 7183
+          }
+        }
+      },
+      "uniform-records@4096": {
+        "json_compact": {
+          "bytes": 349111,
+          "tokens": {
+            "o200k_base": 97308,
+            "cl100k_base": 97307
+          }
+        },
+        "toon_comma": {
+          "bytes": 132061,
+          "tokens": {
+            "o200k_base": 60455,
+            "cl100k_base": 60455
+          }
+        },
+        "toon_tab": {
+          "bytes": 132062,
+          "tokens": {
+            "o200k_base": 60456,
+            "cl100k_base": 60456
+          }
+        },
+        "toon_pipe": {
+          "bytes": 132062,
+          "tokens": {
+            "o200k_base": 60456,
+            "cl100k_base": 60456
+          }
+        }
+      },
+      "string-heavy@16": {
+        "json_compact": {
+          "bytes": 4368,
+          "tokens": {
+            "o200k_base": 804,
+            "cl100k_base": 803
+          }
+        },
+        "toon_comma": {
+          "bytes": 3584,
+          "tokens": {
+            "o200k_base": 653,
+            "cl100k_base": 653
+          }
+        },
+        "toon_tab": {
+          "bytes": 3585,
+          "tokens": {
+            "o200k_base": 654,
+            "cl100k_base": 654
+          }
+        },
+        "toon_pipe": {
+          "bytes": 3585,
+          "tokens": {
+            "o200k_base": 654,
+            "cl100k_base": 654
+          }
+        }
+      },
+      "numeric-heavy@16": {
+        "json_compact": {
+          "bytes": 1079,
+          "tokens": {
+            "o200k_base": 485,
+            "cl100k_base": 484
+          }
+        },
+        "toon_comma": {
+          "bytes": 525,
+          "tokens": {
+            "o200k_base": 319,
+            "cl100k_base": 318
+          }
+        },
+        "toon_tab": {
+          "bytes": 526,
+          "tokens": {
+            "o200k_base": 317,
+            "cl100k_base": 316
+          }
+        },
+        "toon_pipe": {
+          "bytes": 526,
+          "tokens": {
+            "o200k_base": 337,
+            "cl100k_base": 337
+          }
+        }
+      },
+      "irregular@16": {
+        "json_compact": {
+          "bytes": 791,
+          "tokens": {
+            "o200k_base": 310,
+            "cl100k_base": 293
+          }
+        },
+        "toon_comma": {
+          "bytes": 727,
+          "tokens": {
+            "o200k_base": 359,
+            "cl100k_base": 359
+          }
+        },
+        "toon_tab": {
+          "bytes": 728,
+          "tokens": {
+            "o200k_base": 353,
+            "cl100k_base": 353
+          }
+        },
+        "toon_pipe": {
+          "bytes": 728,
+          "tokens": {
+            "o200k_base": 360,
+            "cl100k_base": 360
+          }
+        }
+      },
+      "string-heavy@512": {
+        "json_compact": {
+          "bytes": 141508,
+          "tokens": {
+            "o200k_base": 25604,
+            "cl100k_base": 25603
+          }
+        },
+        "toon_comma": {
+          "bytes": 115429,
+          "tokens": {
+            "o200k_base": 20493,
+            "cl100k_base": 20493
+          }
+        },
+        "toon_tab": {
+          "bytes": 115430,
+          "tokens": {
+            "o200k_base": 20494,
+            "cl100k_base": 20494
+          }
+        },
+        "toon_pipe": {
+          "bytes": 115430,
+          "tokens": {
+            "o200k_base": 20494,
+            "cl100k_base": 20494
+          }
+        }
+      },
+      "numeric-heavy@512": {
+        "json_compact": {
+          "bytes": 35010,
+          "tokens": {
+            "o200k_base": 15873,
+            "cl100k_base": 15872
+          }
+        },
+        "toon_comma": {
+          "bytes": 16601,
+          "tokens": {
+            "o200k_base": 10251,
+            "cl100k_base": 10250
+          }
+        },
+        "toon_tab": {
+          "bytes": 16602,
+          "tokens": {
+            "o200k_base": 10249,
+            "cl100k_base": 10248
+          }
+        },
+        "toon_pipe": {
+          "bytes": 16602,
+          "tokens": {
+            "o200k_base": 10765,
+            "cl100k_base": 10765
+          }
+        }
+      },
+      "irregular@512": {
+        "json_compact": {
+          "bytes": 23387,
+          "tokens": {
+            "o200k_base": 8252,
+            "cl100k_base": 7739
+          }
+        },
+        "toon_comma": {
+          "bytes": 22083,
+          "tokens": {
+            "o200k_base": 9789,
+            "cl100k_base": 9789
+          }
+        },
+        "toon_tab": {
+          "bytes": 22084,
+          "tokens": {
+            "o200k_base": 9783,
+            "cl100k_base": 9783
+          }
+        },
+        "toon_pipe": {
+          "bytes": 22084,
+          "tokens": {
+            "o200k_base": 9790,
+            "cl100k_base": 9790
+          }
+        }
+      }
+    },
+    "gate": "tests/test_efficiency_lock.py fails on any difference, in either direction"
+  },
+  "gates": {
+    "G1_conformance": "perfect corpus: every fixture passes with options applied; zero failures, zero declared divergences",
+    "G3_typed_decode_beats_wrapper": true,
+    "G4_whole_encode_beats_to_builtins_alone": false,
+    "G5_codec_floor": true,
+    "typed_beats_incumbent_pipeline": true,
+    "G6_wheel_parity": "measurements taken on the release abi3 extension in the environment that actually imports it; benches/build_freshness.py refuses to publish a number from a stale or alloc-stats build",
+    "G2_zero_builtin_containers": true
+  },
+  "benchmark_caveats": [
+    "Each codec round-trips its own encoded bytes: the incumbents predate TOON 4.x and emit the fallback list form (no nested field groups), so they parse roughly 2.9x more bytes for the same value. Byte sizes are published per row; that difference is the real-world comparison, not an unfair one.",
+    "The incumbent pipeline rows (to_builtins + python-toon encode; python-toon decode + convert) reproduce a known-inefficient composition \u2014 a benchmark to beat, not the strongest alternative.",
+    "The integration rows start and end as compact JSON. The CLI row includes two process launches and therefore describes deployment cost, not only codec implementation speed.",
+    "python-toon's latest PyPI release equals the pinned 0.1.3 at measurement time, so a single python-toon row covers both the pinned and latest variants."
+  ],
+  "known_divergences_and_gaps": [
+    "The stock msgspec 0.21.1 build uses public attribute access for Struct fields. The optional, versioned Struct-access capsule removes the slope gap and wins G4 at large payloads, but it is not available in an upstream msgspec release. The published wheel keeps the safe stock path; `make fastpath-build` activates the measured capsule experiment.",
+    "Non-finite float encoding raises EncodeError (msgspec.json parity); no 4.1 fixture exercises the alternative null mapping, so the prior-art question stands resolved-by-absence for this corpus.",
+    "unsupported: tagged unions (tier 1)",
+    "unsupported: array_like Structs (tier 1)",
+    "unsupported: strict=False scalar coercion (tier 1) \u2014 `strict` reaches duplicate handling but not `convert_scalar`",
+    "unsupported: recursive Struct types (tier 1) \u2014 the plan compiler recurses until RecursionError instead of erroring clearly",
+    "unsupported: Literal with mixed member types (tier 1) \u2014 not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect",
+    "unsupported: dict[int, T] and other non-string keys (tier 1) \u2014 the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}",
+    "unsupported: enum members (tier 2)",
+    "unsupported: datetime (tier 2)",
+    "unsupported: UUID (tier 2)",
+    "unsupported: Decimal (tier 2)",
+    "unsupported: dataclasses (tier 2)",
+    "unsupported: encode(order=...) (tier 1) \u2014 an unimplemented value now raises NotImplementedError instead of returning insertion order. A value msgspec itself rejects still raises the same ValueError",
+    "unsupported: Encoder(decimal_format=..., uuid_format=...) (tier 2) \u2014 downgraded from silently ignored: non-default values now raise. The review recorded these as accepted by the constructor but rejected by encode(); that split is msgspec's own surface \u2014 msgspec.json.encode() also refuses them \u2014 so it is parity, not a defect"
+  ]
+}
