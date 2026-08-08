@@ -9,10 +9,13 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use pyo3::exceptions::PyAttributeError;
 use pyo3::prelude::*;
+use pyo3::sync::critical_section::with_critical_section;
 use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 
 use crate::limits::{MAX_NESTING_DEPTH, reserve_bytes};
+use crate::msgspec_capi::MsgspecCapi;
 use crate::writer::Writer;
 
 /// Capacity heuristic only — never policy: an assumed average encoded cell
@@ -26,6 +29,7 @@ pub struct EncodeContext {
     pub struct_base: Py<PyAny>,
     pub plan_source: Py<PyAny>,
     pub encode_error: Py<PyAny>,
+    pub struct_api: Option<MsgspecCapi>,
     pub cache: Mutex<HashMap<usize, Arc<EncodePlan>>>,
     /// Spec-defined wire options (TOON 4.1 delimiter and indentation width);
     /// defaults produce canonical output.
@@ -45,8 +49,17 @@ pub struct EncodePlan {
 }
 
 struct EncodeField {
-    attr: Py<PyString>,
+    access: StructAccess,
     wire: String,
+}
+
+enum StructAccess {
+    Attr(Py<PyString>),
+    Offset {
+        attr: Py<PyString>,
+        class: Py<PyAny>,
+        offset: usize,
+    },
 }
 
 enum Val<'py> {
@@ -108,10 +121,30 @@ fn plan_from_spec(
 ) -> PyResult<Arc<EncodePlan>> {
     let mut fields = Vec::new();
     let mut shape: Option<Vec<ShapeNode>> = Some(Vec::new());
-    for field in spec.getattr("fields")?.try_iter()? {
+    let offsets = ctx
+        .struct_api
+        .as_ref()
+        .map(|api| api.struct_offsets(py, class))
+        .transpose()?;
+    for (index, field) in spec.getattr("fields")?.try_iter()?.enumerate() {
         let field = field?;
         let name_text = field.getattr("python_name")?.extract::<String>()?;
         let attr = PyString::intern(py, &name_text).unbind();
+        let access = match offsets.as_ref() {
+            Some(offsets) => {
+                let offset = offsets.get(index).copied().ok_or_else(|| {
+                    pyo3::exceptions::PySystemError::new_err(
+                        "msgspec C API field count is shorter than the encode plan",
+                    )
+                })?;
+                StructAccess::Offset {
+                    attr,
+                    class: class.clone().unbind(),
+                    offset,
+                }
+            }
+            None => StructAccess::Attr(attr),
+        };
         let wire = field.getattr("wire_name")?.extract::<String>()?;
         let value_spec = field.getattr("plan")?;
 
@@ -123,7 +156,7 @@ fn plan_from_spec(
                 match &nested.static_shape {
                     Some(children) => nodes.push(ShapeNode {
                         wire: wire.clone(),
-                        access: Access::Attr(attr.clone_ref(py)),
+                        access: access.clone_ref(py).into(),
                         children: clone_nodes(py, children),
                     }),
                     None => shape = None,
@@ -131,7 +164,7 @@ fn plan_from_spec(
             } else if spec_is_leaf(&value_spec)? {
                 nodes.push(ShapeNode {
                     wire: wire.clone(),
-                    access: Access::Attr(attr.clone_ref(py)),
+                    access: access.clone_ref(py).into(),
                     children: Vec::new(),
                 });
             } else {
@@ -139,7 +172,15 @@ fn plan_from_spec(
             }
         }
 
-        fields.push(EncodeField { attr, wire });
+        fields.push(EncodeField { access, wire });
+    }
+    if offsets
+        .as_ref()
+        .is_some_and(|offsets| offsets.len() != fields.len())
+    {
+        return Err(pyo3::exceptions::PySystemError::new_err(
+            "msgspec C API field count differs from the encode plan",
+        ));
     }
     let static_shape = match shape {
         Some(nodes) if !nodes.is_empty() => Some(Arc::new(nodes)),
@@ -174,6 +215,15 @@ fn clone_nodes(py: Python<'_>, nodes: &[ShapeNode]) -> Vec<ShapeNode> {
             wire: node.wire.clone(),
             access: match &node.access {
                 Access::Attr(attr) => Access::Attr(attr.clone_ref(py)),
+                Access::Offset {
+                    attr,
+                    class,
+                    offset,
+                } => Access::Offset {
+                    attr: attr.clone_ref(py),
+                    class: class.clone_ref(py),
+                    offset: *offset,
+                },
                 Access::Item(key) => Access::Item(key.clone_ref(py)),
             },
             children: clone_nodes(py, &node.children),
@@ -276,7 +326,7 @@ fn object_pairs<'value, 'py>(
         Val::Struct(instance, plan) => {
             let mut pairs = Vec::with_capacity(plan.fields.len());
             for field in &plan.fields {
-                let item = instance.getattr(field.attr.bind(py))?;
+                let item = struct_field(py, instance, &field.access)?;
                 pairs.push((EntryText::Wire(field.wire.as_str()), item));
             }
             Ok(pairs)
@@ -626,7 +676,82 @@ struct ShapeNode {
 
 enum Access {
     Attr(Py<PyString>),
+    Offset {
+        attr: Py<PyString>,
+        class: Py<PyAny>,
+        offset: usize,
+    },
     Item(Py<PyAny>),
+}
+
+impl StructAccess {
+    fn clone_ref(&self, py: Python<'_>) -> Self {
+        match self {
+            Self::Attr(attr) => Self::Attr(attr.clone_ref(py)),
+            Self::Offset {
+                attr,
+                class,
+                offset,
+            } => Self::Offset {
+                attr: attr.clone_ref(py),
+                class: class.clone_ref(py),
+                offset: *offset,
+            },
+        }
+    }
+}
+
+impl From<StructAccess> for Access {
+    fn from(value: StructAccess) -> Self {
+        match value {
+            StructAccess::Attr(attr) => Self::Attr(attr),
+            StructAccess::Offset {
+                attr,
+                class,
+                offset,
+            } => Self::Offset {
+                attr,
+                class,
+                offset,
+            },
+        }
+    }
+}
+
+#[inline(always)]
+fn struct_field<'py>(
+    py: Python<'py>,
+    instance: &Bound<'py, PyAny>,
+    access: &StructAccess,
+) -> PyResult<Bound<'py, PyAny>> {
+    match access {
+        StructAccess::Attr(attr) => instance.getattr(attr.bind(py)),
+        StructAccess::Offset { attr, offset, .. } => offset_field(py, instance, attr, *offset),
+    }
+}
+
+#[inline(always)]
+fn offset_field<'py>(
+    py: Python<'py>,
+    instance: &Bound<'py, PyAny>,
+    attr: &Py<PyString>,
+    offset: usize,
+) -> PyResult<Bound<'py, PyAny>> {
+    with_critical_section(instance, || unsafe {
+        let slot = (instance.as_ptr() as *const u8)
+            .add(offset)
+            .cast::<*mut pyo3::ffi::PyObject>();
+        let value = *slot;
+        if value.is_null() {
+            let repr = attr.bind(py).repr()?;
+            let name = repr.to_string_lossy();
+            Err(PyAttributeError::new_err(format!(
+                "Struct field {name} is unset"
+            )))
+        } else {
+            Ok(Bound::from_borrowed_ptr(py, value))
+        }
+    })
 }
 
 /// A row shape, either computed for this call or shared from a plan's
@@ -694,7 +819,7 @@ fn build_shape<'py>(
         }
         plan.fields
             .iter()
-            .map(|field| (field.wire.clone(), Access::Attr(field.attr.clone_ref(py))))
+            .map(|field| (field.wire.clone(), field.access.clone_ref(py).into()))
             .collect()
     } else if let Ok(first_map) = first.cast::<PyDict>() {
         let mut first_keys = Vec::with_capacity(first_map.len());
@@ -739,6 +864,7 @@ fn build_shape<'py>(
         for row in rows {
             let item = match &access {
                 Access::Attr(attr) => row.getattr(attr.bind(py))?,
+                Access::Offset { attr, offset, .. } => offset_field(py, row, attr, *offset)?,
                 Access::Item(key) => match row.cast::<PyDict>() {
                     Ok(map) => match map.get_item(key.bind(py))? {
                         Some(item) => item,
@@ -812,9 +938,23 @@ fn write_row_obj<'py>(
     shape: &[ShapeNode],
     first: &mut bool,
 ) -> PyResult<()> {
+    // A static nested shape comes from the declared field type, while callers
+    // may still place a Struct subclass there. Validate once for this Struct
+    // level; every offset in one level belongs to the same pinned class.
+    let offsets_match = shape.first().is_none_or(|node| match &node.access {
+        Access::Offset { class, .. } => std::ptr::eq(
+            unsafe { pyo3::ffi::Py_TYPE(row.as_ptr()) },
+            class.as_ptr().cast(),
+        ),
+        _ => true,
+    });
     for node in shape {
         let item = match &node.access {
             Access::Attr(attr) => row.getattr(attr.bind(py))?,
+            Access::Offset { attr, offset, .. } if offsets_match => {
+                offset_field(py, row, attr, *offset)?
+            }
+            Access::Offset { attr, .. } => row.getattr(attr.bind(py))?,
             Access::Item(key) => match row.cast::<PyDict>() {
                 Ok(map) => map
                     .get_item(key.bind(py))?

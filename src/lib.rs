@@ -13,6 +13,7 @@ pub mod error;
 pub mod event;
 pub mod header;
 pub mod limits;
+mod msgspec_capi;
 pub mod parser;
 pub mod plan;
 pub mod pyval;
@@ -195,6 +196,7 @@ impl Encoder {
     #[new]
     #[pyo3(signature = (*, enc_hook=None, plan_source, struct_base, encode_error, delimiter=",", indent=2))]
     fn new(
+        py: Python<'_>,
         enc_hook: Option<Py<PyAny>>,
         plan_source: Py<PyAny>,
         struct_base: Py<PyAny>,
@@ -222,11 +224,21 @@ impl Encoder {
                 struct_base,
                 plan_source,
                 encode_error,
+                struct_api: msgspec_capi::MsgspecCapi::import(py)?,
                 cache: Mutex::new(std::collections::HashMap::new()),
                 delimiter,
                 indent,
             },
         })
+    }
+
+    #[getter]
+    fn _struct_access(&self) -> &'static str {
+        if self.context.struct_api.is_some() {
+            "capsule"
+        } else {
+            "attribute"
+        }
     }
 
     fn encode<'py>(

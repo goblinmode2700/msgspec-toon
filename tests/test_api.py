@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import sys
+from concurrent.futures import ThreadPoolExecutor
+
 import msgspec
+import msgspec._core
 import msgspec_toon as toon
 import pytest
 
@@ -176,3 +180,54 @@ def test_unimplemented_encoder_options_fail_loudly() -> None:
         )
         == b"b: 1\na: 2"
     )
+
+
+def test_encoder_discovers_optional_msgspec_c_api() -> None:
+    encoder = toon.Encoder()
+    expected = "capsule" if hasattr(msgspec._core, "_C_API") else "attribute"
+    assert encoder._native._struct_access == expected
+
+
+def test_unset_struct_field_still_raises_attribute_error() -> None:
+    class Pair(msgspec.Struct):
+        left: int
+        right: int
+
+    value = Pair(1, 2)
+    del value.right
+    encoder = toon.Encoder()
+    message = (
+        "Struct field 'right' is unset"
+        if encoder._native._struct_access == "capsule"
+        else "object has no attribute 'right'"
+    )
+    with pytest.raises(AttributeError, match=message):
+        encoder.encode(value)
+
+
+@pytest.mark.skipif(
+    not hasattr(sys, "_is_gil_enabled") or sys._is_gil_enabled(),
+    reason="requires a free-threaded CPython build",
+)
+def test_capsule_struct_access_is_safe_during_concurrent_mutation() -> None:
+    if not hasattr(msgspec._core, "_C_API"):
+        pytest.skip("requires the optional msgspec C API")
+
+    class Cell(msgspec.Struct):
+        value: int
+
+    cell = Cell(1)
+    encoder = toon.Encoder()
+
+    def mutate() -> None:
+        for index in range(20_000):
+            cell.value = 1 + index % 2
+
+    def encode() -> None:
+        for _ in range(20_000):
+            assert encoder.encode(cell) in (b"value: 1", b"value: 2")
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = [pool.submit(mutate), *(pool.submit(encode) for _ in range(4))]
+        for future in futures:
+            future.result()
