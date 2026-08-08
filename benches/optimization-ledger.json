@@ -269,6 +269,12 @@
       "cause": "each A/B block called a sampler that measured every metric in the module and reported one, so every typed-encode block also timed the python-toon incumbent at ~30ms a call",
       "fix": "MSGSPEC_TOON_ONLY_METRIC makes the sampler skip metrics the block will discard; a 4096 typed-encode block fell from about 4s to 0.5s",
       "caveat": "the sampler metric name is now listed in the METRICS table rather than derived from the result key \u2014 deriving it silently mismatched half the metrics, and a block that measures nothing reports a mean of zero"
+    },
+    "ab_python_profile_H5": {
+      "question": "how much of an A/B block is Python harness work outside the three published samples?",
+      "method": "cProfile around 8 parent run_block calls plus a child profile of bench_typed.sample_run for entry decode@512 with the guard's fixed 1024-loop count",
+      "result": "mean block wall 0.4369s; the three published samples account for 0.2971s; 0.1398s (32%) is non-published work. About 0.097s is the deliberate discarded warmup. Parent Python is negligible: cProfile attributes 3.484 of 3.495s to subprocess polling. Child imports cost about 0.035s and sample_run performs about 0.028s of setup outside measure, including unrelated python-toon encode/decode validation.",
+      "ruling": "ADOPTED. process isolation, imports, and one discarded sample stay because the estimator intentionally measures between-process variance and warms each process. Metric-unrelated payload and incumbent setup was removed. Child setup outside measure fell from about 0.028s to 0.002s; a 20-pair alternating fixed-one-loop diagnostic fell from 43.04ms to 34.24ms per process (-20.5%). Full sampler paths retain every setup/assertion. A source-identical 8-block-per-side comparison remained parity (+0.3%, no significant difference; noisy 6.7% MDE). The current-side calibration block also stays: it cannot warm a later interpreter, but it does symmetrically fault in that build's binary/code pages before measured sweeps."
     }
   },
   "harness_findings": {

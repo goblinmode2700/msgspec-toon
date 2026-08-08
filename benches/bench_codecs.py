@@ -24,7 +24,7 @@ import msgspec
 import msgspec_toon
 import toon as python_toon
 import toons as toons_rust
-from _timing import DEFAULT_WORKERS, measure, methodology
+from _timing import DEFAULT_WORKERS, measure, methodology, selected_metric
 from _workers import across_workers
 from payloads import document
 
@@ -38,15 +38,22 @@ def builtins_tree(records: int) -> Any:
 def sample_run(records: int) -> dict[str, Any]:
     """One worker's measurements; the parent decides the gates from the mean."""
     tree = builtins_tree(records)
+    selected = selected_metric()
+    measuring_all = selected is None
 
     ours_bytes = msgspec_toon.encode(tree)
-    python_toon_text = python_toon.encode(tree)
-    toons_text = toons_rust.dumps(tree)
-    json_bytes = msgspec.json.encode(tree)
+    need_python_toon = measuring_all or selected in {"encode.python_toon", "decode.python_toon"}
+    need_toons = measuring_all or selected in {"encode.toons_rust", "decode.toons_rust"}
+    need_json = measuring_all or selected in {"encode.json", "decode.json"}
+    python_toon_text = python_toon.encode(tree) if need_python_toon else ""
+    toons_text = toons_rust.dumps(tree) if need_toons else ""
+    json_bytes = msgspec.json.encode(tree) if need_json else b""
 
     assert msgspec_toon.decode(ours_bytes) == tree
-    assert python_toon.decode(python_toon_text) == tree
-    assert toons_rust.loads(toons_text) == tree
+    if need_python_toon:
+        assert python_toon.decode(python_toon_text) == tree
+    if need_toons:
+        assert toons_rust.loads(toons_text) == tree
 
     ours_encoder = msgspec_toon.Encoder()
     ours_decoder = msgspec_toon.Decoder()

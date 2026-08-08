@@ -92,6 +92,16 @@ def calibrating() -> bool:
     return not _LOOPS
 
 
+def selected_metric() -> str | None:
+    """The one metric an A/B block requested, or `None` for a full ladder.
+
+    Samplers use this only to skip setup that the selected callable cannot
+    reach. The timed callable, loop calibration, warmup, and samples remain in
+    `measure`, unchanged.
+    """
+    return _ONLY
+
+
 def _calibrate(fn: Callable[[], object], target_seconds: float) -> int:
     loops = 1
     while True:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T06:13:20.029420+00:00",
+  "generated_at": "2026-08-08T06:24:05.862855+00:00",
   "distribution": "msgspec-toon 0.4.0",
   "environment": {
     "python": "3.13.1",
@@ -346,39 +346,39 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 4.89,
-        "untyped_tree": 4.27,
-        "keyed_document": 4.43,
-        "entry_document": 3.11,
-        "convert_only": 1.48,
-        "wrapper_tree_plus_convert": 6.1,
-        "incumbent_pipeline_python_toon_plus_convert": 113.23,
-        "msgspec_json_native": 2.24
+        "typed_direct": 4.8,
+        "untyped_tree": 4.28,
+        "keyed_document": 4.3,
+        "entry_document": 3.1,
+        "convert_only": 1.49,
+        "wrapper_tree_plus_convert": 5.69,
+        "incumbent_pipeline_python_toon_plus_convert": 112.15,
+        "msgspec_json_native": 2.26
       },
       "encode_us": {
-        "typed_direct_whole": 2.35,
-        "entry_document": 3.66,
-        "to_builtins_alone": 1.1,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 101.65,
-        "msgspec_json_native": 1.03
+        "typed_direct_whole": 2.02,
+        "entry_document": 3.51,
+        "to_builtins_alone": 1.06,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 96.92,
+        "msgspec_json_native": 1.02
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 4.59,
-        "decode_us.untyped_tree": 3.05,
-        "decode_us.keyed_document": 11.13,
-        "decode_us.entry_document": 1.36,
-        "decode_us.convert_only": 6.46,
-        "decode_us.wrapper_tree_plus_convert": 10.26,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 4.1,
-        "decode_us.msgspec_json_native": 2.51,
-        "encode_us.typed_direct_whole": 23.0,
-        "encode_us.entry_document": 5.64,
-        "encode_us.to_builtins_alone": 3.11,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 15.04,
-        "encode_us.msgspec_json_native": 1.91
+        "decode_us.typed_direct": 1.64,
+        "decode_us.untyped_tree": 4.96,
+        "decode_us.keyed_document": 3.26,
+        "decode_us.entry_document": 2.81,
+        "decode_us.convert_only": 15.07,
+        "decode_us.wrapper_tree_plus_convert": 1.46,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 4.11,
+        "decode_us.msgspec_json_native": 6.77,
+        "encode_us.typed_direct_whole": 1.62,
+        "encode_us.entry_document": 1.42,
+        "encode_us.to_builtins_alone": 1.89,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 3.33,
+        "encode_us.msgspec_json_native": 1.03
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -393,39 +393,39 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 16.49,
-        "untyped_tree": 14.85,
-        "keyed_document": 15.96,
-        "entry_document": 11.88,
-        "convert_only": 5.38,
-        "wrapper_tree_plus_convert": 20.78,
-        "incumbent_pipeline_python_toon_plus_convert": 454.36,
-        "msgspec_json_native": 8.53
+        "typed_direct": 16.19,
+        "untyped_tree": 14.79,
+        "keyed_document": 15.88,
+        "entry_document": 11.79,
+        "convert_only": 5.35,
+        "wrapper_tree_plus_convert": 20.58,
+        "incumbent_pipeline_python_toon_plus_convert": 449.51,
+        "msgspec_json_native": 8.49
       },
       "encode_us": {
-        "typed_direct_whole": 7.01,
-        "entry_document": 13.14,
-        "to_builtins_alone": 4.5,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 387.71,
-        "msgspec_json_native": 3.2
+        "typed_direct_whole": 6.83,
+        "entry_document": 12.85,
+        "to_builtins_alone": 4.45,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 377.79,
+        "msgspec_json_native": 3.1
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 2.77,
-        "decode_us.untyped_tree": 1.7,
-        "decode_us.keyed_document": 0.85,
-        "decode_us.entry_document": 0.98,
-        "decode_us.convert_only": 1.01,
-        "decode_us.wrapper_tree_plus_convert": 1.59,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.71,
-        "decode_us.msgspec_json_native": 1.05,
-        "encode_us.typed_direct_whole": 5.15,
-        "encode_us.entry_document": 0.78,
-        "encode_us.to_builtins_alone": 1.0,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 6.74,
-        "encode_us.msgspec_json_native": 7.22
+        "decode_us.typed_direct": 0.75,
+        "decode_us.untyped_tree": 1.0,
+        "decode_us.keyed_document": 1.52,
+        "decode_us.entry_document": 0.7,
+        "decode_us.convert_only": 0.95,
+        "decode_us.wrapper_tree_plus_convert": 1.33,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.67,
+        "decode_us.msgspec_json_native": 2.32,
+        "encode_us.typed_direct_whole": 1.1,
+        "encode_us.entry_document": 1.24,
+        "encode_us.to_builtins_alone": 1.75,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.1,
+        "encode_us.msgspec_json_native": 1.04
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -440,39 +440,39 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 126.44,
-        "untyped_tree": 124.28,
-        "keyed_document": 138.22,
-        "entry_document": 101.57,
-        "convert_only": 43.65,
-        "wrapper_tree_plus_convert": 175.04,
-        "incumbent_pipeline_python_toon_plus_convert": 3787.7,
-        "msgspec_json_native": 72.88
+        "typed_direct": 126.6,
+        "untyped_tree": 124.05,
+        "keyed_document": 138.5,
+        "entry_document": 100.39,
+        "convert_only": 43.53,
+        "wrapper_tree_plus_convert": 171.56,
+        "incumbent_pipeline_python_toon_plus_convert": 3786.94,
+        "msgspec_json_native": 67.94
       },
       "encode_us": {
-        "typed_direct_whole": 54.13,
-        "entry_document": 103.8,
-        "to_builtins_alone": 45.34,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 3126.81,
-        "msgspec_json_native": 24.01
+        "typed_direct_whole": 56.35,
+        "entry_document": 103.01,
+        "to_builtins_alone": 43.91,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3008.79,
+        "msgspec_json_native": 22.73
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.65,
-        "decode_us.untyped_tree": 1.1,
-        "decode_us.keyed_document": 1.54,
-        "decode_us.entry_document": 1.49,
-        "decode_us.convert_only": 2.3,
-        "decode_us.wrapper_tree_plus_convert": 8.25,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 5.28,
-        "decode_us.msgspec_json_native": 19.13,
-        "encode_us.typed_direct_whole": 1.14,
-        "encode_us.entry_document": 0.87,
-        "encode_us.to_builtins_alone": 10.31,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 10.5,
-        "encode_us.msgspec_json_native": 10.96
+        "decode_us.typed_direct": 1.14,
+        "decode_us.untyped_tree": 0.91,
+        "decode_us.keyed_document": 2.56,
+        "decode_us.entry_document": 1.45,
+        "decode_us.convert_only": 5.65,
+        "decode_us.wrapper_tree_plus_convert": 2.19,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 5.52,
+        "decode_us.msgspec_json_native": 2.06,
+        "encode_us.typed_direct_whole": 15.23,
+        "encode_us.entry_document": 1.91,
+        "encode_us.to_builtins_alone": 2.75,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.98,
+        "encode_us.msgspec_json_native": 0.76
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -487,39 +487,39 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1143.96,
-        "untyped_tree": 1180.27,
-        "keyed_document": 1175.13,
-        "entry_document": 850.63,
-        "convert_only": 458.6,
-        "wrapper_tree_plus_convert": 1535.79,
-        "incumbent_pipeline_python_toon_plus_convert": 31333.02,
-        "msgspec_json_native": 683.92
+        "typed_direct": 1125.09,
+        "untyped_tree": 1101.44,
+        "keyed_document": 1141.2,
+        "entry_document": 824.28,
+        "convert_only": 448.13,
+        "wrapper_tree_plus_convert": 1492.3,
+        "incumbent_pipeline_python_toon_plus_convert": 30625.7,
+        "msgspec_json_native": 655.31
       },
       "encode_us": {
-        "typed_direct_whole": 455.17,
-        "entry_document": 884.95,
-        "to_builtins_alone": 467.49,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 24896.61,
-        "msgspec_json_native": 217.36
+        "typed_direct_whole": 428.05,
+        "entry_document": 839.75,
+        "to_builtins_alone": 456.16,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24694.59,
+        "msgspec_json_native": 184.83
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 3.94,
-        "decode_us.untyped_tree": 14.78,
-        "decode_us.keyed_document": 5.24,
-        "decode_us.entry_document": 4.09,
-        "decode_us.convert_only": 3.05,
-        "decode_us.wrapper_tree_plus_convert": 3.34,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 2.33,
-        "decode_us.msgspec_json_native": 6.92,
-        "encode_us.typed_direct_whole": 7.1,
-        "encode_us.entry_document": 3.61,
-        "encode_us.to_builtins_alone": 7.23,
+        "decode_us.typed_direct": 0.67,
+        "decode_us.untyped_tree": 1.09,
+        "decode_us.keyed_document": 2.33,
+        "decode_us.entry_document": 0.8,
+        "decode_us.convert_only": 1.25,
+        "decode_us.wrapper_tree_plus_convert": 0.75,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.91,
+        "decode_us.msgspec_json_native": 0.46,
+        "encode_us.typed_direct_whole": 2.99,
+        "encode_us.entry_document": 1.14,
+        "encode_us.to_builtins_alone": 2.48,
         "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.3,
-        "encode_us.msgspec_json_native": 40.38
+        "encode_us.msgspec_json_native": 2.91
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -539,26 +539,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.44,
-        "toons_rust": 27.82,
-        "python_toon": 96.25,
-        "msgspec_json_context": 1.24
+        "msgspec_toon": 4.37,
+        "toons_rust": 27.68,
+        "python_toon": 94.83,
+        "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.57,
-        "toons_rust": 11.8,
-        "python_toon": 112.74,
-        "msgspec_json_context": 2.54
+        "msgspec_toon": 4.26,
+        "toons_rust": 11.39,
+        "python_toon": 110.35,
+        "msgspec_json_context": 2.38
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.41,
-        "encode_us.toons_rust": 1.14,
-        "encode_us.python_toon": 1.25,
-        "encode_us.msgspec_json_context": 2.73,
-        "decode_us.msgspec_toon": 13.76,
-        "decode_us.toons_rust": 4.37,
-        "decode_us.python_toon": 2.68,
-        "decode_us.msgspec_json_context": 20.73
+        "encode_us.msgspec_toon": 0.88,
+        "encode_us.toons_rust": 1.48,
+        "encode_us.python_toon": 0.66,
+        "encode_us.msgspec_json_context": 1.68,
+        "decode_us.msgspec_toon": 1.12,
+        "decode_us.toons_rust": 0.75,
+        "decode_us.python_toon": 0.5,
+        "decode_us.msgspec_json_context": 2.22
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -574,26 +574,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.71,
-        "toons_rust": 109.22,
-        "python_toon": 374.68,
-        "msgspec_json_context": 3.78
+        "msgspec_toon": 15.09,
+        "toons_rust": 108.24,
+        "python_toon": 377.38,
+        "msgspec_json_context": 3.8
       },
       "decode_us": {
-        "msgspec_toon": 16.0,
-        "toons_rust": 46.14,
-        "python_toon": 452.86,
-        "msgspec_json_context": 9.68
+        "msgspec_toon": 15.29,
+        "toons_rust": 44.91,
+        "python_toon": 449.16,
+        "msgspec_json_context": 9.6
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 8.54,
-        "encode_us.toons_rust": 7.96,
-        "encode_us.python_toon": 0.89,
-        "encode_us.msgspec_json_context": 1.78,
-        "decode_us.msgspec_toon": 18.57,
-        "decode_us.toons_rust": 0.93,
-        "decode_us.python_toon": 0.6,
-        "decode_us.msgspec_json_context": 0.96
+        "encode_us.msgspec_toon": 1.64,
+        "encode_us.toons_rust": 1.81,
+        "encode_us.python_toon": 3.05,
+        "encode_us.msgspec_json_context": 2.86,
+        "decode_us.msgspec_toon": 3.9,
+        "decode_us.toons_rust": 0.96,
+        "decode_us.python_toon": 0.67,
+        "decode_us.msgspec_json_context": 1.09
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -609,26 +609,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 119.01,
-        "toons_rust": 855.61,
-        "python_toon": 3047.94,
-        "msgspec_json_context": 29.41
+        "msgspec_toon": 115.5,
+        "toons_rust": 846.74,
+        "python_toon": 3014.82,
+        "msgspec_json_context": 27.83
       },
       "decode_us": {
-        "msgspec_toon": 128.94,
-        "toons_rust": 403.47,
-        "python_toon": 3796.87,
-        "msgspec_json_context": 90.71
+        "msgspec_toon": 124.91,
+        "toons_rust": 374.73,
+        "python_toon": 3668.03,
+        "msgspec_json_context": 85.53
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 4.65,
-        "encode_us.toons_rust": 3.63,
-        "encode_us.python_toon": 5.42,
-        "encode_us.msgspec_json_context": 14.22,
-        "decode_us.msgspec_toon": 7.52,
-        "decode_us.toons_rust": 7.38,
-        "decode_us.python_toon": 4.04,
-        "decode_us.msgspec_json_context": 6.57
+        "encode_us.msgspec_toon": 1.61,
+        "encode_us.toons_rust": 1.43,
+        "encode_us.python_toon": 7.01,
+        "encode_us.msgspec_json_context": 0.61,
+        "decode_us.msgspec_toon": 2.79,
+        "decode_us.toons_rust": 0.98,
+        "decode_us.python_toon": 1.81,
+        "decode_us.msgspec_json_context": 0.87
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -644,26 +644,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 933.32,
-        "toons_rust": 6954.02,
-        "python_toon": 24856.8,
-        "msgspec_json_context": 220.96
+        "msgspec_toon": 905.41,
+        "toons_rust": 6742.33,
+        "python_toon": 23893.71,
+        "msgspec_json_context": 213.68
       },
       "decode_us": {
-        "msgspec_toon": 1155.72,
-        "toons_rust": 3273.5,
-        "python_toon": 31725.42,
-        "msgspec_json_context": 854.03
+        "msgspec_toon": 1100.9,
+        "toons_rust": 3113.15,
+        "python_toon": 30026.59,
+        "msgspec_json_context": 823.63
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 2.41,
-        "encode_us.toons_rust": 3.63,
-        "encode_us.python_toon": 4.56,
-        "encode_us.msgspec_json_context": 2.59,
-        "decode_us.msgspec_toon": 4.08,
-        "decode_us.toons_rust": 1.24,
-        "decode_us.python_toon": 1.66,
-        "decode_us.msgspec_json_context": 1.23
+        "encode_us.msgspec_toon": 1.59,
+        "encode_us.toons_rust": 2.33,
+        "encode_us.python_toon": 0.56,
+        "encode_us.msgspec_json_context": 1.1,
+        "decode_us.msgspec_toon": 1.35,
+        "decode_us.toons_rust": 0.77,
+        "decode_us.python_toon": 0.62,
+        "decode_us.msgspec_json_context": 1.83
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -3373,6 +3373,12 @@
         "cause": "each A/B block called a sampler that measured every metric in the module and reported one, so every typed-encode block also timed the python-toon incumbent at ~30ms a call",
         "fix": "MSGSPEC_TOON_ONLY_METRIC makes the sampler skip metrics the block will discard; a 4096 typed-encode block fell from about 4s to 0.5s",
         "caveat": "the sampler metric name is now listed in the METRICS table rather than derived from the result key \u2014 deriving it silently mismatched half the metrics, and a block that measures nothing reports a mean of zero"
+      },
+      "ab_python_profile_H5": {
+        "question": "how much of an A/B block is Python harness work outside the three published samples?",
+        "method": "cProfile around 8 parent run_block calls plus a child profile of bench_typed.sample_run for entry decode@512 with the guard's fixed 1024-loop count",
+        "result": "mean block wall 0.4369s; the three published samples account for 0.2971s; 0.1398s (32%) is non-published work. About 0.097s is the deliberate discarded warmup. Parent Python is negligible: cProfile attributes 3.484 of 3.495s to subprocess polling. Child imports cost about 0.035s and sample_run performs about 0.028s of setup outside measure, including unrelated python-toon encode/decode validation.",
+        "ruling": "ADOPTED. process isolation, imports, and one discarded sample stay because the estimator intentionally measures between-process variance and warms each process. Metric-unrelated payload and incumbent setup was removed. Child setup outside measure fell from about 0.028s to 0.002s; a 20-pair alternating fixed-one-loop diagnostic fell from 43.04ms to 34.24ms per process (-20.5%). Full sampler paths retain every setup/assertion. A source-identical 8-block-per-side comparison remained parity (+0.3%, no significant difference; noisy 6.7% MDE). The current-side calibration block also stays: it cannot warm a later interpreter, but it does symmetrically fault in that build's binary/code pages before measured sweeps."
       }
     },
     "harness_findings": {

@@ -31,10 +31,13 @@ continuation. The ordered queue is now:
    The focused resolution is 1.1% in that session; practical full-ladder resolution remains
    roughly 1–2% on quiet rows and higher where the published per-row MDE says so.
 
-3. **NEXT: audit the Python A/B orchestration cost, then measure the public functional API**,
-   which the existing reusable-codec ladders omit,
+3. **H5 — DONE at checkpoint 12.** Parent Python orchestration is negligible; process
+   isolation and discarded warmup are intentional. Metric-unrelated sampler setup was not:
+   selecting setup by metric cut a fixed-one-loop `entry decode@512` child from 43.04 ms to
+   34.24 ms (-20.5%) without changing the timer or estimator.
+4. **NEXT: measure the public functional API**, which the existing reusable-codec ladders omit,
    then attempt bounded construction/plan reuse only if the overhead resolves.
-4. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
+5. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
    `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
 
 Then stop. Each candidate is adopted only on same-session A/B and otherwise recorded as

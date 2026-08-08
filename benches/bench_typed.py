@@ -26,7 +26,7 @@ import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
 import msgspec_toon as toon
 import toon as python_toon
-from _timing import DEFAULT_WORKERS, measure, methodology
+from _timing import DEFAULT_WORKERS, measure, methodology, selected_metric
 from _workers import across_workers
 from payloads import Document, document, entry_document, keyed_document, keyed_toon_text, toon_text
 
@@ -41,23 +41,34 @@ def sample_run(records: int) -> dict[str, Any]:
     keyed_text = keyed_toon_text(records)
     doc = document(records)
     entry_doc = entry_document(records)
-    json_bytes = msgspec.json.encode(doc)
+    selected = selected_metric()
+    measuring_all = selected is None
+    json_bytes = (
+        msgspec.json.encode(doc) if measuring_all or selected == "decode.json_native" else b""
+    )
 
     typed_decoder = toon.Decoder(Document)
     untyped_decoder = toon.Decoder()
     encoder = toon.Encoder()
     json_decoder = msgspec.json.Decoder(Document)
 
-    # The incumbent pipeline round-trips its own (fallback-form) text.
-    incumbent_text = python_toon.encode(msgspec.to_builtins(doc))
-    assert msgspec.convert(python_toon.decode(incumbent_text), Document) == doc
-    assert untyped_decoder.decode(keyed_text) == keyed_document(records)
+    # An A/B block requests one metric. Do not heat that block with the
+    # unrelated incumbent pipeline or keyed-payload validation; full ladder
+    # runs still execute every setup and assertion exactly as before (H5).
+    need_incumbent = measuring_all or selected in {"decode.incumbent", "encode.incumbent"}
+    incumbent_text = python_toon.encode(msgspec.to_builtins(doc)) if need_incumbent else ""
+    if need_incumbent:
+        assert msgspec.convert(python_toon.decode(incumbent_text), Document) == doc
+    if measuring_all or selected == "decode.keyed_document":
+        assert untyped_decoder.decode(keyed_text) == keyed_document(records)
 
     typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
     untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
     keyed_decode = measure("decode.keyed_document", lambda: untyped_decoder.decode(keyed_text)).us
-    entry_text = encoder.encode(entry_doc)
-    assert untyped_decoder.decode(entry_text) == entry_doc
+    need_entry = measuring_all or selected in {"decode.entry_document", "encode.entry_document"}
+    entry_text = encoder.encode(entry_doc) if need_entry else b""
+    if need_entry:
+        assert untyped_decoder.decode(entry_text) == entry_doc
     entry_decode = measure("decode.entry_document", lambda: untyped_decoder.decode(entry_text)).us
     entry_encode = measure("encode.entry_document", lambda: encoder.encode(entry_doc)).us
     wrapper_decode = measure(

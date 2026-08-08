@@ -1,0 +1,32 @@
+{
+  "records": [512],
+  "baseline_venv": ".venv-guard",
+  "current_venv": ".venv-h3",
+  "gated": false,
+  "block_sequence": [
+    "baseline", "current", "current", "baseline",
+    "baseline", "current", "current", "baseline",
+    "baseline", "current", "current", "baseline",
+    "baseline", "current", "current", "baseline"
+  ],
+  "baseline_instrumented": false,
+  "canary": {
+    "metric": "entry decode@512",
+    "reads_us": [97.53, 99.49, 102.32],
+    "spread_pct": 4.911309340715668,
+    "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+  },
+  "method": "one metric at one size per block, B C C B interleaved across all metric points; H5 metric-scoped setup enabled on both source-identical sides",
+  "results": [
+    {
+      "metric": "entry decode@512",
+      "baseline_us": [99.53, 98.23, 99.1, 96.77, 99.02, 98.86, 116.67, 99.69],
+      "current_us": [97.6, 98.73, 99.18, 97.69, 101.79, 98.85, 116.34, 100.01],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "change_pct": 0.28717491675641504,
+      "significant": false,
+      "minimum_detectable_effect_pct": 6.711149729414793
+    }
+  ]
+}

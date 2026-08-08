@@ -326,6 +326,11 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
       list collection is demoted to roughly 1–2% of sampled stacks.
 - [x] **H3:** build source-identical code at a third path and publish the observed
       build-identity resolution floor.
+- [x] **H5 A/B block setup:** an only-metric block skips timing unrelated metrics but
+      still constructs and round-trips every incumbent payload before the timer. Profile
+      the parent and child separately; remove only setup the selected callable cannot use.
+      Falsifier: block wall time does not fall, the selected callable/loop/sample policy
+      changes, or a source-identical A/B comparison stops reporting parity.
 - [ ] **P4 functional surface:** add same-run rows for functional `encode()` and
       `decode()`. Hypothesis: constructing a codec and rebuilding/attaching plans on every
       call is a resolvable small-payload cost. Only then attempt bounded reuse; reject a
@@ -366,6 +371,32 @@ says so.
 comparisons explicit without swapping the editable working extension behind its freshness
 check. The evidence is `benches/ab-guard-vs-h3.json`. Next: profile the harness's own
 Python/orchestration cost, then add functional API rows.
+
+#### Checkpoint 12 — H5 Python harness profile and metric-scoped setup
+
+Hypothesis: `MSGSPEC_TOON_ONLY_METRIC` skipped unrelated timers but not their setup, so an
+A/B child still encoded and decoded the slow incumbent payload before timing a completely
+different callable. Selecting setup by the same metric name should shorten blocks without
+changing process isolation, calibration, loop counts, warmup, samples, or statistics.
+
+Confirmed. Parent cProfile put 3.484 of 3.495 seconds in subprocess polling; JSON,
+statistics, and orchestration are negligible. For `entry decode@512`, an ordinary block
+took 0.4369 seconds, of which 0.2971 seconds were the three published samples. The 0.1398
+second remainder includes one deliberate discarded sample (~0.097 seconds), process/import
+cost, and unrelated setup. Child cProfile found about 0.028 seconds in `sample_run` setup,
+including a `python-toon` round-trip the selected metric could not use.
+
+After metric-scoping setup, the same child profile put about 0.002 seconds outside
+`measure`. In a 20-pair alternating diagnostic with a fixed one-loop entry-decode probe,
+mean whole-process time fell from **43.04 ms to 34.24 ms (-20.5%)**. Full sampler paths
+still execute every setup/assertion. A source-identical 8-block-per-side comparison remained
+parity (+0.3%, no significant difference; noisy 6.7% MDE), recorded in
+`benches/ab-h5-parity.json`.
+
+The discarded current-side calibration block remains. It cannot warm a later interpreter,
+but it symmetrically faults that build's binary/code pages into the OS cache before the
+measured sweeps. Removing independent process launches or the discarded warmup would change
+the estimator rather than merely remove overhead, so neither was attempted.
 
 ### F. Distribution finish
 
