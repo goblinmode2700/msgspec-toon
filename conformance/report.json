@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T09:08:35.347548+00:00",
+  "generated_at": "2026-08-08T01:53:23.161427+00:00",
   "distribution": "msgspec-toon 0.3.0",
   "environment": {
     "python": "3.13.1",
@@ -352,35 +352,35 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 4.93,
-        "untyped_tree": 4.29,
-        "keyed_document": 4.33,
-        "convert_only": 1.42,
-        "wrapper_tree_plus_convert": 5.86,
-        "incumbent_pipeline_python_toon_plus_convert": 112.35,
+        "typed_direct": 4.85,
+        "untyped_tree": 4.3,
+        "keyed_document": 4.32,
+        "convert_only": 1.41,
+        "wrapper_tree_plus_convert": 5.85,
+        "incumbent_pipeline_python_toon_plus_convert": 110.6,
         "msgspec_json_native": 2.22
       },
       "encode_us": {
-        "typed_direct_whole": 2.04,
+        "typed_direct_whole": 2.01,
         "to_builtins_alone": 1.07,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 96.04,
-        "msgspec_json_native": 1.03
+        "incumbent_pipeline_to_builtins_plus_python_toon": 94.8,
+        "msgspec_json_native": 1.02
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.65,
-        "decode_us.untyped_tree": 0.68,
-        "decode_us.keyed_document": 1.08,
-        "decode_us.convert_only": 1.02,
-        "decode_us.wrapper_tree_plus_convert": 1.59,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.83,
-        "decode_us.msgspec_json_native": 1.04,
-        "encode_us.typed_direct_whole": 1.41,
-        "encode_us.to_builtins_alone": 0.77,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.48,
-        "encode_us.msgspec_json_native": 0.89
+        "decode_us.typed_direct": 0.93,
+        "decode_us.untyped_tree": 5.4,
+        "decode_us.keyed_document": 4.28,
+        "decode_us.convert_only": 3.73,
+        "decode_us.wrapper_tree_plus_convert": 3.63,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 3.74,
+        "decode_us.msgspec_json_native": 4.02,
+        "encode_us.typed_direct_whole": 2.19,
+        "encode_us.to_builtins_alone": 2.36,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.89,
+        "encode_us.msgspec_json_native": 2.65
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -395,35 +395,35 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 16.61,
-        "untyped_tree": 15.3,
-        "keyed_document": 16.49,
-        "convert_only": 5.4,
-        "wrapper_tree_plus_convert": 21.21,
-        "incumbent_pipeline_python_toon_plus_convert": 457.63,
-        "msgspec_json_native": 8.61
+        "typed_direct": 16.32,
+        "untyped_tree": 15.01,
+        "keyed_document": 15.99,
+        "convert_only": 5.32,
+        "wrapper_tree_plus_convert": 20.68,
+        "incumbent_pipeline_python_toon_plus_convert": 459.63,
+        "msgspec_json_native": 8.59
       },
       "encode_us": {
-        "typed_direct_whole": 6.87,
-        "to_builtins_alone": 4.5,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 378.84,
-        "msgspec_json_native": 3.16
+        "typed_direct_whole": 6.79,
+        "to_builtins_alone": 4.48,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 374.85,
+        "msgspec_json_native": 3.11
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 1.06,
-        "decode_us.untyped_tree": 1.44,
-        "decode_us.keyed_document": 4.74,
-        "decode_us.convert_only": 1.99,
-        "decode_us.wrapper_tree_plus_convert": 2.12,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.67,
-        "decode_us.msgspec_json_native": 1.28,
-        "encode_us.typed_direct_whole": 1.24,
-        "encode_us.to_builtins_alone": 1.77,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.91,
-        "encode_us.msgspec_json_native": 1.64
+        "decode_us.typed_direct": 0.85,
+        "decode_us.untyped_tree": 1.46,
+        "decode_us.keyed_document": 0.99,
+        "decode_us.convert_only": 1.68,
+        "decode_us.wrapper_tree_plus_convert": 1.02,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 4.71,
+        "decode_us.msgspec_json_native": 1.15,
+        "encode_us.typed_direct_whole": 1.95,
+        "encode_us.to_builtins_alone": 2.01,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.64,
+        "encode_us.msgspec_json_native": 2.18
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -438,35 +438,35 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 129.75,
-        "untyped_tree": 126.16,
-        "keyed_document": 138.0,
-        "convert_only": 42.75,
-        "wrapper_tree_plus_convert": 171.92,
-        "incumbent_pipeline_python_toon_plus_convert": 3731.68,
-        "msgspec_json_native": 67.37
+        "typed_direct": 129.61,
+        "untyped_tree": 125.94,
+        "keyed_document": 138.07,
+        "convert_only": 43.38,
+        "wrapper_tree_plus_convert": 172.06,
+        "incumbent_pipeline_python_toon_plus_convert": 3776.28,
+        "msgspec_json_native": 68.99
       },
       "encode_us": {
-        "typed_direct_whole": 52.99,
-        "to_builtins_alone": 43.83,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 3016.69,
-        "msgspec_json_native": 22.75
+        "typed_direct_whole": 53.0,
+        "to_builtins_alone": 43.47,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3015.62,
+        "msgspec_json_native": 23.42
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.76,
-        "decode_us.untyped_tree": 0.89,
-        "decode_us.keyed_document": 1.13,
-        "decode_us.convert_only": 0.51,
-        "decode_us.wrapper_tree_plus_convert": 0.79,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.69,
-        "decode_us.msgspec_json_native": 0.68,
-        "encode_us.typed_direct_whole": 1.31,
-        "encode_us.to_builtins_alone": 2.15,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.85,
-        "encode_us.msgspec_json_native": 1.03
+        "decode_us.typed_direct": 0.91,
+        "decode_us.untyped_tree": 1.79,
+        "decode_us.keyed_document": 1.61,
+        "decode_us.convert_only": 4.07,
+        "decode_us.wrapper_tree_plus_convert": 1.59,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 4.1,
+        "decode_us.msgspec_json_native": 3.4,
+        "encode_us.typed_direct_whole": 1.89,
+        "encode_us.to_builtins_alone": 0.84,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.26,
+        "encode_us.msgspec_json_native": 4.14
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -481,35 +481,35 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1143.46,
-        "untyped_tree": 1109.66,
-        "keyed_document": 1149.29,
-        "convert_only": 455.85,
-        "wrapper_tree_plus_convert": 1511.31,
-        "incumbent_pipeline_python_toon_plus_convert": 31000.31,
-        "msgspec_json_native": 664.48
+        "typed_direct": 1147.96,
+        "untyped_tree": 1125.7,
+        "keyed_document": 1175.54,
+        "convert_only": 460.15,
+        "wrapper_tree_plus_convert": 1524.23,
+        "incumbent_pipeline_python_toon_plus_convert": 31052.54,
+        "msgspec_json_native": 668.81
       },
       "encode_us": {
-        "typed_direct_whole": 423.66,
-        "to_builtins_alone": 454.31,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 24639.97,
-        "msgspec_json_native": 178.46
+        "typed_direct_whole": 427.42,
+        "to_builtins_alone": 465.56,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 25213.97,
+        "msgspec_json_native": 178.57
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 1.97,
-        "decode_us.untyped_tree": 0.7,
-        "decode_us.keyed_document": 1.33,
-        "decode_us.convert_only": 0.98,
-        "decode_us.wrapper_tree_plus_convert": 0.49,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.62,
-        "decode_us.msgspec_json_native": 1.16,
-        "encode_us.typed_direct_whole": 1.66,
-        "encode_us.to_builtins_alone": 0.76,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.62,
-        "encode_us.msgspec_json_native": 5.69
+        "decode_us.typed_direct": 2.41,
+        "decode_us.untyped_tree": 4.03,
+        "decode_us.keyed_document": 4.5,
+        "decode_us.convert_only": 3.24,
+        "decode_us.wrapper_tree_plus_convert": 3.38,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.33,
+        "decode_us.msgspec_json_native": 1.29,
+        "encode_us.typed_direct_whole": 3.05,
+        "encode_us.to_builtins_alone": 4.42,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 6.51,
+        "encode_us.msgspec_json_native": 3.61
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -529,26 +529,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.42,
-        "toons_rust": 27.69,
-        "python_toon": 95.0,
+        "msgspec_toon": 4.44,
+        "toons_rust": 27.79,
+        "python_toon": 95.56,
         "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.35,
-        "toons_rust": 11.59,
-        "python_toon": 111.91,
-        "msgspec_json_context": 2.4
+        "msgspec_toon": 4.32,
+        "toons_rust": 11.56,
+        "python_toon": 111.59,
+        "msgspec_json_context": 2.39
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.27,
-        "encode_us.toons_rust": 1.0,
-        "encode_us.python_toon": 0.71,
-        "encode_us.msgspec_json_context": 1.71,
-        "decode_us.msgspec_toon": 1.92,
-        "decode_us.toons_rust": 0.29,
-        "decode_us.python_toon": 2.91,
-        "decode_us.msgspec_json_context": 2.49
+        "encode_us.msgspec_toon": 1.0,
+        "encode_us.toons_rust": 2.28,
+        "encode_us.python_toon": 0.61,
+        "encode_us.msgspec_json_context": 1.4,
+        "decode_us.msgspec_toon": 1.04,
+        "decode_us.toons_rust": 1.52,
+        "decode_us.python_toon": 0.92,
+        "decode_us.msgspec_json_context": 1.64
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -564,26 +564,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.33,
-        "toons_rust": 106.28,
-        "python_toon": 373.74,
-        "msgspec_json_context": 3.75
+        "msgspec_toon": 15.29,
+        "toons_rust": 110.58,
+        "python_toon": 377.16,
+        "msgspec_json_context": 3.79
       },
       "decode_us": {
-        "msgspec_toon": 15.28,
-        "toons_rust": 46.37,
-        "python_toon": 451.54,
+        "msgspec_toon": 15.72,
+        "toons_rust": 46.62,
+        "python_toon": 454.21,
         "msgspec_json_context": 9.68
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.39,
-        "encode_us.toons_rust": 1.3,
-        "encode_us.python_toon": 0.57,
-        "encode_us.msgspec_json_context": 1.36,
-        "decode_us.msgspec_toon": 2.05,
-        "decode_us.toons_rust": 3.97,
-        "decode_us.python_toon": 0.38,
-        "decode_us.msgspec_json_context": 1.23
+        "encode_us.msgspec_toon": 1.71,
+        "encode_us.toons_rust": 6.18,
+        "encode_us.python_toon": 1.66,
+        "encode_us.msgspec_json_context": 2.39,
+        "decode_us.msgspec_toon": 6.94,
+        "decode_us.toons_rust": 4.1,
+        "decode_us.python_toon": 1.2,
+        "decode_us.msgspec_json_context": 0.82
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -599,26 +599,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 116.85,
-        "toons_rust": 845.39,
-        "python_toon": 2963.54,
-        "msgspec_json_context": 28.01
+        "msgspec_toon": 119.73,
+        "toons_rust": 851.88,
+        "python_toon": 3025.87,
+        "msgspec_json_context": 27.74
       },
       "decode_us": {
-        "msgspec_toon": 124.53,
-        "toons_rust": 381.19,
-        "python_toon": 3679.37,
-        "msgspec_json_context": 86.6
+        "msgspec_toon": 126.42,
+        "toons_rust": 383.24,
+        "python_toon": 3679.5,
+        "msgspec_json_context": 87.36
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.38,
-        "encode_us.toons_rust": 2.19,
-        "encode_us.python_toon": 0.76,
-        "encode_us.msgspec_json_context": 3.62,
-        "decode_us.msgspec_toon": 0.62,
-        "decode_us.toons_rust": 1.64,
-        "decode_us.python_toon": 2.09,
-        "decode_us.msgspec_json_context": 1.02
+        "encode_us.msgspec_toon": 8.73,
+        "encode_us.toons_rust": 1.22,
+        "encode_us.python_toon": 4.06,
+        "encode_us.msgspec_json_context": 0.76,
+        "decode_us.msgspec_toon": 1.64,
+        "decode_us.toons_rust": 1.0,
+        "decode_us.python_toon": 0.74,
+        "decode_us.msgspec_json_context": 3.43
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -634,26 +634,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 920.97,
-        "toons_rust": 6889.05,
-        "python_toon": 23975.65,
-        "msgspec_json_context": 213.75
+        "msgspec_toon": 932.79,
+        "toons_rust": 6990.63,
+        "python_toon": 24272.3,
+        "msgspec_json_context": 215.6
       },
       "decode_us": {
-        "msgspec_toon": 1122.13,
-        "toons_rust": 3156.36,
-        "python_toon": 30364.18,
-        "msgspec_json_context": 827.37
+        "msgspec_toon": 1169.71,
+        "toons_rust": 3319.65,
+        "python_toon": 30955.65,
+        "msgspec_json_context": 850.89
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.43,
-        "encode_us.toons_rust": 1.38,
-        "encode_us.python_toon": 0.65,
-        "encode_us.msgspec_json_context": 0.82,
-        "decode_us.msgspec_toon": 1.01,
-        "decode_us.toons_rust": 0.48,
-        "decode_us.python_toon": 0.76,
-        "decode_us.msgspec_json_context": 1.01
+        "encode_us.msgspec_toon": 1.79,
+        "encode_us.toons_rust": 2.81,
+        "encode_us.python_toon": 1.15,
+        "encode_us.msgspec_json_context": 0.83,
+        "decode_us.msgspec_toon": 8.18,
+        "decode_us.toons_rust": 5.84,
+        "decode_us.python_toon": 1.06,
+        "decode_us.msgspec_json_context": 2.12
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1622,402 +1622,402 @@
         {
           "metric": "typed decode@16",
           "baseline_us": [
-            5.13,
-            5.18,
-            5.06,
-            5.18
+            5.23,
+            5.22,
+            5.3,
+            5.21
           ],
           "current_us": [
-            4.87,
-            4.85,
-            4.82,
-            4.79
+            4.92,
+            4.93,
+            4.91,
+            4.94
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -5.936739659367392,
+          "change_pct": -6.0114503816793965,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.5886643291930482
+          "minimum_detectable_effect_pct": 0.9997545839692602
         },
         {
           "metric": "typed decode@64",
           "baseline_us": [
-            17.85,
-            17.91,
-            17.59,
-            17.73
+            17.75,
+            18.39,
+            17.93,
+            18.45
           ],
           "current_us": [
-            16.54,
-            16.1,
-            16.25,
-            16.29
+            16.49,
+            16.52,
+            16.52,
+            16.49
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -8.300506471581306,
+          "change_pct": -8.963044677330393,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.5905655962626029
+          "minimum_detectable_effect_pct": 2.3224327439388786
         },
         {
           "metric": "typed decode@512",
           "baseline_us": [
-            139.14,
-            136.85,
-            137.81,
-            138.16
+            139.62,
+            140.07,
+            141.03,
+            139.21
           ],
           "current_us": [
-            126.96,
-            129.02,
-            128.7,
-            126.63
+            129.3,
+            128.72,
+            130.84,
+            130.76
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.36466410609465,
+          "change_pct": -7.1991141749861685,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.3595373401101667
+          "minimum_detectable_effect_pct": 1.151672672792023
         },
         {
           "metric": "typed decode@4096",
           "baseline_us": [
-            1207.59,
-            1213.22,
-            1198.23,
-            1206.68
+            1223.63,
+            1227.49,
+            1217.3,
+            1235.49
           ],
           "current_us": [
-            1102.25,
-            1115.06,
-            1105.33,
-            1103.7
+            1142.41,
+            1125.97,
+            1127.13,
+            1132.88
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -8.276070721053026,
+          "change_pct": -7.657563046630128,
           "significant": true,
-          "minimum_detectable_effect_pct": 0.8590753520289522
+          "minimum_detectable_effect_pct": 1.0667448871644851
         },
         {
           "metric": "typed encode@16",
           "baseline_us": [
-            2.28,
-            2.3,
-            2.34,
-            2.29
+            2.37,
+            2.35,
+            2.33,
+            2.54
           ],
           "current_us": [
-            1.99,
-            2.03,
-            2.03,
-            1.97
+            2.11,
+            2.02,
+            2.05,
+            2.08
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -12.920738327904447,
+          "change_pct": -13.86861313868613,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.1199733203890307
+          "minimum_detectable_effect_pct": 5.301388345829603
         },
         {
           "metric": "typed encode@64",
           "baseline_us": [
-            7.81,
-            7.7,
-            7.84,
-            7.77
+            8.02,
+            8.06,
+            7.99,
+            8.05
           ],
           "current_us": [
-            6.76,
-            6.79,
-            6.61,
-            6.72
+            6.77,
+            6.93,
+            6.81,
+            6.83
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -13.62467866323907,
+          "change_pct": -14.881693648816949,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.5621027784838666
+          "minimum_detectable_effect_pct": 1.1435921178823925
         },
         {
           "metric": "typed encode@512",
           "baseline_us": [
-            61.16,
-            61.67,
-            62.22,
-            62.18
+            63.57,
+            62.91,
+            62.29,
+            63.11
           ],
           "current_us": [
-            52.45,
-            50.71,
-            51.98,
-            50.46
+            53.57,
+            53.24,
+            52.68,
+            52.49
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -16.838571370788333,
+          "change_pct": -15.84087660790852,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.152046402729709
+          "minimum_detectable_effect_pct": 1.4147395338837532
         },
         {
           "metric": "typed encode@4096",
           "baseline_us": [
-            487.91,
-            487.54,
-            486.58,
-            498.66
+            495.01,
+            500.68,
+            495.7,
+            511.57
           ],
           "current_us": [
-            410.42,
-            413.27,
-            413.52,
-            412.3
+            419.65,
+            416.21,
+            416.89,
+            418.71
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -15.870943392377177,
+          "change_pct": -16.550505252226706,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.4620773453866875
+          "minimum_detectable_effect_pct": 1.9089531725466309
         },
         {
           "metric": "keyed decode@16",
           "baseline_us": [
-            4.31,
-            4.25,
+            4.45,
             4.33,
-            4.75
+            4.31,
+            4.33
           ],
           "current_us": [
-            4.28,
-            4.35,
-            4.26,
+            4.41,
+            4.4,
+            4.37,
             4.34
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -2.3242630385487533,
+          "change_pct": 0.5740528128587707,
           "significant": false,
-          "minimum_detectable_effect_pct": 6.476351769768273
+          "minimum_detectable_effect_pct": 2.006323233598669
         },
         {
           "metric": "keyed decode@64",
           "baseline_us": [
-            19.56,
-            20.68,
-            19.78,
-            19.68
+            20.0,
+            19.96,
+            20.14,
+            19.85
           ],
           "current_us": [
-            15.91,
-            15.95,
-            15.93,
-            15.84
+            16.03,
+            16.36,
+            16.05,
+            16.04
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -20.16311166875785,
+          "change_pct": -19.349593495934958,
           "significant": true,
-          "minimum_detectable_effect_pct": 3.1534161980610076
+          "minimum_detectable_effect_pct": 1.2246476888329678
         },
         {
           "metric": "keyed decode@512",
           "baseline_us": [
-            277.96,
-            298.84,
-            281.74,
-            281.47
+            288.65,
+            284.1,
+            286.49,
+            286.43
           ],
           "current_us": [
-            135.64,
-            137.94,
-            135.39,
-            137.98
+            137.12,
+            138.53,
+            137.5,
+            137.54
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -52.02235068113438,
+          "change_pct": -51.93293007585081,
           "significant": true,
-          "minimum_detectable_effect_pct": 4.074196487672837
+          "minimum_detectable_effect_pct": 0.8344713915855765
         },
         {
           "metric": "keyed decode@4096",
           "baseline_us": [
-            9685.55,
-            9656.64,
-            9599.69,
-            9635.69
+            9821.48,
+            9765.27,
+            9806.13,
+            9773.75
           ],
           "current_us": [
-            1144.01,
-            1136.9,
-            1130.74,
-            1112.39
+            1145.46,
+            1142.2,
+            1134.98,
+            1120.96
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -88.27287462636967,
+          "change_pct": -88.39930828871414,
           "significant": true,
-          "minimum_detectable_effect_pct": 0.48960662338568856
+          "minimum_detectable_effect_pct": 0.35860707539504066
         },
         {
           "metric": "untyped decode@16",
           "baseline_us": [
-            4.36,
+            4.41,
             4.43,
-            4.36,
-            4.41
+            4.44,
+            4.45
           ],
           "current_us": [
-            4.32,
+            4.33,
             4.26,
-            4.22,
-            4.28
+            4.35,
+            4.31
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -2.73348519362189,
+          "change_pct": -2.7072758037225064,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.5265115013839885
+          "minimum_detectable_effect_pct": 1.1656589244954272
         },
         {
           "metric": "untyped decode@64",
           "baseline_us": [
-            15.58,
-            15.83,
-            16.25,
-            15.81
+            16.08,
+            15.86,
+            15.93,
+            15.98
           ],
           "current_us": [
-            14.99,
-            15.55,
+            15.41,
             15.22,
-            15.14
+            15.98,
+            15.57
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.0491570820860145,
+          "change_pct": -2.615505090054808,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.821800422947546
+          "minimum_detectable_effect_pct": 2.5779967144235987
         },
         {
           "metric": "untyped decode@512",
           "baseline_us": [
-            131.7,
-            126.55,
-            131.01,
-            131.17
+            131.47,
+            130.47,
+            133.33,
+            134.27
           ],
           "current_us": [
-            126.27,
-            122.03,
-            125.22,
-            125.05
+            122.51,
+            121.7,
+            123.14,
+            122.91
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.200372768672052,
+          "change_pct": -7.417758809532797,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.8268044123564593
+          "minimum_detectable_effect_pct": 1.700089617395167
         },
         {
           "metric": "untyped decode@4096",
           "baseline_us": [
-            1152.31,
-            1159.34,
-            1179.12,
-            1152.08
+            1195.02,
+            1200.35,
+            1180.66,
+            1178.54
           ],
           "current_us": [
-            1121.42,
-            1104.82,
-            1119.37,
-            1108.79
+            1135.81,
+            1125.56,
+            1132.9,
+            1112.36
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -4.058929321429722,
+          "change_pct": -5.2147723137949304,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.587583128936574
+          "minimum_detectable_effect_pct": 1.5404145401120817
         },
         {
           "metric": "untyped encode@16",
           "baseline_us": [
-            4.71,
-            4.73,
-            4.63,
-            4.77
+            4.79,
+            4.67,
+            4.66,
+            4.82
           ],
           "current_us": [
-            4.38,
-            4.32,
+            4.41,
+            4.4,
             4.35,
             4.45
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.112526539278131,
+          "change_pct": -7.022175290390717,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.1050167322333655
+          "minimum_detectable_effect_pct": 2.367053656228036
         },
         {
           "metric": "untyped encode@64",
           "baseline_us": [
-            16.26,
-            16.04,
-            16.21,
-            16.08
+            16.44,
+            16.37,
+            16.34,
+            16.98
           ],
           "current_us": [
-            15.16,
-            15.21,
-            14.81,
-            15.16
+            15.23,
+            15.34,
+            15.2,
+            15.23
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -6.579965938999845,
+          "change_pct": -7.757447451988502,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.6083710309376307
+          "minimum_detectable_effect_pct": 2.275701766973339
         },
         {
           "metric": "untyped encode@512",
           "baseline_us": [
-            122.06,
-            122.55,
-            123.66,
-            126.05
+            125.06,
+            127.01,
+            123.78,
+            126.43
           ],
           "current_us": [
-            115.08,
-            115.72,
-            114.13,
-            113.9
+            115.17,
+            114.66,
+            117.29,
+            117.99
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.17955979932028,
+          "change_pct": -7.400254837939,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.9491670787708681
+          "minimum_detectable_effect_pct": 2.1107125351591307
         },
         {
           "metric": "untyped encode@4096",
           "baseline_us": [
-            967.69,
-            967.64,
-            995.3,
-            976.93
+            998.21,
+            994.2,
+            984.84,
+            973.97
           ],
           "current_us": [
-            901.6,
-            896.11,
-            904.28,
-            929.61
+            915.75,
+            922.81,
+            911.16,
+            906.45
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -7.062207618053211,
+          "change_pct": -7.467313892924215,
           "significant": true,
-          "minimum_detectable_effect_pct": 2.475760856971453
+          "minimum_detectable_effect_pct": 1.5911741007066356
         }
       ]
     },
@@ -2539,7 +2539,9 @@
     "token_findings": {
       "T1": "PASS \u2014 canonical TOON is 0.61-0.64x compact JSON tokens (o200k_base) on the uniform-record ladder; 0.80x on string-heavy; 0.65x on numeric-heavy",
       "incumbents": "both v3.0-era codecs cost 1.25x JSON tokens on the challenge shape \u2014 worse than the format they replace",
-      "T2": "the tab-delimiter folklore does not hold under o200k_base: differences are within a few tokens per ten thousand either way (tab wins marginally on numeric-heavy, loses one header token elsewhere); losing points published per the requirement"
+      "T2": "the tab-delimiter folklore does not hold under o200k_base: differences are within a few tokens per ten thousand either way (tab wins marginally on numeric-heavy, loses one header token elsewhere); losing points published per the requirement",
+      "T3_irregular_shapes_lose": "MEASURED LOSS, published per the losing-points requirement: on irregular (non-tabular) shapes canonical TOON costs MORE tokens than compact JSON - 1.16x at 16 records, 1.19x at 512 - despite producing FEWER bytes (0.92x and 0.94x). Both numbers were already in efficiency.lock.json; the divergence had never been read. Mechanism: TOON tokenizes worse per byte than JSON (2.26 vs 2.83 bytes/token on this payload) because JSON's punctuation is saturated in the o200k_base merge table while TOON's indentation and `key: value` runs are not. So the token win is not the byte win: TOON needs roughly a 0.77x byte ratio just to break even on tokens. Tabular clears it (0.37x bytes -> 0.61x tokens); entry-by-entry does not (0.94x bytes -> 1.19x tokens). The token advantage is a property of the tabular forms specifically, not of TOON.",
+      "T4_indent_axis_unmeasured": "The published token work varies the delimiter only and found it to be noise (T2). The indent axis was never measured and is not noise: on irregular@512, indent=1 costs 8,509 tokens against canonical indent=2's 9,789 - 1.19x -> 1.03x against JSON, 13 points recovered by a spec-legal wire option with no conformance impact (canonical default stays 2). benches/bench_tokens.py should be extended across the indent axis."
     },
     "measurements": {
       "instrumentation_cost": {
