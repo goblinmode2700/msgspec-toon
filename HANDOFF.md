@@ -35,9 +35,12 @@ continuation. The ordered queue is now:
    isolation and discarded warmup are intentional. Metric-unrelated sampler setup was not:
    selecting setup by metric cut a fixed-one-loop `entry decode@512` child from 43.04 ms to
    34.24 ms (-20.5%) without changing the timer or estimator.
-4. **NEXT: measure the public functional API**, which the existing reusable-codec ladders omit,
-   then attempt bounded construction/plan reuse only if the overhead resolves.
-5. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
+4. **P4a — DONE at checkpoint 13.** The generated ladder now measures the public
+   functional API. At 16 records, functional decode is 86% slower than reusable decode and
+   functional encode is 147% slower; the fixed construction cost fades with payload size.
+5. **NEXT: attempt bounded functional construction/plan reuse.** Retention and concurrency
+   semantics must be explicit; an unbounded global class cache is rejected by construction.
+6. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
    `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
 
 Then stop. Each candidate is adopted only on same-session A/B and otherwise recorded as

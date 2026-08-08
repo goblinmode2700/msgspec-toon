@@ -63,6 +63,7 @@ def sample_run(records: int) -> dict[str, Any]:
         assert untyped_decoder.decode(keyed_text) == keyed_document(records)
 
     typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
+    functional_decode = measure("decode.functional", lambda: toon.decode(text, type=Document)).us
     untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
     keyed_decode = measure("decode.keyed_document", lambda: untyped_decoder.decode(keyed_text)).us
     need_entry = measuring_all or selected in {"decode.entry_document", "encode.entry_document"}
@@ -82,6 +83,7 @@ def sample_run(records: int) -> dict[str, Any]:
     json_native_decode = measure("decode.json_native", lambda: json_decoder.decode(json_bytes)).us
 
     typed_encode = measure("encode.typed_direct", lambda: encoder.encode(doc)).us
+    functional_encode = measure("encode.functional", lambda: toon.encode(doc)).us
     to_builtins_only = measure("encode.to_builtins", lambda: msgspec.to_builtins(doc)).us
     incumbent_encode = measure(
         "encode.incumbent", lambda: python_toon.encode(msgspec.to_builtins(doc))
@@ -95,6 +97,7 @@ def sample_run(records: int) -> dict[str, Any]:
         "json_bytes": len(json_bytes),
         "decode_us": {
             "typed_direct": typed_decode,
+            "functional": functional_decode,
             "untyped_tree": untyped_decode,
             "keyed_document": keyed_decode,
             "entry_document": entry_decode,
@@ -105,6 +108,7 @@ def sample_run(records: int) -> dict[str, Any]:
         },
         "encode_us": {
             "typed_direct_whole": typed_encode,
+            "functional": functional_encode,
             "entry_document": entry_encode,
             "to_builtins_alone": to_builtins_only,
             "incumbent_pipeline_to_builtins_plus_python_toon": incumbent_encode,
@@ -166,6 +170,7 @@ def main() -> None:
         )
         print(
             f"  decode us: typed={decode['typed_direct']:>9}  "
+            f"functional={decode['functional']:>9}  "
             f"wrapper={decode['wrapper_tree_plus_convert']:>9}  "
             f"incumbent-pipeline={decode['incumbent_pipeline_python_toon_plus_convert']:>10}  "
             f"(untyped={decode['untyped_tree']}, convert={decode['convert_only']}, "
@@ -173,6 +178,7 @@ def main() -> None:
         )
         print(
             f"  encode us: typed={encode['typed_direct_whole']:>9}  "
+            f"functional={encode['functional']:>9}  "
             f"to_builtins={encode['to_builtins_alone']:>9}  "
             f"incumbent-pipeline={encode['incumbent_pipeline_to_builtins_plus_python_toon']:>10}  "
             f"(json-native={encode['msgspec_json_native']})"

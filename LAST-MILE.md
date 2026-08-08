@@ -331,10 +331,11 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
       the parent and child separately; remove only setup the selected callable cannot use.
       Falsifier: block wall time does not fall, the selected callable/loop/sample policy
       changes, or a source-identical A/B comparison stops reporting parity.
-- [ ] **P4 functional surface:** add same-run rows for functional `encode()` and
+- [x] **P4a functional evidence surface:** add same-run rows for functional `encode()` and
       `decode()`. Hypothesis: constructing a codec and rebuilding/attaching plans on every
-      call is a resolvable small-payload cost. Only then attempt bounded reuse; reject a
-      global cache that can retain arbitrary user classes indefinitely.
+      call is a resolvable small-payload cost.
+- [ ] **P4b bounded functional reuse:** attempt reuse only after P4a resolves the overhead;
+      reject a global cache that can retain arbitrary user classes indefinitely.
 - [ ] **E8 quoting specialization:** branch once on the first byte so strings that cannot
       be numeric-like skip numeric-state tracking. Falsifier: the existing >100k quoting
       differential moves or the typed/untyped encode ladder cannot resolve a win.
@@ -397,6 +398,19 @@ The discarded current-side calibration block remains. It cannot warm a later int
 but it symmetrically faults that build's binary/code pages into the OS cache before the
 measured sweeps. Removing independent process launches or the discarded warmup would change
 the estimator rather than merely remove overhead, so neither was attempted.
+
+#### Checkpoint 13 — P4a functional API evidence
+
+The reusable-codec ladder did not measure the package-level `encode()` and `decode()` calls,
+which construct a codec on every invocation. Added functional rows to both the generated
+ten-worker report and the guard A/B metric table without changing codec behavior.
+
+The cost resolves at small payloads. At 16 records, functional decode measured 8.89 us versus
+4.77 us reusable (**+86%**), and functional encode measured 4.97 us versus 2.01 us reusable
+(**+147%**). At 64 records the premiums were 27% and 42%; at 512 they were 5% and 10%.
+At 4096 the difference fell into run noise (decode +0.6%, encode -2.1%). This confirms a
+fixed construction/plan-attachment mechanism worth attempting, bounded to the functional
+surface. Next: make retention and concurrency semantics explicit, then test one reuse design.
 
 ### F. Distribution finish
 

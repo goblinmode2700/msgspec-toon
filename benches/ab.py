@@ -92,7 +92,9 @@ T_CRITICAL_LARGE = 1.960
 #: nothing and reported a mean of zero.
 METRICS = (
     ("bench_typed", "decode_us", "typed_direct", "decode.typed_direct", "typed decode"),
+    ("bench_typed", "decode_us", "functional", "decode.functional", "functional decode"),
     ("bench_typed", "encode_us", "typed_direct_whole", "encode.typed_direct", "typed encode"),
+    ("bench_typed", "encode_us", "functional", "encode.functional", "functional encode"),
     ("bench_typed", "decode_us", "keyed_document", "decode.keyed_document", "keyed decode"),
     ("bench_typed", "decode_us", "entry_document", "decode.entry_document", "entry decode"),
     ("bench_typed", "encode_us", "entry_document", "encode.entry_document", "entry encode"),
