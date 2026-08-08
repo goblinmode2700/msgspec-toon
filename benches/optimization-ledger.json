@@ -175,6 +175,15 @@
       "source": "external review round 2 (Fable 5), patch 03 of 8",
       "measurement": "make ab vs the v0.3.0 guard on the new entry encode metric, attributed by reverting: without R2-B -2.0/-3.6/-0.7/-3.2/-5.1/-2.1% at 4/8/16/64/512/4096; with R2-B -8.2/-11.4/-18.8/-10.2/-10.1/-9.1%. R2-B's share is roughly 5 to 7 points.",
       "note": "write_scalar now writes directly using the row path's own spellings (itoa, write_float, needs_quote/write_quoted) and scalar_text is deleted, so there is one scalar-spelling implementation rather than two. Measurable only because entry_document and the entry encode metric landed first; on the old ladder every payload was tabular or keyed and this would have read as noise."
+    },
+    {
+      "id": "R2-C",
+      "target": "entry key text on the encode path (src/encode.rs)",
+      "hypothesis": "object_pairs copied every key into a String per call (dict: to_str()?.to_string(); struct: field.wire.clone()) and KeyedShape copied every entry key. Borrowing the plan's text or holding the key object should remove a copy per entry per call.",
+      "status": "adopted",
+      "source": "external review round 2 (Fable 5), patch 04 of 8",
+      "measurement": "entry encode vs the v0.3.0 guard: -8.2/-11.4/-18.8/-10.2/-10.1/-9.1% before, -12.0/-16.8/-13.0/-18.1/-18.2/-16.0% after, at 4/8/16/64/512/4096. R2-C adds roughly 4 to 8 points. The @16 before-reading carried a 28% MDE and is not a usable comparison point.",
+      "note": "EntryText::{Wire(&str borrowed from the plan inside the Val), Object(Bound<PyString>)} reads the text at write time. Costs one to_str per dict key at write time and an incref per held key object; both measured cheaper than the copy they replace."
     }
   ],
   "token_findings": {

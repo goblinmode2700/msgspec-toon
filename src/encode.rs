@@ -239,19 +239,37 @@ fn classify<'py>(
     ))
 }
 
-fn object_pairs<'py>(
+/// A pending entry key: a wire name borrowed from the plan inside the `Val`,
+/// or the dict key object itself, read at write time. Carrying a borrow or
+/// the object instead of a copied `String` is optimization R2-C: the copy was
+/// one allocation per entry, per call, on every non-tabular object.
+enum EntryText<'value, 'py> {
+    Wire(&'value str),
+    Object(Bound<'py, PyString>),
+}
+
+impl EntryText<'_, '_> {
+    fn as_str(&self) -> PyResult<&str> {
+        match self {
+            EntryText::Wire(text) => Ok(text),
+            EntryText::Object(text) => text.to_str(),
+        }
+    }
+}
+
+fn object_pairs<'value, 'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
-    value: &Val<'py>,
-) -> PyResult<Vec<(String, Bound<'py, PyAny>)>> {
+    value: &'value Val<'py>,
+) -> PyResult<Vec<(EntryText<'value, 'py>, Bound<'py, PyAny>)>> {
     match value {
         Val::Dict(map) => {
             let mut pairs = Vec::with_capacity(map.len());
             for (key, item) in map.iter() {
-                let Ok(key_text) = key.cast::<PyString>() else {
+                let Ok(key_text) = key.cast_into::<PyString>() else {
                     return Err(encode_err(ctx, py, "object keys must be strings"));
                 };
-                pairs.push((key_text.to_str()?.to_string(), item));
+                pairs.push((EntryText::Object(key_text), item));
             }
             Ok(pairs)
         }
@@ -259,7 +277,7 @@ fn object_pairs<'py>(
             let mut pairs = Vec::with_capacity(plan.fields.len());
             for field in &plan.fields {
                 let item = instance.getattr(field.attr.bind(py))?;
-                pairs.push((field.wire.clone(), item));
+                pairs.push((EntryText::Wire(field.wire.as_str()), item));
             }
             Ok(pairs)
         }
@@ -296,14 +314,14 @@ fn write_entries<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     writer: &mut Writer,
-    pairs: &[(String, Bound<'py, PyAny>)],
+    pairs: &[(EntryText<'_, 'py>, Bound<'py, PyAny>)],
     depth: usize,
 ) -> PyResult<()> {
     if depth > MAX_NESTING_DEPTH {
         return Err(encode_err(ctx, py, "nesting depth limit exceeded"));
     }
     for (key, item) in pairs {
-        write_entry(ctx, py, writer, key, item, depth, false)?;
+        write_entry(ctx, py, writer, key.as_str()?, item, depth, false)?;
     }
     Ok(())
 }
@@ -483,7 +501,15 @@ fn write_list_item<'py>(
             let (first_key, first_item) = &pairs[0];
             // The item's fields live one level below the dash line; the
             // first field shares the dash line itself.
-            write_entry(ctx, py, writer, first_key, first_item, depth + 1, true)?;
+            write_entry(
+                ctx,
+                py,
+                writer,
+                first_key.as_str()?,
+                first_item,
+                depth + 1,
+                true,
+            )?;
             write_entries(ctx, py, writer, &pairs[1..], depth + 1)?;
             Ok(())
         }
@@ -509,7 +535,7 @@ fn write_list_item<'py>(
 /// An eligible keyed tabular object: two or more entries, every value an
 /// object of one uniform shape. Field order follows the first entry.
 struct KeyedShape<'py> {
-    entries: Vec<(String, Bound<'py, PyAny>)>,
+    entries: Vec<(Bound<'py, PyString>, Bound<'py, PyAny>)>,
     shape: Shape,
 }
 
@@ -528,13 +554,13 @@ fn keyed_shape<'py>(
     let mut entries = Vec::with_capacity(map.len());
     let mut rows = Vec::with_capacity(map.len());
     for (key, item) in map.iter() {
-        let Ok(key_text) = key.cast::<PyString>() else {
+        let Ok(key_text) = key.cast_into::<PyString>() else {
             return Ok(None);
         };
         if !(item.is_instance_of::<PyDict>() || item.is_instance(ctx.struct_base.bind(py))?) {
             return Ok(None);
         }
-        entries.push((key_text.to_str()?.to_string(), item.clone()));
+        entries.push((key_text, item.clone()));
         rows.push(item);
     }
     let Some(shape) = build_shape(ctx, py, &rows, depth)? else {
@@ -572,7 +598,7 @@ fn write_keyed<'py>(
     writer.newline();
     for (row_key, row) in &keyed.entries {
         writer.indent(depth + 1);
-        write_key(writer, row_key);
+        write_key(writer, row_key.to_str()?);
         writer.bytes(b": ");
         let mut first = true;
         write_row_obj(ctx, py, writer, row, nodes, &mut first)?;
