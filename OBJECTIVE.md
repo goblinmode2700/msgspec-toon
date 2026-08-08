@@ -137,12 +137,32 @@ rather than keep hunting it.
 
 ---
 
-## After those two: stop
+## Reopened bounded improvement round (2026-08-07)
 
-There is no third item, and this is the part the loop has never had written down.
+The previous exit condition was correct for the evidence then available. A new
+symbolized profile and public-entry-point profile found mechanisms that the three
+review rounds did not measure. The owner explicitly reopened the objective for one
+bounded round over those mechanisms. This is a new objective statement, not an
+implicit continuation of the old loop.
 
-When C7 is repaired and the C9 floor is published, this project has met its
-objective. The remaining backlog is scope, not optimization:
+After C-00 and the H3 floor experiment, execute these checkpoints in order:
+
+1. Add functional `encode()` / `decode()` ladder rows before optimizing their
+   construction overhead.
+2. Attempt bounded plan/codec reuse only if those rows resolve the overhead; do not
+   introduce an unbounded class-retaining cache.
+3. Attempt a first-byte specialization of `needs_quote`.
+4. Attempt a one-pass quote/delimiter scan in `split_cells_into`.
+5. Attempt to move absent-`Any` forwarding off the typed common path.
+6. Measure wide-dictionary row-shape validation, then replace quadratic membership
+   only if the payload and same-session A/B resolve it.
+
+Each item remains a falsifiable checkpoint: add the metric or differential first,
+make one focused change, run the protected gates, adopt only a same-session resolved
+win, otherwise revert and record the rejection. E4 list collection is explicitly
+deferred because the profile put it below these candidates and probably below H3.
+
+The remaining product backlog is still scope, not optimization:
 
 - `strict=False` scalar coercion (F-06). Not a constraint repair. Nothing is
   silently wrong today; unsupported input refuses loudly. This is a new feature,
@@ -153,7 +173,7 @@ Those are decisions about how far to take the product. They are not this objecti
 function, and they should be chosen deliberately rather than fallen into because
 the loop was still running.
 
-**Exit condition, stated plainly:** when the support matrix shows zero
-`silently_wrong` and zero `silently_ignored`, and the gate's resolution floor is a
-published number, the optimization objective is met. Further work is a new
-objective and deserves a new statement of one.
+**Exit condition, stated plainly:** the support matrix shows zero `silently_wrong`
+and zero `silently_ignored`; the gate's resolution floor is published; and every
+candidate in the bounded queue above is either adopted with same-session evidence or
+rejected with its falsifier recorded. Further work again requires a new objective.

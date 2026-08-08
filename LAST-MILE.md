@@ -279,9 +279,30 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 
 ### E. Continued efficiency work
 
-- [ ] Run formal profiles for typed decode, untyped decode, Struct encode, and dictionary encode.
-- [ ] Rank costs by measured inclusive time.
-- [ ] Attempt E3 only if writer overhead is material.
+- [x] Run symbolized profiles for typed decode and Struct encode at small and large sizes.
+- [ ] Complete equivalent symbolized profiles for untyped decode and dictionary encode.
+- [x] Rank costs by measured inclusive time. `needs_quote` leads encode;
+      `split_cells_into` and absent-`Any` forwarding lead focused decode candidates. E4
+      list collection is demoted to roughly 1–2% of sampled stacks.
+- [ ] **H3:** build source-identical code at a third path and publish the observed
+      build-identity resolution floor.
+- [ ] **P4 functional surface:** add same-run rows for functional `encode()` and
+      `decode()`. Hypothesis: constructing a codec and rebuilding/attaching plans on every
+      call is a resolvable small-payload cost. Only then attempt bounded reuse; reject a
+      global cache that can retain arbitrary user classes indefinitely.
+- [ ] **E8 quoting specialization:** branch once on the first byte so strings that cannot
+      be numeric-like skip numeric-state tracking. Falsifier: the existing >100k quoting
+      differential moves or the typed/untyped encode ladder cannot resolve a win.
+- [ ] **D7 one-pass quote-free cells:** use a combined quote/delimiter search so the
+      common quote-free row is scanned once. Falsifier: quoted-heavy control regresses or
+      the typed/untyped decode ladder cannot resolve a win.
+- [ ] **D8 cold Any forwarding:** avoid constructing/forwarding an `AnyEvent` when no
+      `Any` subtree is active. Falsifier: Any/dec-hook behavior changes, G2 moves, or typed
+      decode cannot resolve a win.
+- [ ] **E9 wide-dictionary shape:** add the diagnostic payload first, then replace the
+      per-key linear search with first-row map membership only if wide rows expose the
+      predicted `O(rows * columns^2)` cost without regressing the canonical five-column
+      ladder.
 - [ ] Record rejected candidates with their measurements.
 - [ ] Keep the canonical token ladder and losing shapes in every report.
 

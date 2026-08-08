@@ -6,16 +6,18 @@ CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**The optimization objective has converged. Read `OBJECTIVE.md` before planning any work.**
+**A bounded improvement round was explicitly reopened on 2026-08-07. Read
+`OBJECTIVE.md` before planning any work.**
 
-Both things this project minimizes are at their constrained optimum. Tokens: no move is
-left inside conformance — all three tabular fallbacks are spec-required (T5), so the
-remaining levers belong to the caller, not to us. Speed: the remaining known wins are
-smaller than the A/B gate can resolve (H3 floor, 1.3–2.0%), and the small-payload encode
-gap has no known mechanism. Round 3 produced **zero codec changes** and spent itself fixing
-the measuring instrument, which is what convergence looks like.
+Tokens remain at their constrained optimum: all three tabular fallbacks are spec-required
+(T5), so the remaining token levers belong to the caller. The old speed conclusion is now
+superseded: symbolized profiles found mechanisms that the previous candidate-driven rounds
+did not inspect. H3 still limits what can be claimed, so every new speed candidate remains
+conditional on that measured floor.
 
-**Two items remain, and neither is optimization:**
+The earlier three-round loop converged on the candidates it had measured. A later
+symbolized profile found new mechanisms and the owner explicitly authorized a bounded
+continuation. The ordered queue is now:
 
 1. **C-00 — constraint enforcement. This is the whole job.** `Annotated[int, Meta(ge=10)]`
    is lowered into the plan IR and never applied, so a value `msgspec.json` rejects is
@@ -30,10 +32,13 @@ the measuring instrument, which is what convergence looks like.
    also differs by ~1%, the floor is build identity, it is permanent, and it should be
    published as the gate's resolution.
 
-**Then stop.** `OBJECTIVE.md` states the exit condition: zero `silently_wrong` and zero
-`silently_ignored` in the support matrix, plus a published gate floor. Everything after
-that — F-06 coercion, Tier 2 types, the wheel matrix — is a scope decision and deserves a
-new objective, not a continuation of this one.
+3. **Measure the public functional API**, which the existing reusable-codec ladders omit,
+   then attempt bounded construction/plan reuse only if the overhead resolves.
+4. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
+   `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
+
+Then stop. Each candidate is adopted only on same-session A/B and otherwise recorded as
+rejected. `OBJECTIVE.md` contains the complete reopened exit condition.
 
 **Do not re-spend these.** Measured dead: the plan-cache mutex (~17ns of ~500ns), per-call
 buffer reuse and the `PyBytes` copy (~114ns floor; the copy is not removable under abi3),
