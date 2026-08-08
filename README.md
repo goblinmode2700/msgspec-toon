@@ -12,10 +12,10 @@ application still needs typed Python objects and fast in-process conversion.
 
 ## Install
 
-The first public beta is available from GitHub:
+Install the public beta from PyPI:
 
 ```bash
-uv add "msgspec-toon @ git+https://github.com/goblinmode2700/msgspec-toon@v0.1.0-beta.1"
+uv add msgspec-toon
 ```
 
 The package requires Python 3.13 or newer. Its only runtime dependency is the
