@@ -1,28 +1,33 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the external review round (unreleased, on top of v0.3.0). Read CLAUDE.md (or AGENTS.md, same
+_Last updated after external review rounds 1 and 2 (unreleased, on top of v0.3.0). Read CLAUDE.md (or AGENTS.md, same
 file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
 
 ## Next action
 
-**An external review round has landed on top of v0.3.0 and is unreleased.** Four of five
-proposed optimizations were adopted on measurement, one was rejected on measurement, and a
-pre-existing silent wrong answer was found and fixed while reviewing them. Everything is
-green but **nothing is tagged**: the next release should be cut and the guard re-cut from
-it before further perf work, or the next round measures against a stale baseline.
+**Two external review rounds have landed on top of v0.3.0 and are unreleased.** Round 1:
+four optimizations adopted, one rejected. Round 2: eight patches, all adopted, plus the
+token evidence extended and Target 1 closed against the spec. Everything is green across 42
+A/B metrics with no reproduced slowdown, but **nothing is tagged** — cut a release and
+re-cut the guard before further perf work, or the next round measures against a stale
+baseline.
 
-After that, the queue is unchanged: **C-00 constraint enforcement** (`Annotated[int,
-Meta(ge=10)]` is parsed into the plan IR and never applied, so a value `msgspec.json`
-rejects is accepted — the last silent divergence in the codec), then **F-06**
-(`strict=False` scalar coercion), then **F-04** (cell-accurate error columns).
+After that the correctness queue is unchanged and is now the whole remaining job:
+**C-00 constraint enforcement** (`Annotated[int, Meta(ge=10)]` is parsed into the plan IR
+and never applied, so a value `msgspec.json` rejects is accepted — the last silent
+divergence), then **F-06** (`strict=False` scalar coercion, which is what makes
+model-emitted TOON usable, not merely a parity item), then **F-04**.
 
-`conformance/support_matrix.py` is both the work list and the acceptance test: flipping an
-entry to `supported` is the definition of done, and the report's gap list regenerates from
-it. Use `/last-mile`.
+Perf leads that are known-dead, so round 3 does not re-spend them: the plan-cache mutex
+(~17ns of a ~500ns fixed cost), per-call buffer reuse and the `PyBytes` copy (a ~114ns
+scalar-root floor, and the copy is not removable under abi3 — `_PyBytes_Resize` is not
+stable ABI). Still open: E4 (iterate `PyList` without collecting `Val::Seq`).
 
-The review bundle at `~/Desktop/msgspec-toon-review-bundle/` is a snapshot of `58ba1a7`
-and is now **stale** — its REVIEW-CONTRACT.md pins speed figures this round has beaten.
-Regenerate it before sending it anywhere again.
+`conformance/support_matrix.py` is both the work list and the acceptance test. Use
+`/last-mile`.
+
+The review bundles on the Desktop (`msgspec-toon-review-bundle`, `-v2`) are snapshots of
+`58ba1a7` and `5a15d19` and are both **stale** — regenerate before sending anywhere again.
 
 ## The goal, precisely
 
@@ -46,15 +51,17 @@ evidence in `conformance/report.json` — never as assertions.
 | vs the real incumbent pipeline | 19–51× faster | `bench_typed.py` incumbent rows |
 | Token efficiency (T1) | **pass**: canonical TOON = 0.61–0.64× JSON tokens on record payloads; incumbents = 1.25× JSON | `bench_tokens.py` |
 | Token efficiency (T3) | **measured loss, now published**: on **irregular (non-tabular) shapes canonical TOON costs MORE tokens than JSON** — 1.16× at 16, 1.19× at 512 — while producing *fewer* bytes (0.92×/0.94×). Both numbers were already in the lock; the divergence had never been read. TOON tokenizes worse per byte (2.26 vs 2.83 B/token) so it needs ~0.77× bytes just to break even. **The token advantage belongs to the tabular forms, not to TOON** | ledger `token_findings.T3`, `efficiency.lock.json` |
-| Token efficiency (T4) | **indent axis unmeasured until now**: `indent=1` on irregular@512 costs 8,509 tokens vs canonical `indent=2`'s 9,789 — 1.19× → 1.03× against JSON, a spec-legal option with no conformance impact. `bench_tokens.py` varies only the delimiter and should be extended | ledger `token_findings.T4` |
+| Token efficiency (T4) | **closed — the indent axis is measured and generated**: `INDENT_AXIS = (1,2,4)` in `bench_tokens.py` with roundtrip assertions. `indent=1` saves on **every** shape, not only entry-heavy ones: uniform@4096 0.621× → **0.579×** vs JSON (60,455 → 56,359 tokens), irregular@512 1.186× → 1.031×. `indent=4` costs bytes and is token-identical to `indent=2`. Canonical stays `indent=2`; this is a caller's option and the lock never moves | ledger `token_findings.T4`, `docs/token-shape-guidance.md` |
+| Token efficiency (T5) | **the three tabular-fallback questions are closed**: a row missing a key, an `Optional[Struct]` that is `None` in one row, and an array-valued column are all fallbacks the spec **requires** (TOON 4.1.1 §9.3), and detection is MUST in both directions, so the classifier can be neither more nor less aggressive. No code change recovers tokens there. Corroboration differs and is recorded: the first two are confirmed by named corpus fixtures, the third has **zero fixture coverage** and rests on the spec reading alone | ledger `token_findings.T5` |
 | Tab-delimiter folklore (T2) | **measured false** at noise level; published as a finding | report `token_efficiency.findings` |
 | Type-support boundaries | **generated, not asserted**: 11 supported, 2 parity-rejects, 13 unsupported, 1 inert, 0 silently wrong. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
-| G4 encode vs `to_builtins` alone | **still fails as a gate** (it requires every size) — 1.91× at 16, 1.53× at 64, 1.21× at 512 — **but the ratio crossed below 1.0 at 4096 for the first time: 0.93×** (0.87/0.91/0.93 across three samples). Whole typed encode now beats `to_builtins` alone on the largest payload. Nothing targeted G4: P2 and E5 removed enough per-cell work that stable-ABI `getattr` (canvas risk R-02) stopped dominating at scale. R-02 is a slope, not the floor it was assumed to be | report `benchmarks_typed_same_run`, `gates` |
+| G4 encode vs `to_builtins` alone | **still fails as a gate** (it requires every size): 1.94× at 16, 1.54× at 64, 1.23× at 512, **0.97× at 4096** — the crossover first seen after round 1 holds. R-02 is a slope, not the floor it was assumed to be. **Round 2 did not move the small end and explains why**: the direction doc's three leads (plan-cache mutex, buffer reuse, `PyBytes` copy) were profiled and measured dead, and the real fixed cost turned out to live in the *entries* path — which the uniform challenge shape never touches, so G4 on this ladder is unmoved by round 2's large entry-path wins. Closing G4 at 16/64 remains open and now has no known mechanism | report `benchmarks_typed_same_run`, `gates` |
 | Optimizations | 6 adopted, re-qualified under the significance-tested harness against `v0.1.0-conformant`: **all 16 metrics resolve as faster** — typed decode −14.3/−17.0/−16.9/−18.1%, untyped decode −11.8/−15.5/−18.2/−17.6%, typed encode −6.4/−6.7/−6.2/−3.4%, untyped encode −8.6/−6.6/−7.2/−6.3%. The two encode rows F-12 could not resolve now resolve | `benches/optimization-ledger.json`, report `speed_ab.baseline` |
 | A/B rigor | **mean across 10 worker processes** (never a minimum); one metric per block, alternating `B C C B`, t-test at alpha 0.95, per-row minimum detectable effect; a slowdown must reproduce at double power to fail | `benches/ab.py`, `benches/ab-guard.json`, `benches/ab-baseline.json` |
 | Regression gates | **token/byte lock** (any drift fails) and **speed gate vs the latest release** (a reproduced slowdown exits non-zero). Both proven to fire by deliberate perturbation | `conformance/efficiency.lock.json`, `make ab` |
 | Release + guard | **v0.3.0 tagged; `.venv-guard` built from it. The tree is now AHEAD of the guard by one adopted review round** — `make ab` reports wins, not parity, which is the expected state before a release is cut. `GUARD_TAG` is derived from the latest tag, and the gate refuses a guard built from an older one | `git tag`, `.venv-guard/GUARD_TAG` |
-| External review round | **4 adopted, 1 rejected, all on measurement.** vs the v0.3.0 guard: typed decode −6.0/−9.0/−7.2/−7.7%, typed encode −13.9/−14.9/−15.8/−16.6%, untyped decode −2.7/−2.6/−7.4/−5.2%, untyped encode −7.0/−7.8/−7.4/−7.5%, and keyed decode −19.3/−51.9/−88.4% at 64/512/4096 | `benches/optimization-ledger.json` (D6, P2, E5, D5 adopted; E7 rejected) |
+| External review round 2 | **8 patches, all adopted, all on measurement.** vs the v0.3.0 guard on the full 42-metric ladder: entry decode −24.8/−33.2/−58.6/−89.1% at 16/64/512/4096, entry encode −21 to −23%, typed decode −5.8 to −9.3%, typed encode −7.7 to −14.7%, untyped decode −4.0 to −8.8%. Two new metrics (`entry decode`/`entry encode`) and two new ladder sizes (4, 8) landed *before* the candidates that needed them | ledger (R2-B, R2-C, R2-D, P3), `docs/token-shape-guidance.md` |
+| External review round 1 | **4 adopted, 1 rejected, all on measurement.** vs the v0.3.0 guard: typed decode −6.0/−9.0/−7.2/−7.7%, typed encode −13.9/−14.9/−15.8/−16.6%, untyped decode −2.7/−2.6/−7.4/−5.2%, untyped encode −7.0/−7.8/−7.4/−7.5%, and keyed decode −19.3/−51.9/−88.4% at 64/512/4096 | `benches/optimization-ledger.json` (D6, P2, E5, D5 adopted; E7 rejected) |
 
 Wire options: `delimiter` (`","`/`"\t"`/`"|"`), `indent`, `indent_size` — exactly TOON
 4.1's own option domain, spelled in the wire, defaults byte-identical to canonical.
