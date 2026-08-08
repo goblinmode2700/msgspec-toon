@@ -323,55 +323,133 @@ def main() -> None:
     baseline_instrumented = False
     regressions = []
 
+    # H2: each metric's blocks used to run consecutively, so its whole sample
+    # set occupied one narrow slice of a multi-minute ladder. Any slice-local
+    # disturbance — a background wakeup, a thermal step — then landed almost
+    # entirely inside one metric's samples, biasing its mean while leaving its
+    # within-slice variance (and therefore its printed MDE) small: the gate
+    # reported sub-1% confidence on a run whose real floor was ~2%, and
+    # certified slowdowns on identical source. The blocks are now interleaved:
+    # every block-position of the B C C B pattern runs across ALL metric
+    # points before the next position runs anywhere, so each metric's baseline
+    # and current samples both span the full run. A local disturbance now
+    # touches a few blocks of many metrics instead of most blocks of one, and
+    # slow drift enters both sides of every comparison symmetrically — it
+    # inflates variance, which the t-test models and the MDE reports, instead
+    # of biasing means, which nothing reported. The order is deterministic:
+    # no randomisation enters the evidence.
+    points = [
+        (module, section, metric, sampler_metric, f"{label}@{records}", records)
+        for module, section, metric, sampler_metric, label in METRICS
+        if not arguments.only or arguments.only == label
+        for records in arguments.records
+    ]
+
+    # Calibration pass first (one discarded block per side per point): the
+    # loop counts both sides share, and the coldness of a freshly built guard,
+    # are both spent here rather than inside anyone's measured window (H1).
+    loops_by_point = {}
+    for module, section, metric, sampler_metric, name, records in points:
+        loops_by_point[name] = calibrate_metric(
+            baseline_python, module, records, section, metric, sampler_metric
+        )
+
+    # The canary is one fixed cheap metric measured before, between, and after
+    # the interleaved rounds. It never gates anything: it exists so a reader
+    # sees the run's observed drift beside its verdicts instead of trusting a
+    # number that carries no such caveat.
+    canary = points[0]
+    canary_reads: list[float] = []
+
+    def read_canary() -> None:
+        module, section, metric, sampler_metric, name, records = canary
+        block = run_block(
+            baseline_python,
+            module,
+            records,
+            section,
+            metric,
+            sampler_metric,
+            True,
+            loops_by_point[name],
+        )
+        canary_reads.append(block["value"])
+
+    samples_by_point: dict[str, dict[str, list[float]]] = {
+        name: {BASELINE: [], CURRENT: []} for *_, name, _records in points
+    }
+    read_canary()
+    for position, side in enumerate(sequence):
+        if position == len(sequence) // 2:
+            read_canary()
+        python = baseline_python if side == BASELINE else CURRENT_PYTHON
+        for module, section, metric, sampler_metric, name, records in points:
+            block = run_block(
+                python,
+                module,
+                records,
+                section,
+                metric,
+                sampler_metric,
+                side == BASELINE,
+                loops_by_point[name],
+            )
+            samples_by_point[name][side].append(block["value"])
+            baseline_instrumented |= side == BASELINE and block["instrumented"]
+    read_canary()
+
+    canary_drift_pct = (
+        (max(canary_reads) - min(canary_reads)) / min(canary_reads) * 100 if canary_reads else 0.0
+    )
+    print(
+        f"observed run drift (canary {canary[4]}, baseline side, start/mid/end): "
+        f"{', '.join(f'{value:.2f}us' for value in canary_reads)}  "
+        f"spread {canary_drift_pct:.1f}%"
+    )
+
     print(f"{'metric':<28} {'change':>9}  {'MDE':>7}   verdict")
-    for module, section, metric, sampler_metric, label in METRICS:
-        if arguments.only and arguments.only != label:
-            continue
-        for records in arguments.records:
-            name = f"{label}@{records}"
-            test, samples, instrumented = measure_metric(
-                baseline_python, sequence, module, records, section, metric, sampler_metric
-            )
-            baseline_instrumented |= instrumented
-            slower = test["significant"] and test["change_pct"] > 0
+    for module, section, metric, sampler_metric, name, records in points:
+        samples = samples_by_point[name]
+        test = compare(samples[BASELINE], samples[CURRENT])
+        slower = test["significant"] and test["change_pct"] > 0
 
-            confirmation = None
-            if slower:
-                # A single test at alpha 0.95 is wrong one time in twenty, and
-                # this harness runs sixteen of them. Confirm before failing —
-                # at DOUBLE the block count, because a confirmation run at the
-                # same power can reproduce a borderline effect by chance twice.
-                # Observed: typed encode@4096 flagged at +2.5% over two rounds
-                # and came back "no significant difference" at three.
-                print(f"{name:<28} {test['change_pct']:>+8.1f}%  confirming at 2x blocks...")
-                confirmation, _, _ = measure_metric(
-                    baseline_python, sequence * 2, module, records, section, metric, sampler_metric
-                )
-                slower = confirmation["significant"] and confirmation["change_pct"] > 0
+        confirmation = None
+        if slower:
+            # A single test at alpha 0.95 is wrong one time in twenty, and
+            # this harness runs dozens of them. Confirm before failing — at
+            # DOUBLE the block count, because a confirmation run at the same
+            # power can reproduce a borderline effect by chance twice. The
+            # confirmation runs the metric alone, after the ladder: the
+            # configuration H2's parity runs showed clean.
+            print(f"{name:<28} {test['change_pct']:>+8.1f}%  confirming at 2x blocks...")
+            confirmation, _, _ = measure_metric(
+                baseline_python, sequence * 2, module, records, section, metric, sampler_metric
+            )
+            slower = confirmation["significant"] and confirmation["change_pct"] > 0
 
-            verdict = (
-                ("SLOWER" if slower else "faster")
-                if test["significant"]
-                else "no significant difference"
-            )
-            if confirmation is not None and not slower:
-                verdict = "slowdown did not reproduce"
-            results.append(
-                {
-                    "metric": name,
-                    "baseline_us": samples[BASELINE],
-                    "current_us": samples[CURRENT],
-                    "verdict": verdict,
-                    "confirmation": confirmation,
-                    **test,
-                }
-            )
-            if slower:
-                regressions.append(name)
-            print(
-                f"{name:<28} {test['change_pct']:>+8.1f}%  "
-                f"{test['minimum_detectable_effect_pct']:>6.1f}%   {verdict}"
-            )
+        verdict = (
+            ("SLOWER" if slower else "faster")
+            if test["significant"]
+            else "no significant difference"
+        )
+        if confirmation is not None and not slower:
+            verdict = "slowdown did not reproduce"
+        results.append(
+            {
+                "metric": name,
+                "baseline_us": samples[BASELINE],
+                "current_us": samples[CURRENT],
+                "verdict": verdict,
+                "confirmation": confirmation,
+                **test,
+            }
+        )
+        if slower:
+            regressions.append(name)
+        print(
+            f"{name:<28} {test['change_pct']:>+8.1f}%  "
+            f"{test['minimum_detectable_effect_pct']:>6.1f}%   {verdict}"
+        )
 
     if baseline_instrumented:
         print(
@@ -391,14 +469,26 @@ def main() -> None:
                 "gated": not arguments.no_gate,
                 "block_sequence": sequence,
                 "baseline_instrumented": baseline_instrumented,
+                "canary": {
+                    "metric": points[0][4] if points else None,
+                    "reads_us": canary_reads,
+                    "spread_pct": canary_drift_pct,
+                    "note": (
+                        "one fixed metric read on the baseline side before, between, and "
+                        "after the interleaved rounds; reported context only, never a gate"
+                    ),
+                },
                 "method": (
-                    "one metric at one size per block, alternating B C C B; two-sample "
-                    "two-tailed t-test at alpha 0.95; a change smaller than the reported "
-                    "minimum detectable effect is published as no significant difference; "
-                    "a slowdown must reproduce in an independent confirmation run at double "
-                    "the block count to fail the gate, because one test in twenty is wrong, "
-                    "this runs sixteen, and a same-power confirmation can reproduce a "
-                    "borderline effect twice by chance"
+                    "one metric at one size per block, B C C B interleaved across all "
+                    "metric points — every block-position runs across the whole ladder "
+                    "before the next, so each metric's samples span the full run and "
+                    "slow drift inflates variance (reported as MDE) instead of biasing "
+                    "means; loop counts calibrated once per point up front and shared by "
+                    "both sides; two-sample two-tailed t-test at alpha 0.95; a change "
+                    "smaller than the reported minimum detectable effect is published as "
+                    "no significant difference; a slowdown must reproduce in an "
+                    "independent solo confirmation run at double the block count to fail "
+                    "the gate"
                 ),
                 "results": results,
             },
