@@ -1,0 +1,84 @@
+{
+  "records": [
+    4096
+  ],
+  "baseline_venv": ".venv-guard",
+  "current_venv": ".venv",
+  "gated": false,
+  "block_sequence": [
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline"
+  ],
+  "baseline_instrumented": false,
+  "canary": {
+    "metric": "functional encode@4096",
+    "reads_us": [
+      409.6,
+      412.37,
+      416.65
+    ],
+    "spread_pct": 1.721191406249989,
+    "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+  },
+  "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
+  "results": [
+    {
+      "metric": "functional encode@4096",
+      "baseline_us": [
+        412.56,
+        415.82,
+        419.1,
+        422.58,
+        407.89,
+        410.01,
+        414.83,
+        409.71,
+        415.42,
+        416.6,
+        416.5,
+        403.79
+      ],
+      "current_us": [
+        430.79,
+        414.47,
+        420.76,
+        430.14,
+        419.99,
+        420.33,
+        420.53,
+        426.17,
+        433.96,
+        431.5,
+        428.34,
+        432.06
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "change_pct": 2.9050457117190747,
+      "significant": false,
+      "minimum_detectable_effect_pct": 7.21990576489546
+    }
+  ]
+}

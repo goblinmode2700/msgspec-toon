@@ -38,9 +38,17 @@ continuation. The ordered queue is now:
 4. **P4a — DONE at checkpoint 13.** The generated ladder now measures the public
    functional API. At 16 records, functional decode is 86% slower than reusable decode and
    functional encode is 147% slower; the fixed construction cost fades with payload size.
-5. **NEXT: attempt bounded functional construction/plan reuse.** Retention and concurrency
-   semantics must be explicit; an unbounded global class cache is rejected by construction.
-6. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
+5. **P4b decode — ADOPTED.** Following msgspec 0.21.1 itself, the existing bounded
+   annotation cache now retains an opaque native compiled plan, not Decoder objects. Typed
+   Decoder construction fell from ~3.36 us to ~0.21 us; functional decode improved 40% at
+   16 records, 16% at 64, and 4.5% at 512 in same-session A/B.
+6. **NEXT: repair A/B family-wise confirmation.** With 54 rows, two independent full
+   ladders failed on different untouched encode metrics; neither reproduced in a longer
+   focused control. The current solo confirmation is not a reliable family-wise gate.
+7. **Then resolve encode plan compilation without a wrapper-object/global-class cache.**
+   The prior-art findings are recorded in
+   `docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
+8. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
    `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
 
 Then stop. Each candidate is adopted only on same-session A/B and otherwise recorded as

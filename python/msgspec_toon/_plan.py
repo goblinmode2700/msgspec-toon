@@ -15,6 +15,7 @@ from typing import Any
 import msgspec
 import msgspec.inspect as mi
 
+from . import _native  # type: ignore[attr-defined]
 from ._types import _UNSET, FieldSpec, PlanSpec
 
 _NODEFAULT = msgspec.NODEFAULT
@@ -23,6 +24,12 @@ _NODEFAULT = msgspec.NODEFAULT
 @lru_cache(maxsize=512)
 def compile_plan(annotation: Any) -> PlanSpec:
     return _lower(mi.type_info(annotation))
+
+
+@lru_cache(maxsize=512)
+def compile_native_plan(annotation: Any) -> _native.NativePlan:
+    """Compile and retain the opaque native plan at the inspection membrane."""
+    return _native.compile_plan(compile_plan(annotation))
 
 
 def _is_keyword_only(cls: type) -> bool:

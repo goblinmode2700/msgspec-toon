@@ -334,8 +334,15 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] **P4a functional evidence surface:** add same-run rows for functional `encode()` and
       `decode()`. Hypothesis: constructing a codec and rebuilding/attaching plans on every
       call is a resolvable small-payload cost.
-- [ ] **P4b bounded functional reuse:** attempt reuse only after P4a resolves the overhead;
-      reject a global cache that can retain arbitrary user classes indefinitely.
+- [x] **P4b native decode-plan reuse:** port msgspec's compiled-Struct-metadata pattern;
+      retain opaque native plans behind the existing 512-entry annotation cache, not codec
+      wrapper objects.
+- [ ] **P4c native encode-plan reuse:** remove repeated functional plan compilation without
+      a wrapper-object cache or unbounded global class map.
+- [ ] **H6 family-wise A/B confirmation:** 54 rows make isolated alpha-0.05 decisions a
+      multiple-comparison family. Two full runs flagged different untouched encode metrics,
+      and neither survived a longer focused control. Replace solo confirmation with a
+      family-wise procedure whose false-positive rate and power are published.
 - [ ] **E8 quoting specialization:** branch once on the first byte so strings that cannot
       be numeric-like skip numeric-state tracking. Falsifier: the existing >100k quoting
       differential moves or the typed/untyped encode ladder cannot resolve a win.
@@ -411,6 +418,33 @@ The cost resolves at small payloads. At 16 records, functional decode measured 8
 At 4096 the difference fell into run noise (decode +0.6%, encode -2.1%). This confirms a
 fixed construction/plan-attachment mechanism worth attempting, bounded to the functional
 surface. Next: make retention and concurrency semantics explicit, then test one reuse design.
+
+#### Checkpoint 14 — P4b native decode-plan reuse
+
+The first cache design was rejected before implementation. Caching Python Decoder/Encoder
+objects would add policy around the codec, and a shared Encoder's native plan map could retain
+unbounded runtime Struct classes through an `Any` or container payload.
+
+Reading exact msgspec 0.21.1 source supplied the cleaner pattern: its functional JSON decoder
+uses local per-call state and reuses compiled `StructInfo` stored with the Struct type. This
+codec now compiles the lowered `PlanSpec` once into an opaque, shareable `NativePlan` behind
+the existing 512-entry `compile_plan` retention boundary. Decoder instances clone an `Arc`;
+they are not themselves cached. The full survey and adopt/reject boundary are recorded in
+`docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
+
+Typed Decoder construction fell from about **3.36 us to 0.21 us**. A same-session three-round
+guard A/B (`benches/ab-p4b-decode.json`) measured functional decode **-40.0% at 16** records,
+**-15.7% at 64**, and **-4.5% at 512**. At 4096, -3.0% was just below that run's 3.2% MDE.
+After H6 repairs the guard, apply the same compiled-metadata principle to encode without
+introducing a global wrapper cache.
+
+The full guard exposed a harness defect rather than a stable codec regression. One ladder
+failed on typed encode@64 (+3.0%); a six-round focused control measured -0.2%. A second full
+ladder did not repeat that row, but failed on functional encode@4096 (+4.8%); its six-round
+focused control reported +2.9% with a 7.2% MDE. These encode paths cannot reach the decode
+plan, and no flagged row repeated across full runs. With the expanded 54-row family, the
+alpha-0.05 plus solo-confirmation policy is no longer adequate. H6 is next; both controls are
+retained as `benches/ab-p4b-*-control.json`.
 
 ### F. Distribution finish
 

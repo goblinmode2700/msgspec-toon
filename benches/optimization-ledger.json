@@ -281,6 +281,12 @@
       "method": "add functional encode/decode rows to the existing mean-across-10-workers typed ladder; reusable and functional calls run in the same worker session",
       "result": "at 16 records functional decode was 8.89us versus 4.77us reusable (+86%), and functional encode was 4.97us versus 2.01us reusable (+147%). Premiums fell to +27%/+42% at 64 and +5%/+10% at 512; the 4096 differences were noise-shaped (+0.6%/-2.1%).",
       "ruling": "CONFIRMED. Attempt one bounded reuse design for the functional surface. Reject any cache that can retain arbitrary user classes without a stated bound."
+    },
+    "functional_decode_native_plan_P4b": {
+      "question": "can functional typed decode reuse compiled metadata without caching codec wrapper objects?",
+      "method": "port msgspec 0.21.1's compiled Struct metadata pattern: cache an opaque native CompiledPlan behind the existing 512-entry annotation LRU, then clone its Arc into each Decoder; compare functional decode to the v0.4.0 guard for three B-C-C-B rounds",
+      "result": "typed Decoder construction fell from about 3.36us to 0.21us. Functional decode moved -40.0% at 16 records, -15.7% at 64, and -4.5% at 512; -3.0% at 4096 was below the run's 3.2% MDE.",
+      "ruling": "ADOPTED. No Decoder object is cached. The same bounded annotation cache owns both the public PlanSpec and opaque native compiled plan; each decode still uses local consumer/parser state. Two full ladders flagged different unreachable encode rows; neither repeated across full runs or survived a longer focused control, exposing the 54-row gate's family-wise false-positive problem (H6), not a stable candidate regression."
     }
   },
   "harness_findings": {

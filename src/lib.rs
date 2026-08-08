@@ -29,6 +29,21 @@ use untyped::UntypedConsumer;
 
 create_exception!(_native, NativeFault, PyException);
 
+/// Opaque, shareable result of lowering a Python `PlanSpec` into the native
+/// typed-consumer plan. Python owns the bounded annotation cache; Rust owns
+/// the compiled representation (the same split msgspec uses for StructInfo).
+#[pyclass(module = "msgspec_toon._native", frozen)]
+struct NativePlan {
+    inner: Arc<CompiledPlan>,
+}
+
+#[pyfunction]
+fn compile_plan(py: Python<'_>, spec: &Bound<'_, PyAny>) -> PyResult<NativePlan> {
+    Ok(NativePlan {
+        inner: Arc::new(CompiledPlan::from_python(py, spec)?),
+    })
+}
+
 fn fault_to_pyerr(py: Python<'_>, fault: &Fault) -> PyErr {
     let err = NativeFault::new_err((fault.safe_message(),));
     let value = err.value(py);
@@ -104,11 +119,13 @@ impl Decoder {
         if indent_size == 0 || indent_size > 16 {
             return Err(PyTypeError::new_err("indent_size must be between 1 and 16"));
         }
-        let compiled = plan
-            .as_ref()
-            .map(|spec| CompiledPlan::from_python(py, spec))
-            .transpose()?
-            .map(Arc::new);
+        let compiled = match plan.as_ref() {
+            Some(spec) => match spec.cast::<NativePlan>() {
+                Ok(native) => Some(native.borrow().inner.clone()),
+                Err(_) => Some(Arc::new(CompiledPlan::from_python(py, spec)?)),
+            },
+            None => None,
+        };
         Ok(Self {
             plan: compiled,
             strict,
@@ -239,8 +256,10 @@ fn reset_alloc_stats() {
 
 #[pymodule]
 fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<NativePlan>()?;
     module.add_class::<Decoder>()?;
     module.add_class::<Encoder>()?;
+    module.add_function(wrap_pyfunction!(compile_plan, module)?)?;
     module.add("NativeFault", module.py().get_type::<NativeFault>())?;
     #[cfg(feature = "alloc-stats")]
     {

@@ -16,7 +16,7 @@ from typing import Any, Final, cast
 import msgspec
 
 from . import _native  # type: ignore[attr-defined]
-from ._plan import compile_plan, encode_plan_for
+from ._plan import compile_native_plan, encode_plan_for
 
 __all__ = [
     "DecodeError",
@@ -149,7 +149,7 @@ class Decoder:
         dec_hook: Callable[[type, Any], Any] | None = None,
         float_hook: Callable[[str], Any] | None = None,
     ) -> None:
-        plan = None if type is Any else compile_plan(type)
+        plan = None if type is Any else compile_native_plan(type)
         self._type = type
         self._native = _native.Decoder(
             plan=plan,
