@@ -65,17 +65,19 @@ continuation. The ordered queue is now:
     key objects through `PyDict_Contains`, exactly preserving TOON 4.1's same-set/order-may-
     vary rule. Wide dict encode improved 58–68%; ordinary untyped encode improved 31–37%;
     typed Struct encode was parity-to-faster.
-12. **G4 upstream mechanism proof — DONE, not shipped.** An exact-source msgspec 0.21.1
-    experiment replaced per-leaf public attribute lookup with the same cached native field
-    offsets used by msgspec's C encoders. Typed encode improved 25-30% from 16 through 4096
-    records and beat `to_builtins` from 64 upward; 16 still missed at 1.41 vs 1.09 us.
-    Wrapper and root-Struct setup explain only about 0.08 us. Raw offsets are not an API,
-    and the GIL-only proof does not settle free-threaded safety. See
-    `docs/implementation-spec/msgspec-upstream-struct-view-g4.md`.
-13. **NEXT:** pursue a versioned upstream msgspec bulk Struct-view capsule, or stop. Do not
-    copy msgspec/CPython private layouts into the abi3 wheel. The bounded in-repo native
-    queue remains exhausted; the residual small-payload floor has no adopted mechanism.
-14. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+12. **G4 upstream mechanism proof — DONE, not shipped.** The disposable raw-offset proof
+    improved typed encode 25-30% and beat `to_builtins` from 64 records upward.
+13. **G4 upstream capsule shot — DONE, preserved, not activated.** A versioned msgspec
+    PyCapsule patch (`6391020`) and optional Rust consumer (`aa27f5e`, branch
+    `g4-upstream-capsule`) define class/order/lifetime/unset/free-threaded semantics. The
+    safe path improves 14-22% and beats `to_builtins` at 512/4096, not 4-64. Both capsule
+    and stock fallback pass `make check`, 538/538, and G2; CPython 3.14t concurrent mutation
+    testing passes with the GIL disabled. The exact stock 0.21.1 pin has no capsule, so main
+    correctly remains unchanged. See
+    `docs/implementation-spec/msgspec-upstream-struct-view-g4.md` and its preserved patch.
+14. **NEXT:** upstream the msgspec patch, or stop. Do not copy msgspec/CPython private
+    layouts into the abi3 wheel. No in-repository mechanism closes the residual 4-64 floor.
+15. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 

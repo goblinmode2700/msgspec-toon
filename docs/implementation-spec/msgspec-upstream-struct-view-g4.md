@@ -81,11 +81,58 @@ A per-field exported function is safer but may return much of the recovered cost
 FFI calls. The next proof should compare a bulk borrowed view or a class-specific offset
 view supplied by a versioned capsule, not a Python tuple and not hard-coded private structs.
 
+## Production capsule shot
+
+That next proof was implemented, not merely designed. The exact msgspec 0.21.1 source now
+has an upstream-shaped patch that publishes `msgspec._core._C_API` as a named `PyCapsule`.
+Its append-only version-1 table returns a class-owned offset view in
+`__struct_fields__` order. The public `msgspec.h` header defines the capsule name, version,
+table size, lifetime rule, unset-field rule, and critical-section requirement. The header
+is present in a built wheel. The patch is preserved at
+`patches/0001-feat-expose-versioned-Struct-access-C-API.patch`; its source commit is
+`6391020` on the msgspec worktree branch `msgspec-struct-capi-g4`.
+
+The corresponding msgspec-toon consumer is commit `aa27f5e` on branch
+`g4-upstream-capsule`. It discovers the capsule once when an Encoder is constructed,
+rejects a present but incompatible table, and otherwise keeps the exact stock-0.21.1
+attribute fallback. Each encode plan copies the offsets and pins the Struct class. Every
+offset load validates the exact runtime class, holds the object's PyO3 critical section,
+and acquires a strong field reference before leaving it. Struct subclasses fall back to
+public attribute access. A deleted field remains an `AttributeError`.
+
+The final same-binary benchmark constructed both encoders against the same patched msgspec
+and measured them in capsule/attribute/attribute/capsule order. It used the same
+mean-across-ten-workers implementation as the published gates.
+
+| records | capsule A (us) | attribute A (us) | attribute B (us) | capsule B (us) | `to_builtins` (us) | capsule G4 |
+|---:|---:|---:|---:|---:|---:|:---:|
+| 4 | 0.60 | 0.70 | 0.73 | 0.61 | 0.34 | fail |
+| 8 | 0.95 | 1.16 | 1.16 | 0.95 | 0.59 | fail |
+| 16 | 1.69 | 2.03 | 2.10 | 1.78 | 1.11 | fail |
+| 64 | 5.26 | 6.65 | 6.62 | 5.30 | 4.64 | fail |
+| 512 | 40.77 | 51.22 | 52.79 | 41.39 | 45.97 | pass |
+| 4096 | 346.66 | 416.89 | 412.11 | 321.60 | 475.09 | pass |
+
+The supported path recovers about 14-22% from the attribute implementation. Its
+strong-reference and synchronization contract costs part of the disposable raw-offset
+proof's 25-30% result, moving the G4 crossover from 64 to 512 records. The 4096 capsule-A
+row was noisy (17.46% worker spread); capsule-B had 1.36% spread and the same directional
+result.
+
+Both configurations passed `make check` and all 538 corpus cases. G2 remained zero builtin
+containers. The capsule producer passed 311 tests under a CPython 3.14t free-threaded
+runtime, and the consumer passed a same-object concurrent mutation/encode stress test with
+the GIL disabled. The stock 0.21.1 fallback passed the full suite and corpus. Its focused
+A/B against the unchanged release found no reproduced slowdown; the harness completed the
+measurements but then hit its existing absolute-venv-path output-filename defect, so no JSON
+artifact is claimed for that run.
+
 ## Ruling
 
 The statement “whether upstream msgspec can eliminate the gap is unmeasured” is closed.
-Upstream access recovers 25-30% on the canonical Struct ladder and closes G4 from 64
-records upward. It does not yet close G4 at 4, 8, or 16 records. Production remains on the
-public attribute path until msgspec provides a supported ABI or the project explicitly
-changes its compatibility constraint.
-
+The unsafe mechanism proof recovered 25-30%; the production-quality capsule path recovers
+14-22% and closes G4 from 512 records upward. It does not close the fixed-cost miss at
+4-64 records. The candidate is preserved and validated, but main remains on public
+attribute access because the exact required `msgspec==0.21.1` release does not provide the
+capsule. Activation requires upstream acceptance and a new pinned msgspec release; copying
+the private layout or shipping a patched dependency remains rejected.

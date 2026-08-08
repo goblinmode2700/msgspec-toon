@@ -329,6 +329,12 @@
       "method": "patch an exact-source msgspec 0.21.1 build to expose its existing struct_offsets for a disposable proof, cache those offsets in the normal Rust encode plan, and compare the ordinary and proof builds in one session using the repository mean-across-10-workers timing implementation",
       "result": "typed encode public/proof/to_builtins in us: 16=1.88/1.41/1.09, 64=6.14/4.39/4.43, 512=48.54/33.71/43.76, 4096=376.32/266.79/447.82. Native slots improve 25.0-30.6% and close G4 from 64 upward, but not at 16. Wrapper plus root Struct handling account for only about 0.08us at 16. A SmallVec sequence experiment moved 1.41 to 1.40us at 16 and regressed 4096 from 266.79 to 293.22us, so it was rejected.",
       "ruling": "UPSTREAM MECHANISM CONFIRMED; PRODUCTION CHANGE REJECTED WITHOUT API. Propose a versioned msgspec capsule for a bulk borrowed Struct view with explicit object-lifetime, unset-field, and free-threaded semantics. Do not copy raw private offsets or CPython descriptor layouts into the abi3 wheel."
+    },
+    "upstream_struct_capsule_G4U2": {
+      "question": "can a versioned, lifetime-safe and free-thread-safe msgspec capsule retain the native Struct-access gain without a private-layout dependency?",
+      "method": "publish an append-only version-1 PyCapsule table and public msgspec.h from exact msgspec 0.21.1 source; have the Rust encoder copy class offsets, pin classes, validate exact runtime types, acquire strong references under PyO3 object critical sections, and compare capsule/attribute/attribute/capsule against the same binaries with ten workers",
+      "result": "capsule/attribute pairs in us: 4=0.60-0.61/0.70-0.73, 8=0.95/1.16, 16=1.69-1.78/2.03-2.10, 64=5.26-5.30/6.62-6.65, 512=40.77-41.39/51.22-52.79, 4096=321.60-346.66/412.11-416.89. The safe path improves about 14-22% and beats to_builtins at 512 and 4096, not 4-64. Both capsule and stock fallback passed make check and 538/538; G2 stayed green; CPython 3.14t concurrent mutation/encode passed with the GIL disabled.",
+      "ruling": "UPSTREAM CANDIDATE PROVEN AND PRESERVED, NOT ACTIVATED. Patch 6391020 and consumer aa27f5e define the missing contract, but stock msgspec==0.21.1 has no capsule. Keep main on public attribute access until upstream acceptance and a new exact pin; the 4-64 fixed-cost G4 miss remains open without a local mechanism."
     }
   },
   "harness_findings": {

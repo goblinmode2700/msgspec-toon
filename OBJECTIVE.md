@@ -201,3 +201,11 @@ upstream msgspec C capsule for a bulk borrowed Struct view. The full experiment 
 are in `docs/implementation-spec/msgspec-upstream-struct-view-g4.md`. Further codec work
 requires either that supported upstream API or a separately stated objective for the
 remaining generic sequence/output setup cost.
+
+The versioned-capsule shot is now implemented and validated as two preserved commits. The
+production-quality path acquires strong references under object critical sections and was
+tested on CPython 3.14t with the GIL disabled. It improves Struct encode by 14-22% over the
+attribute fallback and beats `to_builtins` at 512 and 4096 records, but not at 4-64. Main
+does not activate it: the exact stock `msgspec==0.21.1` pin has no capsule. The next external
+action is upstream review of the preserved patch; the remaining small-payload floor still
+has no in-repository mechanism.

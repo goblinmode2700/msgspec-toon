@@ -549,6 +549,31 @@ sizes; no control regressed. Two focused tests lock varying insertion order and 
 different-key fallback. All 36 Rust tests, 121 Python tests, 538/538 corpus, payload safety,
 and G2 passed. Evidence: `benches/ab-e9-*.json`. Adopted.
 
+#### Checkpoint 21 — upstream Struct capsule shot
+
+Hypothesis: a versioned msgspec capsule that exposes the existing per-class Struct offsets,
+combined with exact-class validation, critical sections, and strong field references in the
+Rust consumer, can retain most of the raw G4 proof's gain without binding the abi3 wheel to
+an undocumented layout.
+
+Confirmed for the mechanism, not for the complete gate. The upstream-shaped msgspec patch
+is commit `6391020`; the optional consumer is commit `aa27f5e` on branch
+`g4-upstream-capsule`. A same-binary ABBA-shaped ten-worker run measured the capsule path
+14-22% faster than the attribute fallback. It beats `to_builtins` at 512 and 4096 records,
+but remains behind at 4, 8, 16, and 64. Safety therefore consumes part of the disposable
+proof's gain and the fixed-cost G4 miss remains.
+
+The capsule header shipped in a built wheel. Both capsule and exact-stock-0.21.1 fallback
+configurations passed `make check` and the 538-case corpus; G2 remained green. CPython 3.14t
+ran the capsule producer tests and a same-object concurrent mutation/encode stress test with
+the GIL disabled. The stock fallback A/B found no reproduced slowdown, although `ab.py`
+failed only when constructing an output filename from the supplied absolute venv paths.
+
+Ruling: preserve the upstream patch and consumer branch, but do not merge a dormant fast
+path into main while the required stock `msgspec==0.21.1` cannot activate it. Upstream
+acceptance plus a new exact pin is the activation gate. The bounded local optimization loop
+is stopped again.
+
 ### F. Distribution finish
 
 - [ ] Lift the PyO3 cooldown pin only after its time gate and `make audit` pass.

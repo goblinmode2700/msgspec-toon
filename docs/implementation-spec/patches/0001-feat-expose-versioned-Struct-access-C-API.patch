@@ -1,0 +1,215 @@
+From 6391020db4185c70e6dbc772a54aace78b2c38b6 Mon Sep 17 00:00:00 2001
+From: Darcy Rose <darcy@fleetmancer.com>
+Date: Sat, 8 Aug 2026 01:26:47 -0700
+Subject: [PATCH] feat: expose versioned Struct access C API
+
+---
+ pyproject.toml          |  9 ++++++-
+ src/msgspec/_core.c     | 36 +++++++++++++++++++++++++++
+ src/msgspec/msgspec.h   | 47 +++++++++++++++++++++++++++++++++++
+ tests/unit/test_capi.py | 55 +++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 146 insertions(+), 1 deletion(-)
+ create mode 100644 src/msgspec/msgspec.h
+ create mode 100644 tests/unit/test_capi.py
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 1e3a771..339cb61 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -113,10 +113,17 @@ packages = ["msgspec"]
+ [tool.setuptools.package-dir]
+ "" = "src"
+ 
++[tool.setuptools.package-data]
++msgspec = ["msgspec.h"]
++
+ [tool.setuptools.exclude-package-data]
+ msgspec = [
+   "*.c",
+-  "*.h",
++  "atof.h",
++  "atof_consts.h",
++  "common.h",
++  "itoa.h",
++  "ryu.h",
+ ]
+ 
+ [tool.setuptools_scm]
+diff --git a/src/msgspec/_core.c b/src/msgspec/_core.c
+index 5a919c4..fda8c89 100644
+--- a/src/msgspec/_core.c
++++ b/src/msgspec/_core.c
+@@ -12,6 +12,7 @@
+ #include "structmember.h"
+ 
+ #include "common.h"
++#include "msgspec.h"
+ #include "itoa.h"
+ #include "ryu.h"
+ #include "atof.h"
+@@ -7471,6 +7472,31 @@ Struct_get_index(PyObject *obj, Py_ssize_t index) {
+     return val;
+ }
+ 
++static int
++msgspec_capi_struct_offsets(
++    PyObject *cls, const Py_ssize_t **offsets, Py_ssize_t *nfields
++) {
++    if (offsets == NULL || nfields == NULL) {
++        PyErr_SetString(PyExc_SystemError, "msgspec C API output pointer is NULL");
++        return -1;
++    }
++    if (!PyType_Check(cls) || !ms_is_struct_cls(cls)) {
++        PyErr_SetString(PyExc_TypeError, "expected a msgspec.Struct class");
++        return -1;
++    }
++
++    StructMetaObject *struct_type = (StructMetaObject *)cls;
++    *offsets = struct_type->struct_offsets;
++    *nfields = PyTuple_GET_SIZE(struct_type->struct_fields);
++    return 0;
++}
++
++static const MsgspecCAPI msgspec_capi = {
++    .abi_version = MSGSPEC_CAPI_VERSION,
++    .struct_size = sizeof(MsgspecCAPI),
++    .struct_offsets = msgspec_capi_struct_offsets,
++};
++
+ static MS_INLINE int
+ Struct_post_init(StructMetaObject *st_type, PyObject *obj) {
+     if (st_type->post_init != NULL) {
+@@ -22461,6 +22487,16 @@ PyInit__core(void)
+     if (m == NULL)
+         return NULL;
+ 
++    temp_obj = PyCapsule_New(
++        (void *)&msgspec_capi, MSGSPEC_CAPI_CAPSULE_NAME, NULL
++    );
++    if (temp_obj == NULL)
++        return NULL;
++    if (PyModule_AddObject(m, "_C_API", temp_obj) < 0) {
++        Py_DECREF(temp_obj);
++        return NULL;
++    }
++
+     /* Add types */
+     Py_INCREF(&Factory_Type);
+     if (PyModule_AddObject(m, "Factory", (PyObject *)&Factory_Type) < 0)
+diff --git a/src/msgspec/msgspec.h b/src/msgspec/msgspec.h
+new file mode 100644
+index 0000000..46a4748
+--- /dev/null
++++ b/src/msgspec/msgspec.h
+@@ -0,0 +1,47 @@
++#ifndef MSGSPEC_CAPI_H
++#define MSGSPEC_CAPI_H
++
++#include <stddef.h>
++#include <stdint.h>
++
++#define PY_SSIZE_T_CLEAN
++#include "Python.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define MSGSPEC_CAPI_VERSION 1
++#define MSGSPEC_CAPI_CAPSULE_NAME "msgspec._core._C_API"
++
++/*
++ * Public cross-extension API. The table is append-only: consumers must check
++ * both abi_version and struct_size before reading a member.
++ */
++typedef struct {
++    uint32_t abi_version;
++    uint32_t struct_size;
++
++    /*
++     * Return the field count and class-owned byte-offset array for a
++     * msgspec.Struct class. The offsets use __struct_fields__ order and remain
++     * valid while `cls` is alive. Returns 0 on success and -1 with a Python
++     * exception set on failure.
++     *
++     * A consumer that dereferences a field at `(char *)obj + offsets[index]`
++     * must hold `obj`'s Python critical section and acquire a strong reference
++     * to the field value before leaving that section. A NULL field pointer is
++     * an unset field and must be reported as AttributeError.
++     */
++    int (*struct_offsets)(
++        PyObject *cls,
++        const Py_ssize_t **offsets,
++        Py_ssize_t *nfields
++    );
++} MsgspecCAPI;
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+diff --git a/tests/unit/test_capi.py b/tests/unit/test_capi.py
+new file mode 100644
+index 0000000..16e6974
+--- /dev/null
++++ b/tests/unit/test_capi.py
+@@ -0,0 +1,55 @@
++import ctypes
++
++import msgspec
++import pytest
++
++
++CAPSULE_NAME = b"msgspec._core._C_API"
++
++
++class MsgspecCAPI(ctypes.Structure):
++    _fields_ = [
++        ("abi_version", ctypes.c_uint32),
++        ("struct_size", ctypes.c_uint32),
++        ("struct_offsets", ctypes.c_void_p),
++    ]
++
++
++def load_capi():
++    get_pointer = ctypes.pythonapi.PyCapsule_GetPointer
++    get_pointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
++    get_pointer.restype = ctypes.c_void_p
++    pointer = get_pointer(msgspec._core._C_API, CAPSULE_NAME)
++    assert pointer
++    return ctypes.cast(pointer, ctypes.POINTER(MsgspecCAPI)).contents
++
++
++def test_capi_header():
++    api = load_capi()
++    assert api.abi_version == 1
++    assert api.struct_size >= ctypes.sizeof(MsgspecCAPI)
++    assert api.struct_offsets
++
++
++def test_capi_struct_offsets():
++    class Point(msgspec.Struct):
++        x: int
++        y: int
++
++    api = load_capi()
++    function = ctypes.PYFUNCTYPE(
++        ctypes.c_int,
++        ctypes.py_object,
++        ctypes.POINTER(ctypes.POINTER(ctypes.c_ssize_t)),
++        ctypes.POINTER(ctypes.c_ssize_t),
++    )(api.struct_offsets)
++    offsets = ctypes.POINTER(ctypes.c_ssize_t)()
++    nfields = ctypes.c_ssize_t()
++
++    assert function(Point, ctypes.byref(offsets), ctypes.byref(nfields)) == 0
++    assert nfields.value == 2
++    assert offsets[0] > 0
++    assert offsets[1] > offsets[0]
++
++    with pytest.raises(TypeError, match="msgspec.Struct class"):
++        function(dict, ctypes.byref(offsets), ctypes.byref(nfields))
+-- 
+2.39.5 (Apple Git-154)
+
