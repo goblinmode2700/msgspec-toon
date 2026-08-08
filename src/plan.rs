@@ -3,8 +3,9 @@
 
 use rustc_hash::FxHashMap;
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyString;
+use pyo3::types::{PyString, PyTuple};
 
 pub enum PlanKind {
     Any,
@@ -27,6 +28,110 @@ pub enum PlanKind {
 
 pub struct CompiledPlan {
     pub kind: PlanKind,
+    /// `None` is the unconstrained fast path. Constraint-bearing annotations
+    /// pay for Python comparisons or regex matching only after conversion.
+    pub constraints: Option<Box<Constraints>>,
+}
+
+pub struct Constraints {
+    pub ge: Option<Py<PyAny>>,
+    pub gt: Option<Py<PyAny>>,
+    pub le: Option<Py<PyAny>>,
+    pub lt: Option<Py<PyAny>>,
+    pub multiple_of: Option<Py<PyAny>>,
+    pub min_length: Option<usize>,
+    pub max_length: Option<usize>,
+    pub pattern: Option<Py<PyAny>>,
+}
+
+impl Constraints {
+    fn from_python(spec: &Bound<'_, PyAny>) -> PyResult<Option<Box<Self>>> {
+        let mut constraints = Self {
+            ge: None,
+            gt: None,
+            le: None,
+            lt: None,
+            multiple_of: None,
+            min_length: None,
+            max_length: None,
+            pattern: None,
+        };
+        let mut any = false;
+        for pair in spec.getattr("constraints")?.try_iter()? {
+            let pair = pair?.cast_into::<PyTuple>()?;
+            let name_obj = pair.get_item(0)?;
+            let name = name_obj.extract::<&str>()?;
+            let value = pair.get_item(1)?;
+            any = true;
+            match name {
+                "ge" => constraints.ge = Some(value.unbind()),
+                "gt" => constraints.gt = Some(value.unbind()),
+                "le" => constraints.le = Some(value.unbind()),
+                "lt" => constraints.lt = Some(value.unbind()),
+                "multiple_of" => constraints.multiple_of = Some(value.unbind()),
+                "min_length" => constraints.min_length = Some(value.extract::<usize>()?),
+                "max_length" => constraints.max_length = Some(value.extract::<usize>()?),
+                "pattern" => constraints.pattern = Some(value.unbind()),
+                // `tz` belongs to datetime, which is still an unsupported
+                // custom type. Silently dropping a new constraint name on a
+                // supported plan would recreate C-00, so unknown names fail.
+                "tz" => {}
+                _ => {
+                    return Err(PyValueError::new_err(
+                        "unknown constraint in msgspec-toon plan IR",
+                    ));
+                }
+            }
+        }
+        Ok(any.then(|| Box::new(constraints)))
+    }
+
+    pub fn length_valid(&self, length: usize) -> bool {
+        self.min_length.is_none_or(|minimum| length >= minimum)
+            && self.max_length.is_none_or(|maximum| length <= maximum)
+    }
+
+    pub fn scalar_valid(&self, value: &Bound<'_, PyAny>) -> PyResult<bool> {
+        if let Some(bound) = &self.ge
+            && !value.ge(bound.bind(value.py()))?
+        {
+            return Ok(false);
+        }
+        if let Some(bound) = &self.gt
+            && !value.gt(bound.bind(value.py()))?
+        {
+            return Ok(false);
+        }
+        if let Some(bound) = &self.le
+            && !value.le(bound.bind(value.py()))?
+        {
+            return Ok(false);
+        }
+        if let Some(bound) = &self.lt
+            && !value.lt(bound.bind(value.py()))?
+        {
+            return Ok(false);
+        }
+        if let Some(divisor) = &self.multiple_of
+            && !value.rem(divisor.bind(value.py()))?.eq(0)?
+        {
+            return Ok(false);
+        }
+        if (self.min_length.is_some() || self.max_length.is_some())
+            && !self.length_valid(value.len()?)
+        {
+            return Ok(false);
+        }
+        if let Some(pattern) = &self.pattern
+            && pattern
+                .bind(value.py())
+                .call_method1("search", (value,))?
+                .is_none()
+        {
+            return Ok(false);
+        }
+        Ok(true)
+    }
 }
 
 pub struct StructPlan {
@@ -175,7 +280,8 @@ impl CompiledPlan {
                 PlanKind::Custom(class)
             }
         };
-        Ok(Self { kind })
+        let constraints = Constraints::from_python(spec)?;
+        Ok(Self { kind, constraints })
     }
 
     /// Unwrap `Optional[T]`-shaped unions to their single non-none member.

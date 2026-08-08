@@ -8,6 +8,7 @@ this point — including all Rust code — sees only PlanSpec/FieldSpec.
 from __future__ import annotations
 
 import inspect
+import re
 from functools import lru_cache
 from typing import Any
 
@@ -76,14 +77,22 @@ def _lower(info: mi.Type) -> PlanSpec:
         case mi.StrType():
             return PlanSpec("str", constraints=_constraints(info))
         case mi.ListType(item_type=item):
-            return PlanSpec("list", python_type=list, item=_lower(item))
+            return PlanSpec(
+                "list", python_type=list, item=_lower(item), constraints=_constraints(info)
+            )
         case mi.VarTupleType(item_type=item):
-            return PlanSpec("tuple_var", python_type=tuple, item=_lower(item))
+            return PlanSpec(
+                "tuple_var", python_type=tuple, item=_lower(item), constraints=_constraints(info)
+            )
         case mi.TupleType(item_types=items):
             return PlanSpec("tuple_fixed", python_type=tuple, items=tuple(map(_lower, items)))
         case mi.DictType(key_type=key, value_type=value):
             return PlanSpec(
-                "dict", python_type=dict, key=_lower_mapping_key(key), value=_lower(value)
+                "dict",
+                python_type=dict,
+                key=_lower_mapping_key(key),
+                value=_lower(value),
+                constraints=_constraints(info),
             )
         case mi.UnionType(types=items):
             return PlanSpec("union", items=tuple(map(_lower, items)))
@@ -135,9 +144,18 @@ def _constraints(info: Any) -> tuple[tuple[str, Any], ...]:
         "pattern",
         "tz",
     )
-    return tuple(
-        (name, value) for name in names if (value := getattr(info, name, None)) is not None
-    )
+    constraints: list[tuple[str, Any]] = []
+    for name in names:
+        value = getattr(info, name, None)
+        if value is None:
+            continue
+        # msgspec uses Python regex search semantics. Compile once at the
+        # inspection membrane so Rust receives an executable schema object,
+        # not a second regex implementation with subtly different behavior.
+        if name == "pattern":
+            value = re.compile(value)
+        constraints.append((name, value))
+    return tuple(constraints)
 
 
 def encode_plan_for(cls: type) -> PlanSpec:

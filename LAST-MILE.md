@@ -222,7 +222,7 @@ the parity items around it.
       refuses to memoize a `ByPosition` frame — the rule lives in one constructor so no call
       site can forget it. Regression test asserts against `msgspec.json` and was confirmed to
       fail on the unfixed build. Corpus 538/538, lock matches, `make ab` resolved no slowdown.
-- [ ] **C-00 enforce constraints (`msgspec.Meta`).** No lettered finding — the adversarial
+- [x] **C-00 enforce constraints (`msgspec.Meta`).** No lettered finding — the adversarial
       review logged it only as "parsed but not enforced" — but it is the **last silent
       divergence in the codec**: `Annotated[int, Meta(ge=10)]` reaches the plan IR and is
       never applied, so a value `msgspec.json` rejects is accepted. Take it first: a wrong
@@ -239,6 +239,46 @@ the parity items around it.
 - [x] F-13 reject unsupported mapping key plans during decoder construction.
 
 Exit: supported behavior matches `msgspec==0.21.1`. Unsupported behavior fails loudly.
+
+#### Checkpoint 10 — C-00 constraint enforcement
+
+Hypothesis: the compatibility membrane already exposes every constraint needed for
+supported scalar and collection plans, so a boxed optional constraint record can enforce
+them at scalar conversion or container completion without an intermediate tree and without
+a measurable cost on unconstrained payloads.
+
+Confirmed, after one rejected representation. `_plan.py` now lowers length constraints for
+lists, variable tuples and dictionaries and compiles patterns once with Python's own regex
+search semantics. Rust stores schema values without narrowing Python-precision integers;
+numeric comparisons and remainders use Python operations, strings use Unicode character
+length, and collection lengths are checked before the final declared container is placed.
+Every failure uses the static `constraint` fault and never stores the rejected value.
+
+The first implementation stored the full constraint record inline in every `CompiledPlan`.
+The release-guard gate reproduced `keyed decode@512` **+2.0% slower**, so that layout was
+rejected. Constraints are now boxed: an unconstrained plan carries one nullable pointer.
+A focused 8-block rerun saw +1.9% initially but the double-power confirmation did not
+reproduce it; the subsequent full 42-row gate had no reproduced slowdown.
+
+```text
+gate                        result
+────                        ──────
+focused differential        29 passed (accepted and rejected boundaries)
+make check                  36 Rust + 118 Python passed; 4 G2-only tests skipped
+corpus                      538/538, zero divergences
+make g2                     zero builtin containers; 129 Structs + 1 final list
+efficiency lock             unchanged
+G3                          pass at every size
+G5                          pass both directions at every size
+G4                          known existing miss at 4..512; pass at 4096
+make ab                     no reproduced slowdown across 42 rows
+support matrix              12 supported, 2 parity-rejects, 13 unsupported,
+                            0 silently ignored, 0 silently wrong
+```
+
+Changed: `python/msgspec_toon/_plan.py`, `src/plan.rs`, `src/typed.rs`, `src/error.rs`,
+`tests/test_constraints.py`, the generated support matrix/report, and this handoff ledger.
+No dependency or canonical byte changed. Next: H3's third-path build-identity experiment.
 
 ### D. Hot-path hardening
 

@@ -19,15 +19,13 @@ The earlier three-round loop converged on the candidates it had measured. A late
 symbolized profile found new mechanisms and the owner explicitly authorized a bounded
 continuation. The ordered queue is now:
 
-1. **C-00 — constraint enforcement. This is the whole job.** `Annotated[int, Meta(ge=10)]`
-   is lowered into the plan IR and never applied, so a value `msgspec.json` rejects is
-   silently accepted. It is the last place the codec quietly disagrees with msgspec, and
-   the support matrix has carried `silently_ignored: 1` for exactly this since it existed.
-   Done means: matrix entry flips to `supported`, a `msgspec.json` oracle differential
-   covers accepted *and* rejected values across every constraint kind, AD-007 holds (the
-   natural error message wants to quote the offending value — do not), and `make ab` shows
-   no cost on payloads declaring no constraints.
-2. **H3 — publish the gate's resolution floor instead of chasing it.** One experiment
+1. **C-00 — DONE at checkpoint 10.** Scalar bounds/multiples, Unicode string length,
+   Python-regex search, and list/tuple/dict lengths are enforced directly from the compiled
+   plan. The generated matrix is now 12 supported, 2 parity-rejects, 13 unsupported,
+   0 silently ignored, 0 silently wrong. The first inline-plan representation reproduced a
+   2.0% keyed-decode slowdown and was rejected; boxing constraints removed the regression
+   on the full release-guard gate.
+2. **H3 — NEXT: publish the gate's resolution floor instead of chasing it.** One experiment
    settles it: build the same source at a third path and compare against the guard. If it
    also differs by ~1%, the floor is build identity, it is permanent, and it should be
    published as the gate's resolution.
@@ -73,7 +71,7 @@ evidence in `conformance/report.json` — never as assertions.
 | Token efficiency (T4) | **closed — the indent axis is measured and generated**: `INDENT_AXIS = (1,2,4)` in `bench_tokens.py` with roundtrip assertions. `indent=1` saves on **every** shape, not only entry-heavy ones: uniform@4096 0.621× → **0.579×** vs JSON (60,455 → 56,359 tokens), irregular@512 1.186× → 1.031×. `indent=4` costs bytes and is token-identical to `indent=2`. Canonical stays `indent=2`; this is a caller's option and the lock never moves | ledger `token_findings.T4`, `docs/token-shape-guidance.md` |
 | Token efficiency (T5) | **the three tabular-fallback questions are closed**: a row missing a key, an `Optional[Struct]` that is `None` in one row, and an array-valued column are all fallbacks the spec **requires** (TOON 4.1.1 §9.3), and detection is MUST in both directions, so the classifier can be neither more nor less aggressive. No code change recovers tokens there. Corroboration differs and is recorded: the first two are confirmed by named corpus fixtures, the third has **zero fixture coverage** and rests on the spec reading alone | ledger `token_findings.T5` |
 | Tab-delimiter folklore (T2) | **measured false** at noise level; published as a finding | report `token_efficiency.findings` |
-| Type-support boundaries | **generated, not asserted**: 11 supported, 2 parity-rejects, 13 unsupported, 1 inert, 0 silently wrong. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
+| Type-support boundaries | **generated, not asserted**: 12 supported, 2 parity-rejects, 13 unsupported, 0 silently ignored, 0 silently wrong. `conformance/report.json` carries the live counts; this row is a snapshot | `conformance/support_matrix.py`, `tests/test_support_matrix.py` |
 | G4 encode vs `to_builtins` alone | **still fails as a gate** (it requires every size): 1.94× at 16, 1.54× at 64, 1.23× at 512, **0.97× at 4096** — the crossover first seen after round 1 holds. R-02 is a slope, not the floor it was assumed to be. **Round 2 did not move the small end and explains why**: the direction doc's three leads (plan-cache mutex, buffer reuse, `PyBytes` copy) were profiled and measured dead, and the real fixed cost turned out to live in the *entries* path — which the uniform challenge shape never touches, so G4 on this ladder is unmoved by round 2's large entry-path wins. Closing G4 at 16/64 remains open and now has no known mechanism | report `benchmarks_typed_same_run`, `gates` |
 | Optimizations | 6 adopted, re-qualified under the significance-tested harness against `v0.1.0-conformant`: **all 16 metrics resolve as faster** — typed decode −14.3/−17.0/−16.9/−18.1%, untyped decode −11.8/−15.5/−18.2/−17.6%, typed encode −6.4/−6.7/−6.2/−3.4%, untyped encode −8.6/−6.6/−7.2/−6.3%. The two encode rows F-12 could not resolve now resolve | `benches/optimization-ledger.json`, report `speed_ab.baseline` |
 | A/B rigor | **mean across 10 worker processes** (never a minimum); one metric per block, alternating `B C C B`, t-test at alpha 0.95, per-row minimum detectable effect; a slowdown must reproduce at double power to fail. **Loop counts are now calibrated once and shared by both sides (H1)** — they used to be chosen independently per block, so two builds near a doubling boundary measured different amounts of work; that produced reproduced false slowdowns of 4–7% at records=64 on *identical source*, now +0.2/+0.6% | `benches/ab.py`, ledger `harness_findings.H1` |

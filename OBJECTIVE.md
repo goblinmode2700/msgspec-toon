@@ -108,17 +108,17 @@ about the ruler, the search has converged.
 
 Two items. Neither one is optimization.
 
-### 1. C7 is broken. Fix it. (item C-00)
+### 1. C7 constraint gap — repaired at checkpoint 10 (item C-00)
 
 Write `Annotated[int, Meta(ge=10)]`. Pass a 5. `msgspec.json` rejects it. We accept
 it and hand back a Struct holding a bad value, with no error.
 
-The constraint is lowered into the plan IR and never applied. This is the last
-place where we silently disagree with msgspec, and the support matrix has carried
-`silently_ignored: 1` for exactly this since the matrix existed.
+The constraint used to be lowered into the plan IR and never applied. Checkpoint
+10 added scalar and collection enforcement; the generated support matrix now has
+zero silently ignored entries.
 
-Done means: the matrix entry flips to `supported`, a differential against
-`msgspec.json` covers accepted and rejected values across every constraint kind,
+The completed acceptance evidence is: the matrix entry is `supported`, a differential against
+`msgspec.json` covers accepted and rejected values across every supported constraint kind,
 errors still carry no payload text (C3 is the easy one to break here, because a
 natural message wants to quote the offending value), and `make ab` shows no cost
 on payloads that declare no constraints.

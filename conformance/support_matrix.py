@@ -243,10 +243,11 @@ MATRIX: tuple[SupportEntry, ...] = (
     SupportEntry(
         "constraints (msgspec.Meta)",
         1,
-        SILENTLY_IGNORED,
-        lambda: toon.decode(b"x: 1", type=Constrained),
-        lambda: msgspec.json.decode(b'{"x":1}', type=Constrained),
-        "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted",
+        SUPPORTED,
+        lambda: toon.decode(b"x: 10", type=Constrained),
+        lambda: msgspec.json.decode(b'{"x":10}', type=Constrained),
+        "numeric bounds and multiples, string length and patterns, and collection length "
+        "constraints are enforced; accepted and rejected boundaries are differential-tested",
     ),
     SupportEntry(
         "Literal[int]",

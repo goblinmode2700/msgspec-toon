@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T04:07:58.745910+00:00",
+  "generated_at": "2026-08-08T06:01:01.806574+00:00",
   "distribution": "msgspec-toon 0.4.0",
   "environment": {
     "python": "3.13.1",
@@ -87,10 +87,10 @@
     "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
     "reference_implementation": "msgspec 0.21.1 (msgspec.json)",
     "counts": {
-      "supported": 11,
+      "supported": 12,
       "parity_rejects": 2,
       "unsupported": 13,
-      "silently_ignored": 1,
+      "silently_ignored": 0,
       "silently_wrong": 0
     },
     "entries": [
@@ -187,8 +187,8 @@
       {
         "feature": "constraints (msgspec.Meta)",
         "tier": 1,
-        "status": "silently_ignored",
-        "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
+        "status": "supported",
+        "detail": "numeric bounds and multiples, string length and patterns, and collection length constraints are enforced; accepted and rejected boundaries are differential-tested"
       },
       {
         "feature": "Literal[int]",
@@ -283,12 +283,6 @@
         "detail": "the plan compiler recurses until RecursionError instead of erroring clearly"
       },
       {
-        "feature": "constraints (msgspec.Meta)",
-        "tier": 1,
-        "status": "silently_ignored",
-        "detail": "parsed by the plan compiler and never enforced: a value msgspec rejects is accepted"
-      },
-      {
         "feature": "Literal with mixed member types",
         "tier": 1,
         "status": "unsupported",
@@ -353,38 +347,38 @@
       "json_bytes": 1339,
       "decode_us": {
         "typed_direct": 4.87,
-        "untyped_tree": 4.21,
-        "keyed_document": 4.18,
-        "entry_document": 3.06,
-        "convert_only": 1.42,
-        "wrapper_tree_plus_convert": 5.75,
-        "incumbent_pipeline_python_toon_plus_convert": 109.42,
-        "msgspec_json_native": 2.22
+        "untyped_tree": 4.26,
+        "keyed_document": 4.31,
+        "entry_document": 3.15,
+        "convert_only": 1.46,
+        "wrapper_tree_plus_convert": 5.84,
+        "incumbent_pipeline_python_toon_plus_convert": 114.51,
+        "msgspec_json_native": 2.28
       },
       "encode_us": {
-        "typed_direct_whole": 2.01,
-        "entry_document": 3.49,
-        "to_builtins_alone": 1.06,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 95.04,
-        "msgspec_json_native": 1.02
+        "typed_direct_whole": 2.11,
+        "entry_document": 3.66,
+        "to_builtins_alone": 1.09,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 96.52,
+        "msgspec_json_native": 1.04
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 3.23,
-        "decode_us.untyped_tree": 4.77,
-        "decode_us.keyed_document": 1.24,
-        "decode_us.entry_document": 1.06,
-        "decode_us.convert_only": 2.51,
-        "decode_us.wrapper_tree_plus_convert": 4.27,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.24,
-        "decode_us.msgspec_json_native": 1.43,
-        "encode_us.typed_direct_whole": 1.66,
-        "encode_us.entry_document": 2.19,
+        "decode_us.typed_direct": 0.74,
+        "decode_us.untyped_tree": 1.27,
+        "decode_us.keyed_document": 1.04,
+        "decode_us.entry_document": 0.95,
+        "decode_us.convert_only": 5.3,
+        "decode_us.wrapper_tree_plus_convert": 1.51,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 5.22,
+        "decode_us.msgspec_json_native": 3.75,
+        "encode_us.typed_direct_whole": 7.08,
+        "encode_us.entry_document": 2.45,
         "encode_us.to_builtins_alone": 1.79,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.72,
-        "encode_us.msgspec_json_native": 1.39
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.88,
+        "encode_us.msgspec_json_native": 2.54
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -399,39 +393,39 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 16.43,
-        "untyped_tree": 14.77,
-        "keyed_document": 15.83,
-        "entry_document": 11.68,
-        "convert_only": 5.35,
-        "wrapper_tree_plus_convert": 21.1,
-        "incumbent_pipeline_python_toon_plus_convert": 450.41,
-        "msgspec_json_native": 8.44
+        "typed_direct": 16.33,
+        "untyped_tree": 14.95,
+        "keyed_document": 16.05,
+        "entry_document": 11.85,
+        "convert_only": 5.42,
+        "wrapper_tree_plus_convert": 21.62,
+        "incumbent_pipeline_python_toon_plus_convert": 455.95,
+        "msgspec_json_native": 8.52
       },
       "encode_us": {
-        "typed_direct_whole": 6.69,
-        "entry_document": 12.95,
-        "to_builtins_alone": 4.43,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 380.91,
-        "msgspec_json_native": 3.17
+        "typed_direct_whole": 6.95,
+        "entry_document": 13.17,
+        "to_builtins_alone": 4.49,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 379.22,
+        "msgspec_json_native": 3.13
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 1.3,
-        "decode_us.untyped_tree": 1.19,
-        "decode_us.keyed_document": 0.84,
-        "decode_us.entry_document": 1.21,
-        "decode_us.convert_only": 0.97,
-        "decode_us.wrapper_tree_plus_convert": 9.21,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.66,
-        "decode_us.msgspec_json_native": 0.86,
-        "encode_us.typed_direct_whole": 1.8,
-        "encode_us.entry_document": 5.19,
-        "encode_us.to_builtins_alone": 0.83,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 3.52,
-        "encode_us.msgspec_json_native": 3.1
+        "decode_us.typed_direct": 0.96,
+        "decode_us.untyped_tree": 1.73,
+        "decode_us.keyed_document": 1.19,
+        "decode_us.entry_document": 0.87,
+        "decode_us.convert_only": 1.78,
+        "decode_us.wrapper_tree_plus_convert": 12.16,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.78,
+        "decode_us.msgspec_json_native": 1.09,
+        "encode_us.typed_direct_whole": 1.13,
+        "encode_us.entry_document": 1.23,
+        "encode_us.to_builtins_alone": 1.25,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.2,
+        "encode_us.msgspec_json_native": 1.27
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -446,39 +440,39 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 127.6,
-        "untyped_tree": 128.87,
-        "keyed_document": 135.69,
-        "entry_document": 100.29,
-        "convert_only": 43.93,
-        "wrapper_tree_plus_convert": 170.2,
-        "incumbent_pipeline_python_toon_plus_convert": 3741.78,
-        "msgspec_json_native": 67.63
+        "typed_direct": 126.89,
+        "untyped_tree": 126.33,
+        "keyed_document": 138.35,
+        "entry_document": 101.79,
+        "convert_only": 43.04,
+        "wrapper_tree_plus_convert": 170.26,
+        "incumbent_pipeline_python_toon_plus_convert": 3736.99,
+        "msgspec_json_native": 72.12
       },
       "encode_us": {
-        "typed_direct_whole": 52.16,
-        "entry_document": 101.71,
-        "to_builtins_alone": 43.74,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 3031.86,
-        "msgspec_json_native": 22.78
+        "typed_direct_whole": 53.75,
+        "entry_document": 104.05,
+        "to_builtins_alone": 43.51,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3015.38,
+        "msgspec_json_native": 22.88
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 1.11,
-        "decode_us.untyped_tree": 9.57,
-        "decode_us.keyed_document": 1.47,
-        "decode_us.entry_document": 2.52,
-        "decode_us.convert_only": 7.61,
-        "decode_us.wrapper_tree_plus_convert": 1.73,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 3.43,
-        "decode_us.msgspec_json_native": 1.23,
-        "encode_us.typed_direct_whole": 2.19,
-        "encode_us.entry_document": 1.72,
-        "encode_us.to_builtins_alone": 2.79,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 3.16,
-        "encode_us.msgspec_json_native": 0.99
+        "decode_us.typed_direct": 0.6,
+        "decode_us.untyped_tree": 1.01,
+        "decode_us.keyed_document": 1.74,
+        "decode_us.entry_document": 3.31,
+        "decode_us.convert_only": 0.86,
+        "decode_us.wrapper_tree_plus_convert": 0.78,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.95,
+        "decode_us.msgspec_json_native": 16.4,
+        "encode_us.typed_direct_whole": 1.88,
+        "encode_us.entry_document": 0.91,
+        "encode_us.to_builtins_alone": 0.75,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.04,
+        "encode_us.msgspec_json_native": 1.09
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -493,39 +487,39 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1123.54,
-        "untyped_tree": 1114.26,
-        "keyed_document": 1117.25,
-        "entry_document": 825.88,
-        "convert_only": 449.35,
-        "wrapper_tree_plus_convert": 1490.08,
-        "incumbent_pipeline_python_toon_plus_convert": 30528.01,
-        "msgspec_json_native": 660.85
+        "typed_direct": 1132.59,
+        "untyped_tree": 1127.38,
+        "keyed_document": 1157.2,
+        "entry_document": 851.97,
+        "convert_only": 453.9,
+        "wrapper_tree_plus_convert": 1536.32,
+        "incumbent_pipeline_python_toon_plus_convert": 31065.63,
+        "msgspec_json_native": 667.76
       },
       "encode_us": {
-        "typed_direct_whole": 412.47,
-        "entry_document": 849.54,
-        "to_builtins_alone": 453.5,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 24807.94,
-        "msgspec_json_native": 180.77
+        "typed_direct_whole": 437.5,
+        "entry_document": 866.58,
+        "to_builtins_alone": 460.36,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 25038.61,
+        "msgspec_json_native": 183.22
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.57,
-        "decode_us.untyped_tree": 2.4,
-        "decode_us.keyed_document": 1.02,
-        "decode_us.entry_document": 1.21,
-        "decode_us.convert_only": 2.99,
-        "decode_us.wrapper_tree_plus_convert": 0.74,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.09,
-        "decode_us.msgspec_json_native": 3.1,
-        "encode_us.typed_direct_whole": 1.59,
-        "encode_us.entry_document": 3.38,
-        "encode_us.to_builtins_alone": 1.65,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.74,
-        "encode_us.msgspec_json_native": 3.32
+        "decode_us.typed_direct": 0.95,
+        "decode_us.untyped_tree": 1.02,
+        "decode_us.keyed_document": 1.61,
+        "decode_us.entry_document": 2.35,
+        "decode_us.convert_only": 1.46,
+        "decode_us.wrapper_tree_plus_convert": 1.82,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.54,
+        "decode_us.msgspec_json_native": 1.95,
+        "encode_us.typed_direct_whole": 2.12,
+        "encode_us.entry_document": 2.4,
+        "encode_us.to_builtins_alone": 2.18,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.63,
+        "encode_us.msgspec_json_native": 2.21
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -545,26 +539,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.36,
-        "toons_rust": 27.7,
-        "python_toon": 98.67,
-        "msgspec_json_context": 1.23
+        "msgspec_toon": 4.37,
+        "toons_rust": 28.47,
+        "python_toon": 98.94,
+        "msgspec_json_context": 1.22
       },
       "decode_us": {
-        "msgspec_toon": 4.28,
-        "toons_rust": 11.46,
-        "python_toon": 112.49,
-        "msgspec_json_context": 2.38
+        "msgspec_toon": 4.34,
+        "toons_rust": 11.64,
+        "python_toon": 111.52,
+        "msgspec_json_context": 2.37
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.22,
-        "encode_us.toons_rust": 1.64,
-        "encode_us.python_toon": 7.13,
-        "encode_us.msgspec_json_context": 1.8,
-        "decode_us.msgspec_toon": 1.19,
-        "decode_us.toons_rust": 0.8,
-        "decode_us.python_toon": 3.01,
-        "decode_us.msgspec_json_context": 1.3
+        "encode_us.msgspec_toon": 1.21,
+        "encode_us.toons_rust": 4.71,
+        "encode_us.python_toon": 10.11,
+        "encode_us.msgspec_json_context": 2.46,
+        "decode_us.msgspec_toon": 3.0,
+        "decode_us.toons_rust": 1.34,
+        "decode_us.python_toon": 0.68,
+        "decode_us.msgspec_json_context": 1.12
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -580,26 +574,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.22,
-        "toons_rust": 106.77,
-        "python_toon": 380.4,
-        "msgspec_json_context": 3.82
+        "msgspec_toon": 15.46,
+        "toons_rust": 106.68,
+        "python_toon": 374.06,
+        "msgspec_json_context": 3.81
       },
       "decode_us": {
-        "msgspec_toon": 14.89,
-        "toons_rust": 45.37,
-        "python_toon": 454.79,
-        "msgspec_json_context": 9.72
+        "msgspec_toon": 15.21,
+        "toons_rust": 45.76,
+        "python_toon": 455.03,
+        "msgspec_json_context": 9.97
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.35,
-        "encode_us.toons_rust": 1.16,
-        "encode_us.python_toon": 2.45,
-        "encode_us.msgspec_json_context": 1.9,
-        "decode_us.msgspec_toon": 0.95,
-        "decode_us.toons_rust": 1.06,
-        "decode_us.python_toon": 2.72,
-        "decode_us.msgspec_json_context": 1.43
+        "encode_us.msgspec_toon": 2.25,
+        "encode_us.toons_rust": 1.59,
+        "encode_us.python_toon": 0.79,
+        "encode_us.msgspec_json_context": 1.41,
+        "decode_us.msgspec_toon": 1.25,
+        "decode_us.toons_rust": 0.76,
+        "decode_us.python_toon": 2.16,
+        "decode_us.msgspec_json_context": 7.49
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -615,26 +609,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 116.54,
-        "toons_rust": 874.15,
-        "python_toon": 2990.6,
-        "msgspec_json_context": 28.27
+        "msgspec_toon": 121.63,
+        "toons_rust": 847.66,
+        "python_toon": 2985.05,
+        "msgspec_json_context": 29.24
       },
       "decode_us": {
-        "msgspec_toon": 129.29,
-        "toons_rust": 379.17,
-        "python_toon": 3697.63,
-        "msgspec_json_context": 87.25
+        "msgspec_toon": 126.75,
+        "toons_rust": 382.72,
+        "python_toon": 3687.73,
+        "msgspec_json_context": 87.06
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.57,
-        "encode_us.toons_rust": 8.1,
-        "encode_us.python_toon": 0.85,
-        "encode_us.msgspec_json_context": 3.41,
-        "decode_us.msgspec_toon": 10.01,
-        "decode_us.toons_rust": 1.2,
-        "decode_us.python_toon": 1.62,
-        "decode_us.msgspec_json_context": 1.34
+        "encode_us.msgspec_toon": 13.14,
+        "encode_us.toons_rust": 1.95,
+        "encode_us.python_toon": 1.45,
+        "encode_us.msgspec_json_context": 13.99,
+        "decode_us.msgspec_toon": 2.62,
+        "decode_us.toons_rust": 2.19,
+        "decode_us.python_toon": 0.88,
+        "decode_us.msgspec_json_context": 1.73
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -650,26 +644,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 914.74,
-        "toons_rust": 6828.48,
-        "python_toon": 23947.76,
-        "msgspec_json_context": 215.81
+        "msgspec_toon": 930.56,
+        "toons_rust": 6847.62,
+        "python_toon": 24115.0,
+        "msgspec_json_context": 216.15
       },
       "decode_us": {
-        "msgspec_toon": 1112.09,
-        "toons_rust": 3138.77,
-        "python_toon": 30863.93,
-        "msgspec_json_context": 837.83
+        "msgspec_toon": 1119.76,
+        "toons_rust": 3194.08,
+        "python_toon": 30929.53,
+        "msgspec_json_context": 835.76
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.68,
-        "encode_us.toons_rust": 2.36,
-        "encode_us.python_toon": 1.02,
-        "encode_us.msgspec_json_context": 3.7,
-        "decode_us.msgspec_toon": 0.68,
-        "decode_us.toons_rust": 1.14,
-        "decode_us.python_toon": 2.8,
-        "decode_us.msgspec_json_context": 0.95
+        "encode_us.msgspec_toon": 2.79,
+        "encode_us.toons_rust": 1.45,
+        "encode_us.python_toon": 1.35,
+        "encode_us.msgspec_json_context": 2.76,
+        "decode_us.msgspec_toon": 0.96,
+        "decode_us.toons_rust": 1.63,
+        "decode_us.python_toon": 1.58,
+        "decode_us.msgspec_json_context": 1.63
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -1909,847 +1903,857 @@
         "baseline"
       ],
       "baseline_instrumented": false,
-      "method": "one metric at one size per block, alternating B C C B; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent confirmation run at double the block count to fail the gate, because one test in twenty is wrong, this runs sixteen, and a same-power confirmation can reproduce a borderline effect twice by chance",
+      "canary": {
+        "metric": "typed decode@4",
+        "reads_us": [
+          1.95,
+          1.92,
+          1.95
+        ],
+        "spread_pct": 1.5625000000000013,
+        "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+      },
+      "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
       "results": [
         {
           "metric": "typed decode@4",
           "baseline_us": [
-            2.17,
-            2.09,
-            2.05,
-            2.02
-          ],
-          "current_us": [
-            1.92,
-            2.05,
-            1.95,
+            2.01,
+            2.01,
+            1.91,
             1.93
           ],
-          "verdict": "faster",
+          "current_us": [
+            1.9,
+            1.91,
+            1.94,
+            1.92
+          ],
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -5.762304921968792,
-          "significant": true,
-          "minimum_detectable_effect_pct": 5.18324549267198
+          "change_pct": -2.417302798982182,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.4433710836617157
         },
         {
           "metric": "typed decode@8",
           "baseline_us": [
-            3.06,
-            3.04,
-            3.11,
-            3.05
+            2.94,
+            2.94,
+            2.93,
+            2.97
           ],
           "current_us": [
             2.88,
-            2.86,
-            2.88,
-            2.88
+            2.91,
+            2.89,
+            2.9
           ],
           "verdict": "faster",
           "confirmation": null,
-          "change_pct": -6.199021207177812,
+          "change_pct": -1.6977928692699578,
           "significant": true,
-          "minimum_detectable_effect_pct": 1.3037305928418554
+          "minimum_detectable_effect_pct": 0.8974743910019296
         },
         {
           "metric": "typed decode@16",
           "baseline_us": [
-            5.3,
-            5.21,
-            5.16,
-            5.16
+            4.84,
+            4.91,
+            4.9,
+            4.89
           ],
           "current_us": [
-            4.86,
-            4.97,
             4.85,
-            4.95
+            4.9,
+            4.85,
+            4.86
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -5.7609217474795935,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.116720668683419
+          "change_pct": -0.4094165813715368,
+          "significant": false,
+          "minimum_detectable_effect_pct": 0.9807485938103072
         },
         {
           "metric": "typed decode@64",
           "baseline_us": [
-            18.32,
-            17.87,
-            17.88,
-            17.96
+            16.48,
+            16.42,
+            16.63,
+            16.41
           ],
           "current_us": [
-            16.89,
-            16.49,
-            16.61,
-            16.68
+            16.42,
+            16.58,
+            16.66,
+            16.67
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -7.4413438844925714,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.8380471321672796
+          "change_pct": 0.5914467697907198,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.141581955486602
         },
         {
           "metric": "typed decode@512",
           "baseline_us": [
-            140.1,
-            139.84,
-            139.21,
-            138.96
+            128.36,
+            127.46,
+            129.63,
+            126.13
           ],
           "current_us": [
-            128.98,
-            128.91,
-            130.14,
-            129.84
+            125.73,
+            125.68,
+            126.68,
+            126.05
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -7.2100481983838325,
-          "significant": true,
-          "minimum_detectable_effect_pct": 0.7137800652224326
+          "change_pct": -1.4543179952304621,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.4785439631091475
         },
         {
           "metric": "typed decode@4096",
           "baseline_us": [
-            1245.31,
-            1228.02,
-            1232.4,
-            1231.86
+            1137.28,
+            1132.21,
+            1138.95,
+            1143.44
           ],
           "current_us": [
-            1113.65,
-            1125.07,
-            1125.47,
-            1115.53
+            1126.67,
+            1116.35,
+            1209.4,
+            1140.71
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -9.273147426173495,
-          "significant": true,
-          "minimum_detectable_effect_pct": 0.9679266357053428
+          "change_pct": 0.9062189688656115,
+          "significant": false,
+          "minimum_detectable_effect_pct": 4.537809042370228
         },
         {
           "metric": "typed encode@4",
           "baseline_us": [
-            0.83,
-            0.79,
-            0.8,
-            0.79
+            0.7,
+            0.69,
+            0.69,
+            0.71
           ],
           "current_us": [
             0.7,
-            0.7,
+            0.69,
             0.71,
-            0.71
+            0.7
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -12.149532710280377,
-          "significant": true,
-          "minimum_detectable_effect_pct": 3.0172912862909387
+          "change_pct": 0.35842293906809275,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.2072216084955247
         },
         {
           "metric": "typed encode@8",
           "baseline_us": [
-            1.32,
-            1.33,
-            1.33,
-            1.32
+            1.15,
+            1.17,
+            1.16,
+            1.15
           ],
           "current_us": [
-            1.14,
-            1.16,
-            1.16,
-            1.13
+            1.15,
+            1.15,
+            1.18,
+            1.17
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -13.396226415094354,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.484151786927659
+          "change_pct": 0.43196544276456966,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.8809798763657772
         },
         {
           "metric": "typed encode@16",
           "baseline_us": [
-            2.32,
-            2.35,
-            2.35,
-            2.37
+            2.0,
+            2.02,
+            2.02,
+            2.04
           ],
           "current_us": [
-            2.02,
-            2.01,
             1.99,
-            2.0
+            2.03,
+            2.04,
+            2.07
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -14.589989350372749,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.2677596472769574
+          "change_pct": 0.6188118811881057,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.232316572450603
         },
         {
           "metric": "typed encode@64",
           "baseline_us": [
-            8.06,
-            8.04,
-            8.04,
-            7.92
+            6.78,
+            6.8,
+            6.87,
+            6.72
           ],
           "current_us": [
             6.82,
-            6.83,
-            6.8,
-            6.89
+            6.73,
+            6.79,
+            6.88
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -14.722395508421716,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.142337570235286
+          "change_pct": 0.18402649981596303,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.5831554876356735
         },
         {
           "metric": "typed encode@512",
           "baseline_us": [
-            62.04,
-            60.98,
-            61.89,
-            60.81
+            51.69,
+            53.21,
+            52.61,
+            53.83
           ],
           "current_us": [
-            52.96,
-            53.05,
-            54.28,
-            52.45
+            53.3,
+            54.24,
+            53.5,
+            53.09
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -13.421780888816533,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.9846147451238176
+          "change_pct": 1.3201476294123176,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.4079473995742435
         },
         {
           "metric": "typed encode@4096",
           "baseline_us": [
-            496.07,
-            501.65,
-            489.5,
-            507.3
+            410.81,
+            486.01,
+            411.18,
+            406.06
           ],
           "current_us": [
-            477.13,
-            480.48,
-            448.41,
-            435.18
+            431.77,
+            423.67,
+            435.29,
+            428.94
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -7.687062551390808,
-          "significant": true,
-          "minimum_detectable_effect_pct": 5.731895298082114
+          "change_pct": 0.32729309359066355,
+          "significant": false,
+          "minimum_detectable_effect_pct": 11.053450889049461
         },
         {
           "metric": "keyed decode@4",
           "baseline_us": [
+            1.26,
+            1.59,
             1.29,
-            1.3,
-            1.3,
-            1.3
+            1.28
           ],
           "current_us": [
-            1.29,
             1.28,
-            1.34,
-            1.28
+            1.27,
+            1.82,
+            1.27
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": 0.0,
+          "change_pct": 4.059040590405916,
           "significant": false,
-          "minimum_detectable_effect_pct": 2.7491983211341933
+          "minimum_detectable_effect_pct": 28.472832797803417
         },
         {
           "metric": "keyed decode@8",
           "baseline_us": [
-            2.33,
-            2.34,
-            2.34,
-            2.34
+            2.31,
+            2.35,
+            2.31,
+            2.33
           ],
           "current_us": [
-            2.75,
-            2.4,
-            2.34,
-            2.35
+            2.3,
+            2.35,
+            2.32,
+            2.34
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": 5.24064171122995,
+          "change_pct": 0.10752688172040871,
           "significant": false,
-          "minimum_detectable_effect_pct": 10.21568144211045
+          "minimum_detectable_effect_pct": 1.5417324229054266
         },
         {
           "metric": "keyed decode@16",
           "baseline_us": [
-            4.4,
-            4.58,
-            4.34,
-            4.35
+            4.29,
+            4.32,
+            4.39,
+            4.26
           ],
           "current_us": [
-            4.36,
+            4.32,
+            4.27,
             4.3,
-            4.35,
-            4.28
+            4.35
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -2.1505376344086167,
+          "change_pct": -0.1158748551564286,
           "significant": false,
-          "minimum_detectable_effect_pct": 3.2673452548122337
+          "minimum_detectable_effect_pct": 1.8448642144137832
         },
         {
           "metric": "keyed decode@64",
           "baseline_us": [
-            20.97,
-            19.87,
-            20.45,
-            20.29
+            15.72,
+            16.24,
+            15.83,
+            15.87
           ],
           "current_us": [
-            16.32,
-            16.15,
-            16.3,
-            16.25
+            15.92,
+            16.34,
+            16.45,
+            16.27
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -20.299092914930135,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.7656281744356446
+          "change_pct": 2.073515551366647,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.472051989438932
         },
         {
           "metric": "keyed decode@512",
           "baseline_us": [
-            284.72,
-            282.51,
-            284.54,
-            286.21
+            136.16,
+            159.35,
+            136.54,
+            133.18
           ],
           "current_us": [
-            135.43,
-            138.13,
-            136.45,
-            134.29
+            130.32,
+            135.2,
+            137.68,
+            135.4
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -52.169633912722546,
-          "significant": true,
-          "minimum_detectable_effect_pct": 0.9584331851091286
+          "change_pct": -4.711356438971745,
+          "significant": false,
+          "minimum_detectable_effect_pct": 10.832936285995624
         },
         {
           "metric": "keyed decode@4096",
           "baseline_us": [
-            9771.89,
-            9810.49,
-            9738.6,
-            9953.71
+            1107.9,
+            1348.23,
+            1134.95,
+            1141.92
           ],
           "current_us": [
-            1107.27,
-            1132.82,
-            1168.31,
-            1191.85
+            1121.02,
+            1110.32,
+            1172.0,
+            1128.57
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -88.28698584253625,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.2689376028449506
+          "change_pct": -4.24867948447074,
+          "significant": false,
+          "minimum_detectable_effect_pct": 11.810080909327063
         },
         {
           "metric": "entry decode@4",
           "baseline_us": [
-            1.13,
-            1.1,
-            1.11,
-            1.1
+            0.85,
+            0.83,
+            0.83,
+            0.81
           ],
           "current_us": [
+            0.8,
+            0.81,
             0.82,
-            0.84,
-            0.82,
-            0.82
+            0.83
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -25.675675675675684,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.9091569036581195
+          "change_pct": -1.8072289156626522,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.068576325719045
         },
         {
           "metric": "entry decode@8",
           "baseline_us": [
-            2.13,
-            2.08,
-            2.16,
-            2.18
+            1.57,
+            1.61,
+            1.55,
+            1.58
           ],
           "current_us": [
-            1.61,
-            1.64,
-            1.6,
-            1.56
+            1.55,
+            1.57,
+            1.57,
+            1.58
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -25.029239766081872,
-          "significant": true,
-          "minimum_detectable_effect_pct": 3.126430224655098
+          "change_pct": -0.6339144215530909,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.1707405024462822
         },
         {
           "metric": "entry decode@16",
           "baseline_us": [
-            4.19,
-            4.2,
-            4.15,
-            4.16
+            3.12,
+            3.33,
+            3.24,
+            3.14
           ],
           "current_us": [
+            3.1,
+            3.1,
             3.15,
-            3.13,
-            3.15,
-            3.13
+            3.18
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -24.790419161676667,
-          "significant": true,
-          "minimum_detectable_effect_pct": 0.7753477195419223
+          "change_pct": -2.338269680436469,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.997646524268777
         },
         {
           "metric": "entry decode@64",
           "baseline_us": [
-            17.66,
-            18.09,
-            17.4,
-            17.74
+            11.8,
+            12.01,
+            11.75,
+            12.06
           ],
           "current_us": [
-            11.91,
-            11.87,
-            11.75,
-            11.85
+            11.72,
+            11.84,
+            11.95,
+            11.77
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -33.16405698970236,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.021309120235841
+          "change_pct": -0.7139857202856014,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.8754120006265924
         },
         {
           "metric": "entry decode@512",
           "baseline_us": [
-            235.21,
-            242.48,
-            231.92,
-            266.78
+            99.53,
+            110.13,
+            98.8,
+            99.48
           ],
           "current_us": [
-            101.66,
-            98.83,
-            97.11,
-            107.08
+            100.07,
+            99.65,
+            98.69,
+            101.47
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -58.55344688085704,
-          "significant": true,
-          "minimum_detectable_effect_pct": 8.1928845997284
+          "change_pct": -1.9757807520713835,
+          "significant": false,
+          "minimum_detectable_effect_pct": 6.671956206851447
         },
         {
           "metric": "entry decode@4096",
           "baseline_us": [
-            7585.7,
-            7681.14,
-            7655.42,
-            7564.84
+            811.01,
+            839.26,
+            820.95,
+            813.49
           ],
           "current_us": [
-            830.61,
-            832.32,
-            824.48,
-            824.59
+            827.58,
+            825.92,
+            825.68,
+            829.18
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -89.13638883330982,
-          "significant": true,
-          "minimum_detectable_effect_pct": 0.8913066531810678
+          "change_pct": 0.720002679079725,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.9186224578779114
         },
         {
           "metric": "entry encode@4",
           "baseline_us": [
-            1.28,
-            1.25,
-            1.28,
-            1.28
+            1.06,
+            1.16,
+            1.08,
+            1.03
           ],
           "current_us": [
-            1.07,
+            1.05,
+            1.04,
             1.06,
-            1.22,
             1.06
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -13.359528487229857,
-          "significant": true,
-          "minimum_detectable_effect_pct": 7.681922907757493
+          "change_pct": -2.7713625866050835,
+          "significant": false,
+          "minimum_detectable_effect_pct": 6.377010426927927
         },
         {
           "metric": "entry encode@8",
           "baseline_us": [
-            2.32,
-            2.37,
-            2.27,
-            2.28
+            1.82,
+            2.16,
+            1.89,
+            1.88
           ],
           "current_us": [
-            1.82,
-            1.84,
-            1.85,
-            1.77
+            1.88,
+            1.86,
+            1.87,
+            1.85
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -21.21212121212121,
-          "significant": true,
-          "minimum_detectable_effect_pct": 3.0579569452532818
+          "change_pct": -3.741935483870968,
+          "significant": false,
+          "minimum_detectable_effect_pct": 9.602916072025645
         },
         {
           "metric": "entry encode@16",
           "baseline_us": [
-            4.47,
-            4.48,
-            4.48,
-            4.69
+            3.58,
+            3.74,
+            3.67,
+            3.61
           ],
           "current_us": [
-            3.56,
             3.58,
-            3.54,
-            3.57
+            3.65,
+            3.64,
+            3.64
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -21.35761589403974,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.920411057715686
+          "change_pct": -0.6164383561643826,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.6018942110786516
         },
         {
           "metric": "entry encode@64",
           "baseline_us": [
-            16.79,
-            16.84,
-            16.75,
-            17.26
+            12.78,
+            13.64,
+            13.18,
+            13.34
           ],
           "current_us": [
-            13.25,
-            13.07,
-            13.03,
-            13.1
+            13.0,
+            13.17,
+            13.17,
+            13.46
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -22.457125960969837,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.8450177409816744
+          "change_pct": -0.2644503211182482,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.7532072680117303
         },
         {
           "metric": "entry encode@512",
           "baseline_us": [
-            131.03,
-            136.14,
-            130.6,
-            132.4
+            104.02,
+            105.48,
+            104.2,
+            103.2
           ],
           "current_us": [
-            101.93,
-            103.34,
-            102.27,
-            103.95
+            100.73,
+            103.19,
+            105.1,
+            105.02
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -22.38527264839579,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.4800404185285014
+          "change_pct": -0.6860158311345679,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.651677719003544
         },
         {
           "metric": "entry encode@4096",
           "baseline_us": [
-            1076.06,
-            1047.5,
-            1075.8,
-            1091.15
+            849.43,
+            867.09,
+            841.23,
+            858.73
           ],
           "current_us": [
-            796.46,
-            848.03,
-            844.2,
-            813.3
+            821.01,
+            830.75,
+            857.52,
+            862.68
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -23.039685258862008,
-          "significant": true,
-          "minimum_detectable_effect_pct": 3.513132973959608
+          "change_pct": -1.303095583758722,
+          "significant": false,
+          "minimum_detectable_effect_pct": 3.317823219639257
         },
         {
           "metric": "untyped decode@4",
           "baseline_us": [
-            1.79,
-            1.8,
-            1.81,
-            1.77
+            1.73,
+            1.77,
+            1.74,
+            1.78
           ],
           "current_us": [
-            1.71,
-            1.74,
-            1.76,
-            1.81
+            1.72,
+            2.31,
+            1.75,
+            1.76
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -2.092050209205026,
+          "change_pct": 7.407407407407414,
           "significant": false,
-          "minimum_detectable_effect_pct": 3.096725162234614
+          "minimum_detectable_effect_pct": 19.857588761183848
         },
         {
           "metric": "untyped decode@8",
           "baseline_us": [
-            2.65,
-            2.67,
-            2.64,
-            2.68
+            2.54,
+            2.58,
+            2.54,
+            2.56
           ],
           "current_us": [
-            2.48,
             2.52,
-            2.53,
-            2.57
+            2.52,
+            2.59,
+            2.58
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -5.075187969924821,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.8964735838132334
+          "change_pct": -0.09784735812132864,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.026943654125447
         },
         {
           "metric": "untyped decode@16",
           "baseline_us": [
-            4.44,
-            4.43,
-            4.42,
-            4.39
+            4.25,
+            4.36,
+            4.33,
+            4.27
           ],
           "current_us": [
-            4.19,
-            4.25,
-            4.29,
-            4.25
+            4.21,
+            4.28,
+            4.16,
+            4.23
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -3.9592760180995437,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.2884802182165374
+          "change_pct": -1.917489831493308,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.0291449744800722
         },
         {
           "metric": "untyped decode@64",
           "baseline_us": [
-            16.08,
-            15.89,
-            15.82,
-            15.79
+            14.78,
+            15.56,
+            15.31,
+            15.13
           ],
           "current_us": [
-            15.1,
-            14.8,
-            14.56,
-            14.82
+            15.23,
+            15.15,
+            14.95,
+            15.0
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -6.763133060710912,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.9739964018035485
+          "change_pct": -0.7403751233958585,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.841394558873927
         },
         {
           "metric": "untyped decode@512",
           "baseline_us": [
-            132.06,
-            128.76,
-            131.77,
-            134.91
+            122.12,
+            125.94,
+            121.96,
+            123.48
           ],
           "current_us": [
-            119.04,
-            119.67,
-            121.36,
-            121.01
+            123.86,
+            124.28,
+            123.86,
+            128.52
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -8.799999999999992,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.544663127175882
+          "change_pct": 1.4224924012158018,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.897364691023092
         },
         {
           "metric": "untyped decode@4096",
           "baseline_us": [
-            1174.14,
-            1176.83,
-            1152.67,
-            1182.46
+            1289.03,
+            1106.79,
+            1116.97,
+            1113.2
           ],
           "current_us": [
-            1102.78,
-            1097.72,
-            1115.67,
-            1106.27
+            1110.46,
+            1101.86,
+            1125.21,
+            1104.9
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -5.62642709289174,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.574611322579936
+          "change_pct": -3.9680154950615867,
+          "significant": false,
+          "minimum_detectable_effect_pct": 9.421994044154609
         },
         {
           "metric": "untyped encode@4",
           "baseline_us": [
-            1.68,
-            1.66,
-            1.67,
-            1.69
+            1.61,
+            1.58,
+            1.61,
+            1.63
           ],
           "current_us": [
-            1.6,
-            1.58,
+            1.57,
             1.59,
-            1.58
+            1.59,
+            1.61
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -5.223880597014907,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.174030518017402
+          "change_pct": -1.0886469673405816,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.0017111820493283
         },
         {
           "metric": "untyped encode@8",
           "baseline_us": [
-            2.71,
-            2.71,
-            2.75,
-            2.74
+            2.56,
+            2.61,
+            2.52,
+            2.62
           ],
           "current_us": [
-            2.57,
-            2.53,
             2.52,
+            2.55,
+            2.53,
             2.56
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -6.691109074243817,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.4126093356847047
+          "change_pct": -1.4548981571290043,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.369464851968356
         },
         {
           "metric": "untyped encode@16",
           "baseline_us": [
-            4.75,
-            4.77,
-            4.61,
-            4.68
+            4.38,
+            4.32,
+            4.46,
+            4.34
           ],
           "current_us": [
-            4.28,
-            4.35,
-            4.35,
-            4.3
+            4.38,
+            4.39,
+            4.49,
+            4.49
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -8.133971291866017,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.107035790227762
+          "change_pct": 1.4285714285714286,
+          "significant": false,
+          "minimum_detectable_effect_pct": 2.4259350456502955
         },
         {
           "metric": "untyped encode@64",
           "baseline_us": [
-            15.88,
-            16.13,
-            16.27,
-            16.3
+            15.02,
+            15.12,
+            15.16,
+            15.22
           ],
           "current_us": [
+            14.83,
             14.93,
-            15.15,
-            15.05,
-            15.16
+            15.17,
+            15.28
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -6.642923505729327,
-          "significant": true,
-          "minimum_detectable_effect_pct": 1.6636114372707491
+          "change_pct": -0.5122273628552465,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.8158835696910478
         },
         {
           "metric": "untyped encode@512",
           "baseline_us": [
-            122.92,
-            126.14,
-            127.11,
-            125.33
+            114.74,
+            115.73,
+            116.91,
+            117.43
           ],
           "current_us": [
-            115.19,
-            116.02,
-            114.15,
-            116.56
+            116.3,
+            116.26,
+            116.71,
+            115.55
           ],
-          "verdict": "faster",
+          "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": -7.892323030907275,
-          "significant": true,
-          "minimum_detectable_effect_pct": 2.0263945579457996
+          "change_pct": 0.002151416707900197,
+          "significant": false,
+          "minimum_detectable_effect_pct": 1.368176887349922
         },
         {
           "metric": "untyped encode@4096",
           "baseline_us": [
-            984.65,
-            1020.68,
-            957.15,
-            988.96
+            907.55,
+            917.27,
+            933.85,
+            907.88
           ],
           "current_us": [
-            1194.13,
-            1023.83,
-            949.43,
-            911.94
+            888.0,
+            907.44,
+            904.34,
+            915.05
           ],
           "verdict": "no significant difference",
           "confirmation": null,
-          "change_pct": 3.2365416152086297,
+          "change_pct": -1.410590336965274,
           "significant": false,
-          "minimum_detectable_effect_pct": 15.832711460550753
+          "minimum_detectable_effect_pct": 2.2410039999292724
         }
       ]
     },
@@ -3370,6 +3374,12 @@
         "fix": "MSGSPEC_TOON_ONLY_METRIC makes the sampler skip metrics the block will discard; a 4096 typed-encode block fell from about 4s to 0.5s",
         "caveat": "the sampler metric name is now listed in the METRICS table rather than derived from the result key \u2014 deriving it silently mismatched half the metrics, and a block that measures nothing reports a mean of zero"
       }
+    },
+    "harness_findings": {
+      "H1_loop_counts_were_calibrated_per_side": "The A/B gate could not certify parity: with the guard re-cut from the SAME commit as the working tree, make ab reported reproduced slowdowns on 2 of 42 metrics, twice running, with four of six flags landing at records=64. Cause: ab.py spawned a fresh process per block and _timing calibrated a loop count independently in each one, while _timing already exposed LOOPS_ENV for exactly this and ab.py never used it. _calibrate doubles from 1, so two builds a few percent apart near a boundary land on counts differing by 2x and the two sides stop measuring the same amount of work. A freshly cut guard is additionally cold on its first run and that run chose its loop count: a guard built moments earlier calibrated to 256 loops at 323us where every later run agreed on 512 loops at 127us. Fixed by calibrate_metric: one discarded block per side warms both interpreters and fixes the loop count both then measure with. Effect on the parity run: typed decode@64 +7.2% SLOWER -> +0.2% no significant difference; keyed decode@64 +4.5% SLOWER -> +0.6% no significant difference.",
+      "H2_residual_drift_across_a_long_run": "LARGELY FIXED by deterministic interleaving (external review round 3, patch 01 of 1). Originally: After H1, a residual false positive remains: entry decode@4096 read +1.6% and +2.2% (reproduced at double blocks) inside full 42-metric runs, but +0.1/+0.6/+0.2% when that metric is run alone. The bias is therefore run-order drift accumulating across a ~6 minute continuous ladder, not a difference between the two builds. The ABBA block design controls drift WITHIN one metric's blocks; nothing controls drift ACROSS metrics, and the per-metric minimum detectable effect cannot see it. Consequence: make ab currently cannot certify parity below roughly 2% on a full run, which is well above the sub-1% MDE it prints. Candidate fixes: round-robin the metric order instead of finishing each metric before starting the next, randomize metric order per run, or re-measure a canary metric at the start and end and report the drift alongside every verdict. A gate that cries wolf gets ignored, which is the same failure mode as a gate that cannot fire. || RESOLUTION: every block-position of the B C C B pattern now runs across ALL metric points before the next position runs anywhere, so each metric's baseline and current samples both span the full run and slow drift enters both sides symmetrically - bias becomes variance, which the t-test models and the MDE reports. No threshold, alpha or block count changed; the ABBA property survives because a metric still sees B at sweep 1, C at 2, C at 3, B at 4. A canary metric is read at start/mid/end and reported beside every run, never gating. Confirmation runs the flagged metric alone after the ladder. Measured on identical source: old harness 2 reproduced slowdowns in each of two runs (up to +7.2%); new harness 1 reproduced then 0, with peak false-positive magnitude down from +7.2% to +1.8%. Options 2 (randomised order) and 4 (empirical floor) were rejected by the author on this project's own grounds - nondeterminism in evidence, and a floor being structurally the 'bigger threshold' the acceptance text bans.",
+      "H3_build_identity_floor": "OPEN, and distinct from H2. After interleaving, a residual bias survives that ordering cannot reach: entry decode@512 measured +1.8/+1.0/+1.3/+1.3% across four SOLO runs against a guard built from source identical to the working tree - consistently positive, never significant only because the MDE sits near 2%. Solo runs are the configuration H2 showed clean, so this is not run-order drift. The likeliest mechanism is build identity: the guard is built in a separate worktree (.guard-src), so path strings embedded in the binary differ and code layout with them. Two builds of identical source are not equally fast. Consequence: the gate's floor on affected metrics is ~1.3-2%, and no scheduling change will remove it. Untested next step: build the same source at a third path and compare it against the guard - if that also differs by ~1%, build identity is confirmed and the floor must be characterised rather than chased. The candidate's own falsification condition predicted this outcome and named per-process state as the next suspect.",
+      "H4_solo_confirmation_can_false_negative": "OPEN. The gate was proven to FIRE, which the round-3 submission did not test - its acceptance evidence was entirely 'zero false positives on identical source', a property any broken gate has. A deliberate perturbation (one 96-byte allocation per scanned line in scan_line_marks) produced a real 10-20% regression: entry decode reproduced SLOWER at 4, 8, 16, 64 and 512, and the run failed. But entry decode@4096 flagged at +10.0% (MDE 1.7%) in the ladder and then did NOT reproduce in the solo confirmation - a false negative on a genuine 10% regression at the largest, noisiest block. The gate still failed the run overall, so this is a weakness rather than a defect, but a confirmation step that can miss 10% is not a confirmation step to rely on alone."
     }
   },
   "gates": {
@@ -3393,7 +3403,6 @@
     "unsupported: array_like Structs (tier 1)",
     "unsupported: strict=False scalar coercion (tier 1) \u2014 review F-06: `strict` reaches duplicate handling but not `convert_scalar`",
     "unsupported: recursive Struct types (tier 1) \u2014 the plan compiler recurses until RecursionError instead of erroring clearly",
-    "silently_ignored: constraints (msgspec.Meta) (tier 1) \u2014 parsed by the plan compiler and never enforced: a value msgspec rejects is accepted",
     "unsupported: Literal with mixed member types (tier 1) \u2014 not our defect and not fixable behind the membrane: msgspec.inspect sorts a Literal's members and raises TypeError on mixed types, so the plan compiler never sees the annotation, while msgspec.json decodes it without inspect",
     "unsupported: dict[int, T] and other non-string keys (tier 1) \u2014 review F-13, downgraded from silently wrong: the key plan was compiled and dropped, so keys stayed strings. Now the Decoder refuses the annotation at construction instead of returning {'1': 2} where msgspec returns {1: 2}",
     "unsupported: enum members (tier 2)",

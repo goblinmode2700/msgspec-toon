@@ -12,7 +12,7 @@ use crate::containers::{count_struct_instance, new_final_dict, new_final_list, n
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
-use crate::plan::{CompiledPlan, DefaultPlan, PlanKind, StructPlan};
+use crate::plan::{CompiledPlan, Constraints, DefaultPlan, PlanKind, StructPlan};
 use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_token_to_py};
 use crate::scalar::unescape;
 use crate::untyped::UntypedConsumer;
@@ -53,11 +53,13 @@ enum Frame<'py, 'plan> {
         items: Vec<Bound<'py, PyAny>>,
         item: SequencePlan<'plan>,
         as_tuple: bool,
+        constraints: Option<&'plan Constraints>,
     },
     Dict {
         map: Bound<'py, PyDict>,
         pending: Option<Bound<'py, PyAny>>,
         value: &'plan CompiledPlan,
+        constraints: Option<&'plan Constraints>,
     },
 }
 
@@ -226,21 +228,28 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             },
             PlanKind::Int => match token {
                 ScalarToken::Integer(digits) => {
-                    int_from_digits(py, digits).map_err(|err| self.internal(err, at))
+                    let value =
+                        int_from_digits(py, digits).map_err(|err| self.internal(err, at))?;
+                    self.validate_scalar(plan, value, at)
                 }
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
             },
             PlanKind::Float => match token {
                 ScalarToken::Integer(digits) | ScalarToken::Float(digits) => {
-                    float_from_digits(py, digits, self.float_hook.as_ref())
-                        .map_err(|err| self.internal(err, at))
+                    let value = float_from_digits(py, digits, self.float_hook.as_ref())
+                        .map_err(|err| self.internal(err, at))?;
+                    self.validate_scalar(plan, value, at)
                 }
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
             },
             PlanKind::Str => match token {
-                ScalarToken::BareString(bytes) => Ok(string_token_to_py(py, bytes, false)),
+                ScalarToken::BareString(bytes) => {
+                    let value = string_token_to_py(py, bytes, false);
+                    self.validate_scalar(plan, value, at)
+                }
                 ScalarToken::Quoted { inner, escaped } => {
-                    Ok(string_token_to_py(py, inner, escaped))
+                    let value = string_token_to_py(py, inner, escaped);
+                    self.validate_scalar(plan, value, at)
                 }
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
             },
@@ -306,6 +315,34 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             | PlanKind::TupleFixed(_)
             | PlanKind::Dict(_, _)
             | PlanKind::Struct(_) => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
+        }
+    }
+
+    fn validate_scalar(
+        &mut self,
+        plan: &'plan CompiledPlan,
+        value: Bound<'py, PyAny>,
+        at: Position,
+    ) -> Result<Bound<'py, PyAny>, Fault> {
+        let Some(constraints) = &plan.constraints else {
+            return Ok(value);
+        };
+        match constraints.scalar_valid(&value) {
+            Ok(true) => Ok(value),
+            Ok(false) => Err(Fault::validation_at(FaultCode::Constraint, at)),
+            Err(err) => Err(self.internal(err, at)),
+        }
+    }
+
+    fn validate_length(
+        constraints: Option<&Constraints>,
+        length: usize,
+        at: Position,
+    ) -> Result<(), Fault> {
+        if constraints.is_some_and(|constraints| !constraints.length_valid(length)) {
+            Err(Fault::validation_at(FaultCode::Constraint, at))
+        } else {
+            Ok(())
         }
     }
 
@@ -522,6 +559,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     map: new_final_dict(self.py),
                     pending: None,
                     value,
+                    constraints: expected.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -657,7 +695,12 @@ impl Consumer for TypedConsumer<'_, '_> {
                 }
                 self.place(value, at)
             }
-            Some(Frame::Dict { map, .. }) => self.place(map.into_any(), at),
+            Some(Frame::Dict {
+                map, constraints, ..
+            }) => {
+                Self::validate_length(constraints, map.len(), at)?;
+                self.place(map.into_any(), at)
+            }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),
         }
     }
@@ -683,6 +726,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: false,
+                    constraints: expected.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -693,6 +737,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: true,
+                    constraints: expected.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -705,6 +750,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                     items: Vec::with_capacity(plans.len()),
                     item,
                     as_tuple: true,
+                    constraints: expected.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -733,11 +779,13 @@ impl Consumer for TypedConsumer<'_, '_> {
                 items,
                 item,
                 as_tuple,
+                constraints,
             }) => {
                 self.row_memos.pop();
                 if item.expected_length().is_some_and(|len| items.len() != len) {
                     return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
                 }
+                Self::validate_length(constraints, items.len(), at)?;
                 let value = if as_tuple {
                     match new_final_tuple(self.py, items) {
                         Ok(tuple) => tuple.into_any(),
