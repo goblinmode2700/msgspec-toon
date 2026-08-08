@@ -1,31 +1,44 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at v0.4.0. Read CLAUDE.md (or AGENTS.md, same
-file) first. Then read `docs/adversarial-review-v0.2.0.md` and `LAST-MILE.md`._
+_Last updated at v0.4.0. Read **`OBJECTIVE.md`** first — it states what this project is
+minimizing, the constraints it may not break, and why the optimization has converged. Then
+CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**v0.4.0 is cut, the guard is re-cut from it, and every gate is green.** It carries two
-external review rounds: round 1 (four optimizations adopted, one rejected) and round 2
-(eight patches adopted, the token evidence extended, the tabular-fallback questions closed
-against the spec). 42 A/B metrics, no reproduced slowdown.
+**The optimization objective has converged. Read `OBJECTIVE.md` before planning any work.**
 
-**The remaining job is correctness, not speed.** In order:
+Both things this project minimizes are at their constrained optimum. Tokens: no move is
+left inside conformance — all three tabular fallbacks are spec-required (T5), so the
+remaining levers belong to the caller, not to us. Speed: the remaining known wins are
+smaller than the A/B gate can resolve (H3 floor, 1.3–2.0%), and the small-payload encode
+gap has no known mechanism. Round 3 produced **zero codec changes** and spent itself fixing
+the measuring instrument, which is what convergence looks like.
 
-1. **C-00 constraint enforcement.** `Annotated[int, Meta(ge=10)]` reaches the plan IR and
-   is never applied, so a value `msgspec.json` rejects is silently accepted. The last
-   silent divergence in the codec.
-2. **F-06 `strict=False` scalar coercion.** Filed as a parity gap; it is better understood
-   as the feature that makes *model-emitted* TOON usable, since a model writing `"42"`
-   where an `int` is declared is the likeliest failure and strict mode rejects it outright.
-3. **F-04** cell-accurate error columns.
+**Two items remain, and neither is optimization:**
 
-Perf leads that are **known dead** — do not re-spend them: the plan-cache mutex (~17ns of
-a ~500ns fixed cost), per-call buffer reuse and the `PyBytes` copy (a ~114ns scalar-root
-floor; the copy is not removable under abi3 because `_PyBytes_Resize` is not stable ABI),
-and `msgspec.structs.astuple` for encode field reads (measured 9–10 points *slower* at
-every size). Still open: **E4** (iterate `PyList` without collecting `Val::Seq`). **G4 at
-16/64 has no known mechanism left** — see its row below.
+1. **C-00 — constraint enforcement. This is the whole job.** `Annotated[int, Meta(ge=10)]`
+   is lowered into the plan IR and never applied, so a value `msgspec.json` rejects is
+   silently accepted. It is the last place the codec quietly disagrees with msgspec, and
+   the support matrix has carried `silently_ignored: 1` for exactly this since it existed.
+   Done means: matrix entry flips to `supported`, a `msgspec.json` oracle differential
+   covers accepted *and* rejected values across every constraint kind, AD-007 holds (the
+   natural error message wants to quote the offending value — do not), and `make ab` shows
+   no cost on payloads declaring no constraints.
+2. **H3 — publish the gate's resolution floor instead of chasing it.** One experiment
+   settles it: build the same source at a third path and compare against the guard. If it
+   also differs by ~1%, the floor is build identity, it is permanent, and it should be
+   published as the gate's resolution.
+
+**Then stop.** `OBJECTIVE.md` states the exit condition: zero `silently_wrong` and zero
+`silently_ignored` in the support matrix, plus a published gate floor. Everything after
+that — F-06 coercion, Tier 2 types, the wheel matrix — is a scope decision and deserves a
+new objective, not a continuation of this one.
+
+**Do not re-spend these.** Measured dead: the plan-cache mutex (~17ns of ~500ns), per-call
+buffer reuse and the `PyBytes` copy (~114ns floor; the copy is not removable under abi3),
+and `msgspec.structs.astuple` for encode field reads (9–10 points *slower*). Closed by
+spec: encoder tabular-classification changes for token wins. Still live but thin: E4.
 
 `conformance/support_matrix.py` is both the work list and the acceptance test. Use
 `/last-mile`.

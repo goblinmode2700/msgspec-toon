@@ -17,24 +17,52 @@ zero-intermediate-tree invariant (G2), or payload-safe errors for either metric.
 
 ## Current state and next round
 
-Read **`HANDOFF.md`** before doing anything — it is the authoritative state-of-the-world:
-what is proven at `v0.2.0` (538/538 corpus, G2/G3/G5/T1 pass, G4 honest miss), the open
-items, and the invariants that must not regress. The adversarial review is complete in
-`docs/adversarial-review-v0.2.0.md`. It found three P0 containment defects and a bounded
-correctness, evidence, and efficiency queue. **The next round is the last-mile loop in
-`LAST-MILE.md`.** Use `/last-mile` for iterative work. Fixes must keep `make check`, the
-corpus run, and G2/G3/G5 green. Performance changes require same-session A/B.
+Read **`OBJECTIVE.md`** first. It states what this project minimizes (tokens first, then
+speed), the nine constraints it may not break to get there, and why **the optimization has
+already converged**: no token move is left inside conformance, and the remaining speed wins
+are smaller than the A/B gate can resolve. It also states the exit condition, which this
+loop went three rounds without having.
+
+Then read **`HANDOFF.md`** — the live state-of-the-world at `v0.4.0`: what is proven, the
+open items, and the invariants that must not regress. `LAST-MILE.md` is the execution
+ledger; use `/last-mile` for iterative work. Fixes must keep `make check`, the corpus run,
+and G2/G3/G5 green. Performance changes require same-session A/B.
+
+**Do not open a new performance round without reading `OBJECTIVE.md` first.** Three
+directions are measured dead and recorded in `benches/optimization-ledger.json`; re-spending
+them is the most likely way to waste a session.
 
 ### Agent continuation contract
 
-- Read `LAST-MILE.md` before code changes.
+- Read `OBJECTIVE.md`, then `HANDOFF.md`, then `LAST-MILE.md` before code changes.
 - Select the first unblocked queue item unless the user names another item.
 - Use one falsifiable hypothesis and one focused change per checkpoint.
 - Reject changes that regress conformance, G2, G3, G5, or payload safety.
 - Keep canonical bytes stable unless the official corpus requires a change.
 - Update generated evidence and the handoff before each checkpoint commit.
-- Continue until a documented stop condition occurs.
+- Continue until a documented stop condition occurs. `OBJECTIVE.md` names one.
 - Do not create another orchestration harness.
+
+### Skills available to this loop
+
+Four skills are installed to raise the quality of the remaining work. They are aids, not
+authorities: nothing they say overrides the constraints in `OBJECTIVE.md`, and no claim
+from them counts as evidence until it is measured here (C9).
+
+| Skill | Use it for | Where it fits this project |
+|---|---|---|
+| `m10-performance` | Rust performance work: profiling, flamegraphs, criterion, allocation and cache behaviour | The one live perf lead is E4, and the small-payload encode gap has *no* known mechanism. Use this to find one before proposing a candidate — a candidate without a mechanism is not reviewable. |
+| `m15-anti-pattern` | Rust code review: code smells, non-idiomatic patterns, common pitfalls | Useful on the hot paths that three optimization rounds have rewritten (`encode.rs`, `parser.rs`, `scalar.rs`, `typed.rs`), where speed edits can leave unidiomatic residue. |
+| `rust-learner` | Rust and crate facts: versions, changelogs, crate APIs, edition and feature questions | The build is pinned (`abi3-py313`, maturin, `msgspec==0.21.1` exact). Check facts here rather than guessing; respect the 14-day package cooldown from global doctrine. |
+| `python-performance-optimization` | Python-side profiling: cProfile, memory profilers | The Python surface is thin (`__init__.py`, `_plan.py`) but `_plan.py` runs per decoder construction, and the benchmark harness itself is Python. |
+
+Two cautions specific to this repo. **`m10-performance` and `python-performance-optimization`
+will suggest benchmarking approaches that conflict with C9** — this project measures the mean
+across ten worker processes, never a minimum, and never cites a figure from another session
+or machine; keep `benches/_timing.py` as the one timing implementation. **`m15-anti-pattern`
+may flag deliberate choices** — the single-membrane container module, the `#[cfg(test)]`
+differential oracles that duplicate replaced implementations, and the data-driven dispatch
+tables are all intentional and documented.
 
 **Public name is `msgspec-toon`.** The local directory name ("toon-millennium-challenge")
 is a working title only and must not leak into anything published: if creating a GitHub
