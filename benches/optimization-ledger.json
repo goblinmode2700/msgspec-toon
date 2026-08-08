@@ -166,6 +166,15 @@
       "source": "external review round (Fable 5), patch 05 of 5",
       "measurement": "make ab vs the v0.3.0 guard. With E7 applied, typed encode measured -5.7/-7.5/-6.6/-5.8% at 16/64/512/4096. With E7 reverted and nothing else changed, the same metric measured -20.4/-16.1/-16.6/-16.5%. E7 costs roughly 9 to 10 points of typed encode at every size. Untyped encode, which never touches a Struct, stayed flat across both runs and serves as the drift control.",
       "note": "The candidate arrived with this exact falsification condition stated \u2014 one vectorcall plus a tuple allocation per row could lose to bare getattr at narrow structs \u2014 and it fired, at every size rather than only the small ones. The challenge shape is narrow: Worker has 3 fields and Metadata 2, so write_row_obj trades 5 getattrs for 2 tuple allocations and 2 vectorcalls per row. Not adopted, and deliberately not adopted conditionally: dispatching on field count would put a magic number in the hot path and add a second field-read implementation beside the first. E7 could be revisited only with evidence from a wide-struct payload, and that payload would have to earn its place on the ladder first. G4 remains the honest miss it was; R-02 is unchanged."
+    },
+    {
+      "id": "R2-B",
+      "target": "scalar spelling on the entries path (src/encode.rs)",
+      "hypothesis": "scalar_text built a String per scalar - to_string() for null/ints/text and a whole temporary Writer for quoted strings - then copied it into the writer. One allocation per key: value entry, per call. The row path never paid this, which is why an entry cost about 3x a tabular cell.",
+      "status": "adopted",
+      "source": "external review round 2 (Fable 5), patch 03 of 8",
+      "measurement": "make ab vs the v0.3.0 guard on the new entry encode metric, attributed by reverting: without R2-B -2.0/-3.6/-0.7/-3.2/-5.1/-2.1% at 4/8/16/64/512/4096; with R2-B -8.2/-11.4/-18.8/-10.2/-10.1/-9.1%. R2-B's share is roughly 5 to 7 points.",
+      "note": "write_scalar now writes directly using the row path's own spellings (itoa, write_float, needs_quote/write_quoted) and scalar_text is deleted, so there is one scalar-spelling implementation rather than two. Measurable only because entry_document and the entry encode metric landed first; on the old ladder every payload was tabular or keyed and this would have read as noise."
     }
   ],
   "token_findings": {

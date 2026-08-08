@@ -958,42 +958,41 @@ fn write_quoted(writer: &mut Writer, text: &str) {
     writer.byte(b'"');
 }
 
+/// Write a classified scalar straight into the output buffer (optimization
+/// R2-B). The previous shape built a `String` per scalar — one allocation for
+/// every `key: value` entry — and copied it into the writer; the row path
+/// never paid this, which is why entries cost ~3x a tabular cell. The number
+/// spellings are the row path's own (`itoa`, `write_float`), so the two paths
+/// cannot drift apart.
 fn write_scalar<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
     writer: &mut Writer,
     value: &Val<'py>,
 ) -> PyResult<()> {
-    let text = scalar_text(ctx, py, value)?;
-    writer.text(&text);
-    Ok(())
-}
-
-fn scalar_text<'py>(ctx: &EncodeContext, py: Python<'py>, value: &Val<'py>) -> PyResult<String> {
     match value {
-        Val::None => Ok("null".to_string()),
-        Val::Bool(true) => Ok("true".to_string()),
-        Val::Bool(false) => Ok("false".to_string()),
-        Val::Int(obj) => {
-            if let Ok(small) = obj.extract::<i64>() {
-                Ok(small.to_string())
-            } else {
-                Ok(obj.str()?.to_str()?.to_string())
+        Val::None => writer.bytes(b"null"),
+        Val::Bool(true) => writer.bytes(b"true"),
+        Val::Bool(false) => writer.bytes(b"false"),
+        Val::Int(obj) => match obj.extract::<i64>() {
+            Ok(small) => {
+                let mut buffer = itoa::Buffer::new();
+                writer.text(buffer.format(small));
             }
-        }
-        Val::Float(number) => Ok(canonical_float(*number)),
+            Err(_) => writer.text(obj.str()?.to_str()?),
+        },
+        Val::Float(number) => write_float(writer, *number),
         Val::Str(text) => {
             let text = text.to_str()?;
             if needs_quote(text, ctx.delimiter) {
-                let mut quoted = Writer::with_capacity(text.len() + 2, ctx.indent);
-                write_quoted(&mut quoted, text);
-                Ok(String::from_utf8(quoted.finish()).expect("escaped output is valid UTF-8"))
+                write_quoted(writer, text);
             } else {
-                Ok(text.to_string())
+                writer.text(text);
             }
         }
-        _ => Err(encode_err(ctx, py, "not a scalar")),
+        _ => return Err(encode_err(ctx, py, "not a scalar")),
     }
+    Ok(())
 }
 
 /// The canonical (JavaScript `Number.prototype.toString`) spelling: decimal
