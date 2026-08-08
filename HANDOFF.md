@@ -25,12 +25,14 @@ continuation. The ordered queue is now:
    0 silently ignored, 0 silently wrong. The first inline-plan representation reproduced a
    2.0% keyed-decode slowdown and was rejected; boxing constraints removed the regression
    on the full release-guard gate.
-2. **H3 — NEXT: publish the gate's resolution floor instead of chasing it.** One experiment
-   settles it: build the same source at a third path and compare against the guard. If it
-   also differs by ~1%, the floor is build identity, it is permanent, and it should be
-   published as the gate's resolution.
+2. **H3 — DONE at checkpoint 11; the proposed cause was falsified.** A third-path `v0.4.0`
+   wheel measured `entry decode@512` at -0.5% against the `v0.4.0` guard, MDE 1.1%, with
+   2.5% canary spread. Source-path-driven layout did not reproduce the old positive bias.
+   The focused resolution is 1.1% in that session; practical full-ladder resolution remains
+   roughly 1–2% on quiet rows and higher where the published per-row MDE says so.
 
-3. **Measure the public functional API**, which the existing reusable-codec ladders omit,
+3. **NEXT: audit the Python A/B orchestration cost, then measure the public functional API**,
+   which the existing reusable-codec ladders omit,
    then attempt bounded construction/plan reuse only if the overhead resolves.
 4. **Attempt the profiled native candidates in order:** `needs_quote`, quote-free
    `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.

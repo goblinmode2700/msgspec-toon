@@ -28,6 +28,7 @@ machine.
 
 Usage: uv run python benches/ab.py [--records 16 64 512 4096]
                                    [--baseline-venv .venv-baseline]
+                                   [--current-venv .venv]
                                    [--rounds 2] [--no-gate]
 """
 
@@ -51,7 +52,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 #: regression. Measured — a 24% typed-decode slowdown read as "+2.2%, no
 #: significant difference" against `v0.1.0-conformant`.
 DEFAULT_BASELINE_VENV = ".venv-guard"
-CURRENT_PYTHON = REPO / ".venv" / "bin" / "python"
+DEFAULT_CURRENT_VENV = ".venv"
 
 BASELINE = "baseline"
 CURRENT = "current"
@@ -233,6 +234,7 @@ def run_block(
 
 def calibrate_metric(
     baseline_python: pathlib.Path,
+    current_python: pathlib.Path,
     module: str,
     records: int,
     section: str,
@@ -259,12 +261,13 @@ def calibrate_metric(
     baseline_block = run_block(
         baseline_python, module, records, section, metric, sampler_metric, True
     )
-    run_block(CURRENT_PYTHON, module, records, section, metric, sampler_metric, False)
+    run_block(current_python, module, records, section, metric, sampler_metric, False)
     return baseline_block.get("calibrated") or {}
 
 
 def measure_metric(
     baseline_python: pathlib.Path,
+    current_python: pathlib.Path,
     sequence: list[str],
     module: str,
     records: int,
@@ -275,9 +278,11 @@ def measure_metric(
     """Run the full alternating sequence for one metric and test it."""
     samples: dict[str, list[float]] = {BASELINE: [], CURRENT: []}
     instrumented = False
-    loops = calibrate_metric(baseline_python, module, records, section, metric, sampler_metric)
+    loops = calibrate_metric(
+        baseline_python, current_python, module, records, section, metric, sampler_metric
+    )
     for side in sequence:
-        python = baseline_python if side == BASELINE else CURRENT_PYTHON
+        python = baseline_python if side == BASELINE else current_python
         block = run_block(
             python, module, records, section, metric, sampler_metric, side == BASELINE, loops
         )
@@ -297,6 +302,11 @@ def main() -> None:
         "--baseline-venv",
         default=DEFAULT_BASELINE_VENV,
         help="environment to compare against (default: the guard, i.e. the latest release)",
+    )
+    parser.add_argument(
+        "--current-venv",
+        default=DEFAULT_CURRENT_VENV,
+        help="environment for the candidate side (default: the working-tree .venv)",
     )
     parser.add_argument("--rounds", type=int, default=2, help="B C C B rounds per metric")
     parser.add_argument(
@@ -318,6 +328,7 @@ def main() -> None:
         require_current_guard(arguments.baseline_venv)
 
     baseline_python = REPO / arguments.baseline_venv / "bin" / "python"
+    current_python = REPO / arguments.current_venv / "bin" / "python"
     sequence = list(ROUND_PATTERN) * arguments.rounds
     results = []
     baseline_instrumented = False
@@ -351,7 +362,7 @@ def main() -> None:
     loops_by_point = {}
     for module, section, metric, sampler_metric, name, records in points:
         loops_by_point[name] = calibrate_metric(
-            baseline_python, module, records, section, metric, sampler_metric
+            baseline_python, current_python, module, records, section, metric, sampler_metric
         )
 
     # The canary is one fixed cheap metric measured before, between, and after
@@ -382,7 +393,7 @@ def main() -> None:
     for position, side in enumerate(sequence):
         if position == len(sequence) // 2:
             read_canary()
-        python = baseline_python if side == BASELINE else CURRENT_PYTHON
+        python = baseline_python if side == BASELINE else current_python
         for module, section, metric, sampler_metric, name, records in points:
             block = run_block(
                 python,
@@ -423,7 +434,14 @@ def main() -> None:
             # configuration H2's parity runs showed clean.
             print(f"{name:<28} {test['change_pct']:>+8.1f}%  confirming at 2x blocks...")
             confirmation, _, _ = measure_metric(
-                baseline_python, sequence * 2, module, records, section, metric, sampler_metric
+                baseline_python,
+                current_python,
+                sequence * 2,
+                module,
+                records,
+                section,
+                metric,
+                sampler_metric,
             )
             slower = confirmation["significant"] and confirmation["change_pct"] > 0
 
@@ -460,12 +478,18 @@ def main() -> None:
     # Named for the environment measured against, so the gate run and the story
     # run do not overwrite each other and a reader can tell them apart.
     role = arguments.baseline_venv.removeprefix(".venv-").removeprefix(".venv") or "current"
+    if arguments.current_venv != DEFAULT_CURRENT_VENV:
+        current_role = (
+            arguments.current_venv.removeprefix(".venv-").removeprefix(".venv") or "current"
+        )
+        role = f"{role}-vs-{current_role}"
     out = REPO / "benches" / f"ab-{role}.json"
     out.write_text(
         json.dumps(
             {
                 "records": arguments.records,
                 "baseline_venv": arguments.baseline_venv,
+                "current_venv": arguments.current_venv,
                 "gated": not arguments.no_gate,
                 "block_sequence": sequence,
                 "baseline_instrumented": baseline_instrumented,

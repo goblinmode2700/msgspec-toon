@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T06:01:01.806574+00:00",
+  "generated_at": "2026-08-08T06:13:20.029420+00:00",
   "distribution": "msgspec-toon 0.4.0",
   "environment": {
     "python": "3.13.1",
@@ -346,39 +346,39 @@
       "incumbent_pipeline_bytes": 1482,
       "json_bytes": 1339,
       "decode_us": {
-        "typed_direct": 4.87,
-        "untyped_tree": 4.26,
-        "keyed_document": 4.31,
-        "entry_document": 3.15,
-        "convert_only": 1.46,
-        "wrapper_tree_plus_convert": 5.84,
-        "incumbent_pipeline_python_toon_plus_convert": 114.51,
-        "msgspec_json_native": 2.28
+        "typed_direct": 4.89,
+        "untyped_tree": 4.27,
+        "keyed_document": 4.43,
+        "entry_document": 3.11,
+        "convert_only": 1.48,
+        "wrapper_tree_plus_convert": 6.1,
+        "incumbent_pipeline_python_toon_plus_convert": 113.23,
+        "msgspec_json_native": 2.24
       },
       "encode_us": {
-        "typed_direct_whole": 2.11,
+        "typed_direct_whole": 2.35,
         "entry_document": 3.66,
-        "to_builtins_alone": 1.09,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 96.52,
-        "msgspec_json_native": 1.04
+        "to_builtins_alone": 1.1,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 101.65,
+        "msgspec_json_native": 1.03
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.74,
-        "decode_us.untyped_tree": 1.27,
-        "decode_us.keyed_document": 1.04,
-        "decode_us.entry_document": 0.95,
-        "decode_us.convert_only": 5.3,
-        "decode_us.wrapper_tree_plus_convert": 1.51,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 5.22,
-        "decode_us.msgspec_json_native": 3.75,
-        "encode_us.typed_direct_whole": 7.08,
-        "encode_us.entry_document": 2.45,
-        "encode_us.to_builtins_alone": 1.79,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 0.88,
-        "encode_us.msgspec_json_native": 2.54
+        "decode_us.typed_direct": 4.59,
+        "decode_us.untyped_tree": 3.05,
+        "decode_us.keyed_document": 11.13,
+        "decode_us.entry_document": 1.36,
+        "decode_us.convert_only": 6.46,
+        "decode_us.wrapper_tree_plus_convert": 10.26,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 4.1,
+        "decode_us.msgspec_json_native": 2.51,
+        "encode_us.typed_direct_whole": 23.0,
+        "encode_us.entry_document": 5.64,
+        "encode_us.to_builtins_alone": 3.11,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 15.04,
+        "encode_us.msgspec_json_native": 1.91
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -393,39 +393,39 @@
       "incumbent_pipeline_bytes": 5922,
       "json_bytes": 5347,
       "decode_us": {
-        "typed_direct": 16.33,
-        "untyped_tree": 14.95,
-        "keyed_document": 16.05,
-        "entry_document": 11.85,
-        "convert_only": 5.42,
-        "wrapper_tree_plus_convert": 21.62,
-        "incumbent_pipeline_python_toon_plus_convert": 455.95,
-        "msgspec_json_native": 8.52
+        "typed_direct": 16.49,
+        "untyped_tree": 14.85,
+        "keyed_document": 15.96,
+        "entry_document": 11.88,
+        "convert_only": 5.38,
+        "wrapper_tree_plus_convert": 20.78,
+        "incumbent_pipeline_python_toon_plus_convert": 454.36,
+        "msgspec_json_native": 8.53
       },
       "encode_us": {
-        "typed_direct_whole": 6.95,
-        "entry_document": 13.17,
-        "to_builtins_alone": 4.49,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 379.22,
-        "msgspec_json_native": 3.13
+        "typed_direct_whole": 7.01,
+        "entry_document": 13.14,
+        "to_builtins_alone": 4.5,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 387.71,
+        "msgspec_json_native": 3.2
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.96,
-        "decode_us.untyped_tree": 1.73,
-        "decode_us.keyed_document": 1.19,
-        "decode_us.entry_document": 0.87,
-        "decode_us.convert_only": 1.78,
-        "decode_us.wrapper_tree_plus_convert": 12.16,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.78,
-        "decode_us.msgspec_json_native": 1.09,
-        "encode_us.typed_direct_whole": 1.13,
-        "encode_us.entry_document": 1.23,
-        "encode_us.to_builtins_alone": 1.25,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.2,
-        "encode_us.msgspec_json_native": 1.27
+        "decode_us.typed_direct": 2.77,
+        "decode_us.untyped_tree": 1.7,
+        "decode_us.keyed_document": 0.85,
+        "decode_us.entry_document": 0.98,
+        "decode_us.convert_only": 1.01,
+        "decode_us.wrapper_tree_plus_convert": 1.59,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.71,
+        "decode_us.msgspec_json_native": 1.05,
+        "encode_us.typed_direct_whole": 5.15,
+        "encode_us.entry_document": 0.78,
+        "encode_us.to_builtins_alone": 1.0,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 6.74,
+        "encode_us.msgspec_json_native": 7.22
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -440,39 +440,39 @@
       "incumbent_pipeline_bytes": 47775,
       "json_bytes": 43167,
       "decode_us": {
-        "typed_direct": 126.89,
-        "untyped_tree": 126.33,
-        "keyed_document": 138.35,
-        "entry_document": 101.79,
-        "convert_only": 43.04,
-        "wrapper_tree_plus_convert": 170.26,
-        "incumbent_pipeline_python_toon_plus_convert": 3736.99,
-        "msgspec_json_native": 72.12
+        "typed_direct": 126.44,
+        "untyped_tree": 124.28,
+        "keyed_document": 138.22,
+        "entry_document": 101.57,
+        "convert_only": 43.65,
+        "wrapper_tree_plus_convert": 175.04,
+        "incumbent_pipeline_python_toon_plus_convert": 3787.7,
+        "msgspec_json_native": 72.88
       },
       "encode_us": {
-        "typed_direct_whole": 53.75,
-        "entry_document": 104.05,
-        "to_builtins_alone": 43.51,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 3015.38,
-        "msgspec_json_native": 22.88
+        "typed_direct_whole": 54.13,
+        "entry_document": 103.8,
+        "to_builtins_alone": 45.34,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 3126.81,
+        "msgspec_json_native": 24.01
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.6,
-        "decode_us.untyped_tree": 1.01,
-        "decode_us.keyed_document": 1.74,
-        "decode_us.entry_document": 3.31,
-        "decode_us.convert_only": 0.86,
-        "decode_us.wrapper_tree_plus_convert": 0.78,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 0.95,
-        "decode_us.msgspec_json_native": 16.4,
-        "encode_us.typed_direct_whole": 1.88,
-        "encode_us.entry_document": 0.91,
-        "encode_us.to_builtins_alone": 0.75,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.04,
-        "encode_us.msgspec_json_native": 1.09
+        "decode_us.typed_direct": 0.65,
+        "decode_us.untyped_tree": 1.1,
+        "decode_us.keyed_document": 1.54,
+        "decode_us.entry_document": 1.49,
+        "decode_us.convert_only": 2.3,
+        "decode_us.wrapper_tree_plus_convert": 8.25,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 5.28,
+        "decode_us.msgspec_json_native": 19.13,
+        "encode_us.typed_direct_whole": 1.14,
+        "encode_us.entry_document": 0.87,
+        "encode_us.to_builtins_alone": 10.31,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 10.5,
+        "encode_us.msgspec_json_native": 10.96
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -487,39 +487,39 @@
       "incumbent_pipeline_bytes": 385976,
       "json_bytes": 349111,
       "decode_us": {
-        "typed_direct": 1132.59,
-        "untyped_tree": 1127.38,
-        "keyed_document": 1157.2,
-        "entry_document": 851.97,
-        "convert_only": 453.9,
-        "wrapper_tree_plus_convert": 1536.32,
-        "incumbent_pipeline_python_toon_plus_convert": 31065.63,
-        "msgspec_json_native": 667.76
+        "typed_direct": 1143.96,
+        "untyped_tree": 1180.27,
+        "keyed_document": 1175.13,
+        "entry_document": 850.63,
+        "convert_only": 458.6,
+        "wrapper_tree_plus_convert": 1535.79,
+        "incumbent_pipeline_python_toon_plus_convert": 31333.02,
+        "msgspec_json_native": 683.92
       },
       "encode_us": {
-        "typed_direct_whole": 437.5,
-        "entry_document": 866.58,
-        "to_builtins_alone": 460.36,
-        "incumbent_pipeline_to_builtins_plus_python_toon": 25038.61,
-        "msgspec_json_native": 183.22
+        "typed_direct_whole": 455.17,
+        "entry_document": 884.95,
+        "to_builtins_alone": 467.49,
+        "incumbent_pipeline_to_builtins_plus_python_toon": 24896.61,
+        "msgspec_json_native": 217.36
       },
       "notes": {
         "incumbent_pipeline": "known-inefficient composition (to_builtins + python-toon, convert + python-toon); a benchmark to beat, not the strongest alternative"
       },
       "worker_spread_pct": {
-        "decode_us.typed_direct": 0.95,
-        "decode_us.untyped_tree": 1.02,
-        "decode_us.keyed_document": 1.61,
-        "decode_us.entry_document": 2.35,
-        "decode_us.convert_only": 1.46,
-        "decode_us.wrapper_tree_plus_convert": 1.82,
-        "decode_us.incumbent_pipeline_python_toon_plus_convert": 1.54,
-        "decode_us.msgspec_json_native": 1.95,
-        "encode_us.typed_direct_whole": 2.12,
-        "encode_us.entry_document": 2.4,
-        "encode_us.to_builtins_alone": 2.18,
-        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 1.63,
-        "encode_us.msgspec_json_native": 2.21
+        "decode_us.typed_direct": 3.94,
+        "decode_us.untyped_tree": 14.78,
+        "decode_us.keyed_document": 5.24,
+        "decode_us.entry_document": 4.09,
+        "decode_us.convert_only": 3.05,
+        "decode_us.wrapper_tree_plus_convert": 3.34,
+        "decode_us.incumbent_pipeline_python_toon_plus_convert": 2.33,
+        "decode_us.msgspec_json_native": 6.92,
+        "encode_us.typed_direct_whole": 7.1,
+        "encode_us.entry_document": 3.61,
+        "encode_us.to_builtins_alone": 7.23,
+        "encode_us.incumbent_pipeline_to_builtins_plus_python_toon": 2.3,
+        "encode_us.msgspec_json_native": 40.38
       },
       "gates": {
         "G3_typed_decode_beats_wrapper": true,
@@ -539,26 +539,26 @@
         "json_compact": 1339
       },
       "encode_us": {
-        "msgspec_toon": 4.37,
-        "toons_rust": 28.47,
-        "python_toon": 98.94,
-        "msgspec_json_context": 1.22
+        "msgspec_toon": 4.44,
+        "toons_rust": 27.82,
+        "python_toon": 96.25,
+        "msgspec_json_context": 1.24
       },
       "decode_us": {
-        "msgspec_toon": 4.34,
-        "toons_rust": 11.64,
-        "python_toon": 111.52,
-        "msgspec_json_context": 2.37
+        "msgspec_toon": 4.57,
+        "toons_rust": 11.8,
+        "python_toon": 112.74,
+        "msgspec_json_context": 2.54
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 1.21,
-        "encode_us.toons_rust": 4.71,
-        "encode_us.python_toon": 10.11,
-        "encode_us.msgspec_json_context": 2.46,
-        "decode_us.msgspec_toon": 3.0,
-        "decode_us.toons_rust": 1.34,
-        "decode_us.python_toon": 0.68,
-        "decode_us.msgspec_json_context": 1.12
+        "encode_us.msgspec_toon": 1.41,
+        "encode_us.toons_rust": 1.14,
+        "encode_us.python_toon": 1.25,
+        "encode_us.msgspec_json_context": 2.73,
+        "decode_us.msgspec_toon": 13.76,
+        "decode_us.toons_rust": 4.37,
+        "decode_us.python_toon": 2.68,
+        "decode_us.msgspec_json_context": 20.73
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -574,26 +574,26 @@
         "json_compact": 5347
       },
       "encode_us": {
-        "msgspec_toon": 15.46,
-        "toons_rust": 106.68,
-        "python_toon": 374.06,
-        "msgspec_json_context": 3.81
+        "msgspec_toon": 15.71,
+        "toons_rust": 109.22,
+        "python_toon": 374.68,
+        "msgspec_json_context": 3.78
       },
       "decode_us": {
-        "msgspec_toon": 15.21,
-        "toons_rust": 45.76,
-        "python_toon": 455.03,
-        "msgspec_json_context": 9.97
+        "msgspec_toon": 16.0,
+        "toons_rust": 46.14,
+        "python_toon": 452.86,
+        "msgspec_json_context": 9.68
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 2.25,
-        "encode_us.toons_rust": 1.59,
-        "encode_us.python_toon": 0.79,
-        "encode_us.msgspec_json_context": 1.41,
-        "decode_us.msgspec_toon": 1.25,
-        "decode_us.toons_rust": 0.76,
-        "decode_us.python_toon": 2.16,
-        "decode_us.msgspec_json_context": 7.49
+        "encode_us.msgspec_toon": 8.54,
+        "encode_us.toons_rust": 7.96,
+        "encode_us.python_toon": 0.89,
+        "encode_us.msgspec_json_context": 1.78,
+        "decode_us.msgspec_toon": 18.57,
+        "decode_us.toons_rust": 0.93,
+        "decode_us.python_toon": 0.6,
+        "decode_us.msgspec_json_context": 0.96
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -609,26 +609,26 @@
         "json_compact": 43167
       },
       "encode_us": {
-        "msgspec_toon": 121.63,
-        "toons_rust": 847.66,
-        "python_toon": 2985.05,
-        "msgspec_json_context": 29.24
+        "msgspec_toon": 119.01,
+        "toons_rust": 855.61,
+        "python_toon": 3047.94,
+        "msgspec_json_context": 29.41
       },
       "decode_us": {
-        "msgspec_toon": 126.75,
-        "toons_rust": 382.72,
-        "python_toon": 3687.73,
-        "msgspec_json_context": 87.06
+        "msgspec_toon": 128.94,
+        "toons_rust": 403.47,
+        "python_toon": 3796.87,
+        "msgspec_json_context": 90.71
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 13.14,
-        "encode_us.toons_rust": 1.95,
-        "encode_us.python_toon": 1.45,
-        "encode_us.msgspec_json_context": 13.99,
-        "decode_us.msgspec_toon": 2.62,
-        "decode_us.toons_rust": 2.19,
-        "decode_us.python_toon": 0.88,
-        "decode_us.msgspec_json_context": 1.73
+        "encode_us.msgspec_toon": 4.65,
+        "encode_us.toons_rust": 3.63,
+        "encode_us.python_toon": 5.42,
+        "encode_us.msgspec_json_context": 14.22,
+        "decode_us.msgspec_toon": 7.52,
+        "decode_us.toons_rust": 7.38,
+        "decode_us.python_toon": 4.04,
+        "decode_us.msgspec_json_context": 6.57
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -644,26 +644,26 @@
         "json_compact": 349111
       },
       "encode_us": {
-        "msgspec_toon": 930.56,
-        "toons_rust": 6847.62,
-        "python_toon": 24115.0,
-        "msgspec_json_context": 216.15
+        "msgspec_toon": 933.32,
+        "toons_rust": 6954.02,
+        "python_toon": 24856.8,
+        "msgspec_json_context": 220.96
       },
       "decode_us": {
-        "msgspec_toon": 1119.76,
-        "toons_rust": 3194.08,
-        "python_toon": 30929.53,
-        "msgspec_json_context": 835.76
+        "msgspec_toon": 1155.72,
+        "toons_rust": 3273.5,
+        "python_toon": 31725.42,
+        "msgspec_json_context": 854.03
       },
       "worker_spread_pct": {
-        "encode_us.msgspec_toon": 2.79,
-        "encode_us.toons_rust": 1.45,
-        "encode_us.python_toon": 1.35,
-        "encode_us.msgspec_json_context": 2.76,
-        "decode_us.msgspec_toon": 0.96,
-        "decode_us.toons_rust": 1.63,
-        "decode_us.python_toon": 1.58,
-        "decode_us.msgspec_json_context": 1.63
+        "encode_us.msgspec_toon": 2.41,
+        "encode_us.toons_rust": 3.63,
+        "encode_us.python_toon": 4.56,
+        "encode_us.msgspec_json_context": 2.59,
+        "decode_us.msgspec_toon": 4.08,
+        "decode_us.toons_rust": 1.24,
+        "decode_us.python_toon": 1.66,
+        "decode_us.msgspec_json_context": 1.23
       },
       "gates": {
         "G5_encode_not_slower_than_toons": true,
@@ -3378,7 +3378,7 @@
     "harness_findings": {
       "H1_loop_counts_were_calibrated_per_side": "The A/B gate could not certify parity: with the guard re-cut from the SAME commit as the working tree, make ab reported reproduced slowdowns on 2 of 42 metrics, twice running, with four of six flags landing at records=64. Cause: ab.py spawned a fresh process per block and _timing calibrated a loop count independently in each one, while _timing already exposed LOOPS_ENV for exactly this and ab.py never used it. _calibrate doubles from 1, so two builds a few percent apart near a boundary land on counts differing by 2x and the two sides stop measuring the same amount of work. A freshly cut guard is additionally cold on its first run and that run chose its loop count: a guard built moments earlier calibrated to 256 loops at 323us where every later run agreed on 512 loops at 127us. Fixed by calibrate_metric: one discarded block per side warms both interpreters and fixes the loop count both then measure with. Effect on the parity run: typed decode@64 +7.2% SLOWER -> +0.2% no significant difference; keyed decode@64 +4.5% SLOWER -> +0.6% no significant difference.",
       "H2_residual_drift_across_a_long_run": "LARGELY FIXED by deterministic interleaving (external review round 3, patch 01 of 1). Originally: After H1, a residual false positive remains: entry decode@4096 read +1.6% and +2.2% (reproduced at double blocks) inside full 42-metric runs, but +0.1/+0.6/+0.2% when that metric is run alone. The bias is therefore run-order drift accumulating across a ~6 minute continuous ladder, not a difference between the two builds. The ABBA block design controls drift WITHIN one metric's blocks; nothing controls drift ACROSS metrics, and the per-metric minimum detectable effect cannot see it. Consequence: make ab currently cannot certify parity below roughly 2% on a full run, which is well above the sub-1% MDE it prints. Candidate fixes: round-robin the metric order instead of finishing each metric before starting the next, randomize metric order per run, or re-measure a canary metric at the start and end and report the drift alongside every verdict. A gate that cries wolf gets ignored, which is the same failure mode as a gate that cannot fire. || RESOLUTION: every block-position of the B C C B pattern now runs across ALL metric points before the next position runs anywhere, so each metric's baseline and current samples both span the full run and slow drift enters both sides symmetrically - bias becomes variance, which the t-test models and the MDE reports. No threshold, alpha or block count changed; the ABBA property survives because a metric still sees B at sweep 1, C at 2, C at 3, B at 4. A canary metric is read at start/mid/end and reported beside every run, never gating. Confirmation runs the flagged metric alone after the ladder. Measured on identical source: old harness 2 reproduced slowdowns in each of two runs (up to +7.2%); new harness 1 reproduced then 0, with peak false-positive magnitude down from +7.2% to +1.8%. Options 2 (randomised order) and 4 (empirical floor) were rejected by the author on this project's own grounds - nondeterminism in evidence, and a floor being structurally the 'bigger threshold' the acceptance text bans.",
-      "H3_build_identity_floor": "OPEN, and distinct from H2. After interleaving, a residual bias survives that ordering cannot reach: entry decode@512 measured +1.8/+1.0/+1.3/+1.3% across four SOLO runs against a guard built from source identical to the working tree - consistently positive, never significant only because the MDE sits near 2%. Solo runs are the configuration H2 showed clean, so this is not run-order drift. The likeliest mechanism is build identity: the guard is built in a separate worktree (.guard-src), so path strings embedded in the binary differ and code layout with them. Two builds of identical source are not equally fast. Consequence: the gate's floor on affected metrics is ~1.3-2%, and no scheduling change will remove it. Untested next step: build the same source at a third path and compare it against the guard - if that also differs by ~1%, build identity is confirmed and the floor must be characterised rather than chased. The candidate's own falsification condition predicted this outcome and named per-process state as the next suspect.",
+      "H3_build_identity_floor": "CLOSED, with the proposed mechanism falsified. v0.4.0 source was built from a third path (/private/tmp/msgspec-toon-h3-src), installed as a wheel in .venv-h3, and compared against the v0.4.0 guard with 8 blocks per side on the previously biased entry decode@512 point. Result: -0.5%, MDE 1.1%, no significant difference; canary spread 2.5%. A third source path did NOT reproduce the old +1.0 to +1.8% sign, so source-path-driven binary layout is not confirmed and must not be stated as the permanent cause. Published resolution: a focused same-source comparison resolved only changes larger than 1.1% in this session; the full-ladder practical floor remains roughly 1-2% on quiet rows and higher where the per-row MDE says so. ab.py gained --current-venv so this comparison names both immutable wheel environments instead of swapping the editable working extension.",
       "H4_solo_confirmation_can_false_negative": "OPEN. The gate was proven to FIRE, which the round-3 submission did not test - its acceptance evidence was entirely 'zero false positives on identical source', a property any broken gate has. A deliberate perturbation (one 96-byte allocation per scanned line in scan_line_marks) produced a real 10-20% regression: entry decode reproduced SLOWER at 4, 8, 16, 64 and 512, and the run failed. But entry decode@4096 flagged at +10.0% (MDE 1.7%) in the ladder and then did NOT reproduce in the solo confirmation - a false negative on a genuine 10% regression at the largest, noisiest block. The gate still failed the run overall, so this is a weakness rather than a defect, but a confirmation step that can miss 10% is not a confirmation step to rely on alone."
     }
   },

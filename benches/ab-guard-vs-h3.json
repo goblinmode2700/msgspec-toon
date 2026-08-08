@@ -1,0 +1,68 @@
+{
+  "records": [
+    512
+  ],
+  "baseline_venv": ".venv-guard",
+  "current_venv": ".venv-h3",
+  "gated": false,
+  "block_sequence": [
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline"
+  ],
+  "baseline_instrumented": false,
+  "canary": {
+    "metric": "entry decode@512",
+    "reads_us": [
+      95.27,
+      97.24,
+      94.83
+    ],
+    "spread_pct": 2.5413898555309467,
+    "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+  },
+  "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
+  "results": [
+    {
+      "metric": "entry decode@512",
+      "baseline_us": [
+        95.56,
+        94.88,
+        96.51,
+        97.46,
+        98.73,
+        96.14,
+        96.6,
+        95.91
+      ],
+      "current_us": [
+        95.9,
+        95.77,
+        97.22,
+        94.92,
+        95.35,
+        96.24,
+        96.42,
+        95.84
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "change_pct": -0.5351196569014882,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.08233532800731
+    }
+  ]
+}

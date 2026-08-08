@@ -123,17 +123,19 @@ errors still carry no payload text (C3 is the easy one to break here, because a
 natural message wants to quote the offending value), and `make ab` shows no cost
 on payloads that declare no constraints.
 
-### 2. C9 has a floor. Characterize it, then stop chasing it.
+### 2. C9 has a floor — characterized at checkpoint 11
 
 Two builds of identical source are not equally fast. Against a guard built from
 the same commit, `entry decode@512` reads consistently 1.0 to 1.8 percent slow
 across four solo runs. The likely cause is that the guard is built in a separate
 worktree, so path strings embedded in the binary shift the code layout.
 
-One experiment settles it: build the same source at a third path and compare it
-against the guard. If it also differs by about a percent, the floor is real and
-permanent, and the honest response is to publish it as the gate's resolution
-rather than keep hunting it.
+The third-path experiment measured -0.5% with a 1.1% minimum detectable effect
+against the source-identical guard; the predicted positive bias did not reproduce.
+Source path is therefore not a confirmed cause. The published focused resolution is
+1.1% for that session, while full-ladder rows retain their own reported MDEs (typically
+roughly 1–2% on quiet rows, higher on noisy ones). The floor is characterized; the
+mechanism remains unknown and is not asserted.
 
 ---
 

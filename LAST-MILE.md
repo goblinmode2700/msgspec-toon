@@ -324,7 +324,7 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] Rank costs by measured inclusive time. `needs_quote` leads encode;
       `split_cells_into` and absent-`Any` forwarding lead focused decode candidates. E4
       list collection is demoted to roughly 1–2% of sampled stacks.
-- [ ] **H3:** build source-identical code at a third path and publish the observed
+- [x] **H3:** build source-identical code at a third path and publish the observed
       build-identity resolution floor.
 - [ ] **P4 functional surface:** add same-run rows for functional `encode()` and
       `decode()`. Hypothesis: constructing a codec and rebuilding/attaching plans on every
@@ -347,6 +347,25 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [ ] Keep the canonical token ladder and losing shapes in every report.
 
 Exit: each adopted optimization has a frozen-baseline A/B result and all protected gates pass.
+
+#### Checkpoint 11 — H3 third-path resolution experiment
+
+Hypothesis: if source-path-driven binary layout causes the old +1.0 to +1.8% bias on
+`entry decode@512`, a third build of identical `v0.4.0` source at a different path will
+differ from the `v0.4.0` guard by about one percent with the same persistent sign.
+
+Falsified. The third source lived at `/private/tmp/msgspec-toon-h3-src`, produced a release
+abi3 wheel installed in `.venv-h3`, and was compared to `.venv-guard` over 8 blocks per
+side. `entry decode@512` measured **-0.5%**, MDE **1.1%**, no significant difference; the
+baseline canary spread was 2.5%. Source path is therefore not a confirmed permanent cause
+of the older bias. The published focused resolution is 1.1% for this session; the practical
+full-ladder floor remains roughly 1–2% on quiet rows and is larger wherever that row's MDE
+says so.
+
+`ab.py` now accepts `--current-venv`, making third-build and other immutable-wheel
+comparisons explicit without swapping the editable working extension behind its freshness
+check. The evidence is `benches/ab-guard-vs-h3.json`. Next: profile the harness's own
+Python/orchestration cost, then add functional API rows.
 
 ### F. Distribution finish
 
