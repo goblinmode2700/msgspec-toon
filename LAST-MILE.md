@@ -347,7 +347,7 @@ lose, which made rejecting it a ten-minute measurement instead of an argument.
 - [x] **E8 quoting specialization:** branch once on the first byte so strings that cannot
       be numeric-like skip numeric-state tracking. Falsifier: the existing >100k quoting
       differential moves or the typed/untyped encode ladder cannot resolve a win.
-- [ ] **D7 one-pass quote-free cells:** use a combined quote/delimiter search so the
+- [x] **D7 one-pass quote-free cells — REJECTED:** use a combined quote/delimiter search so the
       common quote-free row is scanned once. Falsifier: quoted-heavy control regresses or
       the typed/untyped decode ladder cannot resolve a win.
 - [ ] **D8 cold Any forwarding:** avoid constructing/forwarding an `AnyEvent` when no
@@ -481,6 +481,21 @@ baseline, so E8 was present on both sides. Functional encode moved **-1.8/-2.1/+
 at 16/64/512/4096 records; every row was below its MDE and reported no significant
 difference. The candidate and its cache test were removed. The functional encode floor is
 therefore elsewhere; do not re-spend native encode-plan compilation without a new profile.
+
+#### Checkpoint 17 — D7 combined quote/delimiter scan rejected
+
+Hypothesis: replacing the quote-presence pass plus delimiter pass with one `memchr2` scan
+will resolve a decode win on quote-free tabular rows. On the first quote, the candidate kept
+already-proven delimiters and resumed the old quote-aware scan from the current cell.
+
+The semantic part passed: a differential oracle compared the candidate with the prior
+splitter across **411,771** generated rows over comma, pipe, and tab delimiters with zero
+divergences; all 37 Rust tests passed. The performance hypothesis did not. Three-round
+same-session A/B found no significant improvement on typed or entry decode. Typed was
+-0.4/+0.9/-8.9/-0.0% (the +0.9% flag did not reproduce; the -8.9% row had an 18.2% MDE),
+and entry was -0.5/-0.6/-0.2/+0.3%. Untyped trended slower at
+**+7.0/+2.5/+2.6/+0.8%**, also below each row's MDE. The stated falsifier fired, so both
+implementation and oracle were removed. Evidence remains in `benches/ab-d7-*-decode.json`.
 
 ### F. Distribution finish
 

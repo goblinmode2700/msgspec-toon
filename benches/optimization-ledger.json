@@ -299,6 +299,12 @@
       "method": "cache an opaque Arc<EncodePlan> in the existing 512-entry Python LRU, retain local Encoder writer/hook/runtime state, and compare with an immutable checkpoint-15 wheel for three B-C-C-B rounds",
       "result": "functional encode moved -1.8/-2.1/+0.3/+0.0% at 16/64/512/4096 records; no row was significant (MDE 5.1/2.2/1.6/1.6%).",
       "ruling": "REJECTED and reverted. Python already cached PlanSpec lowering, and the remaining native field/shape compilation does not materially move whole-call cost. Do not retry without a new measured mechanism."
+    },
+    "combined_quote_delimiter_scan_D7": {
+      "question": "does one memchr2 quote/delimiter scan beat the existing quote-presence pass followed by delimiter iteration on common quote-free rows?",
+      "method": "preserve the old splitter as a 411771-row differential oracle, then run three-round focused A/B on typed, entry, and untyped decode at 16/64/512/4096 records",
+      "result": "zero semantic divergences, but no significant decode win. Entry stayed within -0.6% to +0.3%; typed had no reproduced change; untyped trended slower at +7.0/+2.5/+2.6/+0.8%, below the per-row MDEs.",
+      "ruling": "REJECTED and reverted. The stated typed/untyped-win falsifier fired. The existing two-pass quote-free path remains."
     }
   },
   "harness_findings": {

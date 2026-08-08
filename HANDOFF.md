@@ -51,9 +51,11 @@ continuation. The ordered queue is now:
    moved -1.8/-2.1/+0.3/+0.0%; none resolved. The remaining compilation is not the
    functional encode floor. The prior-art boundary remains recorded in
    `docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
-8. **NEXT: attempt the remaining profiled native candidates in order:** quote-free
-   `split_cells_into`, absent-`Any` forwarding, then measured wide-dictionary membership.
-9. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+8. **D7 quote-free cell scan — REJECTED.** A combined `memchr2` quote/delimiter scan was
+   equivalent across 411,771 generated rows, but typed and entry decode stayed at parity;
+   untyped decode trended slower. The prior two-pass common path remains.
+9. **NEXT:** attempt absent-`Any` forwarding, then measured wide-dictionary membership.
+10. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 
