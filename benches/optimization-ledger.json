@@ -311,6 +311,12 @@
       "method": "leave the existing Any/untyped sub-consumer state machine intact, add six hot-path presence guards, mark forwarding cold and noinline, then run three-round focused typed-decode A/B",
       "result": "typed decode improved -9.0/-10.0/-9.3/-7.1% at 16/64/512/4096 records with 0.8-1.3% MDEs.",
       "ruling": "ADOPTED. Any and dec_hook support tests, 36 Rust tests, 119 Python tests, corpus 538/538, payload safety, and G2 remained green."
+    },
+    "wide_dictionary_diagnostic_E9": {
+      "question": "does a permanent 64-column dict-row payload expose the shape-classifier cost before changing membership?",
+      "method": "rotate later-row insertion order, verify canonical tabular roundtrip, and measure encode across ten workers at 4/8/16/64/512 rows",
+      "result": "22.72/44.38/88.30/355.39/2944.27us, or 5.52-5.75us per row. Source contains nested per-row-key linear scans of first_keys. toon-rust 2136cb1 independently uses IndexMap::contains_key for the equivalent v3 check.",
+      "ruling": "DIAGNOSTIC ADOPTED. Attempt hashed first-row membership next; retain only if the wide row wins without regressing the canonical five-column ladders."
     }
   },
   "harness_findings": {

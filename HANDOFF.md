@@ -57,9 +57,13 @@ continuation. The ordered queue is now:
 9. **D8 absent-`Any` forwarding — ADOPTED.** Guarding before `AnyEvent` construction and
    outlining the forwarding routine as cold improved typed decode 7.1–10.0% at every size.
    Full support/containment tests, corpus, payload safety, and G2 stayed green.
-10. **NEXT:** add the wide-dictionary diagnostic, then attempt hashed first-row membership
-    only if it exposes the predicted quadratic shape cost.
-11. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
+10. **E9 diagnostic — DONE.** The permanent `wide dict encode` row uses 64 columns with
+    rotated insertion order. Baseline cost is stable at 5.5–5.8 us/row from 4 through 512
+    rows; source inspection confirms nested linear key membership. `toon-rust` independently
+    uses `IndexMap::contains_key` for this check.
+11. **NEXT:** replace only first-row membership with Python dict hashing, then require a
+    wide-row win and no regression on the canonical five-column encode ladders.
+12. **H6 is deferred, not an invitation to hand-roll statistics in Python.** Preserve raw
    block data; if this is resumed, use an established bulk-analysis implementation and a
    predeclared family-wise procedure outside the timed worker path.
 

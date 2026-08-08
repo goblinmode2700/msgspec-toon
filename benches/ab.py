@@ -98,6 +98,13 @@ METRICS = (
     ("bench_typed", "decode_us", "keyed_document", "decode.keyed_document", "keyed decode"),
     ("bench_typed", "decode_us", "entry_document", "decode.entry_document", "entry decode"),
     ("bench_typed", "encode_us", "entry_document", "encode.entry_document", "entry encode"),
+    (
+        "bench_typed",
+        "encode_us",
+        "wide_dict_document",
+        "encode.wide_dict_document",
+        "wide dict encode",
+    ),
     ("bench_codecs", "decode_us", "msgspec_toon", "decode.msgspec_toon", "untyped decode"),
     ("bench_codecs", "encode_us", "msgspec_toon", "encode.msgspec_toon", "untyped encode"),
 )

@@ -512,6 +512,26 @@ three-round A/B measured typed decode **-9.0/-10.0/-9.3/-7.1%** at
 (including support, containment, `Any`, and hook cases), the 538/538 corpus, payload-safety
 checks, and G2 passed. Evidence: `benches/ab-d8-typed-decode.json`. Adopted.
 
+#### Checkpoint 19 — E9 diagnostic and `toon-rust` prior art
+
+Added a permanent `wide dict encode` metric before changing classification. Its payload is
+a uniform array of 64-column Python dicts; later rows rotate insertion order, so tabular
+eligibility requires key-set membership rather than positional equality. The generated
+payload round-trips through canonical tabular output.
+
+Mean-across-ten-worker measurements were stable across row counts: 4/8/16/64/512 rows cost
+22.72/44.38/88.30/355.39/2944.27 us, or **5.52–5.75 us per row**. The source mechanism is
+the predicted nested scan: every key of every later row calls
+`first_keys.iter().any(...)`. The diagnostic therefore isolates the wide-row cost without a
+row-count slope confound.
+
+The owner-supplied `toon-format/toon-rust` source was inspected at `2136cb1`. It cannot be
+adopted: encode materializes, clones, and normalizes an owned Serde/JSON value tree; decode
+uses owned `Vec<char>` tokens and values; its v3 grammar and `i64/u64/f64` numbers violate
+TOON 4.1, G2, and Python-precision integers. Its tabular detector does provide direct E9
+prior art: first-row keys live in `IndexMap` and later rows use `contains_key`. The detailed
+verdict is in `docs/implementation-spec/prior-art-native-codec-2026-08-07.md`.
+
 ### F. Distribution finish
 
 - [ ] Lift the PyO3 cooldown pin only after its time gate and `make audit` pass.

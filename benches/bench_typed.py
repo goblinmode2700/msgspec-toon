@@ -28,7 +28,15 @@ import msgspec_toon as toon
 import toon as python_toon
 from _timing import DEFAULT_WORKERS, measure, methodology, selected_metric
 from _workers import across_workers
-from payloads import Document, document, entry_document, keyed_document, keyed_toon_text, toon_text
+from payloads import (
+    Document,
+    document,
+    entry_document,
+    keyed_document,
+    keyed_toon_text,
+    toon_text,
+    wide_dict_document,
+)
 
 LADDER = (4, 8, 16, 64, 512, 4096)
 
@@ -72,6 +80,11 @@ def sample_run(records: int) -> dict[str, Any]:
         assert untyped_decoder.decode(entry_text) == entry_doc
     entry_decode = measure("decode.entry_document", lambda: untyped_decoder.decode(entry_text)).us
     entry_encode = measure("encode.entry_document", lambda: encoder.encode(entry_doc)).us
+    need_wide = measuring_all or selected == "encode.wide_dict_document"
+    wide_doc = wide_dict_document(records) if need_wide else []
+    if need_wide:
+        assert untyped_decoder.decode(encoder.encode(wide_doc)) == wide_doc
+    wide_dict_encode = measure("encode.wide_dict_document", lambda: encoder.encode(wide_doc)).us
     wrapper_decode = measure(
         "decode.wrapper", lambda: msgspec.convert(untyped_decoder.decode(text), Document)
     ).us
@@ -110,6 +123,7 @@ def sample_run(records: int) -> dict[str, Any]:
             "typed_direct_whole": typed_encode,
             "functional": functional_encode,
             "entry_document": entry_encode,
+            "wide_dict_document": wide_dict_encode,
             "to_builtins_alone": to_builtins_only,
             "incumbent_pipeline_to_builtins_plus_python_toon": incumbent_encode,
             "msgspec_json_native": json_native_encode,
@@ -183,6 +197,7 @@ def main() -> None:
             f"incumbent-pipeline={encode['incumbent_pipeline_to_builtins_plus_python_toon']:>10}  "
             f"(json-native={encode['msgspec_json_native']})"
         )
+        print(f"  diagnostic encode us: wide-64-column-dicts={encode['wide_dict_document']}")
         print(
             f"  gates: G3={'PASS' if gates['G3_typed_decode_beats_wrapper'] else 'FAIL'}  "
             f"G4={'PASS' if gates['G4_whole_encode_beats_to_builtins_alone'] else 'FAIL'}  "

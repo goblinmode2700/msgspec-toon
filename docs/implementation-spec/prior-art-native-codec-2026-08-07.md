@@ -27,6 +27,13 @@ compilation for functional calls, and scan-specialized text parsing/encoding.
   path. The underlying v3.0 codec cannot replace this v4.1 corpus-complete parser, but its
   first-byte string specialization, combined delimiter/quote scans, and precomputed field
   slots independently match candidates E8, D7, and E9.
+- `toon-format/toon-rust` (`2136cb1`), the official/community v3.0 implementation: its
+  generic encode path converts through `serde_json::Value`, clones and normalizes an owned
+  tree, while decode tokenizes into owned strings/values from a `Vec<char>`. Its
+  `i64`/`u64`/`f64` number model, v3 grammar, and value-tree ownership rule it out for G2,
+  Python-precision integers, and TOON 4.1 nested field groups. One algorithm is directly
+  relevant: `is_tabular_array` takes first-row keys from `IndexMap` and validates later
+  rows with hashed `contains_key`, corroborating E9's wide-dictionary membership candidate.
 - CPython 3.13 `json` and `functools`: default codec-object reuse and bounded thread-safe LRU
   are mature patterns, but caching whole codec wrappers is weaker than msgspec's native
   compiled-schema pattern for this extension.
@@ -39,6 +46,8 @@ Take msgspec's split between native functional entry points, local per-call stat
 compiled Struct metadata. Keep the existing 512-entry Python annotation cache as the
 retention boundary and cache an opaque native compiled plan behind it. Separately port the
 three scan/data-layout ideas from `serde_toon_format`, one measured checkpoint at a time.
+Use `toon-rust` only as corroboration for hashed wide-row membership; do not port its owned
+value pipeline, character scanner, or bounded-integer model.
 
 Reject wrapper-object caches, unbounded global class maps, Serde/jaq value trees, the v3.0
 wire implementation, new subprocesses, and any dependency that moves inspection outside

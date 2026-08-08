@@ -163,6 +163,28 @@ def entry_document(records: int) -> dict:
     return tree
 
 
+WIDE_DICT_FIELDS = 64
+
+
+def wide_dict_document(records: int) -> list[dict[str, int]]:
+    """Uniform wide dict rows for tabular shape-classification diagnostics.
+
+    Later rows rotate insertion order so correctness requires key-set
+    membership rather than positional equality. Sixty-four columns make a
+    linear membership scan's quadratic width cost visible without changing
+    the canonical five-column challenge ladder.
+    """
+    keys = [f"field_{index:02}" for index in range(WIDE_DICT_FIELDS)]
+    rows = []
+    for row in range(records):
+        offset = row % WIDE_DICT_FIELDS
+        ordered = keys[offset:] + keys[:offset]
+        rows.append(
+            {key: row * WIDE_DICT_FIELDS + int(key.removeprefix("field_")) for key in ordered}
+        )
+    return rows
+
+
 def token_payload_matrix() -> list[tuple[str, int, Any]]:
     cases: list[tuple[str, int, Any]] = []
     for records in TOKEN_LADDER:
