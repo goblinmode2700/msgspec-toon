@@ -42,6 +42,14 @@ declared divergences**, including tab/pipe delimiters, keyed tabular objects
 \* the incumbents only tabularize flat records; one nested field per record collapses
 them to the fallback form that costs more than JSON.
 
+The token advantage is a property of the tabular forms specifically, not of TOON:
+irregular, non-uniform shapes cost **1.16–1.19×** compact JSON's tokens (their smaller
+byte count tokenizes worse per byte), and the spec requires the entry-by-entry fallback
+for them, so no encoder change recovers it — keep those payloads JSON when tokens are
+the budget. The spec-legal `indent=1` option saves tokens on every shape (uniform@4096:
+0.62× → **0.58×**). Mechanism, measurements, and the closed spec rulings:
+`docs/token-shape-guidance.md`.
+
 **Speed** (same-run, Apple silicon, abi3 release wheel, min-of-batches):
 
 - Typed decode (`Decoder(T).decode`) beats untyped-decode-plus-`msgspec.convert` at

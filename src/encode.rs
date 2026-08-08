@@ -1241,7 +1241,7 @@ mod e5_differential {
             "\n", "\r", "[", "]", "{", "#", "'", "\u{0}", "\u{1f}", "\u{7f}", "é", "→", "𝄞", "n",
             "u", "l",
         ];
-        const DELIMITERS: [u8; 3] = [b',', b'\t', b'|'];
+        const DELIMITERS: [u8; 3] = *b",\t|";
         let mut checked = 0usize;
         for first in ALPHABET {
             for second in ALPHABET {

@@ -33,8 +33,16 @@ PRIMARY = "o200k_base"
 SECONDARY = "cl100k_base"
 
 
+#: The indent widths the token evidence covers. Canonical is 2; 1 and 4 are
+#: spec-legal wire options (§12) a caller may choose. The published token
+#: work only ever varied the delimiter — and found it to be noise — while
+#: the indent axis was never measured, although indentation is exactly the
+#: syntax TOON spends on the entry-by-entry forms where it loses to JSON.
+INDENT_AXIS = (1, 2, 4)
+
+
 def format_texts(tree: Any) -> dict[str, str]:
-    return {
+    texts = {
         "json_compact": msgspec.json.encode(tree).decode(),
         "toon_comma": msgspec_toon.encode(tree).decode(),
         "toon_tab": msgspec_toon.encode(tree, delimiter="\t").decode(),
@@ -42,6 +50,11 @@ def format_texts(tree: Any) -> dict[str, str]:
         "toons_rust": toons_rust.dumps(tree),
         "python_toon": python_toon.encode(tree),
     }
+    for indent in INDENT_AXIS:
+        if indent == 2:
+            continue  # canonical, already present as toon_comma
+        texts[f"toon_comma_indent{indent}"] = msgspec_toon.encode(tree, indent=indent).decode()
+    return texts
 
 
 def run() -> dict[str, Any]:
@@ -52,6 +65,13 @@ def run() -> dict[str, Any]:
         # Sanity: our option outputs still decode to the same value.
         assert msgspec_toon.decode(texts["toon_tab"].encode()) == tree
         assert msgspec_toon.decode(texts["toon_pipe"].encode()) == tree
+        for indent in INDENT_AXIS:
+            if indent == 2:
+                continue
+            decoded = msgspec_toon.decode(
+                texts[f"toon_comma_indent{indent}"].encode(), indent_size=indent
+            )
+            assert decoded == tree
 
         json_tokens = {
             name: len(enc.encode(texts["json_compact"])) for name, enc in encoders.items()
@@ -88,7 +108,39 @@ def run() -> dict[str, Any]:
         ),
         "T2_published": True,
     }
+    indent_axis = [
+        {
+            "shape": r["shape"],
+            "records": r["records"],
+            "tokens_vs_json_by_indent": {
+                str(indent): r["formats"][
+                    "toon_comma" if indent == 2 else f"toon_comma_indent{indent}"
+                ]["tokens_vs_json"]
+                for indent in INDENT_AXIS
+            },
+        }
+        for r in rows
+    ]
+    irregular_rows = [r for r in rows if r["shape"] == "irregular"]
     findings = {
+        "indent_axis": indent_axis,
+        "indent_note": (
+            "indent=1 saves tokens on every shape: ~4 points on the tabular "
+            "ladder (a single leading space merges into the first cell's token "
+            "where two spaces cost their own token per row) and 13-15 points "
+            "on irregular shapes, where indentation is a large share of the "
+            "syntax. indent=4 costs bytes but is token-identical to indent=2 "
+            "(space runs merge). None of this changes the fact that the token "
+            "advantage is a property of the tabular forms specifically, not of "
+            "TOON: irregular shapes cost more tokens than compact JSON at "
+            "every measured indent, indent=1 included."
+        ),
+        "irregular_costs_more_tokens_than_json_at_every_indent": all(
+            row["formats"][fmt]["tokens"][PRIMARY]
+            > row["formats"]["json_compact"]["tokens"][PRIMARY]
+            for row in irregular_rows
+            for fmt in ("toon_comma", "toon_comma_indent1", "toon_comma_indent4")
+        ),
         "tab_beats_comma_everywhere": not tab_losing_points,
         "tab_losing_points": tab_losing_points,
         "note": (
@@ -117,7 +169,15 @@ def main() -> None:
         formats = row["formats"]
         json_t = formats["json_compact"]["tokens"][PRIMARY]
         print(f"\n{row['shape']} records={row['records']}  (json={json_t} tokens)")
-        for fmt in ("toon_comma", "toon_tab", "toon_pipe", "toons_rust", "python_toon"):
+        for fmt in (
+            "toon_comma",
+            "toon_comma_indent1",
+            "toon_comma_indent4",
+            "toon_tab",
+            "toon_pipe",
+            "toons_rust",
+            "python_toon",
+        ):
             info = formats[fmt]
             print(
                 f"  {fmt:<12} tokens={info['tokens'][PRIMARY]:>7}  "
