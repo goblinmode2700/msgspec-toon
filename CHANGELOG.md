@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.0b3
+
+Release qualification and provenance.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b2`: no support changes and no canonical-wire changes for shared locked payloads.
+<!-- release-compatibility:end -->
+
+- Run one canonical validation gate for pull requests, the default branch, and releases.
+- Build distributions once, verify installed artifacts on their target runners, and publish only
+  the digest-matched verified set.
+- Build the source distribution in a clean uv-managed environment before release.
+- Use PyPI Trusted Publishing with short-lived GitHub OIDC credentials and default attestations.
+- Generate version- and revision-bound release evidence from canonical checks and artifact
+  manifests.
+- Preserve codec behavior and canonical TOON bytes from beta 2.
+
 ## 0.1.0b2
 
 Release and documentation polish.

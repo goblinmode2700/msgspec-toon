@@ -202,6 +202,7 @@ Use `uv` for all Python environment work:
 uv sync --locked                         # library and developer tools
 make build                              # release extension in .venv
 make check                              # Rust and Python checks
+make qualify                            # canonical release gate and evidence
 uv run python conformance/run.py        # pinned 538-fixture corpus
 make g2                                 # allocation proof in a separate build
 
@@ -212,6 +213,8 @@ make public-report                      # raw JSON, R charts, and BENCHMARKS.md
 
 `make public-report` uses the host `Rscript`, `ggplot2`, `jsonlite`, and
 `scales`. It does not install R or add R packages to the Python environment.
+The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
+documents installed-artifact verification and Trusted Publishing.
 
 ## License
 

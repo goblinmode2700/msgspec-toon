@@ -5,6 +5,8 @@ PYO3_PYTHON ?= $(shell command -v python3.13 || command -v python3)
 export PYO3_PYTHON
 
 COOLDOWN_DAYS := 14
+QUALIFICATION_DIR := target/qualification
+PYTEST_ARGS ?=
 
 # Opt-in build against the proposed msgspec Struct C API. The normal project
 # environment and dependency pin stay untouched; this profile owns a separate
@@ -19,7 +21,7 @@ FASTPATH_TOON_WHEELS := $(FASTPATH_ROOT)/toon-wheels
 FASTPATH_VENV := .venv-fastpath
 FASTPATH_PYTHON := $(FASTPATH_VENV)/bin/python
 
-.PHONY: lint typecheck test check build bench benchmark-env report public-report audit relock g2 efficiency \
+.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock g2 efficiency \
 	fastpath-source fastpath-build fastpath-check fastpath-bench fastpath-gates fastpath-clean
 
 lint:
@@ -34,7 +36,7 @@ typecheck:
 
 test:
 	cargo test
-	uv run --no-sync pytest
+	uv run --no-sync pytest $(PYTEST_ARGS)
 
 # Offline-capable by design: the network-dependent cooldown audit is a
 # separate target, run in CI and before releases.
@@ -49,6 +51,26 @@ check: lint typecheck test
 build:
 	rm -f target/wheels/*.whl
 	uv run --no-sync maturin develop --release
+
+conformance:
+	uv run --no-sync python conformance/run.py
+
+# One release qualification definition. CI and release workflows invoke this
+# target instead of maintaining smaller copies of the command list.
+qualify:
+	rm -rf "$(QUALIFICATION_DIR)"
+	mkdir -p "$(QUALIFICATION_DIR)"
+	uv sync --all-groups --locked
+	$(MAKE) build
+	$(MAKE) check PYTEST_ARGS="--junitxml=$(QUALIFICATION_DIR)/pytest.xml"
+	$(MAKE) conformance
+	$(MAKE) g2
+	uv run --no-sync python scripts/release-report.py --check-changelog
+	cp conformance/conformance-results.json "$(QUALIFICATION_DIR)/conformance-results.json"
+	cp conformance/allocation-proof.json "$(QUALIFICATION_DIR)/allocation-proof.json"
+	uv run --no-sync python scripts/qualification-summary.py \
+		--junit "$(QUALIFICATION_DIR)/pytest.xml" \
+		--output "$(QUALIFICATION_DIR)/summary.json"
 
 benchmark-env:
 	uv sync --group bench --locked
@@ -120,10 +142,9 @@ efficiency:
 # the release wheel every benchmark measures stays free of counters.
 g2:
 	rm -rf .venv-g2 target/g2-wheels
-	uv venv .venv-g2 --python 3.13
+	UV_PROJECT_ENVIRONMENT=.venv-g2 uv sync --python 3.13 --locked --no-install-project
 	uv run --no-sync maturin build --release --features alloc-stats -o target/g2-wheels
-	uv pip install --python .venv-g2/bin/python target/g2-wheels/*.whl \
-		msgspec==0.21.1 python-toon==0.1.3 toons pytest
+	uv pip install --python .venv-g2/bin/python --reinstall --no-deps target/g2-wheels/*.whl
 	.venv-g2/bin/python -m pytest tests/test_typed_allocations.py -q
 	.venv-g2/bin/python scripts/allocation-proof.py
 

@@ -8,9 +8,12 @@ incumbent pipeline), and token efficiency under named tokenizers (T1-T3).
 
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import json
+import os
 import platform
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +31,12 @@ from _timing import methodology
 from bench_typed import run
 from msgspec_toon import _native
 from support_matrix import as_report as support_matrix_report
+
+ROOT = Path(__file__).resolve().parent.parent
+BASELINE_VERSION = os.environ.get("MSGSPEC_TOON_RELEASE_BASELINE", "0.1.0b2")
+REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE") == "1"
+CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
+CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
 
 
 def allocation_proof() -> dict:
@@ -101,7 +110,143 @@ def conformance_summary(lock: dict) -> dict:
     }
 
 
+def _source_revision() -> str:
+    revision = os.environ.get("GITHUB_SHA")
+    if revision:
+        return revision
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _external_evidence(variable: str, *, version: str, revision: str) -> dict:
+    value = os.environ.get(variable)
+    if not value:
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(f"missing required release evidence: {variable}")
+        return {"status": f"NOT PROVIDED — set {variable} for release qualification"}
+    path = Path(value)
+    if not path.is_file():
+        raise SystemExit(f"{variable} does not name a file: {path}")
+    evidence = json.loads(path.read_text())
+    if evidence.get("source_revision") != revision:
+        raise SystemExit(
+            f"{variable} revision {evidence.get('source_revision')} does not match {revision}"
+        )
+    evidence_version = evidence.get("version")
+    if evidence_version is not None and evidence_version != version:
+        raise SystemExit(f"{variable} version {evidence_version} does not match {version}")
+    if variable == "MSGSPEC_TOON_VERIFIED_MANIFEST":
+        expected_prefix = f"msgspec_toon-{version}"
+        artifacts = evidence.get("artifacts", [])
+        filenames = [item["filename"] for item in artifacts]
+        if not filenames or any(not name.startswith(expected_prefix) for name in filenames):
+            raise SystemExit(f"{variable} contains a file outside version {version}: {filenames}")
+        if any(item.get("verification", {}).get("status") != "passed" for item in artifacts):
+            raise SystemExit(f"{variable} contains an unverified artifact")
+        if any(
+            item.get("verification", {}).get("distribution_version") != version
+            for item in artifacts
+        ):
+            raise SystemExit(f"{variable} contains installed metadata outside version {version}")
+    return evidence
+
+
+def _wire_hash(value: dict) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def compatibility_delta(current_support: dict, current_lock: dict) -> dict:
+    baseline_path = ROOT / "conformance" / "release-baselines" / f"{BASELINE_VERSION}.json"
+    baseline = json.loads(baseline_path.read_text())
+    previous = baseline["support_matrix"]
+    current = {entry["feature"]: entry["status"] for entry in current_support["entries"]}
+    features = sorted(previous.keys() | current.keys())
+    changes = [
+        {"feature": feature, "before": previous.get(feature), "after": current.get(feature)}
+        for feature in features
+        if previous.get(feature) != current.get(feature)
+    ]
+
+    locked_payloads = current_lock["payloads"]
+    shared_formats = ("json_compact", "toon_comma", "toon_tab", "toon_pipe")
+    wire_changes = []
+    for payload, before_hash in baseline["shared_wire_lock_sha256"].items():
+        if payload not in locked_payloads:
+            wire_changes.append({"payload": payload, "status": "removed"})
+            continue
+        comparable = {
+            name: locked_payloads[payload][name]
+            for name in shared_formats
+            if name in locked_payloads[payload]
+        }
+        after_hash = _wire_hash(comparable)
+        if after_hash != before_hash:
+            wire_changes.append(
+                {
+                    "payload": payload,
+                    "status": "changed",
+                    "before": before_hash,
+                    "after": after_hash,
+                }
+            )
+    return {
+        "baseline_version": BASELINE_VERSION,
+        "support_changes": changes,
+        "new_support": [
+            item
+            for item in changes
+            if item["after"] == "supported" and item["before"] != "supported"
+        ],
+        "removed_support": [
+            item
+            for item in changes
+            if item["before"] == "supported" and item["after"] != "supported"
+        ],
+        "wire_output_changes_for_shared_locked_payloads": wire_changes,
+    }
+
+
+def compatibility_markdown(delta: dict) -> str:
+    baseline = delta["baseline_version"]
+    changes = delta["support_changes"]
+    wire_changes = delta["wire_output_changes_for_shared_locked_payloads"]
+    if not changes and not wire_changes:
+        summary = (
+            f"- Compatibility since `{baseline}`: no support changes and no canonical-wire "
+            "changes for shared locked payloads."
+        )
+    else:
+        summary = (
+            f"- Compatibility since `{baseline}`: {len(delta['new_support'])} newly supported, "
+            f"{len(delta['removed_support'])} removed, {len(changes)} total support-status "
+            f"changes, and {len(wire_changes)} shared canonical-wire changes."
+        )
+    return f"{CHANGELOG_COMPATIBILITY_START}\n{summary}\n{CHANGELOG_COMPATIBILITY_END}"
+
+
+def check_changelog_compatibility(delta: dict) -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text()
+    expected = compatibility_markdown(delta)
+    if expected not in changelog:
+        raise SystemExit(
+            "CHANGELOG.md compatibility block does not match executable release delta; "
+            "regenerate it from compatibility_markdown()"
+        )
+
+
 def main() -> None:
+    if sys.argv[1:] == ["--check-changelog"]:
+        efficiency = _efficiency_lock()
+        delta = compatibility_delta(support_matrix_report(), efficiency)
+        check_changelog_compatibility(delta)
+        print(compatibility_markdown(delta))
+        return
     lock = json.loads(
         (Path(__file__).resolve().parent.parent / "conformance" / "fixtures.lock.json").read_text()
     )
@@ -116,9 +261,24 @@ def main() -> None:
         for shape in bench_integration.SHAPES
         for records in bench_integration.LADDER
     ]
+    version = importlib.metadata.version("msgspec-toon")
+    revision = _source_revision()
+    support = support_matrix_report()
+    efficiency = _efficiency_lock()
+    verified_artifacts = _external_evidence(
+        "MSGSPEC_TOON_VERIFIED_MANIFEST", version=version, revision=revision
+    )
+    qualification = _external_evidence(
+        "MSGSPEC_TOON_QUALIFICATION_SUMMARY", version=version, revision=revision
+    )
     report = {
         "generated_at": datetime.now(UTC).isoformat(),
-        "distribution": (f"msgspec-toon {importlib.metadata.version('msgspec-toon')}"),
+        "distribution": (f"msgspec-toon {version}"),
+        "package": {
+            "name": "msgspec-toon",
+            "version": version,
+            "source_revision": revision,
+        },
         "environment": {
             "python": sys.version.split()[0],
             "msgspec": msgspec.__version__,
@@ -140,12 +300,15 @@ def main() -> None:
         },
         "conformance": conformance_summary(lock),
         "allocation_proof": allocation_proof(),
-        "support_matrix": support_matrix_report(),
+        "canonical_qualification": qualification,
+        "verified_release_artifacts": verified_artifacts,
+        "support_matrix": support,
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "benchmarks_integration_same_run": integration_benchmarks,
         "token_efficiency": bench_tokens.run(),
-        "efficiency_lock": _efficiency_lock(),
+        "efficiency_lock": efficiency,
+        "compatibility_since_previous_release": compatibility_delta(support, efficiency),
         "gates": {
             "G1_conformance": (
                 "perfect corpus: every fixture passes with options applied; "
@@ -214,7 +377,7 @@ def main() -> None:
             *(
                 f"{gap['status']}: {gap['feature']} (tier {gap['tier']})"
                 + (f" — {gap['detail']}" if gap["detail"] else "")
-                for gap in support_matrix_report()["known_gaps"]
+                for gap in support["known_gaps"]
             ),
         ],
     }
