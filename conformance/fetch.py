@@ -16,7 +16,7 @@ import tarfile
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent
-LOCK = json.loads((ROOT / "fixtures.lock.json").read_text())
+LOCK = json.loads((ROOT / "fixtures.lock.json").read_text(encoding="utf-8"))
 
 
 def tree_sha256(root: pathlib.Path) -> str:
