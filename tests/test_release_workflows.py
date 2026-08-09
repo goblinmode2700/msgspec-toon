@@ -80,6 +80,11 @@ def test_trusted_publishing_identity_is_job_scoped() -> None:
     assert text.count("id-token: write") == 1
 
 
+def test_github_release_commands_have_explicit_repository_context() -> None:
+    text = RELEASE.read_text(encoding="utf-8")
+    assert "GH_REPO: ${{ github.repository }}" in text
+
+
 @pytest.mark.parametrize(
     "failed_component", [component for component, _ in QUALIFICATION_COMPONENTS]
 )
