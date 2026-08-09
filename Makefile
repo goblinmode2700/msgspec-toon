@@ -8,6 +8,24 @@ COOLDOWN_DAYS := 14
 QUALIFICATION_DIR := target/qualification
 PYTEST_ARGS ?=
 
+# Command seams keep the normal targets readable and let tests prove that every
+# qualification component fails closed without running or corrupting a real
+# release build. Production and CI never override these defaults.
+TEST_RUST ?= cargo test
+TEST_PYTHON ?= uv run --no-sync pytest $(PYTEST_ARGS)
+CHECK_LINT ?= $(MAKE) lint
+CHECK_TYPECHECK ?= $(MAKE) typecheck
+CHECK_TEST ?= $(MAKE) test
+QUALIFY_PREPARE ?= rm -rf "$(QUALIFICATION_DIR)" && mkdir -p "$(QUALIFICATION_DIR)"
+QUALIFY_SYNC ?= uv sync --all-groups --locked
+QUALIFY_BUILD ?= $(MAKE) build
+QUALIFY_CHECK ?= $(MAKE) check PYTEST_ARGS="--junitxml=$(QUALIFICATION_DIR)/pytest.xml"
+QUALIFY_CONFORMANCE ?= $(MAKE) conformance
+QUALIFY_G2 ?= $(MAKE) g2
+QUALIFY_REPORT ?= uv run --no-sync python scripts/release-report.py --check-changelog
+QUALIFY_COPY_EVIDENCE ?= cp conformance/conformance-results.json "$(QUALIFICATION_DIR)/conformance-results.json" && cp conformance/allocation-proof.json "$(QUALIFICATION_DIR)/allocation-proof.json"
+QUALIFY_SUMMARY ?= uv run --no-sync python scripts/qualification-summary.py --junit "$(QUALIFICATION_DIR)/pytest.xml" --output "$(QUALIFICATION_DIR)/summary.json"
+
 # Opt-in build against the proposed msgspec Struct C API. The normal project
 # environment and dependency pin stay untouched; this profile owns a separate
 # source checkout, wheel directory, and virtual environment.
@@ -35,12 +53,15 @@ typecheck:
 	uv run --no-sync mypy python/msgspec_toon
 
 test:
-	cargo test
-	uv run --no-sync pytest $(PYTEST_ARGS)
+	$(TEST_RUST)
+	$(TEST_PYTHON)
 
 # Offline-capable by design: the network-dependent cooldown audit is a
 # separate target, run in CI and before releases.
-check: lint typecheck test
+check:
+	$(CHECK_LINT)
+	$(CHECK_TYPECHECK)
+	$(CHECK_TEST)
 
 # Build the release extension into the environment that is actually imported.
 # `.venv` installs this project editable, so `uv run` resolves
@@ -58,19 +79,15 @@ conformance:
 # One release qualification definition. CI and release workflows invoke this
 # target instead of maintaining smaller copies of the command list.
 qualify:
-	rm -rf "$(QUALIFICATION_DIR)"
-	mkdir -p "$(QUALIFICATION_DIR)"
-	uv sync --all-groups --locked
-	$(MAKE) build
-	$(MAKE) check PYTEST_ARGS="--junitxml=$(QUALIFICATION_DIR)/pytest.xml"
-	$(MAKE) conformance
-	$(MAKE) g2
-	uv run --no-sync python scripts/release-report.py --check-changelog
-	cp conformance/conformance-results.json "$(QUALIFICATION_DIR)/conformance-results.json"
-	cp conformance/allocation-proof.json "$(QUALIFICATION_DIR)/allocation-proof.json"
-	uv run --no-sync python scripts/qualification-summary.py \
-		--junit "$(QUALIFICATION_DIR)/pytest.xml" \
-		--output "$(QUALIFICATION_DIR)/summary.json"
+	$(QUALIFY_PREPARE)
+	$(QUALIFY_SYNC)
+	$(QUALIFY_BUILD)
+	$(QUALIFY_CHECK)
+	$(QUALIFY_CONFORMANCE)
+	$(QUALIFY_G2)
+	$(QUALIFY_REPORT)
+	$(QUALIFY_COPY_EVIDENCE)
+	$(QUALIFY_SUMMARY)
 
 benchmark-env:
 	uv sync --group bench --locked
