@@ -1455,3 +1455,32 @@ Public commit `90ef919` is on `origin/main`, and issues #1, #2, #3, and #5 are c
 evidence above. The completed OpenSpec change is archived as
 `2026-08-10-repair-roundtrip-parity-after-0-2-0b2`. Public evidence commit `a0a3866` carries the
 report and regenerated figures bound to tested package revision `90ef919`.
+
+#### Checkpoint 40 — `0.2.0b3` qualified and published
+
+The round-trip repair was promoted without changing the repaired source. Public release commit
+`9aab586f9a85452ac0c2351a3875f0326f2003f3` changes only the Python/Rust package versions and
+closes the changelog section. Local `make qualify` passed 285 Python tests with 8 expected skips,
+39 Rust tests, the 538/538 official corpus, 84/84 strict-error fixtures, and all seven G2 probes.
+Default-branch validation run `31405095549` passed on that exact SHA.
+
+Publication-disabled run `31405238364` built and target-verified twelve wheels plus one sdist,
+then generated a release report bound to `0.2.0b3` and `9aab586`. The manifest contained 13 unique
+artifacts; G2, G3, and G5 passed and the known G4 miss remained explicit. Only PyPI publication and
+release attachment were skipped. The downloaded qualification summary, report, manifest, and
+artifacts are retained below `.git/public-origin/.git/release-runs/31405238364/`.
+
+After that gate passed, annotated tag `v0.2.0b3` triggered trusted-publishing run `31407671281`.
+All build, target-native verification, exact-set collection, evidence, OIDC publication, and
+GitHub prerelease-attachment jobs passed. PyPI contains exactly the trusted run's twelve wheels and
+one sdist, with no missing, extra, or mismatched SHA-256 values. Pinned
+`pypi-attestations==0.0.30` cryptographically verified every file against repository identity
+`https://github.com/goblinmode2700/msgspec-toon`. The GitHub release is marked prerelease and its
+two evidence assets match the trusted run's SHA-256 values.
+
+Fresh installations from PyPI, outside the repository cooldown configuration, passed direct
+round trips for tagged Structs with datetime, UUID, and Decimal fields and for array-like Structs.
+CPython 3.13.1 loaded the ABI3 extension; CPython 3.14.7 free-threaded loaded the cp314t extension
+with the GIL disabled. Trusted artifacts, PyPI JSON, and evidence are retained under
+`.git/public-origin/.git/release-runs/31407671281/`. The feedback round has reached its stop
+condition: every reported issue is closed and no measured optimization lead remains.

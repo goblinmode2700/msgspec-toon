@@ -1,14 +1,14 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the post-`0.2.0b2` round-trip repair. Read
+_Last updated after the trusted `0.2.0b3` round-trip-repair release. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**The five post-release reports from 2026-08-10 are triaged and the four actionable
-correctness/evidence repairs are implemented on `fix/post-b2-roundtrip-parity`.** GitHub issues
+**The five post-release reports from 2026-08-10 are resolved, and their repair is published as
+`0.2.0b3`.** GitHub issues
 [#1](https://github.com/goblinmode2700/msgspec-toon/issues/1),
 [#2](https://github.com/goblinmode2700/msgspec-toon/issues/2),
 [#3](https://github.com/goblinmode2700/msgspec-toon/issues/3), and
@@ -35,11 +35,26 @@ the new native-scalar Struct probe records zero built-in dictionaries and lists.
 ten-worker `make report` records G2, G3, and G5 pass, the known G4 miss, and zero shared locked-wire
 changes. The completed OpenSpec change is archived as
 `2026-08-10-repair-roundtrip-parity-after-0-2-0b2`; all seven authoritative specs pass strict
-validation. Public commit `90ef91926ea59b13a600184c9902f5a232692fc3` is on
-`origin/main`. The public export contains no handoff, objective, active-change ledger, or local
-benchmark history. Issues #1, #2, #3, and #5 are closed with evidence. No new version is tagged
-or published yet. Public evidence commit `a0a3866` adds the exact report behind the refreshed
-benchmark tables and figures; its `source_revision` names tested package commit `90ef919`.
+validation. Public repair commit `90ef91926ea59b13a600184c9902f5a232692fc3` and evidence commit
+`a0a3866d2a61b61656296971e0037dd96881b62e` are on `origin/main`. Issues #1, #2, #3, and #5 are
+closed with evidence. The public export contains no handoff, objective, active-change ledger, or
+local benchmark history.
+
+Annotated tag `v0.2.0b3` names public release revision
+`9aab586f9a85452ac0c2351a3875f0326f2003f3`. Local `make qualify`, default-branch validation run
+`31405095549`, and publication-disabled run `31405238364` passed before tagging. Trusted run
+`31407671281` rebuilt and verified 12 target-native wheels plus one sdist, generated release-bound
+evidence, published through PyPI OIDC, and attached the report and manifest to a correctly marked
+GitHub prerelease. PyPI exposes exactly the 13 manifest files; every filename and SHA-256 matches.
+`pypi-attestations==0.0.30` verifies all 13 against `goblinmode2700/msgspec-toon`. Clean PyPI
+installs pass tagged/native-scalar and array-like Struct round trips on CPython 3.13 ABI3 and
+CPython 3.14t with the GIL disabled. Trusted artifacts and evidence are retained under
+`.git/public-origin/.git/release-runs/31407671281/`.
+
+There is no unblocked correctness or performance item from this feedback round. Stop unless new
+evidence or an explicit task opens a new round. Time-gated maintenance remains the PyO3 cooldown
+review around 2026-08-19; the benchmark-sharding OpenSpec proposal remains specified but
+unimplemented.
 
 **`0.2.0b2` is published and independently verified.** Annotated tag `v0.2.0b2` names
 public revision `256e014e534ff969bc1ca037d7bb600ab9e2dbf4`. This plot-only beta adds a
