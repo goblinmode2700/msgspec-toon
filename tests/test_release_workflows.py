@@ -85,6 +85,11 @@ def test_github_release_commands_have_explicit_repository_context() -> None:
     assert "GH_REPO: ${{ github.repository }}" in text
 
 
+def test_github_release_is_created_as_a_prerelease() -> None:
+    text = RELEASE.read_text(encoding="utf-8")
+    assert 'gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --prerelease' in text
+
+
 @pytest.mark.parametrize(
     "failed_component", [component for component, _ in QUALIFICATION_COMPONENTS]
 )
