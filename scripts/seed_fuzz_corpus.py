@@ -38,7 +38,7 @@ def _sync(destination: pathlib.Path, seeds: list[bytes]) -> tuple[int, int]:
 def main() -> None:
     seeds = list(PERMANENT_CASES)
     for path in sorted(FIXTURES.rglob("*.json")):
-        document = json.loads(path.read_text())
+        document = json.loads(path.read_text(encoding="utf-8"))
         for case in document.get("tests", []):
             for name in ("input", "expected"):
                 value = case.get(name)
