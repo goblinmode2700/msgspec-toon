@@ -51,6 +51,19 @@ pub trait Consumer {
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault>;
+    /// Offer an adjacent object key and scalar as one operation. The default
+    /// preserves the ordinary event sequence; typed consumers may fuse field
+    /// resolution, scalar conversion, and placement without an awaiting-key
+    /// state round-trip.
+    fn scalar_field(
+        &mut self,
+        key: StringToken<'_>,
+        value: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        self.key(key, at)?;
+        self.scalar(value, at)
+    }
     fn end_object(&mut self, at: Position) -> Result<(), Fault>;
     fn start_array(&mut self, declared_len: usize, at: Position) -> Result<(), Fault>;
     fn end_array(&mut self, at: Position) -> Result<(), Fault>;

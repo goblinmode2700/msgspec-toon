@@ -347,6 +347,12 @@
       "method": "add only #[inline(always)] to finish_struct, compare with an immutable wheel from the immediately preceding source, and time only typed decode at 64, 512, and 4096 records with eight B-C-C-B rounds per metric",
       "result": "typed decode improved -3.3% at 64 records (MDE 1.2%), -2.8% at 512 (MDE 0.6%), and -2.3% at 4096 (MDE 2.1%); every row resolved faster. Against the immutable phase-8 capability checkpoint, the 64 and 512 slowdown flags did not reproduce, while 4096 still reproduced at +1.8%.",
       "ruling": "ADOPTED. The machine-code localization was causal: restoring the old inlining decision recovers a per-row cost without changing semantics. make check passed 39 Rust and 259 Python tests with 7 expected skips; the official corpus remained 538/538 with 84/84 strict errors; all six G2 probes passed with zero intermediate builtin containers. The release stop narrows to typed decode@4096; proceed to fused scalar-field dispatch rather than retrying plan-node lookup candidates. Artifacts: benches/ab-s3-base.json and benches/ab-phase8-current.json."
+    },
+    "typed_tabular_scalar_field_fusion_S4": {
+      "question": "does adjacent key-then-scalar dispatch impose a repeated state transition for every tabular Struct leaf cell?",
+      "method": "add one Consumer::scalar_field event whose default is the old key then scalar sequence, specialize only the typed Struct path, and compare with the exact S3 wheel for eight B-C-C-B rounds at 64, 512, and 4096 records; run the same untyped rows as a control",
+      "result": "typed decode improved -4.4% at 64 records (MDE 0.9%), -5.7% at 512 (MDE 1.5%), and -4.1% at 4096 (MDE 0.7%). The untyped control was no significant difference at 64 and 4096 and -1.6% at 512. Against the immutable phase-8 checkpoint, 64 was parity, 512 was -5.0%, and 4096 was -3.1%.",
+      "ruling": "ADOPTED. The generic event sequence remains the semantic fallback, nested field groups are unchanged, and the typed path removes only the redundant awaiting-state round trip. make check passed 39 Rust and 259 Python tests with 7 expected skips; corpus remained 538/538 with 84/84 strict errors; G2, every G3 row, and every G5 row passed. The known encode-only G4 misses through 512 are unchanged. Artifacts: benches/ab-s4-base.json, benches/ab-s4-untyped.json, and benches/ab-phase8-current.json."
     }
   },
   "harness_findings": {

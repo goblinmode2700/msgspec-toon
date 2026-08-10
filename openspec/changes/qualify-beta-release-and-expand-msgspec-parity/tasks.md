@@ -143,7 +143,7 @@
       missing tags, unknown tags, nested unions, and payload-safe error paths.
 - [x] 11.4 Implement tag dispatch from compiled metadata using a bounded pure-Rust preflight over
       the tagged object's input range, then consume the selected Struct plan without a value tree.
-- [ ] 11.5 Update the executable matrix and run `make check`, complete corpus, containment, G2,
+- [x] 11.5 Update the executable matrix and run `make check`, complete corpus, containment, G2,
       G3/G5, and same-session typed-decode A/B after each focused form; do not combine unresolved
       array-like and union effects.
 
@@ -157,7 +157,7 @@
 - [x] 12.3 Measure non-string mapping-key demand and direct-conversion feasibility. Either implement
       a plan-directed key path with collision/precision tests or retain `TypePlanError` at plan
       construction and document the intentional rejection for `0.2.0b1`.
-- [ ] 12.4 Update the executable support matrix and run `make check`, complete corpus,
+- [x] 12.4 Update the executable support matrix and run `make check`, complete corpus,
       containment, payload safety, G2, G3/G5, and same-session typed-decode A/B after each focused
       change.
 

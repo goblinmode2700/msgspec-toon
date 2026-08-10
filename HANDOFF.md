@@ -1,37 +1,41 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at the blocked `0.2.0b1` capability checkpoint. Read
+_Last updated at the qualified S4 typed-decode checkpoint. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**STOP: do not tag or publish `0.2.0b1`.** Checkpoint 32 adopted S3, restoring the phase-8
-`finish_struct` inlining decision. Against the immediately preceding immutable wheel, typed
-decode improved 3.3% at 64 records, 2.8% at 512, and 2.3% at 4096; every row resolved faster.
-The 64 and 512 phase-8 slowdown flags no longer reproduce. The 4096 comparison still reproduces
-at +1.8%, so OpenSpec tasks 11.5 and 12.4 remain open. The next mechanism is S4: fuse the typed
-consumer's adjacent key and scalar events for tabular leaf cells, preserving the generic event
-fallback and parser/Python membrane.
+**The typed-decode qualification stop is cleared.** Checkpoint 33 adopted S4: tabular leaf cells
+now use one fused `scalar_field` event. The default consumer implementation remains the original
+`key` then `scalar` sequence, while the typed Struct path performs one field lookup, conversion,
+duplicate check, and direct placement. Against the exact S3 wheel, typed decode improved 4.4% at
+64 records, 5.7% at 512, and 4.1% at 4096. The untyped control was parity at 64 and 4096 and 1.6%
+faster at 512, so the change did not move cost into the generic fallback.
+
+Against the immutable phase-8 capability checkpoint, 64 records is now parity; 512 is 5.0%
+faster; and 4096 is 3.1% faster. OpenSpec tasks 11.5 and 12.4 are complete. The remaining release
+work is task 14.3's full artifact workflow, task 14.4's final evidence/archive checkpoint, and the
+authorized publication stop in 14.5. Do not start a larger row-program rewrite without a new
+symbolized profile showing a mechanism beyond the accepted scalar-field fusion.
 
 The capability implementation, sustained fuzzing,
 canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
-are complete, but OpenSpec tasks 11.5 and 12.4 remain open. Against the immutable phase-8
-checkpoint, the pre-S3 source reproduced typed-decode slowdowns at 64 records (+4.8%, MDE 1.1%),
-512 (+4.8%, MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). S3 removes the first two reproduced misses
-and reduces, but does not close, the last. The complete
-release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster, but that does not
-erase the closer feature-checkpoint regression required by tasks 11.5 and 12.4.
+are complete, including OpenSpec tasks 11.5 and 12.4. Against the immutable phase-8 checkpoint,
+the pre-S3 source reproduced typed-decode slowdowns at 64 records (+4.8%, MDE 1.1%), 512 (+4.8%,
+MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). S3 and S4 together remove all three misses. The complete
+release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster. The closer phase-8
+comparison now also passes the qualification requirement.
 
-One mechanism-led remedy is now accepted: restoring `finish_struct` inlining. Four earlier
-remedies were rejected and reverted: direct references into the plan arena,
-merging array-like and object Struct frames, and compile-time strict/permissive specialization.
+Two mechanism-led remedies are accepted: restoring `finish_struct` inlining and fusing tabular
+leaf field dispatch. Four earlier remedies were rejected and reverted: direct references into
+the plan arena, merging array-like and object Struct frames, and compile-time strict/permissive
+specialization.
 A final cold outlining of permissive scalar conversion also failed to remove the effect and was
 reverted. The accepted default-Encoder cache and parser preflight split repair separate functional
-encode and ordinary parser costs; they do not close this residual typed-decode gap. Continue only
-with a new measured mechanism. Do not retry these four designs. Owner publication authority was
-explicitly granted, but qualification—not authorization—is the active stop.
+encode and ordinary parser costs. Do not retry these four designs. Owner publication authority was
+explicitly granted; the remaining stop is the full release-artifact qualification workflow.
 
 Current completed evidence: 19 supported, 2 parity rejects, 8 unsupported, zero silent failures;
 538/538 corpus and 84/84 strict errors; 259 Python tests passed with 7 expected skips; 39 Rust
@@ -41,8 +45,8 @@ G3 and G5 cell and records the known G4 miss through 512 records, with G4 passin
 `make report` generated `conformance/report.json` for `0.2.0b1`. The 12-wheel-plus-sdist workflow
 has not run for this candidate because the closer A/B stop fired first.
 
-The active OpenSpec change remains `qualify-beta-release-and-expand-msgspec-parity`. Tasks 13.5,
-14.1, and 14.2 are complete. Tasks 11.5, 12.4, and 14.3-14.5 remain open. Do not archive it.
+The active OpenSpec change remains `qualify-beta-release-and-expand-msgspec-parity`. Tasks 11.5,
+12.4, 13.5, 14.1, and 14.2 are complete. Tasks 14.3-14.5 remain open. Do not archive it.
 
 ## Previous published checkpoint
 

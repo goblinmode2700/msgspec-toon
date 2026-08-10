@@ -1276,3 +1276,28 @@ did not reproduce under the gate's double-power confirmation. The 4096 row still
 **+1.8%**, so tasks 11.5 and 12.4 remain open and publication remains stopped. Next: S4, one fused
 typed `scalar_field` event for tabular leaves, with the generic key-then-scalar fallback retained
 as the semantic oracle during the experiment.
+
+#### Checkpoint 33 — S4 fuses tabular typed scalar-field dispatch
+
+Hypothesis: each tabular leaf cell paid twice for the generic event membrane: `key` selected a
+field and stored awaiting state, then `scalar` rediscovered the expected plan and placement. A
+single typed event can preserve the generic semantic oracle while removing that repeated state
+transition from ordinary Struct rows.
+
+Confirmed. `Consumer::scalar_field` defaults to the original `key` then `scalar` sequence. The
+parser calls it only for tabular leaf cells; nested field groups keep the original object events.
+The typed Struct override performs the same memoized lookup, duplicate/unknown/tag handling,
+conversion, and direct value placement without an awaiting-state round trip.
+
+Against the exact S3 wheel, an eight-round focused A/B measured typed decode **-4.4% at 64
+records (MDE 0.9%)**, **-5.7% at 512 (MDE 1.5%)**, and **-4.1% at 4096 (MDE 0.7%)**. An untyped
+control was no significant difference at 64 and 4096 and 1.6% faster at 512. Against the immutable
+phase-8 capability checkpoint, 64 was no significant difference, while 512 and 4096 were 5.0%
+and 3.1% faster. The release regression is closed.
+
+`make check` passed 39 Rust tests and 259 Python tests with 7 expected skips. The official corpus
+remained 538/538 with 84/84 strict errors. All six G2 probes passed with zero intermediate builtin
+containers. G3 and every G5 cell passed. `make bench` returns nonzero only for the pre-existing G4
+encode misses through 512 records; S4 does not touch encode. Artifacts:
+`benches/ab-s4-base.json`, `benches/ab-s4-untyped.json`, and
+`benches/ab-phase8-current.json`. OpenSpec tasks 11.5 and 12.4 are complete.

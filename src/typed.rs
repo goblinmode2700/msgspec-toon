@@ -515,6 +515,55 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         }
     }
 
+    fn lookup_struct_field(
+        plan: &StructPlan,
+        mut memo: Option<&mut RowMemo>,
+        key: StringToken<'_>,
+    ) -> Option<usize> {
+        // D1 memo: replay the first row's resolution positionally. A trusted
+        // tabular memo resolves without reading the repeated key bytes.
+        if let Some(memo) = memo.as_deref_mut()
+            && !memo.disabled
+            && memo.complete
+            && memo.trusted
+        {
+            match memo.entries.get(memo.cursor) {
+                Some((_, index)) => {
+                    memo.cursor += 1;
+                    return *index;
+                }
+                None => memo.disabled = true,
+            }
+        }
+
+        let raw = match key {
+            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+            StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
+        };
+        if let Some(memo) = memo.as_deref_mut()
+            && !memo.disabled
+            && memo.complete
+        {
+            match memo.entries.get(memo.cursor) {
+                Some((bytes, index)) if bytes.as_slice() == raw.as_ref() => {
+                    memo.cursor += 1;
+                    return *index;
+                }
+                _ => memo.disabled = true,
+            }
+        }
+
+        let index = plan.by_wire.get(raw.as_ref()).copied();
+        if let Some(memo) = memo
+            && !memo.disabled
+            && !memo.complete
+        {
+            memo.entries.push((raw.into_owned(), index));
+            memo.cursor += 1;
+        }
+        index
+    }
+
     #[inline(always)]
     fn finish_struct(
         &mut self,
@@ -847,60 +896,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 awaiting,
                 skip_value,
             }) => {
-                // D1 memo: replay the first row's resolution positionally.
-                // A trusted memo (D5: the parser announced a tabular body,
-                // whose rows are all emitted from one header) resolves
-                // without reading the key bytes at all.
-                let mut replayed: Option<Option<usize>> = None;
-                if let Some(memo) = self.row_memos.last_mut()
-                    && !memo.disabled
-                    && memo.complete
-                    && memo.trusted
-                {
-                    match memo.entries.get(memo.cursor) {
-                        Some((_, index)) => {
-                            memo.cursor += 1;
-                            replayed = Some(*index);
-                        }
-                        None => memo.disabled = true,
-                    }
-                }
-                let looked_up = match replayed {
-                    Some(index) => index,
-                    None => {
-                        let raw = match key {
-                            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
-                            StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
-                        };
-                        let mut verified: Option<Option<usize>> = None;
-                        if let Some(memo) = self.row_memos.last_mut()
-                            && !memo.disabled
-                            && memo.complete
-                        {
-                            match memo.entries.get(memo.cursor) {
-                                Some((bytes, index)) if bytes.as_slice() == raw.as_ref() => {
-                                    memo.cursor += 1;
-                                    verified = Some(*index);
-                                }
-                                _ => memo.disabled = true,
-                            }
-                        }
-                        match verified {
-                            Some(index) => index,
-                            None => {
-                                let index = plan.by_wire.get(raw.as_ref()).copied();
-                                if let Some(memo) = self.row_memos.last_mut()
-                                    && !memo.disabled
-                                    && !memo.complete
-                                {
-                                    memo.entries.push((raw.clone().into_owned(), index));
-                                    memo.cursor += 1;
-                                }
-                                index
-                            }
-                        }
-                    }
-                };
+                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
                 match looked_up {
                     Some(index) if EXTENDED && index == usize::MAX => {
                         *skip_value = true;
@@ -930,6 +926,57 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     }
                 };
                 *pending = Some(converted);
+                Ok(())
+            }
+            _ => Err(Fault::syntax_at(FaultCode::Internal, at)),
+        }
+    }
+
+    fn scalar_field(
+        &mut self,
+        key: StringToken<'_>,
+        token: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        if self.any_sub.is_some() {
+            self.key(key, at)?;
+            return self.scalar(token, at);
+        }
+        if self.skip_depth > 0 {
+            return Ok(());
+        }
+
+        let strict = self.strict;
+        let target = match self.stack.last_mut() {
+            Some(Frame::Struct { plan, values, .. }) => {
+                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
+                match looked_up {
+                    Some(index) if EXTENDED && index == usize::MAX => None,
+                    Some(index) => {
+                        if values[index].is_some() && strict {
+                            return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
+                        }
+                        Some((index, plan.fields[index].value))
+                    }
+                    None if plan.forbid_unknown => {
+                        return Err(Fault::validation_at(FaultCode::UnknownField, at));
+                    }
+                    None => None,
+                }
+            }
+            _ => {
+                self.key(key, at)?;
+                return self.scalar(token, at);
+            }
+        };
+
+        let Some((index, value_plan)) = target else {
+            return Ok(());
+        };
+        let value = self.convert_scalar(value_plan, token, at)?;
+        match self.stack.last_mut() {
+            Some(Frame::Struct { values, .. }) => {
+                values[index] = Some(value);
                 Ok(())
             }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),

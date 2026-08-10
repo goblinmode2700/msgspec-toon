@@ -532,11 +532,11 @@ fn emit_row_fields<C: Consumer>(
     consumer: &mut C,
 ) -> Result<(), Fault> {
     for node in fields {
-        consumer.key(node.name, at)?;
         if node.children.is_empty() {
-            consumer.scalar(classify_value(cells[*cursor], at)?, at)?;
+            consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
             *cursor += 1;
         } else {
+            consumer.key(node.name, at)?;
             consumer.start_object(at)?;
             emit_row_fields(&node.children, cells, cursor, at, consumer)?;
             consumer.end_object(at)?;
