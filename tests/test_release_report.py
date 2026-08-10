@@ -28,18 +28,25 @@ def test_current_compatibility_delta_records_native_scalar_support(
         report_module.support_matrix_report(), {"payloads": locked["payloads"]}
     )
     assert delta["support_changes"] == [
+        {"feature": "Decimal", "before": "unsupported", "after": "supported"},
         {
             "feature": "Encoder(decimal_format=..., uuid_format=...)",
             "before": "unsupported",
             "after": "supported",
         },
+        {"feature": "UUID", "before": "unsupported", "after": "supported"},
         {
             "feature": "array_like Structs",
             "before": "unsupported",
             "after": "supported",
         },
+        {"feature": "date", "before": None, "after": "supported"},
+        {"feature": "datetime", "before": "unsupported", "after": "supported"},
+        {"feature": "enum members", "before": "unsupported", "after": None},
+        {"feature": "fractional and exponent floats", "before": None, "after": "supported"},
+        {"feature": "integer Enum", "before": None, "after": "supported"},
         {
-            "feature": "date/time, UUID, and Decimal encoding",
+            "feature": "integer, string, boolean, and null scalars",
             "before": None,
             "after": "supported",
         },
@@ -49,19 +56,27 @@ def test_current_compatibility_delta_records_native_scalar_support(
             "after": "supported",
         },
         {
+            "feature": "scalars (int, float, str, bool, null)",
+            "before": "supported",
+            "after": None,
+        },
+        {
             "feature": "strict=False scalar coercion",
             "before": "unsupported",
             "after": "supported",
         },
-        {
-            "feature": "string and integer Enum encoding",
-            "before": None,
-            "after": "supported",
-        },
+        {"feature": "string Enum", "before": None, "after": "supported"},
         {
             "feature": "tagged unions",
             "before": "unsupported",
             "after": "supported",
+        },
+        {"feature": "time", "before": None, "after": "supported"},
+        {"feature": "timedelta", "before": None, "after": "supported"},
+        {
+            "feature": "whole floats and negative zero",
+            "before": None,
+            "after": "format_divergence",
         },
     ]
     assert delta["wire_output_changes_for_shared_locked_payloads"] == []

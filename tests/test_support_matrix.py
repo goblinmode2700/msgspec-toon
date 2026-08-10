@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 
 from support_matrix import (
     CHECKERS,
+    FORMAT_DIVERGENCE,
     MATRIX,
     PARITY_REJECTS,
     SUPPORTED,
@@ -40,7 +41,9 @@ def test_report_view_lists_every_non_supported_entry() -> None:
     report = as_report()
     assert len(report["entries"]) == len(MATRIX)
     declared_gaps = {
-        entry.feature for entry in MATRIX if entry.status not in {SUPPORTED, PARITY_REJECTS}
+        entry.feature
+        for entry in MATRIX
+        if entry.status not in {SUPPORTED, PARITY_REJECTS, FORMAT_DIVERGENCE}
     }
     assert {gap["feature"] for gap in report["known_gaps"]} == declared_gaps
     # A report that lists no gaps would mean this codec matches msgspec.json

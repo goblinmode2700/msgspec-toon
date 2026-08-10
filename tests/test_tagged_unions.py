@@ -56,6 +56,27 @@ def test_nested_tagged_union_constructs_selected_variant() -> None:
     assert toon.decode(document, type=Envelope) == Envelope(Dog(True, "rex"))
 
 
+def test_tagged_struct_encode_includes_discriminator_and_round_trips() -> None:
+    dog = Dog(True, "rex")
+    document = toon.encode(dog)
+    assert document == b"type: dog\ngood: true\nname: rex"
+    assert toon.decode(document, type=Cat | Dog) == dog
+
+
+def test_custom_tag_field_encode_round_trips() -> None:
+    value = One(4)
+    document = toon.encode(value)
+    assert document == b"kind: 1\nvalue: 4"
+    assert toon.decode(document, type=One | Two) == value
+
+
+def test_tagged_struct_array_keeps_discriminator_in_tabular_shape() -> None:
+    values = [Cat("mio"), Cat("sumi", 8)]
+    document = toon.encode(values)
+    assert document == b"[2]{type,name,lives}:\n  cat,mio,9\n  cat,sumi,8"
+    assert toon.decode(document, type=list[Cat | Dog]) == values
+
+
 def test_concrete_tagged_struct_validates_a_present_tag() -> None:
     assert toon.decode("name: mio", type=Cat) == Cat("mio")
     with pytest.raises(msgspec.DecodeError):

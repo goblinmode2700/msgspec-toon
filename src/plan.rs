@@ -23,6 +23,7 @@ pub enum PlanKind {
     Struct(Box<StructPlan>),
     Union(Box<UnionPlan>),
     Literal(Vec<Py<PyAny>>),
+    NativeScalar(Py<PyAny>),
     Custom(Py<PyAny>),
 }
 
@@ -254,6 +255,10 @@ impl CompiledPlan {
                     values.push(value?.unbind());
                 }
                 PlanKind::Literal(values)
+            }
+            "native_scalar" => {
+                let class = spec.getattr("python_type")?.unbind();
+                PlanKind::NativeScalar(class)
             }
             "struct" => {
                 let class = spec.getattr("python_type")?.unbind();

@@ -15,14 +15,14 @@ import decimal
 import enum
 import uuid
 from collections.abc import Callable
-from typing import Any, Final, cast
+from typing import Annotated, Any, Final, cast, get_origin
 
 import msgspec
 
 from . import _native  # type: ignore[attr-defined]
 from ._exceptions import TypePlanError
 from ._options import ENCODER_OPTIONS, validate_python_options
-from ._plan import compile_native_plan, encode_plan_for
+from ._plan import compile_native_plan, compile_plan, encode_plan_for
 
 __all__ = [
     "DecodeError",
@@ -48,6 +48,7 @@ _NATIVE_SCALAR_TYPES: Final = (
     enum.Enum,
 )
 _MSGSPEC_JSON_ENCODE: Final = msgspec.json.encode
+_MSGSPEC_CONVERT: Final = msgspec.convert
 
 
 class _RawScalar(str):
@@ -102,6 +103,25 @@ class _EncodeHook:
         if isinstance(value, enum.Enum):
             return value.value
         return _NOT_NATIVE
+
+
+class _DecodeHook:
+    __slots__ = ("strict", "user_hook")
+
+    def __init__(self, user_hook: Callable[[type, Any], Any] | None, strict: bool) -> None:
+        self.user_hook = user_hook
+        self.strict = strict
+
+    def __call__(self, type_: type, value: Any) -> Any:
+        if (
+            type_ in _NATIVE_SCALAR_TYPES[:-1]
+            or (isinstance(type_, type) and issubclass(type_, enum.Enum))
+            or get_origin(type_) is Annotated
+        ):
+            return _MSGSPEC_CONVERT(value, type=type_, strict=self.strict)
+        if self.user_hook is not None:
+            return self.user_hook(type_, value)
+        raise TypeError("unsupported decode type")
 
 
 _plan_source = cast(Any, encode_plan_for)
@@ -212,13 +232,19 @@ class Decoder:
         dec_hook: Callable[[type, Any], Any] | None = None,
         float_hook: Callable[[str], Any] | None = None,
     ) -> None:
-        plan = None if type is Any else compile_native_plan(type, allow_custom=dec_hook is not None)
+        allow_custom = dec_hook is not None
+        graph = None if type is Any else compile_plan(type, allow_custom=allow_custom)
+        plan = None if type is Any else compile_native_plan(type, allow_custom=allow_custom)
+        needs_native_hook = graph is not None and any(
+            node.kind == "native_scalar" for node in graph.nodes
+        )
+        native_hook = _DecodeHook(dec_hook, strict) if needs_native_hook else dec_hook
         self._type = type
         self._native = _native.Decoder(
             plan=plan,
             strict=strict,
             indent_size=indent_size,
-            dec_hook=dec_hook,
+            dec_hook=native_hook,
             float_hook=float_hook,
         )
 

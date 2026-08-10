@@ -7,10 +7,13 @@ this point — including all Rust code — sees only PlanSpec/FieldSpec.
 
 from __future__ import annotations
 
+import datetime
+import decimal
 import inspect
 import re
+import uuid
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
 import msgspec
 import msgspec.inspect as mi
@@ -152,6 +155,32 @@ class _GraphCompiler:
                 return PlanSpec("float", constraints=_constraints(info))
             case mi.StrType():
                 return PlanSpec("str", constraints=_constraints(info))
+            case mi.DateTimeType(tz=tz):
+                datetime_target = (
+                    datetime.datetime
+                    if tz is None
+                    else Annotated[datetime.datetime, msgspec.Meta(tz=tz)]
+                )
+                return PlanSpec(
+                    "native_scalar", python_type=datetime_target, constraints=_constraints(info)
+                )
+            case mi.DateType():
+                return PlanSpec("native_scalar", python_type=datetime.date)
+            case mi.TimeType(tz=tz):
+                time_target = (
+                    datetime.time if tz is None else Annotated[datetime.time, msgspec.Meta(tz=tz)]
+                )
+                return PlanSpec(
+                    "native_scalar", python_type=time_target, constraints=_constraints(info)
+                )
+            case mi.TimeDeltaType():
+                return PlanSpec("native_scalar", python_type=datetime.timedelta)
+            case mi.UUIDType():
+                return PlanSpec("native_scalar", python_type=uuid.UUID)
+            case mi.DecimalType():
+                return PlanSpec("native_scalar", python_type=decimal.Decimal)
+            case mi.EnumType(cls=cls):
+                return PlanSpec("native_scalar", python_type=cls)
             case mi.ListType(item_type=item):
                 return PlanSpec(
                     "list",

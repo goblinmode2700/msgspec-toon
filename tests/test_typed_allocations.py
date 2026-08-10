@@ -17,6 +17,7 @@ holds if nothing was decoded — so every case pins the positive counts too.
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 import msgspec
@@ -67,6 +68,11 @@ class TaggedA(msgspec.Struct, tag="a"):
 
 class TaggedB(msgspec.Struct, tag="b"):
     value: int
+
+
+class NativeScalarRow(msgspec.Struct):
+    at: datetime.datetime
+    day: datetime.date
 
 
 RECORDS = 64
@@ -177,3 +183,23 @@ def test_array_like_and_tagged_frames_build_only_final_structs() -> None:
         assert stats["builtin_dicts"] == 0
         assert stats["builtin_lists"] == 0
         assert stats["final_structs"] == 1
+
+
+def test_native_scalar_fields_build_only_the_final_struct() -> None:
+    value: NativeScalarRow | None = None
+
+    def decode() -> None:
+        nonlocal value
+        value = toon.decode(
+            b'at: "2026-08-10T13:28:00Z"\nday: "2026-08-10"',
+            type=NativeScalarRow,
+        )
+
+    stats = _stats_for(decode)
+    assert value == NativeScalarRow(
+        datetime.datetime(2026, 8, 10, 13, 28, tzinfo=datetime.UTC),
+        datetime.date(2026, 8, 10),
+    )
+    assert stats["builtin_dicts"] == 0
+    assert stats["builtin_lists"] == 0
+    assert stats["final_structs"] == 1

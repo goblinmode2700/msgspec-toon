@@ -1422,3 +1422,32 @@ added and four modified requirements were synced into seven strict-valid authori
 then the complete change was archived as
 `2026-08-10-qualify-beta-release-and-expand-msgspec-parity`. The active change is now the
 unimplemented GitHub Actions benchmark-sharding proposal.
+
+#### Checkpoint 39 — post-`0.2.0b2` round-trip parity repair
+
+Five deployment-focused reports were reproduced from the agent-generated issue bundle dated
+2026-08-10. Four open GitHub issues track the actionable gaps; the benchmark JSON-baseline report
+was already satisfied by `0.2.0b2` and was closed with credit to the reporting agents.
+
+The shared root cause for tagged and array-like Struct encode was plan truncation: Python already
+lowered the metadata, but the Rust encode plan discarded it. The repair retains the discriminator
+as a constant plan value, includes it in object and tabular output, and routes array-like Structs
+through the positional sequence writer. Direct field reads remain intact and no built-in encode
+tree was added.
+
+Typed native scalar decode uses a distinct plan kind for datetime, date, time, timedelta, UUID,
+Decimal, string Enum, and integer Enum. The inspection membrane reconstructs timezone-constrained
+targets. Rust converts one parser scalar, calls msgspec's public scalar converter, and discards
+payload-bearing conversion errors before it creates the package validation fault. The arbitrary
+custom-type path and user hook semantics remain separate.
+
+The support matrix now requires round-trip probes for supported value shapes. It splits native
+scalar families and number categories, and it classifies whole-float behavior as a fixture-required
+format divergence. TOON 4.1 requires `1.0 -> 1` and `-0.0 -> 0`; changing those bytes was rejected
+under C1. README and tests disclose the untyped integer result and negative-zero sign loss.
+
+Evidence: 39 Rust tests and 285 Python tests pass; 8 environment-specific tests skip. The official
+corpus remains 538/538 and 84/84. Seven G2 probes pass, including the new native-scalar Struct,
+with zero intermediate built-in containers. The fresh ten-worker report records G2, G3, and G5
+pass, the known G4 miss, 26 supported matrix entries, zero silent failures, and zero shared locked
+wire changes. Both the bounded OpenSpec change and all authoritative specs validate in strict mode.

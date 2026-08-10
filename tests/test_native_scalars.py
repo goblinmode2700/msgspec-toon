@@ -6,7 +6,7 @@ import datetime
 import decimal
 import enum
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 import msgspec
 import msgspec_toon as toon
@@ -40,6 +40,17 @@ NATIVE_SCALARS = (
     (IntegerValue.TWO, b"2"),
 )
 
+NATIVE_SCALAR_TYPES = (
+    datetime.date,
+    datetime.datetime,
+    datetime.time,
+    datetime.timedelta,
+    uuid.UUID,
+    decimal.Decimal,
+    TextValue,
+    IntegerValue,
+)
+
 
 @pytest.mark.parametrize(("value", "expected"), NATIVE_SCALARS)
 def test_native_scalar_canonical_bytes(value: Any, expected: bytes) -> None:
@@ -51,6 +62,46 @@ def test_native_scalar_normalization_precedes_enc_hook(value: Any, expected: byt
     calls: list[Any] = []
     assert toon.encode(value, enc_hook=lambda item: calls.append(item) or "hooked") == expected
     assert calls == []
+
+
+@pytest.mark.parametrize(
+    ("value", "type_"), tuple(zip((item[0] for item in NATIVE_SCALARS), NATIVE_SCALAR_TYPES))
+)
+def test_native_scalar_typed_decode_round_trips(value: Any, type_: Any) -> None:
+    assert toon.decode(toon.encode(value), type=type_) == value
+
+
+def test_native_scalar_struct_round_trips_without_builtin_tree() -> None:
+    value = NativeRow(datetime.date(2026, 8, 9), decimal.Decimal("1.20"))
+    assert toon.decode(toon.encode(value), type=NativeRow) == value
+
+
+@pytest.mark.parametrize(
+    ("type_", "valid", "invalid"),
+    [
+        (
+            Annotated[datetime.datetime, msgspec.Meta(tz=True)],
+            b'"2026-08-09T01:02:03Z"',
+            b'"2026-08-09T01:02:03"',
+        ),
+        (
+            Annotated[datetime.time, msgspec.Meta(tz=False)],
+            b'"01:02:03"',
+            b'"01:02:03Z"',
+        ),
+    ],
+)
+def test_native_datetime_timezone_constraints(type_: Any, valid: bytes, invalid: bytes) -> None:
+    toon.decode(valid, type=type_)
+    with pytest.raises(toon.ValidationError):
+        toon.decode(invalid, type=type_)
+
+
+def test_native_scalar_conversion_error_does_not_leak_payload() -> None:
+    sentinel = "SENTINEL_SECRET_ENUM_VALUE"
+    with pytest.raises(toon.ValidationError) as caught:
+        toon.decode(sentinel, type=TextValue)
+    assert sentinel not in str(caught.value)
 
 
 def test_datetime_family_matches_msgspec_text() -> None:

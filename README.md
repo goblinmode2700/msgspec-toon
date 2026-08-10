@@ -125,9 +125,16 @@ decoder = toon.Decoder(float_hook=Decimal)
 assert value == decoder.decode(b"1.25") == Decimal("1.25")
 ```
 
-The encoder supports msgspec-native date, time, UUID, Decimal, and Enum values.
-It normalizes these values before it calls `enc_hook`. Decimal values keep all
-their digits and trailing zeroes.
+Typed encode and decode support these msgspec-native values:
+
+- `datetime`, `date`, `time`, and `timedelta`
+- `UUID`
+- `Decimal`
+- string `Enum` and integer `Enum`
+
+The encoder normalizes these values before it calls `enc_hook`. Decimal values keep all
+their digits and trailing zeroes. Typed decode constructs each value without a built-in
+container tree.
 
 ```python
 from decimal import Decimal
@@ -143,15 +150,20 @@ toon.encode(UUID("12345678-1234-5678-1234-567812345678"), uuid_format="hex")
 # b'"12345678123456781234567812345678"'
 ```
 
+TOON 4.1 uses one canonical spelling for whole numbers. Thus, the encoder writes `1.0`
+as `1`. It writes `-0.0` as `0`, as required by the official fixtures.
+
+An untyped decode returns an `int` for these values. A typed `float` decode returns a
+`float`, but it cannot recover the sign of `-0.0` because the sign is not on the wire.
+
 The codec does not implement sorted or deterministic output. Both encoder entry
 points raise `NotImplementedError` for these `order` values. They never ignore
 an accepted option.
 
 Typed decode supports recursive Structs, array-like Structs, object-form tagged Struct unions,
-and permissive scalar conversion. Tagged array-like unions fail during plan construction. Set
-`strict=False` to accept the same bool,
-integer, and float string conversions as msgspec 0.21.1. Strict mode stays the
-default.
+native scalar values, and permissive scalar conversion. Tagged array-like unions fail during
+plan construction. Set `strict=False` to accept the same bool, integer, and float string
+conversions as msgspec 0.21.1. Strict mode stays the default.
 
 Non-string mapping keys are intentionally rejected in 0.2.0b1. See the
 [mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).

@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-10
+goal: Close tracked post-0.2.0b2 correctness gaps without weakening TOON 4.1
+  conformance, G2, or payload safety.

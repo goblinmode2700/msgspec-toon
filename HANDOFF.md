@@ -1,11 +1,40 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after publishing and verifying `0.2.0b2`. Read
+_Last updated after the post-`0.2.0b2` round-trip repair. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
+
+**The five post-release reports from 2026-08-10 are triaged and the four actionable
+correctness/evidence repairs are implemented on `fix/post-b2-roundtrip-parity`.** GitHub issues
+[#1](https://github.com/goblinmode2700/msgspec-toon/issues/1),
+[#2](https://github.com/goblinmode2700/msgspec-toon/issues/2),
+[#3](https://github.com/goblinmode2700/msgspec-toon/issues/3), and
+[#5](https://github.com/goblinmode2700/msgspec-toon/issues/5) track the work. Issue
+[#4](https://github.com/goblinmode2700/msgspec-toon/issues/4) was already complete in
+`0.2.0b2` and is closed. Each issue credits the agents that found it.
+
+Tagged Struct encode now emits the configured discriminator, including tagged tabular rows.
+Array-like Struct encode now uses positional TOON sequences at the root and when nested. Typed
+decode now accepts datetime, date, time, timedelta, UUID, Decimal, string Enum, and integer Enum
+scalar annotations through a distinct scalar plan. Invalid native scalars return the package's
+payload-safe validation fault. The executable matrix requires a value round trip for every
+supported value shape and reports 26 supported, 2 parity rejects, 4 unsupported, 1 declared
+TOON-format divergence, and zero silent failures.
+
+The float report was correct about the observed Python type change but proposed an invalid wire
+change. TOON 4.1 and the pinned encoder fixtures require whole floats to use integer-looking
+spellings and require `-0.0` to encode as `0`. README, tests, OpenSpec, and generated evidence now
+state this rule. Canonical bytes did not change.
+
+Current gates: `make check` passes 39 Rust tests and 285 Python tests with 8 expected skips. The
+official corpus passes 538/538 with 84/84 strict-error fixtures. `make g2` passes seven probes;
+the new native-scalar Struct probe records zero built-in dictionaries and lists. A fresh complete
+ten-worker `make report` records G2, G3, and G5 pass, the known G4 miss, and zero shared locked-wire
+changes. OpenSpec change `repair-roundtrip-parity-after-0-2-0b2` and all seven authoritative specs
+pass strict validation. The branch is not versioned, committed, pushed, tagged, or published yet.
 
 **`0.2.0b2` is published and independently verified.** Annotated tag `v0.2.0b2` names
 public revision `256e014e534ff969bc1ca037d7bb600ab9e2dbf4`. This plot-only beta adds a
