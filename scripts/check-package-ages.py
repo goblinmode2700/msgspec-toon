@@ -1,4 +1,4 @@
-"""Supply-chain cooldown audit over both lockfiles.
+"""Supply-chain cooldown audit over the runtime, fuzz, and Python lockfiles.
 
 Fails (exit 1) if any resolved version in Cargo.lock or uv.lock was released
 within the cooldown window. This is the enforcement layer Cargo lacks natively
@@ -47,9 +47,12 @@ def pypi_release_date(name: str, version: str) -> datetime.datetime | None:
 
 
 def cargo_lock_packages() -> list[tuple[str, str]]:
-    text = (REPO_ROOT / "Cargo.lock").read_text()
-    found = re.findall(r'\[\[package\]\]\nname = "([^"]+)"\nversion = "([^"]+)"', text)
-    return [(name, version) for name, version in found if name != "msgspec-toon-native"]
+    found: set[tuple[str, str]] = set()
+    for relative in ("Cargo.lock", "fuzz/Cargo.lock"):
+        text = (REPO_ROOT / relative).read_text()
+        found.update(re.findall(r'\[\[package\]\]\nname = "([^"]+)"\nversion = "([^"]+)"', text))
+    local = {"msgspec-toon-native", "msgspec-toon-fuzz"}
+    return sorted((name, version) for name, version in found if name not in local)
 
 
 def uv_lock_packages() -> list[tuple[str, str]]:

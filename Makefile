@@ -1,18 +1,39 @@
-# Single entry point for developer checks (openspec: dev-tooling).
+# Single entry point for developer checks.
 #
 # The uv-managed CPython's dylib install-name breaks `cargo test` linking,
 # so Rust tests link against the Homebrew Python instead.
-PYO3_PYTHON := /opt/homebrew/opt/python@3.13/bin/python3.13
+HOMEBREW_PYTHON := /opt/homebrew/opt/python@3.13/bin/python3.13
+PYO3_PYTHON ?= $(if $(wildcard $(HOMEBREW_PYTHON)),$(HOMEBREW_PYTHON),python3.13)
 export PYO3_PYTHON
 
 COOLDOWN_DAYS := 14
+QUALIFICATION_DIR := target/qualification
+PYTEST_ARGS ?=
+
+# Command seams keep the normal targets readable and let tests prove that every
+# qualification component fails closed without running or corrupting a real
+# release build. Production and CI never override these defaults.
+TEST_RUST ?= cargo test
+TEST_PYTHON ?= uv run --no-sync pytest $(PYTEST_ARGS)
+CHECK_LINT ?= $(MAKE) lint
+CHECK_TYPECHECK ?= $(MAKE) typecheck
+CHECK_TEST ?= $(MAKE) test
+QUALIFY_PREPARE ?= rm -rf "$(QUALIFICATION_DIR)" && mkdir -p "$(QUALIFICATION_DIR)"
+QUALIFY_SYNC ?= uv sync --all-groups --locked
+QUALIFY_BUILD ?= $(MAKE) build
+QUALIFY_CHECK ?= $(MAKE) check PYTEST_ARGS="--junitxml=$(QUALIFICATION_DIR)/pytest.xml"
+QUALIFY_CONFORMANCE ?= $(MAKE) conformance
+QUALIFY_G2 ?= $(MAKE) g2
+QUALIFY_REPORT ?= uv run --no-sync python scripts/release-report.py --check-changelog
+QUALIFY_COPY_EVIDENCE ?= cp conformance/conformance-results.json "$(QUALIFICATION_DIR)/conformance-results.json" && cp conformance/allocation-proof.json "$(QUALIFICATION_DIR)/allocation-proof.json"
+QUALIFY_SUMMARY ?= uv run --no-sync python scripts/qualification-summary.py --junit "$(QUALIFICATION_DIR)/pytest.xml" --output "$(QUALIFICATION_DIR)/summary.json"
 
 # Opt-in build against the proposed msgspec Struct C API. The normal project
 # environment and dependency pin stay untouched; this profile owns a separate
 # source checkout, wheel directory, and virtual environment.
 MSGSPEC_FASTPATH_COMMIT := 10c9ac4a8d0a9aacb7854a71f5cf479b47594736
 MSGSPEC_FASTPATH_REPO := https://github.com/jcrist/msgspec.git
-MSGSPEC_FASTPATH_PATCH := $(CURDIR)/docs/implementation-spec/patches/0001-feat-expose-versioned-Struct-access-C-API.patch
+MSGSPEC_FASTPATH_PATCH := $(CURDIR)/patches/msgspec-0.21.1-struct-c-api.patch
 FASTPATH_ROOT := target/fastpath
 FASTPATH_MSGSPEC_SRC := $(FASTPATH_ROOT)/msgspec
 FASTPATH_MSGSPEC_WHEELS := $(FASTPATH_ROOT)/msgspec-wheels
@@ -33,7 +54,7 @@ BASELINE_TAG := v0.1.0-conformant
 # against a guard built from an older tag.
 GUARD_TAG := $(shell git tag -l 'v*' --sort=-v:refname | head -1)
 
-.PHONY: lint typecheck test check build bench report audit relock baseline guard ab ab-story g2 efficiency \
+.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock baseline guard ab ab-story g2 efficiency \
 	fastpath-source fastpath-build fastpath-check fastpath-bench fastpath-gates fastpath-clean
 
 lint:
@@ -47,12 +68,15 @@ typecheck:
 	uv run --no-sync mypy python/msgspec_toon
 
 test:
-	cargo test
-	uv run --no-sync pytest
+	$(TEST_RUST)
+	$(TEST_PYTHON)
 
 # Offline-capable by design: the network-dependent cooldown audit is a
 # separate target, run in CI and before releases.
-check: lint typecheck test
+check:
+	$(CHECK_LINT)
+	$(CHECK_TYPECHECK)
+	$(CHECK_TEST)
 
 # Build the release extension into the environment that is actually imported.
 # `.venv` installs this project editable, so `uv run` resolves
@@ -64,12 +88,36 @@ build:
 	rm -f target/wheels/*.whl
 	uv run --no-sync maturin develop --release
 
-bench: build
+conformance:
+	uv run --no-sync python conformance/run.py
+
+# One release qualification definition. CI and release workflows invoke this
+# target instead of maintaining smaller copies of the command list.
+qualify:
+	$(QUALIFY_PREPARE)
+	$(QUALIFY_SYNC)
+	$(QUALIFY_BUILD)
+	$(QUALIFY_CHECK)
+	$(QUALIFY_CONFORMANCE)
+	$(QUALIFY_G2)
+	$(QUALIFY_REPORT)
+	$(QUALIFY_COPY_EVIDENCE)
+	$(QUALIFY_SUMMARY)
+
+benchmark-env:
+	uv sync --group bench --locked
+
+bench: benchmark-env build
 	uv run --no-sync python benches/bench_codecs.py
 	uv run --no-sync python benches/bench_typed.py
 
-report: build
+report: benchmark-env build
 	uv run --no-sync python scripts/release-report.py
+
+# R and its plotting packages are host tools, not project dependencies. This
+# target consumes the generated JSON evidence and writes public SVG/PNG/Markdown.
+public-report: report
+	Rscript .github/reporting/render_benchmarks.R conformance/report.json
 
 # Reproduce the upstream capsule experiment without changing `.venv` or the
 # publishable `msgspec==0.21.1` dependency. The source is hash-pinned, the patch
@@ -166,10 +214,9 @@ efficiency:
 # separation as `make baseline`: a second venv, never the working one.
 g2:
 	rm -rf .venv-g2 target/g2-wheels
-	uv venv .venv-g2 --python 3.13
+	UV_PROJECT_ENVIRONMENT=.venv-g2 uv sync --python 3.13 --locked --no-install-project
 	uv run --no-sync maturin build --release --features alloc-stats -o target/g2-wheels
-	uv pip install --python .venv-g2/bin/python target/g2-wheels/*.whl \
-		msgspec==0.21.1 python-toon==0.1.3 toons pytest
+	uv pip install --python .venv-g2/bin/python --reinstall --no-deps target/g2-wheels/*.whl
 	.venv-g2/bin/python -m pytest tests/test_typed_allocations.py -q
 	.venv-g2/bin/python scripts/allocation-proof.py
 
@@ -181,7 +228,7 @@ relock:
 	cargo update
 	$(MAKE) audit
 
-# Fail if any resolved version in Cargo.lock or uv.lock is younger than
+# Fail if any resolved version in Cargo.lock, fuzz/Cargo.lock, or uv.lock is younger than
 # $(COOLDOWN_DAYS) days (queries crates.io / PyPI; network required).
 # This is the enforcement layer Cargo lacks natively, and a belt-and-
 # suspenders double check on the uv side.

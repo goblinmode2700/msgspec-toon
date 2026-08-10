@@ -4,7 +4,7 @@ Every entry in `conformance/support_matrix.py` declares how this codec behaves
 relative to `msgspec.json` on an equivalent document. This file runs both sides
 and fails when the declaration stops being true — in either direction. Fixing a
 gap without updating the matrix fails here, which is the point: the released
-gap list is generated from that module (review F-11).
+gap list is generated from that module.
 """
 
 from __future__ import annotations

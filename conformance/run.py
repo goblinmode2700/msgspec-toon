@@ -99,7 +99,7 @@ def main() -> int:
     results: list[dict[str, Any]] = []
     for category, runner in (("decode", run_decode), ("encode", run_encode)):
         for path in sorted((ROOT / "fixtures" / category).glob("*.json")):
-            fixture = json.loads(path.read_text())
+            fixture = json.loads(path.read_text(encoding="utf-8"))
             for index, test in enumerate(fixture["tests"]):
                 status, detail = runner(test)
                 results.append(
@@ -145,7 +145,10 @@ def main() -> int:
     }
 
     out = ROOT / "conformance-results.json"
-    out.write_text(json.dumps({"summary": summary, "results": results}, indent=2) + "\n")
+    out.write_text(
+        json.dumps({"summary": summary, "results": results}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     print(f"corpus {LOCK['tag']} @ {LOCK['commit'][:12]} ({len(results)} tests)")
     for section in ("decode", "encode"):

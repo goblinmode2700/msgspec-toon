@@ -1,0 +1,6 @@
+items[2]:
+  - config[2:]{x}:
+      a: 1
+      b: 2
+    status: ok
+  - status: down

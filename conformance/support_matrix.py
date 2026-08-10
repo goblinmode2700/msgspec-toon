@@ -50,6 +50,7 @@ class SupportEntry:
     ours: Callable[[], Any]
     reference: Callable[[], Any]
     detail: str
+    plan_rejection: bool = False
 
 
 # --- probes -----------------------------------------------------------------
@@ -97,6 +98,10 @@ class Strict(msgspec.Struct, forbid_unknown_fields=True):
 
 class Color(enum.Enum):
     RED = "red"
+
+
+class Priority(enum.IntEnum):
+    HIGH = 2
 
 
 @dataclass
@@ -189,7 +194,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         SUPPORTED,
         lambda: toon.decode(b"[2]: 1,x", type=tuple[int, str]),
         lambda: msgspec.json.decode(b'[1,"x"]', type=tuple[int, str]),
-        "review F-08, fixed: one plan per position, and a length mismatch is a type error",
+        "one plan per position; a length mismatch is a type error",
     ),
     SupportEntry(
         "fixed-length tuple rejects a wrong length",
@@ -205,40 +210,41 @@ MATRIX: tuple[SupportEntry, ...] = (
         SUPPORTED,
         lambda: toon.decode(b"x: 1", type=KeywordOnly),
         lambda: msgspec.json.decode(b'{"x":1}', type=KeywordOnly),
-        "review F-09, fixed: the plan carries a keyword-name tuple and the class is "
+        "the plan carries a keyword-name tuple and the class is "
         "constructed through the keyword half of the vectorcall",
     ),
     SupportEntry(
         "tagged unions",
         1,
-        UNSUPPORTED,
-        lambda: toon.decode(b"type: cat\nname: x", type=Cat | Dog),
+        SUPPORTED,
+        lambda: toon.decode(b"name: x\ntype: cat", type=Cat | Dog),
         lambda: msgspec.json.decode(b'{"type":"cat","name":"x"}', type=Cat | Dog),
-        "",
+        "object-form only; bounded scalar preflight selects the compiled Struct plan before "
+        "construction; tagged array-like unions fail at plan construction",
     ),
     SupportEntry(
         "array_like Structs",
         1,
-        UNSUPPORTED,
-        lambda: toon.decode(b"[2]: 1,x", type=Positional),
+        SUPPORTED,
+        lambda: toon.decode(b"[2]:\n  - 1\n  - x", type=Positional),
         lambda: msgspec.json.decode(b'[1,"x"]', type=Positional),
-        "",
+        "positional frames construct the Struct without an intermediate mapping",
     ),
     SupportEntry(
         "strict=False scalar coercion",
         1,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b'"1"', type=int, strict=False),
         lambda: msgspec.json.decode(b'"1"', type=int, strict=False),
-        "review F-06: `strict` reaches duplicate handling but not `convert_scalar`",
+        "table-driven bool, int, and float conversion matches pinned msgspec 0.21.1",
     ),
     SupportEntry(
         "recursive Struct types",
         1,
-        UNSUPPORTED,
-        lambda: toon.Decoder(Recursive),
-        lambda: msgspec.json.Decoder(Recursive),
-        "the plan compiler recurses until RecursionError instead of erroring clearly",
+        SUPPORTED,
+        lambda: toon.decode(b"value: 1\nchild: null", type=Recursive),
+        lambda: msgspec.json.decode(b'{"value":1,"child":null}', type=Recursive),
+        "identity-keyed graph plans support bounded direct recursive construction",
     ),
     SupportEntry(
         "constraints (msgspec.Meta)",
@@ -266,6 +272,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         "not our defect and not fixable behind the membrane: msgspec.inspect sorts a "
         "Literal's members and raises TypeError on mixed types, so the plan compiler "
         "never sees the annotation, while msgspec.json decodes it without inspect",
+        plan_rejection=True,
     ),
     SupportEntry(
         "Literal[int] rejects a boolean",
@@ -273,7 +280,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         PARITY_REJECTS,
         lambda: toon.decode(b"true", type=Literal[1]),
         lambda: msgspec.json.decode(b"true", type=Literal[1]),
-        "review F-07, fixed: Python equality makes True == 1, so membership now compares "
+        "Python equality makes True == 1, so membership now compares "
         "the exact scalar category first",
     ),
     SupportEntry(
@@ -282,9 +289,10 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b"1: 2", type=dict[int, int]),
         lambda: msgspec.json.decode(b'{"1":2}', type=dict[int, int]),
-        "review F-13, downgraded from silently wrong: the key plan was compiled and "
+        "the key plan was compiled and "
         "dropped, so keys stayed strings. Now the Decoder refuses the annotation at "
         "construction instead of returning {'1': 2} where msgspec returns {1: 2}",
+        plan_rejection=True,
     ),
     # --- Tier 2: absent -----------------------------------------------------
     SupportEntry(
@@ -293,7 +301,9 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b"red", type=Color),
         lambda: msgspec.json.decode(b'"red"', type=Color),
-        "",
+        "native encoding is supported; typed decoding requires native scalar support or an "
+        "explicit dec_hook",
+        plan_rejection=True,
     ),
     SupportEntry(
         "datetime",
@@ -301,7 +311,9 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b'"2026-01-01T00:00:00Z"', type=datetime.datetime),
         lambda: msgspec.json.decode(b'"2026-01-01T00:00:00Z"', type=datetime.datetime),
-        "",
+        "native encoding is supported; typed decoding requires native scalar support or an "
+        "explicit dec_hook",
+        plan_rejection=True,
     ),
     SupportEntry(
         "UUID",
@@ -309,7 +321,9 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b'"12345678-1234-5678-1234-567812345678"', type=uuid.UUID),
         lambda: msgspec.json.decode(b'"12345678-1234-5678-1234-567812345678"', type=uuid.UUID),
-        "",
+        "native encoding is supported; typed decoding requires native scalar support or an "
+        "explicit dec_hook",
+        plan_rejection=True,
     ),
     SupportEntry(
         "Decimal",
@@ -317,7 +331,9 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b'"1.5"', type=decimal.Decimal),
         lambda: msgspec.json.decode(b'"1.5"', type=decimal.Decimal),
-        "",
+        "native encoding is supported; typed decoding requires native scalar support or an "
+        "explicit dec_hook",
+        plan_rejection=True,
     ),
     SupportEntry(
         "dataclasses",
@@ -325,7 +341,8 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.decode(b"x: 1", type=PlainDataclass),
         lambda: msgspec.json.decode(b'{"x":1}', type=PlainDataclass),
-        "",
+        "requires declared plan support or an explicit dec_hook",
+        plan_rejection=True,
     ),
     # --- public API surface -------------------------------------------------
     SupportEntry(
@@ -334,20 +351,51 @@ MATRIX: tuple[SupportEntry, ...] = (
         UNSUPPORTED,
         lambda: toon.encode({"b": 1, "a": 2}, order="sorted"),
         lambda: msgspec.json.encode({"b": 1, "a": 2}, order="sorted"),
-        "review F-10, downgraded from silently ignored: an unimplemented value now raises "
+        "an unimplemented value now raises "
         "NotImplementedError instead of returning insertion order. A value msgspec itself "
         "rejects still raises the same ValueError",
     ),
     SupportEntry(
+        "date/time, UUID, and Decimal encoding",
+        2,
+        SUPPORTED,
+        lambda: (
+            toon.encode(datetime.date(2026, 8, 9)),
+            toon.encode(uuid.UUID("12345678-1234-5678-1234-567812345678")),
+            toon.encode(decimal.Decimal("1.2300")),
+        ),
+        lambda: (
+            msgspec.json.encode(datetime.date(2026, 8, 9)),
+            msgspec.json.encode(uuid.UUID("12345678-1234-5678-1234-567812345678")),
+            msgspec.json.encode(decimal.Decimal("1.2300")),
+        ),
+        "normalization runs before enc_hook and Decimal digits never pass through float",
+    ),
+    SupportEntry(
+        "string and integer Enum encoding",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode([Color.RED, Priority.HIGH])),
+        lambda: msgspec.json.decode(msgspec.json.encode([Color.RED, Priority.HIGH])),
+        "Enum members encode through their declared scalar values",
+    ),
+    SupportEntry(
         "Encoder(decimal_format=..., uuid_format=...)",
         2,
-        UNSUPPORTED,
-        lambda: toon.Encoder(decimal_format="number", uuid_format="hex").encode({"a": 1}),
-        lambda: msgspec.json.Encoder(decimal_format="number", uuid_format="hex").encode({"a": 1}),
-        "downgraded from silently ignored: non-default values now raise. The review recorded "
-        "these as accepted by the constructor but rejected by encode(); that split is "
-        "msgspec's own surface — msgspec.json.encode() also refuses them — so it is parity, "
-        "not a defect",
+        SUPPORTED,
+        lambda: (
+            toon.Encoder(decimal_format="number").encode(decimal.Decimal("1.2300")),
+            toon.Encoder(uuid_format="hex").encode(
+                uuid.UUID("12345678-1234-5678-1234-567812345678")
+            ),
+        ),
+        lambda: (
+            msgspec.json.Encoder(decimal_format="number").encode(decimal.Decimal("1.2300")),
+            msgspec.json.Encoder(uuid_format="hex").encode(
+                uuid.UUID("12345678-1234-5678-1234-567812345678")
+            ),
+        ),
+        "both reusable and functional encoders implement each documented format value",
     ),
 )
 
@@ -385,9 +433,15 @@ def check_parity_rejects(entry: SupportEntry) -> None:
 
 
 def check_unsupported(entry: SupportEntry) -> None:
-    assert _raised(entry.ours) is not None, (
+    ours_error = _raised(entry.ours)
+    assert ours_error is not None, (
         f"{entry.feature}: declared unsupported but succeeded — update the matrix"
     )
+    if entry.plan_rejection:
+        assert isinstance(ours_error, toon.TypePlanError), (
+            f"{entry.feature}: typed plan rejection leaked {type(ours_error).__name__}"
+        )
+        assert ours_error.code and isinstance(ours_error.path, tuple)
     assert _raised(entry.reference) is None, (
         f"{entry.feature}: msgspec.json also rejects this, so it is shared behavior, not a gap"
     )

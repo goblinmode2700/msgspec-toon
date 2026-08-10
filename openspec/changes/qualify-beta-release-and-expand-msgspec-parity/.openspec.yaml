@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-08-08
+goal: Ship a trusted 0.1.0b3 release gate, then a backward-compatible 0.2.0b1
+  beta with deliberate typed behavior, native scalar parity, fuzzing, and
+  generated release evidence.

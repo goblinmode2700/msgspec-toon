@@ -13,7 +13,7 @@ network dependency.
 Deliberately absent: any assertion that this codec beats another codec. That
 comparison lives once in the published ladder under gates T1 and G5, where a
 miss is visible as a gate miss. Repeating it here would measure the machine and
-grow without bound (openspec: distribution-quality, "Comparative claims are made
+grow without bound (the distribution requirement, "Comparative claims are made
 once, where a miss is visible").
 """
 

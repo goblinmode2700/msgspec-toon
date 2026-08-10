@@ -20,9 +20,8 @@ Three roles, selected by environment so the same script serves all three:
 The loop count is calibrated once and handed to every worker, so all workers
 measure the same amount of work and their means are comparable.
 
-No benchmark script hand-rolls a loop (openspec: distribution-quality,
-"Benchmark timing is standardized", "The timing estimator is stated and is not
-a minimum").
+No benchmark script hand-rolls a loop. Timing and the estimator stay in this
+module.
 """
 
 from __future__ import annotations

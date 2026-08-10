@@ -1,7 +1,7 @@
 """Hostile inputs fault; they never panic, abort, or kill the interpreter.
 
-Three v0.2.0 defects motivated this file (`docs/adversarial-review-v0.2.0.md`
-F-01/F-02/F-03): a declared array count sized a `Vec` reservation, and neither
+Three pre-release defects motivated this file: a declared array count sized a
+`Vec` reservation, and neither
 header field-group parsing nor encoder shape discovery was bounded by the
 codec's nesting limit. Small inputs produced `PanicException` and exit 139.
 
@@ -54,7 +54,7 @@ def _assert_contained(result: subprocess.CompletedProcess[str]) -> None:
 
 @pytest.mark.parametrize("strict", [True, False])
 def test_declared_count_does_not_size_an_allocation(strict: bool) -> None:
-    """F-01: `[18446744073709551615]:` panicked with a capacity overflow.
+    """A maximal declared count once panicked with a capacity overflow.
 
     Either outcome of the count contract is contained — strict rejects the
     mismatch, non-strict keeps the rows it actually found. Only the panic was
@@ -92,7 +92,7 @@ def test_oversized_arrays_still_decode() -> None:
 
 @pytest.mark.parametrize("strict", [True, False])
 def test_nested_field_groups_are_depth_limited(strict: bool) -> None:
-    """F-02: deep `{a{a{...}}}` headers exhausted the stack (exit 139)."""
+    """Deep `{a{a{...}}}` headers once exhausted the stack (exit 139)."""
     result = _run_probe(
         f"""
 import msgspec_toon as toon
@@ -111,7 +111,7 @@ else:
 
 
 def test_encode_shape_discovery_is_depth_limited() -> None:
-    """F-03: shape discovery recursed past the writer's depth check."""
+    """Shape discovery once recursed past the writer's depth check."""
     result = _run_probe(
         f"""
 import msgspec, msgspec_toon as toon

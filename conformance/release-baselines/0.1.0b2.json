@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "distribution": "msgspec-toon",
+  "version": "0.1.0b2",
+  "source_revision": "65d6d31e51d073fdf16fe02b3436897af8ab7da3",
+  "source_tag": null,
+  "requires_python": ">=3.13",
+  "requires_dist": [
+    "msgspec==0.21.1"
+  ],
+  "workflow": {
+    "path": ".github/workflows/wheels.yml",
+    "sha256": "139d5a650d98426c6b239a4683fad7d01cefd0d58abb44f4cd76ce36df0a87a9",
+    "validation_dependency": false,
+    "installed_test": "one encode/decode smoke test per wheel from the build job",
+    "publication": "uv publish with repository PYPI_API_KEY",
+    "attestations": false
+  },
+  "published_report": {
+    "reported_distribution": "msgspec-toon 0.1.0b1",
+    "version_matches_release": false
+  },
+  "support_matrix": {
+    "scalars (int, float, str, bool, null)": "supported",
+    "nested Structs in a tabular array": "supported",
+    "Optional and defaults": "supported",
+    "field renaming": "supported",
+    "dict[str, T]": "supported",
+    "variable-length tuple": "supported",
+    "Literal[str]": "supported",
+    "forbid_unknown_fields": "supported",
+    "fixed-length tuple": "supported",
+    "fixed-length tuple rejects a wrong length": "parity_rejects",
+    "kw_only Structs": "supported",
+    "tagged unions": "unsupported",
+    "array_like Structs": "unsupported",
+    "strict=False scalar coercion": "unsupported",
+    "recursive Struct types": "unsupported",
+    "constraints (msgspec.Meta)": "supported",
+    "Literal[int]": "supported",
+    "Literal with mixed member types": "unsupported",
+    "Literal[int] rejects a boolean": "parity_rejects",
+    "dict[int, T] and other non-string keys": "unsupported",
+    "enum members": "unsupported",
+    "datetime": "unsupported",
+    "UUID": "unsupported",
+    "Decimal": "unsupported",
+    "dataclasses": "unsupported",
+    "encode(order=...)": "unsupported",
+    "Encoder(decimal_format=..., uuid_format=...)": "unsupported"
+  },
+  "shared_wire_lock_sha256": {
+    "uniform-records@16": "062af43fed877ee17cad2975a809f465b51ade38ac1198dc4f8654715400e962",
+    "uniform-records@64": "02c124dcf1c6d9c2fd44436cbdcccb6ce45e5c5ab98e77b9e498d9330d4cd672",
+    "uniform-records@512": "61d88ccb10c76b6467b779d04a556d11092b6f2f49cf112283b040b4a0f93cdd",
+    "uniform-records@4096": "7cf15c0fc2ca425ba1390da850cbbcba44647faacb2e3809f7eeca22cb5e17a9"
+  },
+  "artifacts": [
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-macosx_10_12_x86_64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"macos","arch":"x86_64","size":334918,"sha256":"ac1134b00d9f0ec880646b8a86cf8066bf661339725cf01e72e98e2fa146f5ef"},
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-macosx_11_0_arm64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"macos","arch":"aarch64","size":320684,"sha256":"8cc7cbee0a3b933a5ff5bb19ee96166190aa701878e213eed0ec29ee021db9c4"},
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"linux","arch":"aarch64","size":338571,"sha256":"402865b27c34ab7da87eff591873bf6db9889d3116af844e7bb4d98a33dc3f19"},
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"linux","arch":"x86_64","size":354429,"sha256":"5bf9f9bd0252de02294ae8796bb1067d1338eb40e35410abe5c08efaa3295f68"},
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-win_amd64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"windows","arch":"x86_64","size":261833,"sha256":"f21047252272fc2958be850f782c6b0b0f3d4f801a11960ba654af9b28e8b212"},
+    {"filename":"msgspec_toon-0.1.0b2-cp313-abi3-win_arm64.whl","kind":"wheel","python_abi":"cp313-abi3","os":"windows","arch":"aarch64","size":252389,"sha256":"d73d4e3c5fd42e0c3aa6b303a738f50870b84a302a23a8ef8d74e0432b723bda"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-macosx_10_12_x86_64.whl","kind":"wheel","python_abi":"cp314t","os":"macos","arch":"x86_64","size":334665,"sha256":"98027ea29def707c57604de2b1b391342090583fa12e8cbbb5fe7ff078f0dbcb"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-macosx_11_0_arm64.whl","kind":"wheel","python_abi":"cp314t","os":"macos","arch":"aarch64","size":320100,"sha256":"be1fc2787b395dc6db37d020a7bae29702e9500f662bf7b5e4af310dfcb51f35"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl","kind":"wheel","python_abi":"cp314t","os":"linux","arch":"aarch64","size":338052,"sha256":"106f9a4a8fd9750c180dec7163a4dcf4032cd1c82fa0ba54926ad3d30c6423bb"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl","kind":"wheel","python_abi":"cp314t","os":"linux","arch":"x86_64","size":354596,"sha256":"b411f5ba3590217eb4069734f9753a12620c7b1a2bf34eaec867933eb693764d"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-win_amd64.whl","kind":"wheel","python_abi":"cp314t","os":"windows","arch":"x86_64","size":261740,"sha256":"ee62b07cb2a0c998868047df93bbf23bb2116edb05b561360ea65d7a68283bc0"},
+    {"filename":"msgspec_toon-0.1.0b2-cp314-cp314t-win_arm64.whl","kind":"wheel","python_abi":"cp314t","os":"windows","arch":"aarch64","size":252094,"sha256":"01b3615c5e8994917dcc1d55aea3b71515e5296a592a43f16e62a64d109645c9"},
+    {"filename":"msgspec_toon-0.1.0b2.tar.gz","kind":"sdist","python_abi":"source","os":"source","arch":"source","size":57500,"sha256":"8b42abf32b71ac2ad23b90ea4e6246371d137254aed27fa016be415442a70908"}
+  ]
+}

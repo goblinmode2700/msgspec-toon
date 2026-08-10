@@ -22,8 +22,12 @@ upstream tokenizer change fails as itself rather than as a phantom codec change.
 
 from __future__ import annotations
 
+import datetime
+import decimal
+import enum
 import importlib.metadata
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +40,23 @@ from payloads import token_payload_matrix
 
 LOCK_PATH = REPO / "conformance" / "efficiency.lock.json"
 TOKENIZERS = ("o200k_base", "cl100k_base")
+
+
+class _LockedColor(enum.Enum):
+    RED = "red"
+
+
+def native_scalar_payload() -> list[Any]:
+    """A stable wire-and-token lock for the msgspec-native encode surface."""
+    return [
+        datetime.date(2026, 8, 9),
+        datetime.datetime(2026, 8, 9, 1, 2, 3, 456, datetime.UTC),
+        datetime.time(1, 2, 3, 456),
+        datetime.timedelta(days=2, seconds=3, microseconds=4),
+        uuid.UUID("12345678-1234-5678-1234-567812345678"),
+        decimal.Decimal("1.2300"),
+        _LockedColor.RED,
+    ]
 
 
 def encoded_texts(tree: Any) -> dict[str, str]:
@@ -81,6 +102,16 @@ def measure(*, with_tokens: bool = True) -> dict[str, Any]:
             formats[name] = entry
         payloads[f"{shape}@{records}"] = formats
 
+    formats = {}
+    for name, text in encoded_texts(native_scalar_payload()).items():
+        entry = {"bytes": len(text.encode())}
+        if encoders:
+            entry["tokens"] = {
+                tokenizer: len(encoder.encode(text)) for tokenizer, encoder in encoders.items()
+            }
+        formats[name] = entry
+    payloads["msgspec-native-scalars@7"] = formats
+
     return {
         "note": (
             "Locked efficiency snapshot. Any difference fails the gate in either "
@@ -88,6 +119,13 @@ def measure(*, with_tokens: bool = True) -> dict[str, Any]:
             "canonical bytes are a conformance surface. Update deliberately, with the "
             "reason the counts moved."
         ),
-        "versions": tokenizer_versions(),
+        "versions": (
+            tokenizer_versions()
+            if with_tokens
+            else {
+                "msgspec": msgspec.__version__,
+                "encodings": ",".join(TOKENIZERS),
+            }
+        ),
         "payloads": payloads,
     }

@@ -154,7 +154,7 @@ def test_invalid_options_are_refused() -> None:
 
 
 def test_unimplemented_encoder_options_fail_loudly() -> None:
-    """Silent acceptance is not compatibility (review F-10).
+    """Silent acceptance is not compatibility.
 
     A caller who asks for sorted keys and receives insertion order has been
     given a wrong answer. The domain check runs first, so a value msgspec
@@ -170,9 +170,6 @@ def test_unimplemented_encoder_options_fail_loudly() -> None:
             toon.Encoder(**{option: value})
     with pytest.raises(NotImplementedError):
         toon.encode({"a": 1}, order="sorted")
-    with pytest.raises(NotImplementedError):
-        toon.Encoder(decimal_format="number")
-
     # Defaults stay silent, including when spelled out.
     assert (
         toon.Encoder(order=None, decimal_format="string", uuid_format="canonical").encode(

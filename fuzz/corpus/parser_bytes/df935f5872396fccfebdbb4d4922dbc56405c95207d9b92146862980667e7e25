@@ -1,0 +1,3 @@
+[2:]{age,city}:
+  alice: 30,Berlin
+  bob: 25,Oslo

@@ -4,13 +4,16 @@ build-backend = "maturin"
 
 [project]
 name = "msgspec-toon"
-version = "0.4.0"
+version = "0.2.0b1"
 description = "A native TOON 4.1 codec with direct msgspec.Struct decoding"
 requires-python = ">=3.13"
 dependencies = ["msgspec==0.21.1"]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Rust",
@@ -36,6 +39,7 @@ dev = [
 # the last 14 days. Per-package CVE escape hatch: exclude-newer-package
 # (e.g. { somepkg = "0 days" }) with the justification in the commit.
 exclude-newer = "14 days"
+default-groups = ["dev"]
 
 [tool.maturin]
 python-source = "python"

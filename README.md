@@ -1,74 +1,38 @@
 # msgspec-toon
 
-**The goal, stated precisely:** the most **token-efficient** and **fastest** TOON 4.1
-codec for Python, integrated natively with **msgspec 0.21.1** — the way `msgspec.json`
-works, not the way the wrapper-shaped `msgspec.toml` works. The typed path decodes TOON
-text **directly into `msgspec.Struct` instances with zero intermediate dict/list tree**,
-and encodes Structs by reading their fields directly, never through
-`msgspec.to_builtins`. Both target metrics are measured, gated, and published — never
-asserted.
+TOON (Token-Oriented Object Notation) is a line-oriented text format that
+reduces repeated keys in uniform JSON-shaped data.
 
-TOON (Token-Oriented Object Notation) exists to cost fewer LLM tokens than JSON. Its
-entire saving lives in the tabular array with nested field groups — a spec-4.0
-construct no other Python codec emits:
+msgspec is a high-performance serialization and validation library whose typed
+`Struct` objects are a faster, lighter alternative to Pydantic models.
 
-```text
-workers[2]{pid,provider,metadata{alias,region}}:      # TOON 4.1 (this codec): 527 B, 238 tokens
-  20324,claude,worker-a,west
-  80916,claude,worker-b,east
+`msgspec-toon` is a native TOON 4.1 codec for Python. It decodes TOON text
+directly into `msgspec.Struct` objects. It does not build an intermediate
+`dict` and `list` tree.
 
-# the same value in compact JSON: 1,339 B, 372 tokens
-# the same value from the existing Python TOON codecs (v3.0-era fallback form):
-#   1,482 B, 467 tokens — MORE than the JSON they replace
+Use it when tabular data must fit in a language model context window, but the
+application still needs typed Python objects and fast in-process conversion.
+
+> This is a beta release. The project passes the pinned TOON 4.1.1 corpus, but
+> it does not yet support every type that `msgspec.json` supports.
+
+## Install
+
+Install the public beta from PyPI:
+
+```bash
+uv add msgspec-toon
 ```
 
-## Measured results (v0.2.0, all from `conformance/report.json`)
+The package requires Python 3.13 or newer. Its only runtime dependency is the
+exact pin `msgspec==0.21.1`. Benchmark codecs and tokenizers are optional
+development dependencies. They are not installed with the library.
 
-Every number below regenerates with `make report`; the machine-readable evidence, with
-tokenizer versions, corpus commit, and methodology, ships in the report.
-
-**Conformance** — the official TOON 4.1 fixture corpus (`toon-format/spec` v4.1.1,
-commit-pinned and hash-locked, 538 tests): **all 538 pass, both directions, zero
-declared divergences**, including tab/pipe delimiters, keyed tabular objects
-(`k[N:]{fields}:`), nested field groups, strict-error and non-strict-leniency fixtures.
-
-**Token efficiency** (tiktoken `o200k_base`):
-
-| format | uniform records | string-heavy | numeric-heavy |
-|---|---|---|---|
-| **this codec (canonical)** | **0.61–0.64× JSON** | 0.80× | 0.65× |
-| `toons` 0.7.0 / `python-toon` 0.1.3 | 1.25× JSON | 1.10× | 0.65×\* |
-
-\* the incumbents only tabularize flat records; one nested field per record collapses
-them to the fallback form that costs more than JSON.
-
-The token advantage is a property of the tabular forms specifically, not of TOON:
-irregular, non-uniform shapes cost **1.16–1.19×** compact JSON's tokens (their smaller
-byte count tokenizes worse per byte), and the spec requires the entry-by-entry fallback
-for them, so no encoder change recovers it — keep those payloads JSON when tokens are
-the budget. The spec-legal `indent=1` option saves tokens on every shape (uniform@4096:
-0.62× → **0.58×**). Mechanism, measurements, and the closed spec rulings:
-`docs/token-shape-guidance.md`.
-
-**Speed** (same-run, Apple silicon, abi3 release wheel, min-of-batches):
-
-- Typed decode (`Decoder(T).decode`) beats untyped-decode-plus-`msgspec.convert` at
-  every payload size (G3), and beats the incumbent production pipeline
-  (`python_toon.decode` + `convert` / `to_builtins` + `python_toon.encode`) by
-  **19–51×**.
-- Raw codec floor (G5): **2–6.5× faster than `toons`** (Rust) and **~20× faster than
-  `python-toon`** in both directions at every size — while emitting 2.9× fewer bytes.
-- The no-tree claim is proven by allocation counters: a typed decode of a 64-record
-  document creates **0** intermediate dicts/lists; the wrapper shape creates 129.
-- Honest miss (G4): the whole typed encode does not yet beat `msgspec.to_builtins`
-  *alone* (2.2× at 16 records, ~10% at 4096) — public stable-ABI attribute reads
-  cannot match msgspec's private C slot access. Reported in every release, not masked.
-
-## Usage
+## Decode TOON into a Struct
 
 ```python
 import msgspec
-import msgspec_toon as toon  # drop-in for `from msgspec import json as toon`
+import msgspec_toon as toon
 
 
 class Metadata(msgspec.Struct, frozen=True):
@@ -86,82 +50,214 @@ class Document(msgspec.Struct, frozen=True):
     workers: list[Worker]
 
 
-text = b"""workers[2]{pid,provider,metadata{alias,region}}:
+wire = b"""workers[2]{pid,provider,metadata{alias,region}}:
   9007199254740993,claude,worker-a,west
   80916,claude,worker-b,east"""
 
-doc = toon.decode(text, type=Document)  # -> Document, no intermediate tree
-assert doc.workers[0].pid == 9007199254740993  # ints at Python precision, always
-assert toon.encode(doc) == text  # byte-exact canonical round-trip
+decoder = toon.Decoder(Document)
+document = decoder.decode(wire)
 
-toon.decode(text)  # untyped: dict/list, like json.loads
-toon.Decoder(Document)
-toon.Encoder()  # reusable, plan-cached
-
-# The only wire options are the ones TOON 4.1 itself defines (spelled in the
-# wire, defaults byte-identical to canonical output):
-toon.encode(value, delimiter="\t")  # [N\t] headers, tab-separated cells
-toon.encode(value, indent=4)
-toon.decode(buf, indent_size=4)
+assert isinstance(document, Document)
+assert document.workers[0].pid == 9007199254740993
+assert toon.encode(document) == wire
 ```
 
-API surface mirrors `msgspec.json`: `encode`, `decode(type=...)`, `Encoder`,
-`Decoder`, `enc_hook`/`dec_hook`, `strict=True` default, `DecodeError` /
-`ValidationError` (msgspec subclasses carrying `.line`/`.column`/`.code` — and, by
-hard requirement, **never any payload content**).
+The parser uses the target type while it reads the input. It constructs the
+final Struct objects directly. The G2 allocation proof records zero temporary
+built-in dictionaries and lists for this path.
 
-## Design commitments
+## Read and write TOON files
 
-- **Runtime dependencies: exactly `msgspec==0.21.1`.** The typed machinery compiles
-  plans from `msgspec.inspect` through a single adapter module; a msgspec metadata
-  change touches one file.
-- **Rust + PyO3, `abi3-py313`** stable-ABI wheels; Python ≥ 3.13.
-- **In-process only**: a conversion opens no file, socket, or subprocess.
-- **Streaming decode**: the input buffer is borrowed, never copied whole.
-- **Canonical by default**: two default-constructed encoders always produce identical
-  bytes; only spec-defined, wire-declared options exist.
-- **Evidence over claims**: conformance counts, allocation proofs, same-run speed
-  ladders, token counts under named tokenizers, and a frozen-baseline optimization
-  ledger all live in the generated report.
+The codec accepts `bytes`, `bytearray`, `memoryview`, or `str`. Encoding returns
+`bytes`, so normal Python file APIs work without an adapter.
 
-## Development
+```python
+from pathlib import Path
+
+import msgspec_toon as toon
+
+
+source = Path("workers.toon")
+target = Path("workers-copy.toon")
+
+decoder = toon.Decoder(Document)
+encoder = toon.Encoder()
+
+value = decoder.decode(source.read_bytes())
+target.write_bytes(encoder.encode(value))
+```
+
+The conversion itself does not open files, sockets, or subprocesses. Your
+application controls all I/O.
+
+## Use untyped values
+
+Omit `type` when you need normal Python dictionaries and lists:
+
+```python
+value = toon.decode(b"name: ada\nactive: true")
+wire = toon.encode(value)
+```
+
+The public surface follows `msgspec.json` where support exists:
+
+- `encode` and `decode`
+- reusable `Encoder` and `Decoder`
+- `enc_hook` and `dec_hook`
+- strict decoding by default
+- msgspec-compatible encode, decode, and validation errors
+
+TOON wire options are explicit:
+
+```python
+toon.encode(value, delimiter="\t", indent=1)
+toon.decode(wire, indent_size=1)
+```
+
+The functional and reusable decoders both accept `float_hook`:
+
+```python
+from decimal import Decimal
+
+value = toon.decode(b"1.25", float_hook=Decimal)
+decoder = toon.Decoder(float_hook=Decimal)
+
+assert value == decoder.decode(b"1.25") == Decimal("1.25")
+```
+
+The encoder supports msgspec-native date, time, UUID, Decimal, and Enum values.
+It normalizes these values before it calls `enc_hook`. Decimal values keep all
+their digits and trailing zeroes.
+
+```python
+from decimal import Decimal
+from uuid import UUID
+
+toon.encode(Decimal("1.2300"))
+# b'"1.2300"'
+
+toon.encode(Decimal("1.2300"), decimal_format="number")
+# b'1.2300'
+
+toon.encode(UUID("12345678-1234-5678-1234-567812345678"), uuid_format="hex")
+# b'"12345678123456781234567812345678"'
+```
+
+The codec does not implement sorted or deterministic output. Both encoder entry
+points raise `NotImplementedError` for these `order` values. They never ignore
+an accepted option.
+
+Typed decode supports recursive Structs, array-like Structs, object-form tagged Struct unions,
+and permissive scalar conversion. Tagged array-like unions fail during plan construction. Set
+`strict=False` to accept the same bool,
+integer, and float string conversions as msgspec 0.21.1. Strict mode stays the
+default.
+
+Non-string mapping keys are intentionally rejected in 0.2.0b1. See the
+[mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).
+
+## Why not wrap another TOON codec?
+
+A wrapper must first convert a Struct into built-in containers. Typed decode
+must parse a built-in tree and then call `msgspec.convert`. Those extra trees
+can cost more than the codec work.
+
+| Project | Format target | Typed msgspec path | Integration model |
+|---|---|---|---|
+| **msgspec-toon** | TOON 4.1.1 corpus | Direct Struct encode and decode | Native, in process |
+| [`toon-rust`](https://github.com/toon-format/toon-rust) | TOON 3.0 | No Python msgspec path | Rust library and CLI |
+| `toons` 0.7.0 | Earlier TOON grammar | Built-in tree | Python Rust extension |
+| `python-toon` 0.1.3 | Earlier TOON grammar | `to_builtins` / `convert` | Pure Python and CLI |
+
+TOON 4 nested field groups are important. They let a uniform nested record use
+one tabular header:
+
+```text
+workers[2]{pid,provider,metadata{alias,region}}:
+  20324,claude,worker-a,west
+  80916,claude,worker-b,east
+```
+
+Older encoders can fall back to a larger entry form for the same data.
+
+## Tokens and speed
+
+![Codec elapsed times](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/codec-times.png)
+
+![Absolute token counts](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/token-counts.png)
+
+The generated [benchmark report](https://github.com/goblinmode2700/msgspec-toon/blob/main/BENCHMARKS.md) publishes both axes:
+
+- Direct encode, decode, and total time for each measured codec.
+- Absolute token counts, including compact JSON, under tiktoken `o200k_base`.
+
+The report crosses four payload shapes with four record counts. Canonical TOON
+uses more tokens than compact JSON for the measured irregular shapes.
+
+All timing rows come from one session and one release build. The estimator is
+the mean across ten independent worker processes. It never reports the minimum.
+The raw evidence is in the
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
+file.
+
+## Conformance and safety
+
+- All 538 pinned TOON 4.1.1 fixtures pass in both directions.
+- Typed decode creates no intermediate built-in container tree.
+- Integers keep Python precision and do not route through `float`.
+- Errors contain coordinates and static messages, never input payload text.
+- Malformed input must return an error. It must not panic or terminate Python.
+- Canonical output is byte-locked by tests.
+
+The generated support matrix in the
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
+file lists supported, rejected, and not-yet-supported msgspec features.
+Unsupported behavior fails clearly. It does not silently return a different
+value.
+
+## Optional msgspec Struct fast path
+
+The stock package reads Struct fields through msgspec's public Python
+attributes. This is the compatible path for `msgspec==0.21.1`.
+
+The repository also contains a versioned Struct-access capsule proposal for
+msgspec. You can build the same codec against that patch in an isolated
+environment:
 
 ```bash
-uv sync                        # env (14-day dependency cooldown enforced natively)
-make check                     # ruff + rustfmt + clippy -D warnings + mypy strict
-                               #   + 32 Rust tests + 43 Python tests
-make bench                     # speed ladders vs toons/python-toon/msgspec.json
-uv run python benches/bench_tokens.py     # token gates (tiktoken o200k_base)
-uv run python conformance/run.py          # the 538-test official corpus
-make baseline && make ab       # same-session A/B vs the frozen v0.1.0 wheel
-make report                    # regenerate conformance/report.json
-make audit                     # dependency-age cooldown check (network)
+make fastpath-build
+make fastpath-check
+make fastpath-bench
+.venv-fastpath/bin/python
 ```
 
-To build the optional upstream Struct-access fast path in an isolated environment:
+This workflow fetches a hash-pinned msgspec commit, applies the preserved patch,
+and builds both release wheels. It does not modify the normal `.venv`. The build
+fails unless the capsule path is active. Published wheels do not depend on the
+unreleased API.
+
+## Develop and reproduce
+
+Use `uv` for all Python environment work:
 
 ```bash
-make fastpath-build            # patched msgspec + msgspec-toon release wheels
-make fastpath-check            # protected tests and corpus through the capsule path
-make fastpath-bench            # same-binary capsule/fallback measurement
-make fastpath-gates            # normal G3/G4 ladder; G4 currently exits nonzero at 4-64
-.venv-fastpath/bin/python      # run Python with the activated build
+uv sync --locked                         # library and developer tools
+make build                              # release extension in .venv
+make check                              # Rust and Python checks
+make qualify                            # canonical release gate and evidence
+uv run python conformance/run.py        # pinned 538-fixture corpus
+make g2                                 # allocation proof in a separate build
+
+uv sync --group bench --locked           # opt in to benchmark packages
+make bench                              # same-run codec and typed ladders
+make public-report                      # raw JSON, R charts, and BENCHMARKS.md
 ```
 
-This profile fetches the hash-pinned msgspec 0.21.1 source, applies the preserved public
-C-API patch, and installs both wheels into `.venv-fastpath`. It does not modify `.venv`,
-the lockfile, or the published `msgspec==0.21.1` requirement. `fastpath-build` exits if the
-Encoder does not report the `capsule` backend.
+`make public-report` uses the host `Rscript`, `ggplot2`, `jsonlite`, and
+`scales`. It does not install R or add R packages to the Python environment.
+The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
+documents installed-artifact verification and Trusted Publishing.
 
-Truth lives in `openspec/specs/` (requirements, validated), `docs/` (the design of
-record), `HANDOFF.md` (current state + open items), and `conformance/report.json`
-(the evidence). Contributor context for coding agents is in `CLAUDE.md` /
-`AGENTS.md`.
+## License
 
-## Status and lineage
-
-`v0.0.1-poc` → `v0.1.0-conformant` (zero fixture failures) → **`v0.2.0`** (perfect
-538/538 corpus, wire options, token measurement, optimization round: typed decode
-−15…−24% vs the frozen baseline). Open work is enumerated honestly in `HANDOFF.md` —
-headline items: the G4 encode gap (candidate E3 pending), typed Tier 1/2 type support,
-multi-platform wheels/CI, and an adversarial review sweep of the newest hot-path code.
+[MIT](https://github.com/goblinmode2700/msgspec-toon/blob/main/LICENSE)

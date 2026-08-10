@@ -581,9 +581,201 @@ stopped again.
 ### F. Distribution finish
 
 - [ ] Lift the PyO3 cooldown pin only after its time gate and `make audit` pass.
-- [ ] Build the five-platform abi3 wheel matrix.
-- [ ] Add CI checks for wheels, syscall restrictions, conformance, and smoke benchmarks.
+- [x] Build and verify the 12-wheel CPython 3.13 abi3 / CPython 3.14t target matrix plus
+  one sdist across macOS, Linux, and Windows on x86_64 and arm64.
+- [x] Add reusable canonical validation and release CI for source checks, conformance,
+  G2, target-native installed-artifact verification, manifest collection, and evidence.
+- [x] Prove every canonical component failure stops the canonical pipeline and a failed
+  reusable validation skips all publication-dependent jobs (OpenSpec task 2.4).
+- [x] Publish `0.1.0b3` through the registered PyPI Trusted Publisher and protected GitHub
+  `pypi` environment; verify all files, attestations, release evidence, and fresh installs.
 - [ ] Archive completed OpenSpec changes after their deferred tasks close.
+
+#### Checkpoint 22 — `0.1.0b3` release-trust qualification
+
+Hypothesis: one build-once, verify-target-natively workflow can produce a publication set
+whose source, target, digest, installed import origin, version, and codec behavior are all
+machine-bound, while a failed or unauthorized run cannot reach PyPI.
+
+Confirmed through the publication-disabled boundary at public source revision
+`f0546e65b95295f7b27858f7387ee5d73d04f19c`. GitHub Actions run `31310610453` completed
+with 29 successful jobs and two intentional skips: PyPI publication and GitHub release.
+The collector accepted exactly 12 wheels and one sdist. Every artifact retained a unique
+SHA-256, target identity, clean-environment import origin, installed version `0.1.0b3`,
+and passing representative round trip. The qualification report is bound to that same
+revision and artifact manifest.
+
+```text
+gate / evidence              result
+───────────────              ──────
+strict OpenSpec validation   pass
+source qualification         ruff, mypy, rustfmt, clippy, cargo test: pass
+pytest                       156 total: 151 passed, 5 expected skips
+official corpus              538/538, zero failures
+G2                            pass, zero builtin containers
+G3                            pass
+artifact set                  12 wheels + 1 sdist, all target-native verification passed
+publication                   skipped; no tag and no PyPI upload
+```
+
+G5 required one independent confirmation, and both observations remain evidence. Attempt
+1 missed only irregular decode at 512 records: msgspec-toon 477.64 microseconds versus
+`toons` 472.82 microseconds (1.02% slower; 2.53% msgspec-toon worker spread). Rerunning
+only the evidence job against the unchanged source and artifact set passed all 16
+shape-by-size cells in both directions; the same row measured 415.91 versus 475.67
+microseconds. No payload, gate, estimator, or code changed. The final generated report
+therefore records G5 true, while this ledger preserves the first miss instead of hiding it.
+After the fail-closed proof changed the public source revision, the full matrix was rerun
+instead of reusing those artifacts. The `f0546e6` report passed all G5 cells on its first
+evidence attempt and is the current release evidence.
+
+The workflow found and fixed two real Windows portability defects before the passing run:
+fixture-tree hashes now use POSIX relative paths, and fixture/report text I/O is explicitly
+UTF-8. Regression tests cover the platform-independent lock.
+
+This checkpoint originally stopped for owner authority and external identity configuration.
+Checkpoint 23 records their completion. The token fallback was never restored. The
+capability tranche now begins at task 7 for `0.2.0b1`.
+
+Task 2.4 closed after this checkpoint without a live destructive release test. The Makefile
+now exposes default-preserving command seams for the existing qualification composition.
+The test suite replaces every command with an ordered harmless probe, injects a nonzero exit
+at each of 12 boundaries, and proves no later command executes. A second test parses the
+release workflow dependencies and proves a failed reusable `validate` job transitively
+blocks every build, verification, collection, evidence, publication, and GitHub-release
+job; it also rejects an `always()` bypass. The normal `make qualify` path then passed with
+38 Rust tests, 151 Python passes plus 5 expected skips, 538/538 corpus, and all four G2
+allocation tests.
+
+The public fail-closed checkpoint is commit `f0546e6`. Its fresh publication-disabled run
+produced exactly 12 wheels plus one sdist with 13 unique digests and passing target-native
+verification. A read-only GitHub API check immediately afterward returned zero configured
+repository environments. After explicit publication authorization, the `pypi` environment
+was created with a custom `v*` tag deployment policy. The owner registered the documented
+PyPI Trusted Publisher tuple, and the release below completed without an API-token fallback.
+
+#### Checkpoint 23 — `0.1.0b3` trusted publication
+
+The owner explicitly authorized publication and registered the PyPI Trusted Publisher.
+Annotated tag `v0.1.0b3` resolves to qualified revision `f0546e6`. Tagged run
+`31336808348` rebuilt and target-native verified 12 wheels plus one sdist, generated the
+complete evidence report, and published the exact collected set through OIDC.
+
+PyPI exposes 13 files whose SHA-256 values exactly match the tagged-run manifest. Its
+Integrity API returns a publish attestation for every file with repository
+`goblinmode2700/msgspec-toon`, workflow `wheels.yml`, and environment `pypi`.
+`pypi-attestations verify pypi` cryptographically verified all 13 files. No
+`PYPI_API_KEY` or token fallback was used.
+
+Fresh consumer installs passed on CPython 3.13 ABI3 and CPython 3.14t with the GIL
+disabled. Both imported from their clean environment, reported version `0.1.0b3`, and
+completed a typed decode/encode round trip.
+
+`make guard` was rerun after publication. The internal optimization repository correctly
+retains `v0.4.0` as its latest development guard; the public beta version line is separate,
+as recorded in the OpenSpec versioning decision.
+
+The workflow finished 30 jobs green and one post-publication attachment job failed: `gh
+release` had neither a checkout nor explicit repository context. Package publication was
+already complete. The exact report and manifest downloaded from the tagged run were
+attached manually and then downloaded and byte-compared. GitHub release `v0.1.0b3` is a
+prerelease. Main commit `7f61585` adds `GH_REPO` to the attachment step and a regression
+test; default validation run `31338043228` passed.
+
+The release-trust tranche is complete. The next unblocked OpenSpec item is task 7.1,
+`TypePlanError`, for the `0.2.0b1` capability checkpoint. Do not archive the change until
+tasks 7 through 14 are complete.
+
+#### Checkpoint 24 — stable typed-plan failure membrane
+
+Hypothesis: every plan-construction failure can cross the Python inspection membrane as one
+package-owned `TypePlanError(TypeError)` with a stable code and schema-known path, without
+changing native plans, canonical bytes, or timed decode behavior.
+
+Confirmed. `TypePlanError` exposes `code` and an immutable tuple `path`; its message is built
+only from those schema components. The lowering context detects an active annotation identity
+before Python recursion grows, so recursive Structs now fail intentionally without
+`RecursionError`. Nested mapping keys, unsupported multi-member unions, array-like Structs,
+inspection failures, unsupported custom types without `dec_hook`, and native compilation faults
+use the same membrane. A supplied `dec_hook` still enables custom types. The executable support
+matrix now marks plan-construction rejections and asserts their exception contract; counts remain
+12 supported, 2 parity rejects, 13 unsupported, 0 silently ignored, and 0 silently wrong.
+
+```text
+gate                                      result
+────                                      ──────
+focused API/matrix tests                  57 passed, 1 free-threaded skip
+make check                                38 Rust + 160 Python passed; 5 expected skips
+official corpus                           538/538, zero failures
+payload safety                            stable messages; sentinel and fault-containment tests pass
+G2                                        zero builtin containers; 129 Structs + 1 final list
+G3                                        pass at 4/8/16/64/512/4096
+G5                                        pass every direction, shape, and size
+efficiency lock                           exact match
+strict OpenSpec                           pass
+isolated phase-7 A/B                      no reproduced slowdown across the full metric family
+```
+
+The ordinary release-guard run still reports the pre-existing functional-encode regressions
+against `v0.4.0` and one keyed-decode@512 regression. Phase 7 cannot reach either timed path, but
+that inference was not used as evidence: two immutable wheels were built from the exact current
+tree, differing only in `__init__.py`, `_plan.py`, and the new exception module. Their full
+same-session comparison reported every functional-decode row and every reusable-decode row at
+no significant difference; the sole initial typed-encode slowdown did not reproduce. Evidence:
+`benches/ab-phase7-baseline-vs-phase7-current.json`.
+
+Changed for the checkpoint: `python/msgspec_toon/_exceptions.py`, `__init__.py`, `_plan.py`,
+`tests/test_type_plan_errors.py`, the executable support matrix, generated report, OpenSpec task
+ledger, and handoff ledgers. No dependency, native code, or canonical byte changed. Next: task
+8.1, one frozen option descriptor model shared by functional and reusable entry points.
+
+#### Checkpoint 25 — one option model and functional `float_hook`
+
+Hypothesis: explicit public signatures can share one frozen option descriptor model for names,
+defaults, domains, implementation state, applicability, and native forwarding without adding
+measurable construction cost.
+
+Confirmed after one pre-measurement correction. Exact msgspec 0.21.1 source keeps explicit C
+signatures and parses finite option domains once per codec construction. This project ports that
+boundary: signatures stay explicit, while frozen Python descriptors drive the parity,
+implementation-state, rejection, and forwarding tests. Dynamic signature generation and a new
+dependency were rejected. The first draft routed every native option through a generic Python
+loop and dictionary. That design put registry bookkeeping on Decoder construction, so it was
+removed before measurement. Rust-owned options retain explicit forwarding and native validation;
+the descriptor model validates only Python-owned deferred values.
+
+Top-level `decode()` now accepts and forwards `float_hook`. Functional and reusable calls invoke
+the hook with the same text and return the same result. Hook errors propagate unchanged.
+`order="sorted"` and `order="deterministic"` raise the same `NotImplementedError` through both
+encoder entry points. The README documents these outcomes and the deferred Decimal and UUID
+formats. No accepted choice can remain inert in the executable descriptor test.
+
+```text
+gate                                      result
+────                                      ──────
+focused option/API tests                  42 passed, 1 free-threaded skip
+make check                                38 Rust + 182 Python passed; 5 expected skips
+official corpus                           538/538, zero failures
+payload safety                            pass
+G2                                        zero builtin containers; 129 Structs + 1 final list
+G3                                        pass at 4/8/16/64/512/4096
+G5                                        pass every direction, shape, and size
+efficiency lock                           exact match
+strict OpenSpec                           pass
+functional encode A/B                     no significant difference at every size
+functional decode A/B                     no reproduced slowdown at every size
+```
+
+The functional encode comparison reported +0.2/+0.8/+0.5/+0.6/+0.1/-0.2 percent at
+4/8/16/64/512/4096 records, all below its 1.2-3.4 percent MDE. Functional decode reported
+-0.7/+1.0/+1.0/+0.6/+0.1/-1.2 percent. The initial +1.0 percent flag at 16 records did not
+reproduce at double power. Evidence:
+`benches/ab-phase7-current-vs-phase8-encode.json` and
+`benches/ab-phase7-current-vs-phase8-current.json`.
+
+Changed: `python/msgspec_toon/_options.py`, `__init__.py`, `tests/test_options.py`, README,
+OpenSpec tasks, and the handoff ledgers. No native code, dependency, or canonical byte changed.
+Next: task 9.1, native scalar encode differentials against msgspec 0.21.1.
 
 ## The guard baseline: enforced, not promised
 
@@ -961,3 +1153,106 @@ make ab-story (vs v0.1.0)   16/16 resolved faster: typed decode -14.3/-17.0/-16.
 Left open, honestly: a possible ~2% typed-encode regression at 4096 against v0.2.0. It
 flagged once, failed to resolve at higher power twice, and is recorded in the ledger as
 unresolved — neither claimed nor dismissed.
+
+#### Checkpoint 26 — msgspec-native scalar encoding without a hot-path regression
+
+Hypothesis: msgspec-native date/time, UUID, Decimal, and Enum values can normalize before the
+caller hook without widening the established Rust value or encoder context.
+
+The first two Rust-native designs were rejected. Extra context state and cold functions moved
+small-payload encode by 7–28 percent. A ninth `Val` variant widened the enum from 24 to 32 bytes
+and slowed entry payloads. The adopted design reuses the existing hook membrane. A private exact
+string subtype carries preformatted scalar text only on the cold path; exact Decimal text never
+passes through `f64`. Default encoders retain `enc_hook=None`. Dynamic shape discovery bypasses
+the fallible native probe for exact built-ins and attempts tabular shape before subclass/native
+scalar fallback.
+
+```text
+gate                                      result
+────                                      ──────
+focused native scalar/options             47 passed
+make check                                39 Rust + 209 Python passed; 5 expected skips
+official corpus                           538/538, zero failures
+G2                                        zero builtin containers; 129 Structs + 1 final list
+G3                                        pass at 4/8/16/64/512/4096
+G5                                        pass every direction, shape, and size
+G4                                        known miss through 512; pass at 4096
+efficiency lock                           exact; beta-2 shared bytes unchanged
+strict OpenSpec                           pass
+same-session encode A/B                   no reproduced slowdown in five focused families
+```
+
+The executable support matrix is now 15 supported, 2 parity rejects, 12 unsupported, 0 silently
+ignored, and 0 silently wrong. Preserved A/B artifacts are
+`benches/ab-phase8-current-vs-phase9-{typed,functional,entry,untyped,wide}.json`. The higher-power
+wide-dict confirmation measured -1.4 percent at 512 and +1.7 percent at 4096, both below MDE.
+Next: task 10.1, bounded recursive annotation graph tests.
+
+#### Checkpoint 27 — bounded recursive annotation graphs
+
+Hypothesis: indexed plan edges can add recursive Struct support without an intermediate value
+tree or a reproducible typed-decode regression.
+
+The Python membrane now compiles annotations by identity with explicit visiting and complete
+states. Its frozen graph uses integer edges. Rust validates those edges once and owns one bounded
+arena. The typed consumer carries node indexes, so self-recursion and mutual recursion do not
+create recursive owners. Unsupported recursive aliases fail as `TypePlanError`; hostile document
+depth still fails with the static `depth_limit` message.
+
+```text
+gate                                      result
+────                                      ──────
+recursive graph tests                     6 passed
+make check                                39 Rust + 215 Python passed; 6 expected skips
+official corpus                           538/538, zero failures
+G2                                        pass; recursive probe: 0 builtin dicts/lists, 3 Structs
+same-session Decoder construction A/B     +2.4%, MDE 3.0%; no significant difference
+same-session typed decode A/B             no reproduced slowdown at 4/512/4096
+```
+
+The executable matrix adds recursive Structs as supported. Next: task 11.1, array-like Struct
+differentials.
+
+#### Checkpoint 28 — array-like Structs and object-form tagged unions
+
+Array-like Structs now use positional frames. Object-form tagged unions use bounded scalar
+preflight and then consume the selected compiled Struct plan directly. Tagged array-like unions
+fail at plan construction. The focused differentials, containment checks, payload-safety checks,
+and G2 proof pass. The first preflight implementation slowed ordinary typed decode by 14-23%; the
+accepted parser entry split reduced that cost to a residual 3-5%, but did not eliminate it.
+
+#### Checkpoint 29 — permissive scalar policy and mapping-key decision
+
+`strict=False` bool, integer, and float conversion is table-driven against msgspec 0.21.1.
+Strict mode remains unchanged. Non-string mapping keys remain an explicit `TypePlanError` for
+`0.2.0b1`; no silently wrong string-key result is possible. The support matrix records both
+decisions. Compile-time strict/permissive specialization and cold outlining were each measured,
+rejected, and fully reverted because neither removed the ordinary typed-decode regression.
+
+#### Checkpoint 30 — native fuzzing
+
+The separate pinned cargo-fuzz workspace has arbitrary-byte parser and structure-aware integer
+round-trip targets. Deterministic corpora contain 420 parser seeds and 4 integer seeds. Sustained
+900-second runs completed 70,600,192 and 96,297,862 executions respectively, with zero crash
+artifacts. The cooldown audit covers both Cargo lockfiles and `uv.lock`.
+
+#### Checkpoint 31 — capability qualification stop
+
+Canonical qualification passes: 39 Rust tests; 259 Python tests with 7 expected skips; 538/538
+official fixtures; 84/84 strict-error fixtures; six G2 probes with zero intermediate builtin
+containers; strict OpenSpec validation; and the package cooldown audit. G3 and every G5 cell pass.
+G4 retains its known miss through 512 records and passes at 4096. The complete release guard
+against `v0.4.0` passes, including typed decode 3.6-6.1% faster and functional encode 7.2-79.5%
+faster.
+
+The closer feature-checkpoint comparison does not pass. Against the immutable phase-8 wheel,
+the final reverted source measured typed decode +2.5% at 4 records (confirmation did not
+reproduce), +1.8% at 16 (MDE 3.7%), +4.8% at 64 (MDE 1.1%, reproduced), +4.8% at 512 (MDE
+1.2%, reproduced), and +3.7% at 4096 (MDE 1.0%, reproduced). Artifact:
+`benches/ab-phase8-current.json`.
+
+Four attempted mechanisms are rejected and absent from source: direct arena references, merged
+Struct frames, compile-time strict specialization, and cold permissive-conversion outlining.
+Tasks 11.5 and 12.4 therefore remain open. Publication authority exists, but the qualification
+stop fires first. Do not tag or publish `0.2.0b1` without a new measured mechanism that closes the
+closer regression, or a separately approved OpenSpec change that explicitly revises this gate.

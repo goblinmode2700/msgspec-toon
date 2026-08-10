@@ -1,0 +1,429 @@
+name: Build, verify, and publish wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the verified artifact set to PyPI
+        required: true
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
+  wheels:
+    name: Build / ${{ matrix.platform.name }} / ${{ matrix.python.label }}
+    needs: validate
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix: &wheel-matrix
+        platform:
+          - name: linux-x86_64
+            runner: ubuntu-22.04
+            target: x86_64
+            python_arch: x64
+            operating_system: linux
+            architecture: x86_64
+            manylinux: "2_17"
+            full_test: true
+          - name: linux-aarch64
+            runner: ubuntu-24.04-arm
+            target: aarch64
+            python_arch: arm64
+            operating_system: linux
+            architecture: aarch64
+            manylinux: "2_17"
+            full_test: false
+          - name: macos-x86_64
+            runner: macos-15-intel
+            target: x86_64
+            python_arch: x64
+            operating_system: macos
+            architecture: x86_64
+            manylinux: off
+            full_test: true
+          - name: macos-aarch64
+            runner: macos-14
+            target: aarch64
+            python_arch: arm64
+            operating_system: macos
+            architecture: aarch64
+            manylinux: off
+            full_test: false
+          - name: windows-x86_64
+            runner: windows-latest
+            target: x64
+            python_arch: x64
+            operating_system: windows
+            architecture: x86_64
+            manylinux: off
+            full_test: true
+          - name: windows-aarch64
+            runner: windows-11-arm
+            target: aarch64
+            python_arch: arm64
+            operating_system: windows
+            architecture: aarch64
+            manylinux: off
+            full_test: false
+        python:
+          - label: abi3
+            abi: cp313-abi3
+            version: "3.13"
+            interpreter: python3.13
+          - label: cp314t
+            abi: cp314t
+            version: "3.14t"
+            interpreter: python3.14t
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python.version }}
+          architecture: ${{ matrix.platform.python_arch }}
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.11.5
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            --locked
+            --compatibility pypi
+            --out dist
+            -i ${{ matrix.python.interpreter }}
+
+      - name: Record build identity
+        shell: bash
+        run: |
+          wheel="$(find dist -name '*.whl' -print -quit)"
+          python scripts/release_artifacts.py manifest \
+            --artifact "$wheel" \
+            --kind wheel \
+            --python-abi "${{ matrix.python.abi }}" \
+            --operating-system "${{ matrix.platform.operating_system }}" \
+            --architecture "${{ matrix.platform.architecture }}" \
+            --revision "$GITHUB_SHA" \
+            --output dist/build-manifest.json
+
+      - name: Upload built wheel
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: built-${{ matrix.platform.name }}-${{ matrix.python.label }}
+          path: dist/
+          if-no-files-found: error
+
+  sdist:
+    name: Build / source distribution
+    needs: validate
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Build source distribution
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          maturin-version: v1.11.5
+          command: sdist
+          args: --out dist
+
+      - name: Record build identity
+        run: |
+          sdist="$(find dist -name '*.tar.gz' -print -quit)"
+          python scripts/release_artifacts.py manifest \
+            --artifact "$sdist" \
+            --kind sdist \
+            --python-abi source \
+            --operating-system source \
+            --architecture source \
+            --revision "$GITHUB_SHA" \
+            --output dist/build-manifest.json
+
+      - name: Upload source distribution
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: built-source-distribution
+          path: dist/
+          if-no-files-found: error
+
+  verify-wheels:
+    name: Verify / ${{ matrix.platform.name }} / ${{ matrix.python.label }}
+    needs: wheels
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix: *wheel-matrix
+    steps:
+      - name: Check out test and verification code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python.version }}
+          architecture: ${{ matrix.platform.python_arch }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Download built wheel
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: built-${{ matrix.platform.name }}-${{ matrix.python.label }}
+          path: built
+
+      - name: Install exact wheel outside the checkout
+        shell: bash
+        run: |
+          wheel="$(find "$GITHUB_WORKSPACE/built" -name '*.whl' -print -quit)"
+          uv pip install --system msgspec==0.21.1
+          uv pip install --system --no-deps "$wheel"
+
+      - name: Verify installed artifact and origin
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          wheel="$(find "$GITHUB_WORKSPACE/built" -name '*.whl' -print -quit)"
+          python -I "$GITHUB_WORKSPACE/scripts/release_artifacts.py" verify \
+            --artifact "$wheel" \
+            --manifest "$GITHUB_WORKSPACE/built/build-manifest.json" \
+            --output "$GITHUB_WORKSPACE/built/artifact.verified.json"
+
+      - name: Install locked test dependencies
+        if: matrix.platform.full_test && matrix.python.label == 'abi3'
+        shell: bash
+        run: |
+          uv export --locked --all-groups --no-emit-project \
+            --output-file "$RUNNER_TEMP/dev-requirements.txt"
+          uv pip install --system --requirements "$RUNNER_TEMP/dev-requirements.txt"
+
+      - name: Run complete installed-wheel Python suite
+        if: matrix.platform.full_test && matrix.python.label == 'abi3'
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: python -I -m pytest "$GITHUB_WORKSPACE/tests"
+
+      - name: Run complete installed-wheel TOON corpus
+        if: matrix.platform.full_test && matrix.python.label == 'abi3'
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: python -I "$GITHUB_WORKSPACE/conformance/run.py"
+
+      - name: Upload verified wheel
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: verified-${{ matrix.platform.name }}-${{ matrix.python.label }}
+          path: built/
+          if-no-files-found: error
+
+  verify-sdist:
+    name: Verify / source distribution
+    needs: sdist
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out verification code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Download source distribution
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: built-source-distribution
+          path: built
+
+      - name: Build and install from the exact sdist
+        working-directory: ${{ runner.temp }}
+        run: |
+          sdist="$(find "$GITHUB_WORKSPACE/built" -name '*.tar.gz' -print -quit)"
+          uv build --wheel --out-dir "$RUNNER_TEMP/sdist-wheel" "$sdist"
+          uv pip install --system msgspec==0.21.1
+          uv pip install --system --no-deps "$RUNNER_TEMP"/sdist-wheel/*.whl
+
+      - name: Verify installed sdist result and origin
+        working-directory: ${{ runner.temp }}
+        run: |
+          sdist="$(find "$GITHUB_WORKSPACE/built" -name '*.tar.gz' -print -quit)"
+          python -I "$GITHUB_WORKSPACE/scripts/release_artifacts.py" verify \
+            --artifact "$sdist" \
+            --manifest "$GITHUB_WORKSPACE/built/build-manifest.json" \
+            --output "$GITHUB_WORKSPACE/built/artifact.verified.json"
+
+      - name: Upload verified source distribution
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: verified-source-distribution
+          path: built/
+          if-no-files-found: error
+
+  collect:
+    name: Collect verified release set
+    needs: [verify-wheels, verify-sdist]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out collector
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Download verified artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: verified-*
+          path: verified
+
+      - name: Verify completeness and collect exact files
+        run: |
+          python scripts/release_artifacts.py collect \
+            --directory verified \
+            --output-directory release/dist \
+            --output-manifest release/verified-release.json
+
+      - name: Upload verified release set
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: verified-release
+          path: release/
+          if-no-files-found: error
+
+  evidence:
+    name: Generate release evidence
+    needs: [collect, validate]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Download verified release set
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: verified-release
+          path: release
+
+      - name: Download canonical qualification evidence
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: qualification-evidence
+          path: qualification
+
+      - name: Install locked benchmark environment and verified wheel
+        run: |
+          uv export --locked --group bench --no-emit-project \
+            --output-file "$RUNNER_TEMP/bench-requirements.txt"
+          uv pip install --system --requirements "$RUNNER_TEMP/bench-requirements.txt"
+          wheel="$(find release/dist -name '*cp313-abi3-manylinux*x86_64.whl' -print -quit)"
+          uv pip install --system --no-deps "$wheel"
+
+      - name: Restore canonical evidence inputs
+        run: |
+          cp qualification/conformance-results.json conformance/conformance-results.json
+          cp qualification/allocation-proof.json conformance/allocation-proof.json
+
+      - name: Generate machine-readable release report
+        env:
+          MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE: "1"
+          MSGSPEC_TOON_VERIFIED_MANIFEST: ${{ github.workspace }}/release/verified-release.json
+          MSGSPEC_TOON_QUALIFICATION_SUMMARY: ${{ github.workspace }}/qualification/summary.json
+        run: python -I scripts/release-report.py
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-evidence
+          path: |
+            conformance/report.json
+            release/verified-release.json
+            qualification/summary.json
+          if-no-files-found: error
+
+  publish:
+    name: Publish verified artifacts to PyPI
+    needs: [collect, evidence]
+    if: >-
+      ${{ startsWith(github.ref, 'refs/tags/v') ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish) }}
+    runs-on: ubuntu-22.04
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download verified release set
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: verified-release
+          path: release
+
+      - name: Publish package distributions with attestations
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: release/dist/
+
+  github-release:
+    name: Attach qualification evidence
+    needs: [publish, evidence]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download release evidence
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: release-evidence
+          path: evidence
+
+      - name: Attach evidence to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          gh release upload "$GITHUB_REF_NAME" \
+            evidence/conformance/report.json \
+            evidence/release/verified-release.json

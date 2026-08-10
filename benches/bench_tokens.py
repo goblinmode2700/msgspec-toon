@@ -1,11 +1,10 @@
 """Token efficiency under named tokenizers — the unit TOON exists for.
 
 Formats: compact JSON, canonical TOON (comma), tab TOON, pipe TOON, and both
-incumbent codecs' output. Payloads: the uniform-record challenge ladder plus
-string-heavy and numeric-heavy variants, so shape-dependence is visible.
+incumbent codecs' output. Payloads cross four shapes with four sizes, so shape
+effects stay visible.
 
-Gates (openspec: distribution-quality, "Token efficiency is measured against
-a named tokenizer"):
+Gates:
   T1 — canonical TOON <= compact JSON tokens on the uniform-record ladder.
   T2 — tab TOON <= comma TOON at every ladder point.
   T3 — every row is published, including losing ones.

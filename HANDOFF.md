@@ -1,10 +1,88 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at v0.4.0. Read **`OBJECTIVE.md`** first — it states what this project is
+_Last updated at the blocked `0.2.0b1` capability checkpoint. Read
+**`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
+
+**STOP: do not tag or publish `0.2.0b1`.** The capability implementation, sustained fuzzing,
+canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
+are complete, but OpenSpec tasks 11.5 and 12.4 remain open. Against the immutable phase-8
+checkpoint, the reverted final source reproduces typed-decode slowdowns at 64 records (+4.8%,
+MDE 1.1%), 512 (+4.8%, MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). At 4 records the initial +2.5%
+flag did not reproduce; at 16 the +1.8% observation was below its 3.7% MDE. The complete
+release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster, but that does not
+erase the closer feature-checkpoint regression required by tasks 11.5 and 12.4.
+
+Three mechanism-led remedies were rejected and reverted: direct references into the plan arena,
+merging array-like and object Struct frames, and compile-time strict/permissive specialization.
+A final cold outlining of permissive scalar conversion also failed to remove the effect and was
+reverted. The accepted default-Encoder cache and parser preflight split repair separate functional
+encode and ordinary parser costs; they do not close this residual typed-decode gap. Continue only
+with a new measured mechanism. Do not retry these four designs. Owner publication authority was
+explicitly granted, but qualification—not authorization—is the active stop.
+
+Current completed evidence: 19 supported, 2 parity rejects, 8 unsupported, zero silent failures;
+538/538 corpus and 84/84 strict errors; 259 Python tests passed with 7 expected skips; 39 Rust
+tests passed; six G2 probes passed with zero intermediate builtin containers; both 900-second fuzz
+targets completed 166.9 million total executions with zero artifacts. `make bench` passes every
+G3 and G5 cell and records the known G4 miss through 512 records, with G4 passing at 4096.
+`make report` generated `conformance/report.json` for `0.2.0b1`. The 12-wheel-plus-sdist workflow
+has not run for this candidate because the closer A/B stop fired first.
+
+The active OpenSpec change remains `qualify-beta-release-and-expand-msgspec-parity`. Tasks 13.5,
+14.1, and 14.2 are complete. Tasks 11.5, 12.4, and 14.3-14.5 remain open. Do not archive it.
+
+## Previous published checkpoint
+
+**`0.1.0b3` is published and release trust is complete.** Public source revision
+`f0546e65b95295f7b27858f7387ee5d73d04f19c` passed the complete publication-disabled
+workflow in [GitHub Actions run 31310610453](https://github.com/goblinmode2700/msgspec-toon/actions/runs/31310610453):
+12 target-native wheels plus one sdist were built once, digest-bound, installed outside
+the checkout, and verified. The generated report records 538/538 conformance, G2, G3,
+and G5; the first evidence attempt passed every G5 cell. Publication and GitHub release
+jobs were skipped. After explicit owner authorization, tag `v0.1.0b3` triggered
+[run 31336808348](https://github.com/goblinmode2700/msgspec-toon/actions/runs/31336808348).
+OIDC publication succeeded for exactly 12 wheels and one sdist. All 13 PyPI digests match
+the tagged manifest, all provenance objects name `goblinmode2700/msgspec-toon`,
+`wheels.yml`, and environment `pypi`, and `pypi-attestations` cryptographically verified
+every file. Clean CPython 3.13 ABI3 and CPython 3.14t installs passed typed round trips.
+
+The final GitHub release-attachment job initially failed because it ran without a checkout
+or explicit repository context. No package upload failed. The exact tagged-run report and
+manifest were attached manually and byte-verified; main commit `7f61585` adds `GH_REPO`
+plus a regression test, and its default validation run passed. The GitHub release is marked
+prerelease. No API-token fallback was used.
+
+The earlier `67171fb` evidence attempt recorded one strict G5 miss: irregular decode at 512 records
+was 477.64 microseconds for msgspec-toon versus 472.82 microseconds for `toons` (1.02%
+slower; msgspec-toon worker spread 2.53%). An independent rerun of only the evidence job,
+against the same revision and verified artifacts, passed every G5 cell; that row measured
+415.91 versus 475.67 microseconds. Both outcomes are part of the handoff. The gate,
+payload selection, and mean-across-ten-workers estimator were not changed. The later
+`f0546e6` qualification passed G5 on its first evidence attempt.
+
+The active OpenSpec change is
+`qualify-beta-release-and-expand-msgspec-parity`. Tasks 1 through 10 are complete. The first
+unblocked item is task 11.1: differential tests for array-like Structs. Phase 10 replaced
+recursive owned plans with an indexed, identity-keyed graph and a bounded native arena.
+Self-recursive and mutually recursive Structs now decode directly, including defaults and
+renamed fields. The recursive allocation proof builds zero intermediate dicts or lists. The
+512-entry annotation cache remains the only bounded owner, and hostile depth still reports the
+static `depth_limit` fault. Same-session A/B found no reproduced typed-decode or cached
+Decoder-construction regression. Phase 7 added public
+`TypePlanError(TypeError)` with stable codes and schema paths; recursive, nested mapping-key,
+unsupported-union, array-like, custom-without-hook, inspection, and native-plan failures no
+longer leak implementation exceptions. Task 2.4 uses harmless command seams to
+prove all 12 qualification boundaries fail closed and a parsed release-job DAG to prove a
+failed validation blocks every downstream job. Capability work starts at task 7 and is
+targeted to `0.2.0b1`. Phase 9 added date/time, UUID, exact Decimal, and Enum encoding
+before the caller hook. The matrix is 15 supported, 2 parity rejects, 12 unsupported, and
+zero silent failures. All beta-2 locked payloads kept their bytes; one new seven-scalar token
+fixture was added. Same-session phase-8 A/B rejected two slower designs before the adopted
+hook membrane cleared all five focused encode families. Do not archive the change.
 
 **A bounded improvement round was explicitly reopened on 2026-08-07. Read
 `OBJECTIVE.md` before planning any work.**
@@ -205,8 +283,11 @@ The old AD-005 blanket prohibition was amended on corpus evidence (see
    `optimize-speed-and-token-efficiency` (23/24) remain open with only
    deferred/time-gated tasks; archive them (`openspec archive`) when their stragglers
    close. Main specs are already synced.
-13. **Wheel matrix + CI** — only local macOS arm64 wheels exist. The canvas §17
-   Phase 6 (abi3 wheels for 5 platforms, syscall checks, CI) is untouched.
+13. **Wheel matrix + CI — qualified for `0.1.0b3`, not published.** The reusable validation
+   workflow and release workflow build and verify 12 wheels (CPython 3.13 abi3 and CPython
+   3.14t across macOS/Linux/Windows on x86_64/arm64) plus one sdist. Run 31298470572
+   verified the exact set target-natively with publication disabled. The remaining release
+   boundary is owner configuration and explicit authorization for Trusted Publishing.
 
 ## Invariants — do not regress these
 

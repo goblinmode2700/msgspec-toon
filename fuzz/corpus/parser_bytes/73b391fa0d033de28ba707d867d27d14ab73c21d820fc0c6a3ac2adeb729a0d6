@@ -1,0 +1,2 @@
+orders[1]{id,customer{name,country}}:
+  1,Ada

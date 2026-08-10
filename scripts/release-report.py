@@ -1,17 +1,19 @@
 """Generate the machine-readable qualification report.
 
-Every release claim is a generated report, never an assertion (openspec:
-distribution-quality): fixture conformance with corpus pinning, the
+Every release claim is a generated report, never an assertion: fixture
+conformance with corpus pinning, the
 allocation proof (G2), same-run speed comparisons (G3/G4/G5 and the
-incumbent pipeline), token efficiency under named tokenizers (T1-T3), and
-the optimization ledger with its frozen-baseline A/B evidence.
+incumbent pipeline), and token efficiency under named tokenizers (T1-T3).
 """
 
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import json
+import os
 import platform
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -21,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 
 import _timing
 import bench_codecs
+import bench_integration
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
@@ -28,6 +31,12 @@ from _timing import methodology
 from bench_typed import run
 from msgspec_toon import _native
 from support_matrix import as_report as support_matrix_report
+
+ROOT = Path(__file__).resolve().parent.parent
+BASELINE_VERSION = os.environ.get("MSGSPEC_TOON_RELEASE_BASELINE", "0.1.0b3")
+REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE") == "1"
+CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
+CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
 
 
 def allocation_proof() -> dict:
@@ -48,36 +57,6 @@ def allocation_proof() -> dict:
             "its timings are not release-representative"
         )
     return proof
-
-
-def ab_results() -> dict:
-    """Publish both A/B comparisons with every block each one measured.
-
-    A single summary number hides the thing a reader most needs: whether the
-    session could resolve the delta at all. Each row carries its minimum
-    detectable effect, and a change smaller than that is published as no
-    significant difference rather than as a small win.
-
-    The two comparisons answer different questions and are kept apart. The
-    story run says what the optimization round bought, measured against the
-    frozen tag. The guard run is the gate, measured against the latest release
-    — a baseline the current build already beats by 15-20% cannot detect a
-    regression, which was verified: a 24% slowdown reads as +2.2% against the
-    story baseline and +24.4% against the guard.
-    """
-    benches = Path(__file__).resolve().parent.parent / "benches"
-    out = {}
-    for role, hint in (
-        ("guard", "make guard && make ab"),
-        ("baseline", "make baseline && make ab-story"),
-    ):
-        path = benches / f"ab-{role}.json"
-        out[role] = (
-            json.loads(path.read_text())
-            if path.exists()
-            else {"status": f"NOT RUN — execute `{hint}` first"}
-        )
-    return out
 
 
 def _efficiency_lock() -> dict:
@@ -131,15 +110,175 @@ def conformance_summary(lock: dict) -> dict:
     }
 
 
+def _source_revision() -> str:
+    revision = os.environ.get("GITHUB_SHA")
+    if revision:
+        return revision
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _external_evidence(variable: str, *, version: str, revision: str) -> dict:
+    value = os.environ.get(variable)
+    if not value:
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(f"missing required release evidence: {variable}")
+        return {"status": f"NOT PROVIDED — set {variable} for release qualification"}
+    path = Path(value)
+    if not path.is_file():
+        raise SystemExit(f"{variable} does not name a file: {path}")
+    evidence = json.loads(path.read_text())
+    if evidence.get("source_revision") != revision:
+        raise SystemExit(
+            f"{variable} revision {evidence.get('source_revision')} does not match {revision}"
+        )
+    evidence_version = evidence.get("version")
+    if evidence_version is not None and evidence_version != version:
+        raise SystemExit(f"{variable} version {evidence_version} does not match {version}")
+    if variable == "MSGSPEC_TOON_VERIFIED_MANIFEST":
+        expected_prefix = f"msgspec_toon-{version}"
+        artifacts = evidence.get("artifacts", [])
+        filenames = [item["filename"] for item in artifacts]
+        if not filenames or any(not name.startswith(expected_prefix) for name in filenames):
+            raise SystemExit(f"{variable} contains a file outside version {version}: {filenames}")
+        if any(item.get("verification", {}).get("status") != "passed" for item in artifacts):
+            raise SystemExit(f"{variable} contains an unverified artifact")
+        if any(
+            item.get("verification", {}).get("distribution_version") != version
+            for item in artifacts
+        ):
+            raise SystemExit(f"{variable} contains installed metadata outside version {version}")
+    return evidence
+
+
+def _wire_hash(value: dict) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def compatibility_delta(current_support: dict, current_lock: dict) -> dict:
+    baseline_path = ROOT / "conformance" / "release-baselines" / f"{BASELINE_VERSION}.json"
+    baseline = json.loads(baseline_path.read_text())
+    previous = baseline["support_matrix"]
+    current = {entry["feature"]: entry["status"] for entry in current_support["entries"]}
+    features = sorted(previous.keys() | current.keys())
+    changes = [
+        {"feature": feature, "before": previous.get(feature), "after": current.get(feature)}
+        for feature in features
+        if previous.get(feature) != current.get(feature)
+    ]
+
+    locked_payloads = current_lock["payloads"]
+    shared_formats = ("json_compact", "toon_comma", "toon_tab", "toon_pipe")
+    wire_changes = []
+    for payload, before_hash in baseline["shared_wire_lock_sha256"].items():
+        if payload not in locked_payloads:
+            wire_changes.append({"payload": payload, "status": "removed"})
+            continue
+        comparable = {
+            name: locked_payloads[payload][name]
+            for name in shared_formats
+            if name in locked_payloads[payload]
+        }
+        after_hash = _wire_hash(comparable)
+        if after_hash != before_hash:
+            wire_changes.append(
+                {
+                    "payload": payload,
+                    "status": "changed",
+                    "before": before_hash,
+                    "after": after_hash,
+                }
+            )
+    return {
+        "baseline_version": BASELINE_VERSION,
+        "support_changes": changes,
+        "new_support": [
+            item
+            for item in changes
+            if item["after"] == "supported" and item["before"] != "supported"
+        ],
+        "removed_support": [
+            item
+            for item in changes
+            if item["before"] == "supported" and item["after"] != "supported"
+        ],
+        "wire_output_changes_for_shared_locked_payloads": wire_changes,
+    }
+
+
+def compatibility_markdown(delta: dict) -> str:
+    baseline = delta["baseline_version"]
+    changes = delta["support_changes"]
+    wire_changes = delta["wire_output_changes_for_shared_locked_payloads"]
+    if not changes and not wire_changes:
+        summary = (
+            f"- Compatibility since `{baseline}`: no support changes and no canonical-wire "
+            "changes for shared locked payloads."
+        )
+    else:
+        summary = (
+            f"- Compatibility since `{baseline}`: {len(delta['new_support'])} newly supported, "
+            f"{len(delta['removed_support'])} removed, {len(changes)} total support-status "
+            f"changes, and {len(wire_changes)} shared canonical-wire changes."
+        )
+    return f"{CHANGELOG_COMPATIBILITY_START}\n{summary}\n{CHANGELOG_COMPATIBILITY_END}"
+
+
+def check_changelog_compatibility(delta: dict) -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text()
+    expected = compatibility_markdown(delta)
+    if expected not in changelog:
+        raise SystemExit(
+            "CHANGELOG.md compatibility block does not match executable release delta; "
+            "regenerate it from compatibility_markdown()"
+        )
+
+
 def main() -> None:
+    if sys.argv[1:] == ["--check-changelog"]:
+        efficiency = _efficiency_lock()
+        delta = compatibility_delta(support_matrix_report(), efficiency)
+        check_changelog_compatibility(delta)
+        print(compatibility_markdown(delta))
+        return
     lock = json.loads(
         (Path(__file__).resolve().parent.parent / "conformance" / "fixtures.lock.json").read_text()
     )
     benchmarks = [run(records) for records in (16, 64, 512, 4096)]
-    codec_benchmarks = [bench_codecs.run(records) for records in bench_codecs.LADDER]
+    codec_benchmarks = [
+        bench_codecs.run(records, shape=shape)
+        for shape in bench_codecs.SHAPES
+        for records in bench_codecs.LADDER
+    ]
+    integration_benchmarks = [
+        bench_integration.run(records, shape=shape)
+        for shape in bench_integration.SHAPES
+        for records in bench_integration.LADDER
+    ]
+    version = importlib.metadata.version("msgspec-toon")
+    revision = _source_revision()
+    support = support_matrix_report()
+    efficiency = _efficiency_lock()
+    verified_artifacts = _external_evidence(
+        "MSGSPEC_TOON_VERIFIED_MANIFEST", version=version, revision=revision
+    )
+    qualification = _external_evidence(
+        "MSGSPEC_TOON_QUALIFICATION_SUMMARY", version=version, revision=revision
+    )
     report = {
         "generated_at": datetime.now(UTC).isoformat(),
-        "distribution": (f"msgspec-toon {importlib.metadata.version('msgspec-toon')}"),
+        "distribution": (f"msgspec-toon {version}"),
+        "package": {
+            "name": "msgspec-toon",
+            "version": version,
+            "source_revision": revision,
+        },
         "environment": {
             "python": sys.version.split()[0],
             "msgspec": msgspec.__version__,
@@ -155,23 +294,21 @@ def main() -> None:
             "warmup": "each worker discards its own first sample; the calibration worker's samples are discarded entirely",
             "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
             "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
-            "minimum_detectable_effect": "published per metric in speed_ab; a change smaller than it is reported as no significant difference, never as a small win",
+            "minimum_detectable_effect": "performance changes use the separate same-session A/B gate; a change smaller than its measured resolution is not claimed as a win",
             "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
             "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py",
         },
         "conformance": conformance_summary(lock),
         "allocation_proof": allocation_proof(),
-        "support_matrix": support_matrix_report(),
+        "canonical_qualification": qualification,
+        "verified_release_artifacts": verified_artifacts,
+        "support_matrix": support,
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
+        "benchmarks_integration_same_run": integration_benchmarks,
         "token_efficiency": bench_tokens.run(),
-        "efficiency_lock": _efficiency_lock(),
-        "speed_ab": ab_results(),
-        "optimization_ledger": json.loads(
-            (
-                Path(__file__).resolve().parent.parent / "benches" / "optimization-ledger.json"
-            ).read_text()
-        ),
+        "efficiency_lock": efficiency,
+        "compatibility_since_previous_release": compatibility_delta(support, efficiency),
         "gates": {
             "G1_conformance": (
                 "perfect corpus: every fixture passes with options applied; "
@@ -202,16 +339,18 @@ def main() -> None:
         },
         "benchmark_caveats": [
             (
-                "Each codec round-trips its own encoded bytes: the incumbents predate "
-                "TOON 4.x and emit the fallback list form (no nested field groups), so "
-                "they parse roughly 2.9x more bytes for the same value. Byte sizes are "
-                "published per row; that difference is the real-world comparison, not "
-                "an unfair one."
+                "Each codec round-trips its own encoded bytes. Output sizes vary by "
+                "payload shape and codec. Each row publishes those byte counts."
             ),
             (
                 "The incumbent pipeline rows (to_builtins + python-toon encode; "
                 "python-toon decode + convert) reproduce a known-inefficient "
                 "composition — a benchmark to beat, not the strongest alternative."
+            ),
+            (
+                "The integration rows start and end as compact JSON. The CLI row "
+                "includes two process launches and therefore describes deployment "
+                "cost, not only codec implementation speed."
             ),
             (
                 "python-toon's latest PyPI release equals the pinned 0.1.3 at "
@@ -221,14 +360,14 @@ def main() -> None:
         ],
         # Generated, never freehand: every type-support gap comes from the
         # matrix that tests/test_support_matrix.py verifies against
-        # msgspec.json, so this list cannot lag the implementation (F-11).
+        # msgspec.json, so this list cannot lag the implementation.
         "known_divergences_and_gaps": [
             (
-                "G4 fails: whole direct encode does not beat msgspec.to_builtins alone "
-                "(2.2x at 16 records, ~10% gap at 4096 after optimizations E1/E2). "
-                "Cause: public stable-ABI attribute reads versus msgspec's private C "
-                "slot reads. This is the canvas risk R-02 outcome, reported rather "
-                "than masked; candidate E3 remains open in the optimization ledger."
+                "The stock msgspec 0.21.1 build uses public attribute access for Struct "
+                "fields. The optional, versioned Struct-access capsule removes the "
+                "slope gap and wins G4 at large payloads, but it is not available in "
+                "an upstream msgspec release. The published wheel keeps the safe stock "
+                "path; `make fastpath-build` activates the measured capsule experiment."
             ),
             (
                 "Non-finite float encoding raises EncodeError (msgspec.json parity); "
@@ -238,7 +377,7 @@ def main() -> None:
             *(
                 f"{gap['status']}: {gap['feature']} (tier {gap['tier']})"
                 + (f" — {gap['detail']}" if gap["detail"] else "")
-                for gap in support_matrix_report()["known_gaps"]
+                for gap in support["known_gaps"]
             ),
         ],
     }

@@ -1,0 +1,7 @@
+items[2]:
+  - id: 1
+    nested:
+      x: 1
+  - id: 2
+    nested:
+      y: 2

@@ -22,15 +22,15 @@ use crate::untyped::UntypedConsumer;
 /// position and runs out, which is what makes its length a type error rather
 /// than a document property.
 enum SequencePlan<'plan> {
-    Uniform(&'plan CompiledPlan),
-    ByPosition(&'plan [CompiledPlan]),
+    Uniform(usize),
+    ByPosition(&'plan [usize]),
 }
 
 impl<'plan> SequencePlan<'plan> {
-    fn at(&self, index: usize) -> Option<&'plan CompiledPlan> {
+    fn at(&self, index: usize) -> Option<usize> {
         match self {
-            Self::Uniform(plan) => Some(plan),
-            Self::ByPosition(plans) => plans.get(index),
+            Self::Uniform(plan) => Some(*plan),
+            Self::ByPosition(plans) => plans.get(index).copied(),
         }
     }
 
@@ -49,6 +49,11 @@ enum Frame<'py, 'plan> {
         awaiting: Option<usize>,
         skip_value: bool,
     },
+    ArrayStruct {
+        plan: &'plan StructPlan,
+        values: Vec<Option<Bound<'py, PyAny>>>,
+        next: usize,
+    },
     List {
         items: Vec<Bound<'py, PyAny>>,
         item: SequencePlan<'plan>,
@@ -58,9 +63,102 @@ enum Frame<'py, 'plan> {
     Dict {
         map: Bound<'py, PyDict>,
         pending: Option<Bound<'py, PyAny>>,
-        value: &'plan CompiledPlan,
+        value: usize,
         constraints: Option<&'plan Constraints>,
     },
+}
+
+fn scalar_text(token: ScalarToken<'_>) -> Option<std::borrow::Cow<'_, [u8]>> {
+    match token {
+        ScalarToken::BareString(bytes) => Some(std::borrow::Cow::Borrowed(bytes)),
+        ScalarToken::Quoted { inner, escaped } => Some(unescape(inner, escaped)),
+        _ => None,
+    }
+}
+
+/// Normalize a JSON-number string to exact integer digits when its value is
+/// integral. This never routes a large integer or exponent through `f64`.
+fn exact_integer_text(text: &[u8]) -> Option<Vec<u8>> {
+    let mut cursor = usize::from(text.first() == Some(&b'-'));
+    let negative = cursor == 1;
+    let integer_start = cursor;
+    if cursor >= text.len() || !text[cursor].is_ascii_digit() {
+        return None;
+    }
+    if text[cursor] == b'0' && text.get(cursor + 1).is_some_and(u8::is_ascii_digit) {
+        return None;
+    }
+    while text.get(cursor).is_some_and(u8::is_ascii_digit) {
+        cursor += 1;
+    }
+    let integer_digits = cursor - integer_start;
+    let mut digits = text[integer_start..cursor].to_vec();
+    if text.get(cursor) == Some(&b'.') {
+        cursor += 1;
+        let fraction_start = cursor;
+        while text.get(cursor).is_some_and(u8::is_ascii_digit) {
+            digits.push(text[cursor]);
+            cursor += 1;
+        }
+        if cursor == fraction_start {
+            return None;
+        }
+    }
+    let mut exponent = 0i32;
+    if matches!(text.get(cursor), Some(b'e' | b'E')) {
+        cursor += 1;
+        let exponent_negative = if text.get(cursor) == Some(&b'-') {
+            cursor += 1;
+            true
+        } else if text.get(cursor) == Some(&b'+') {
+            cursor += 1;
+            false
+        } else {
+            false
+        };
+        let start = cursor;
+        while let Some(byte) = text.get(cursor).filter(|byte| byte.is_ascii_digit()) {
+            exponent = exponent
+                .checked_mul(10)?
+                .checked_add(i32::from(*byte - b'0'))?;
+            cursor += 1;
+        }
+        if cursor == start {
+            return None;
+        }
+        if exponent_negative {
+            exponent = -exponent;
+        }
+    }
+    if cursor != text.len() {
+        return None;
+    }
+    let decimal = i64::try_from(integer_digits).ok()? + i64::from(exponent);
+    if decimal <= 0 {
+        if digits.iter().all(|digit| *digit == b'0') {
+            return Some(b"0".to_vec());
+        }
+        return None;
+    }
+    let decimal = usize::try_from(decimal).ok()?;
+    if decimal < digits.len() {
+        if digits[decimal..].iter().any(|digit| *digit != b'0') {
+            return None;
+        }
+        digits.truncate(decimal);
+    } else if decimal > digits.len() {
+        digits.resize(decimal.min(1_000_000), b'0');
+        if decimal > 1_000_000 {
+            return None;
+        }
+    }
+    while digits.len() > 1 && digits[0] == b'0' {
+        digits.remove(0);
+    }
+    if negative && digits.iter().any(|digit| *digit != b'0') {
+        digits.insert(0, b'-');
+    }
+    Some(digits)
 }
 
 /// Optimization D1: rows of one array repeat an identical key-event
@@ -96,7 +194,7 @@ impl RowMemo {
     }
 }
 
-pub struct TypedConsumer<'py, 'plan> {
+pub struct TypedConsumer<'py, 'plan, const EXTENDED: bool = false> {
     py: Python<'py>,
     root: &'plan CompiledPlan,
     strict: bool,
@@ -114,9 +212,13 @@ pub struct TypedConsumer<'py, 'plan> {
     arguments_scratch: Vec<Bound<'py, PyAny>>,
     /// One memo per open array frame, scoped like the frame stack.
     row_memos: Vec<RowMemo>,
+    /// Variant selected by bounded parser lookahead for the next object.
+    pending_object_plan: Option<usize>,
+    pending_invalid_tag: bool,
+    has_tagged_plans: bool,
 }
 
-impl<'py, 'plan> TypedConsumer<'py, 'plan> {
+impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
     pub fn new(
         py: Python<'py>,
         root: &'plan CompiledPlan,
@@ -124,6 +226,12 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
         dec_hook: Option<Py<PyAny>>,
         float_hook: Option<Py<PyAny>>,
     ) -> Self {
+        let has_tagged_plans = EXTENDED
+            && root.nodes.iter().any(|node| match &node.kind {
+                PlanKind::Struct(plan) => plan.tag_field.is_some(),
+                PlanKind::Union(union) => union.members.len() > 1,
+                _ => false,
+            });
         Self {
             py,
             root,
@@ -139,6 +247,9 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             values_pool: Vec::new(),
             arguments_scratch: Vec::new(),
             row_memos: Vec::new(),
+            pending_object_plan: None,
+            pending_invalid_tag: false,
+            has_tagged_plans,
         }
     }
 
@@ -151,24 +262,27 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
         Fault::syntax_at(FaultCode::Internal, at)
     }
 
-    fn expected_plan(&self) -> Option<&'plan CompiledPlan> {
+    fn expected_plan(&self) -> Option<usize> {
         match self.stack.last() {
             Some(Frame::Struct {
                 plan,
                 awaiting: Some(index),
                 ..
-            }) => Some(&plan.fields[*index].value),
+            }) => Some(plan.fields[*index].value),
             Some(Frame::Struct { .. }) => None,
+            Some(Frame::ArrayStruct { plan, next, .. }) => {
+                plan.fields.get(*next).map(|field| field.value)
+            }
             Some(Frame::List { items, item, .. }) => item.at(items.len()),
-            Some(Frame::Dict { value, .. }) => Some(value),
-            None => Some(self.root),
+            Some(Frame::Dict { value, .. }) => Some(*value),
+            None => Some(self.root.root),
         }
     }
 
     /// The plan for the next value, or the fault that explains its absence.
     /// A saturated fixed tuple has no plan for another element — that is a
     /// length violation the caller should see, not an internal inconsistency.
-    fn expected_plan_or_fault(&self, at: Position) -> Result<&'plan CompiledPlan, Fault> {
+    fn expected_plan_or_fault(&self, at: Position) -> Result<usize, Fault> {
         if let Some(plan) = self.expected_plan() {
             return Ok(plan);
         }
@@ -192,6 +306,10 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                     .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
                 values[index] = Some(value);
             }
+            Some(Frame::ArrayStruct { values, next, .. }) => {
+                values[*next] = Some(value);
+                *next += 1;
+            }
             Some(Frame::List { items, .. }) => items.push(value),
             Some(Frame::Dict { map, pending, .. }) => {
                 let key = pending
@@ -208,12 +326,12 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     fn convert_scalar(
         &mut self,
-        plan: &'plan CompiledPlan,
+        plan: usize,
         token: ScalarToken<'_>,
         at: Position,
     ) -> Result<Bound<'py, PyAny>, Fault> {
         let py = self.py;
-        match &plan.kind {
+        match &self.root.node(plan).kind {
             PlanKind::Any => {
                 let converted = scalar_to_py(py, token, self.float_hook.as_ref());
                 converted.map_err(|err| self.internal(err, at))
@@ -224,6 +342,21 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
             },
             PlanKind::Bool => match token {
                 ScalarToken::Bool(value) => Ok(PyBool::new(py, value).to_owned().into_any()),
+                ScalarToken::Integer(b"0") if !self.strict => {
+                    Ok(PyBool::new(py, false).to_owned().into_any())
+                }
+                ScalarToken::Integer(b"1") if !self.strict => {
+                    Ok(PyBool::new(py, true).to_owned().into_any())
+                }
+                _ if !self.strict => match scalar_text(token).as_deref() {
+                    Some(b"true" | b"True" | b"TRUE" | b"1") => {
+                        Ok(PyBool::new(py, true).to_owned().into_any())
+                    }
+                    Some(b"false" | b"False" | b"FALSE" | b"0" | b"-0") => {
+                        Ok(PyBool::new(py, false).to_owned().into_any())
+                    }
+                    _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
+                },
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
             },
             PlanKind::Int => match token {
@@ -232,12 +365,48 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                         int_from_digits(py, digits).map_err(|err| self.internal(err, at))?;
                     self.validate_scalar(plan, value, at)
                 }
+                _ if !self.strict => {
+                    let Some(text) = scalar_text(token) else {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    };
+                    if text.iter().any(|byte| matches!(byte, b'.' | b'e' | b'E')) {
+                        let value = float_from_digits(py, &text, None)
+                            .map_err(|_| Fault::validation_at(FaultCode::TypeMismatch, at))?;
+                        let number = value
+                            .extract::<f64>()
+                            .map_err(|err| self.internal(err, at))?;
+                        if !number.is_finite()
+                            || number.fract() != 0.0
+                            || number.abs() > 9_007_199_254_740_992.0
+                        {
+                            return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                        }
+                        let integer = value
+                            .call_method0("__int__")
+                            .map_err(|err| self.internal(err, at))?;
+                        return self.validate_scalar(plan, integer, at);
+                    }
+                    let Some(digits) = exact_integer_text(&text) else {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    };
+                    let value =
+                        int_from_digits(py, &digits).map_err(|err| self.internal(err, at))?;
+                    self.validate_scalar(plan, value, at)
+                }
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
             },
             PlanKind::Float => match token {
                 ScalarToken::Integer(digits) | ScalarToken::Float(digits) => {
                     let value = float_from_digits(py, digits, self.float_hook.as_ref())
                         .map_err(|err| self.internal(err, at))?;
+                    self.validate_scalar(plan, value, at)
+                }
+                _ if !self.strict => {
+                    let Some(text) = scalar_text(token) else {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    };
+                    let value = float_from_digits(py, &text, self.float_hook.as_ref())
+                        .map_err(|_| Fault::validation_at(FaultCode::TypeMismatch, at))?;
                     self.validate_scalar(plan, value, at)
                 }
                 _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
@@ -261,7 +430,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                         Err(Fault::validation_at(FaultCode::TypeMismatch, at))
                     };
                 }
-                for member in &union.members {
+                for &member in &union.members {
                     match self.convert_scalar(member, token, at) {
                         Ok(value) => return Ok(value),
                         Err(fault) if fault.code == FaultCode::TypeMismatch => continue,
@@ -281,7 +450,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
                     // Category before equality. Python's `True == 1` is true and
                     // `bool` subclasses `int`, so equality alone lets a boolean
                     // satisfy `Literal[1]` — which msgspec rejects with
-                    // "Expected `int`, got `bool`" (review F-07). Comparing the
+                    // "Expected `int`, got `bool`". Comparing the
                     // exact types first restores that boundary; msgspec permits
                     // only None, int, and str in a Literal, so there is no
                     // widening case this rejects wrongly.
@@ -320,11 +489,11 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
 
     fn validate_scalar(
         &mut self,
-        plan: &'plan CompiledPlan,
+        plan: usize,
         value: Bound<'py, PyAny>,
         at: Position,
     ) -> Result<Bound<'py, PyAny>, Fault> {
-        let Some(constraints) = &plan.constraints else {
+        let Some(constraints) = &self.root.node(plan).constraints else {
             return Ok(value);
         };
         match constraints.scalar_valid(&value) {
@@ -382,7 +551,7 @@ impl<'py, 'plan> TypedConsumer<'py, 'plan> {
         // A kw_only class rejects positional arguments, so its plan carries the
         // field names and every value goes in the keyword half of the call: zero
         // positional, one names tuple built once at plan-compile time. Ordinary
-        // classes keep the positional path with a null kwnames (review F-09).
+        // classes keep the positional path with a null kwnames.
         let (positional_count, keyword_names) = match &plan.keyword_names {
             Some(names) => (0, names.as_ptr()),
             None => (pointers.len(), std::ptr::null_mut()),
@@ -502,7 +671,81 @@ enum AnyEvent<'a> {
     Scalar(ScalarToken<'a>),
 }
 
-impl Consumer for TypedConsumer<'_, '_> {
+impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
+    fn needs_object_preflight(&self) -> bool {
+        if !EXTENDED || !self.has_tagged_plans {
+            return false;
+        }
+        let Some(index) = self.expected_plan() else {
+            return false;
+        };
+        match &self.root.node(index).kind {
+            PlanKind::Struct(plan) => plan.tag_field.is_some(),
+            PlanKind::Union(union) => union.members.len() > 1,
+            _ => false,
+        }
+    }
+
+    fn object_scalar_hint(
+        &mut self,
+        key: StringToken<'_>,
+        value: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let Some(declared) = self.expected_plan() else {
+            return Ok(());
+        };
+        let key = match key {
+            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+            StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
+        };
+        let members: smallvec::SmallVec<[usize; 4]> = match &self.root.node(declared).kind {
+            PlanKind::Struct(plan) if plan.tag_field.as_deref() == Some(key.as_ref()) => {
+                smallvec::smallvec![declared]
+            }
+            PlanKind::Union(union) if union.members.len() > 1 => union
+                .members
+                .iter()
+                .copied()
+                .filter(|&member| {
+                    matches!(
+                        &self.root.node(member).kind,
+                        PlanKind::Struct(plan)
+                            if plan.tag_field.as_deref() == Some(key.as_ref())
+                    )
+                })
+                .collect(),
+            _ => return Ok(()),
+        };
+        if members.is_empty() {
+            return Ok(());
+        }
+        let converted = scalar_to_py(self.py, value, self.float_hook.as_ref())
+            .map_err(|err| self.internal(err, at))?;
+        for member in members {
+            let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                continue;
+            };
+            if plan.tag_field.as_deref() != Some(key.as_ref()) {
+                continue;
+            }
+            let Some(tag) = &plan.tag_value else {
+                continue;
+            };
+            match converted.eq(tag.bind(self.py)) {
+                Ok(true) => {
+                    self.pending_object_plan = Some(member);
+                    self.pending_invalid_tag = false;
+                    return Ok(());
+                }
+                Ok(false) => {}
+                Err(err) => return Err(self.internal(err, at)),
+            }
+        }
+        self.pending_invalid_tag = true;
+        Ok(())
+    }
+
     fn begin_tabular(&mut self, _leaf_count: usize, _at: Position) -> Result<(), Fault> {
         // Inside an `Any` subtree or a skipped value the announcement is not
         // about a frame this consumer owns; the sub-consumer resolves keys by
@@ -536,9 +779,20 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.skip_depth = 1;
             return Ok(());
         }
-        let expected = self.expected_plan_or_fault(at)?.resolve_container();
-        match &expected.kind {
-            PlanKind::Struct(plan) => {
+        if EXTENDED && std::mem::take(&mut self.pending_invalid_tag) {
+            return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+        }
+        let declared = self.expected_plan_or_fault(at)?;
+        let expected = match &self.root.node(declared).kind {
+            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => self
+                .pending_object_plan
+                .take()
+                .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
+            _ => self.root.resolve_container(declared),
+        };
+        let expected_node = self.root.node(expected);
+        match &expected_node.kind {
+            PlanKind::Struct(plan) if !plan.array_like => {
                 // A struct opening directly under an array frame starts a
                 // new row: rewind the array's key memo for replay.
                 if matches!(self.stack.last(), Some(Frame::List { .. }))
@@ -562,8 +816,8 @@ impl Consumer for TypedConsumer<'_, '_> {
                 self.stack.push(Frame::Dict {
                     map: new_final_dict(self.py),
                     pending: None,
-                    value,
-                    constraints: expected.constraints.as_deref(),
+                    value: *value,
+                    constraints: expected_node.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -647,6 +901,10 @@ impl Consumer for TypedConsumer<'_, '_> {
                     }
                 };
                 match looked_up {
+                    Some(index) if EXTENDED && index == usize::MAX => {
+                        *skip_value = true;
+                        Ok(())
+                    }
                     Some(index) => {
                         if values[index].is_some() && self.strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
@@ -703,6 +961,7 @@ impl Consumer for TypedConsumer<'_, '_> {
                 }
                 self.place(value, at)
             }
+            Some(Frame::ArrayStruct { .. }) => Err(Fault::syntax_at(FaultCode::Internal, at)),
             Some(Frame::Dict {
                 map, constraints, ..
             }) => {
@@ -727,27 +986,50 @@ impl Consumer for TypedConsumer<'_, '_> {
             self.skip_depth = 1;
             return Ok(());
         }
-        let expected = self.expected_plan_or_fault(at)?.resolve_container();
-        match &expected.kind {
+        let expected = self
+            .root
+            .resolve_container(self.expected_plan_or_fault(at)?);
+        let expected_node = self.root.node(expected);
+        match &expected_node.kind {
             PlanKind::List(item) => {
-                let item = SequencePlan::Uniform(item);
-                self.row_memos.push(RowMemo::for_sequence(&item));
+                let item_index = *item;
+                let item = SequencePlan::Uniform(item_index);
+                let mut memo = RowMemo::for_sequence(&item);
+                if EXTENDED
+                    && matches!(
+                        &self.root.node(item_index).kind,
+                        PlanKind::Union(union) if union.members.len() > 1
+                    )
+                {
+                    memo.disabled = true;
+                }
+                self.row_memos.push(memo);
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: false,
-                    constraints: expected.constraints.as_deref(),
+                    constraints: expected_node.constraints.as_deref(),
                 });
                 Ok(())
             }
             PlanKind::TupleVar(item) => {
-                let item = SequencePlan::Uniform(item);
-                self.row_memos.push(RowMemo::for_sequence(&item));
+                let item_index = *item;
+                let item = SequencePlan::Uniform(item_index);
+                let mut memo = RowMemo::for_sequence(&item);
+                if EXTENDED
+                    && matches!(
+                        &self.root.node(item_index).kind,
+                        PlanKind::Union(union) if union.members.len() > 1
+                    )
+                {
+                    memo.disabled = true;
+                }
+                self.row_memos.push(memo);
                 self.stack.push(Frame::List {
                     items: Vec::with_capacity(reserve_elements(declared_len)),
                     item,
                     as_tuple: true,
-                    constraints: expected.constraints.as_deref(),
+                    constraints: expected_node.constraints.as_deref(),
                 });
                 Ok(())
             }
@@ -760,7 +1042,18 @@ impl Consumer for TypedConsumer<'_, '_> {
                     items: Vec::with_capacity(plans.len()),
                     item,
                     as_tuple: true,
-                    constraints: expected.constraints.as_deref(),
+                    constraints: expected_node.constraints.as_deref(),
+                });
+                Ok(())
+            }
+            PlanKind::Struct(plan) if plan.array_like => {
+                let mut values = self.values_pool.pop().unwrap_or_default();
+                values.clear();
+                values.resize(plan.fields.len(), None);
+                self.stack.push(Frame::ArrayStruct {
+                    plan,
+                    values,
+                    next: 0,
                 });
                 Ok(())
             }
@@ -811,6 +1104,10 @@ impl Consumer for TypedConsumer<'_, '_> {
                         Err(err) => return Err(self.internal(err, at)),
                     }
                 };
+                self.place(value, at)
+            }
+            Some(Frame::ArrayStruct { plan, values, .. }) => {
+                let value = self.finish_struct(plan, values, at)?;
                 self.place(value, at)
             }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),

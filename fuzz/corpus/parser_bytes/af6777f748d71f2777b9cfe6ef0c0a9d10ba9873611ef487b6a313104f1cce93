@@ -1,0 +1,3 @@
+servers[2:|]{host|port}:
+  alpha: a|8080
+  beta: b|9090

@@ -1,0 +1,6 @@
+envs:
+  dev:
+    host: x
+  prod:
+    host: y
+    port: 1

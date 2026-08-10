@@ -1,0 +1,3 @@
+servers[2:]{host,port}:
+  alpha: a.example.com,8080
+  beta: b.example.com,9090

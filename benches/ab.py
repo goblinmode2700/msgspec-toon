@@ -91,6 +91,13 @@ T_CRITICAL_LARGE = 1.960
 #: differ for half of these, and deriving it produced blocks that measured
 #: nothing and reported a mean of zero.
 METRICS = (
+    (
+        "bench_typed",
+        "plan_us",
+        "decoder_construction_cached",
+        "decode.decoder_construction",
+        "decoder construction",
+    ),
     ("bench_typed", "decode_us", "typed_direct", "decode.typed_direct", "typed decode"),
     ("bench_typed", "decode_us", "functional", "decode.functional", "functional decode"),
     ("bench_typed", "encode_us", "typed_direct_whole", "encode.typed_direct", "typed encode"),

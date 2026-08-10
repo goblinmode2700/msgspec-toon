@@ -1,9 +1,25 @@
 [package]
 name = "msgspec-toon-native"
-version = "0.4.0"
+version = "0.2.0-beta.1"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
+description = "Native TOON 4.1 codec for msgspec"
+repository = "https://github.com/goblinmode2700/msgspec-toon"
+homepage = "https://github.com/goblinmode2700/msgspec-toon"
+documentation = "https://github.com/goblinmode2700/msgspec-toon#readme"
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/LICENSE",
+    "/README.md",
+    "/pyproject.toml",
+    "/python/**",
+    "!/python/**/*.so",
+    "!/python/**/__pycache__/**",
+    "!/python/**/*.pyc",
+    "/src/**",
+]
 
 [lib]
 name = "_native"

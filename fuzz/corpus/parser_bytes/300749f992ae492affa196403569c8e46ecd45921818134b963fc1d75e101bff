@@ -1,0 +1,2 @@
+shipments[1]{id,sender{name,city},receiver{name,city}}:
+  s1,ACME,Berlin,Globex,Oslo

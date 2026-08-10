@@ -28,6 +28,26 @@ pub fn parse<C: Consumer>(
     indent_size: usize,
     consumer: &mut C,
 ) -> Result<(), Fault> {
+    parse_inner::<C, false>(input, strict, indent_size, consumer)
+}
+
+#[cold]
+#[inline(never)]
+pub fn parse_with_object_preflight<C: Consumer>(
+    input: &[u8],
+    strict: bool,
+    indent_size: usize,
+    consumer: &mut C,
+) -> Result<(), Fault> {
+    parse_inner::<C, true>(input, strict, indent_size, consumer)
+}
+
+fn parse_inner<C: Consumer, const PREFLIGHT: bool>(
+    input: &[u8],
+    strict: bool,
+    indent_size: usize,
+    consumer: &mut C,
+) -> Result<(), Fault> {
     if std::str::from_utf8(input).is_err() {
         return Err(Fault::syntax(FaultCode::InvalidUtf8, 1, None));
     }
@@ -55,14 +75,18 @@ pub fn parse<C: Consumer>(
     match parse_header(first.content, &marks, strict, at)? {
         HeaderOutcome::Header(header) if header.key.is_none() => {
             lines.advance()?;
-            parse_array_or_keyed_body(&mut lines, &header, 0, at, strict, consumer)?;
+            parse_array_or_keyed_body::<C, PREFLIGHT>(
+                &mut lines, &header, 0, at, strict, consumer,
+            )?;
             expect_end(&mut lines)
         }
-        HeaderOutcome::Header(_) => parse_root_object(&mut lines, strict, consumer, at),
+        HeaderOutcome::Header(_) => {
+            parse_root_object::<C, PREFLIGHT>(&mut lines, strict, consumer, at)
+        }
         HeaderOutcome::Malformed(code) if strict => Err(Fault::syntax_at(code, at)),
         HeaderOutcome::Malformed(_) | HeaderOutcome::NotHeader => {
             if entry_colon(first.content, resolved_colon(first.content, &marks)).is_some() {
-                parse_root_object(&mut lines, strict, consumer, at)
+                parse_root_object::<C, PREFLIGHT>(&mut lines, strict, consumer, at)
             } else {
                 lines.advance()?;
                 consumer.scalar(classify_value(first.content, at)?, at)?;
@@ -72,15 +96,66 @@ pub fn parse<C: Consumer>(
     }
 }
 
-fn parse_root_object<C: Consumer>(
+fn parse_root_object<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     strict: bool,
     consumer: &mut C,
     at: Position,
 ) -> Result<(), Fault> {
+    if PREFLIGHT && consumer.needs_object_preflight() {
+        preflight_object_body(&mut lines.clone(), 0, None, strict, consumer)?;
+    }
     consumer.start_object(at)?;
-    parse_object_body(lines, 0, None, strict, consumer)?;
+    parse_object_body::<C, PREFLIGHT>(lines, 0, None, strict, consumer)?;
     consumer.end_object(at)?;
+    Ok(())
+}
+
+fn hint_entry<C: Consumer>(
+    content: &[u8],
+    at: Position,
+    strict: bool,
+    consumer: &mut C,
+) -> Result<(), Fault> {
+    let marks = scan_line_marks(content);
+    if matches!(
+        parse_header(content, &marks, strict, at)?,
+        HeaderOutcome::Header(_)
+    ) {
+        return Ok(());
+    }
+    let Some(colon) = entry_colon(content, resolved_colon(content, &marks)) else {
+        return Ok(());
+    };
+    let rest = &content[colon + 1..];
+    if rest.len() <= 1 || rest == b" []" {
+        return Ok(());
+    }
+    let key = parse_string_token(trim_spaces(&content[..colon]), at)?;
+    let value_at = Position {
+        line: at.line,
+        column: at.column + colon as u32 + 2,
+    };
+    consumer.object_scalar_hint(key, classify_value(&rest[1..], value_at)?, value_at)
+}
+
+fn preflight_object_body<C: Consumer>(
+    lines: &mut Lines<'_>,
+    depth: usize,
+    first: Option<(&[u8], Position)>,
+    strict: bool,
+    consumer: &mut C,
+) -> Result<(), Fault> {
+    if let Some((content, at)) = first {
+        hint_entry(content, at, strict, consumer)?;
+    }
+    while let Some(line) = lines.peek()? {
+        if line.depth != depth {
+            break;
+        }
+        lines.advance()?;
+        hint_entry(line.content, line.position, strict, consumer)?;
+    }
     Ok(())
 }
 
@@ -126,7 +201,7 @@ fn token_owned_bytes(token: &StringToken<'_>) -> Vec<u8> {
     }
 }
 
-fn parse_object_body<C: Consumer>(
+fn parse_object_body<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     depth: usize,
     first: Option<(&[u8], Position)>,
@@ -137,7 +212,7 @@ fn parse_object_body<C: Consumer>(
 
     if let Some((content, at)) = first {
         let marks = scan_line_marks(content);
-        parse_entry(
+        parse_entry::<C, PREFLIGHT>(
             content, &marks, at, lines, depth, strict, consumer, &mut seen,
         )?;
     }
@@ -153,7 +228,7 @@ fn parse_object_body<C: Consumer>(
         }
         lines.advance()?;
         let marks = scan_line_marks(line.content);
-        parse_entry(
+        parse_entry::<C, PREFLIGHT>(
             line.content,
             &marks,
             line.position,
@@ -167,7 +242,7 @@ fn parse_object_body<C: Consumer>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn parse_entry<C: Consumer>(
+fn parse_entry<C: Consumer, const PREFLIGHT: bool>(
     content: &[u8],
     marks: &LineMarks,
     at: Position,
@@ -184,7 +259,9 @@ fn parse_entry<C: Consumer>(
                 .ok_or(Fault::syntax_at(FaultCode::ExpectedKey, at))?;
             note_key(&key, at, strict, seen)?;
             consumer.key(key, at)?;
-            return parse_array_or_keyed_body(lines, &header, depth, at, strict, consumer);
+            return parse_array_or_keyed_body::<C, PREFLIGHT>(
+                lines, &header, depth, at, strict, consumer,
+            );
         }
         HeaderOutcome::Malformed(code) if strict => {
             return Err(Fault::syntax_at(code, at));
@@ -210,9 +287,12 @@ fn parse_entry<C: Consumer>(
             }
             _ => false,
         };
+        if PREFLIGHT && nested && consumer.needs_object_preflight() {
+            preflight_object_body(&mut lines.clone(), depth + 1, None, strict, consumer)?;
+        }
         consumer.start_object(at)?;
         if nested {
-            parse_object_body(lines, depth + 1, None, strict, consumer)?;
+            parse_object_body::<C, PREFLIGHT>(lines, depth + 1, None, strict, consumer)?;
         }
         consumer.end_object(at)?;
         return Ok(());
@@ -281,7 +361,7 @@ fn next_body_line<'a>(
     }
 }
 
-fn parse_array_or_keyed_body<C: Consumer>(
+fn parse_array_or_keyed_body<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     header: &Header<'_>,
     depth: usize,
@@ -290,9 +370,9 @@ fn parse_array_or_keyed_body<C: Consumer>(
     consumer: &mut C,
 ) -> Result<(), Fault> {
     if header.keyed {
-        return parse_keyed_body(lines, header, depth, at, strict, consumer);
+        return parse_keyed_body::<C, PREFLIGHT>(lines, header, depth, at, strict, consumer);
     }
-    parse_array_body(lines, header, depth, at, strict, consumer)
+    parse_array_body::<C, PREFLIGHT>(lines, header, depth, at, strict, consumer)
 }
 
 /// Row-count loop shared by tabular, keyed, and list bodies: strict reads
@@ -328,7 +408,7 @@ fn reject_extra_rows(lines: &mut Lines<'_>, depth: usize) -> Result<(), Fault> {
     Ok(())
 }
 
-fn parse_array_body<C: Consumer>(
+fn parse_array_body<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     header: &Header<'_>,
     depth: usize,
@@ -347,6 +427,9 @@ fn parse_array_body<C: Consumer>(
             if cells.len() != leaf_count {
                 return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
             }
+            if PREFLIGHT && consumer.needs_object_preflight() {
+                hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+            }
             consumer.start_object(row.position)?;
             let mut cursor = 0usize;
             emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
@@ -362,7 +445,14 @@ fn parse_array_body<C: Consumer>(
         }
     } else {
         body_rows(lines, depth, strict, header.declared_len, |lines, item| {
-            parse_list_item(item.content, item.position, lines, depth, strict, consumer)
+            parse_list_item::<C, PREFLIGHT>(
+                item.content,
+                item.position,
+                lines,
+                depth,
+                strict,
+                consumer,
+            )
         })?;
     }
 
@@ -372,7 +462,7 @@ fn parse_array_body<C: Consumer>(
 
 /// A keyed tabular body: `key[N:]{fields}:` rows are `rowkey: cells` and the
 /// construct denotes an object of field-group objects.
-fn parse_keyed_body<C: Consumer>(
+fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     header: &Header<'_>,
     depth: usize,
@@ -404,12 +494,33 @@ fn parse_keyed_body<C: Consumer>(
             return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
         }
         consumer.key(row_key, row.position)?;
+        if PREFLIGHT && consumer.needs_object_preflight() {
+            hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+        }
         consumer.start_object(row.position)?;
         let mut cursor = 0usize;
         emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
         consumer.end_object(row.position)
     })?;
     consumer.end_object(at)?;
+    Ok(())
+}
+
+fn hint_row_fields<C: Consumer>(
+    fields: &[FieldNode<'_>],
+    cells: &[&[u8]],
+    at: Position,
+    consumer: &mut C,
+) -> Result<(), Fault> {
+    let mut cursor = 0usize;
+    for node in fields {
+        if node.children.is_empty() {
+            consumer.object_scalar_hint(node.name, classify_value(cells[cursor], at)?, at)?;
+            cursor += 1;
+        } else {
+            cursor += node.leaf_count();
+        }
+    }
     Ok(())
 }
 
@@ -434,7 +545,7 @@ fn emit_row_fields<C: Consumer>(
     Ok(())
 }
 
-fn parse_list_item<C: Consumer>(
+fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
     content: &[u8],
     at: Position,
     lines: &mut Lines<'_>,
@@ -469,19 +580,36 @@ fn parse_list_item<C: Consumer>(
             if !header.fields.is_empty() || header.keyed {
                 return Err(Fault::syntax_at(FaultCode::MalformedHeader, item_at));
             }
-            return parse_array_body(lines, &header, depth + 1, item_at, strict, consumer);
+            return parse_array_body::<C, PREFLIGHT>(
+                lines,
+                &header,
+                depth + 1,
+                item_at,
+                strict,
+                consumer,
+            );
         }
         HeaderOutcome::Header(header) => {
             // An object item whose first entry is an array; the item's fields
             // sit two levels below the list base, so the array body's rows
             // sit at depth + 3.
+            if PREFLIGHT && consumer.needs_object_preflight() {
+                preflight_object_body(&mut lines.clone(), depth + 2, None, strict, consumer)?;
+            }
             consumer.start_object(item_at)?;
             let key = header.key.as_ref().expect("checked above");
             let mut seen = FxHashSet::default();
             seen.insert(token_owned_bytes(key));
             consumer.key(*key, item_at)?;
-            parse_array_or_keyed_body(lines, &header, depth + 2, item_at, strict, consumer)?;
-            continue_object_item(lines, depth, strict, consumer, &mut seen)?;
+            parse_array_or_keyed_body::<C, PREFLIGHT>(
+                lines,
+                &header,
+                depth + 2,
+                item_at,
+                strict,
+                consumer,
+            )?;
+            continue_object_item::<C, PREFLIGHT>(lines, depth, strict, consumer, &mut seen)?;
             consumer.end_object(item_at)?;
             return Ok(());
         }
@@ -494,9 +622,18 @@ fn parse_list_item<C: Consumer>(
     if entry_colon(item, resolved_colon(item, &marks)).is_some() {
         // An object item: first key/value on the dash line, the rest two
         // levels deeper (the `- ` prefix occupies one indent unit).
+        if PREFLIGHT && consumer.needs_object_preflight() {
+            preflight_object_body(
+                &mut lines.clone(),
+                depth + 2,
+                Some((item, item_at)),
+                strict,
+                consumer,
+            )?;
+        }
         consumer.start_object(item_at)?;
         let mut seen = FxHashSet::default();
-        parse_entry(
+        parse_entry::<C, PREFLIGHT>(
             item,
             &marks,
             item_at,
@@ -506,7 +643,7 @@ fn parse_list_item<C: Consumer>(
             consumer,
             &mut seen,
         )?;
-        continue_object_item(lines, depth, strict, consumer, &mut seen)?;
+        continue_object_item::<C, PREFLIGHT>(lines, depth, strict, consumer, &mut seen)?;
         consumer.end_object(item_at)?;
         return Ok(());
     }
@@ -515,7 +652,7 @@ fn parse_list_item<C: Consumer>(
     Ok(())
 }
 
-fn continue_object_item<C: Consumer>(
+fn continue_object_item<C: Consumer, const PREFLIGHT: bool>(
     lines: &mut Lines<'_>,
     depth: usize,
     strict: bool,
@@ -534,7 +671,7 @@ fn continue_object_item<C: Consumer>(
         }
         lines.advance()?;
         let marks = scan_line_marks(line.content);
-        parse_entry(
+        parse_entry::<C, PREFLIGHT>(
             line.content,
             &marks,
             line.position,

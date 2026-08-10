@@ -103,4 +103,9 @@ def across_workers(
     calibration = _run_probe(module, function, args, loops=None)
     loops = calibration["loops"]
     measured = [_run_probe(module, function, args, loops)["result"] for _ in range(workers)]
-    return _merge(measured), _dispersion(measured)
+    merged = _merge(measured)
+    if isinstance(merged, dict):
+        # Retain each worker mean. Publication plots use these direct times to
+        # calculate confidence intervals around the arithmetic mean.
+        merged["worker_observations"] = measured
+    return merged, _dispersion(measured)

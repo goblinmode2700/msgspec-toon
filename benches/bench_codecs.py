@@ -1,10 +1,7 @@
 """Raw codec comparison: msgspec_toon vs the incumbent TOON codecs.
 
-Rows per ladder size, both directions, same run. Each codec round-trips its
-own encoded bytes — the incumbents predate TOON 4.x and emit the fallback
-list form for the challenge shape (no nested field groups), so their byte
-sizes differ from ours. That difference is reported, not hidden: parsing a
-fatter document is part of what the older format costs.
+Rows cross four payload shapes, four sizes, and both directions. Each codec
+round-trips its own encoded bytes. The byte sizes are part of the evidence.
 
 Gate G5 (codec floor): no slower than the fastest competing compiled codec
 (`toons`, Rust) at every size in both directions.
@@ -26,18 +23,15 @@ import toon as python_toon
 import toons as toons_rust
 from _timing import DEFAULT_WORKERS, measure, methodology, selected_metric
 from _workers import across_workers
-from payloads import document
+from payloads import COMPARATIVE_LADDER, COMPARATIVE_SHAPES, comparative_tree
 
-LADDER = (16, 64, 512, 4096)
-
-
-def builtins_tree(records: int) -> Any:
-    return msgspec.to_builtins(document(records))
+LADDER = COMPARATIVE_LADDER
+SHAPES = COMPARATIVE_SHAPES
 
 
-def sample_run(records: int) -> dict[str, Any]:
+def sample_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
     """One worker's measurements; the parent decides the gates from the mean."""
-    tree = builtins_tree(records)
+    tree = comparative_tree(shape, records)
     selected = selected_metric()
     measuring_all = selected is None
 
@@ -80,6 +74,7 @@ def sample_run(records: int) -> dict[str, Any]:
     }
 
     return {
+        "shape": shape,
         "records": records,
         "output_bytes": output_bytes,
         "encode_us": encode_us,
@@ -97,9 +92,14 @@ def with_gates(result: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def run(records: int, *, workers: int = DEFAULT_WORKERS) -> dict[str, Any]:
+def run(
+    records: int,
+    *,
+    shape: str = "uniform-records",
+    workers: int = DEFAULT_WORKERS,
+) -> dict[str, Any]:
     """The published figure: the mean across independent worker processes."""
-    merged, spread = across_workers("bench_codecs", "sample_run", [records], workers=workers)
+    merged, spread = across_workers("bench_codecs", "sample_run", [records, shape], workers=workers)
     merged["worker_spread_pct"] = spread
     return with_gates(merged)
 
@@ -117,32 +117,34 @@ def versions() -> dict[str, str]:
 def main() -> None:
     print("versions:", versions())
     print("timing:", methodology())
-    print("payload: challenge shape (records with one nested object each)\n")
+    print("payloads: four shapes crossed with four record counts\n")
     all_pass = True
-    for records in LADDER:
-        result = run(records)
-        sizes = result["output_bytes"]
-        encode = result["encode_us"]
-        decode = result["decode_us"]
-        gates = result["gates"]
-        all_pass &= all(gates.values())
-        print(
-            f"records={records:>5}  bytes: ours={sizes['msgspec_toon_tabular_4_1']} "
-            f"toons={sizes['toons_rust_fallback_3_0']} "
-            f"python-toon={sizes['python_toon_fallback']} json={sizes['json_compact']}"
-        )
-        print(
-            f"  encode us: ours={encode['msgspec_toon']:>9}  toons={encode['toons_rust']:>9}  "
-            f"python-toon={encode['python_toon']:>10}  (json={encode['msgspec_json_context']})"
-        )
-        print(
-            f"  decode us: ours={decode['msgspec_toon']:>9}  toons={decode['toons_rust']:>9}  "
-            f"python-toon={decode['python_toon']:>10}  (json={decode['msgspec_json_context']})"
-        )
-        print(
-            f"  G5: encode={'PASS' if gates['G5_encode_not_slower_than_toons'] else 'FAIL'}  "
-            f"decode={'PASS' if gates['G5_decode_not_slower_than_toons'] else 'FAIL'}\n"
-        )
+    for shape in SHAPES:
+        for records in LADDER:
+            result = run(records, shape=shape)
+            sizes = result["output_bytes"]
+            encode = result["encode_us"]
+            decode = result["decode_us"]
+            gates = result["gates"]
+            all_pass &= all(gates.values())
+            print(
+                f"shape={shape:<15} records={records:>5}  bytes: "
+                f"ours={sizes['msgspec_toon_tabular_4_1']} "
+                f"toons={sizes['toons_rust_fallback_3_0']} "
+                f"python-toon={sizes['python_toon_fallback']} json={sizes['json_compact']}"
+            )
+            print(
+                f"  encode µs: ours={encode['msgspec_toon']:>9}  toons={encode['toons_rust']:>9}  "
+                f"python-toon={encode['python_toon']:>10}  (json={encode['msgspec_json_context']})"
+            )
+            print(
+                f"  decode µs: ours={decode['msgspec_toon']:>9}  toons={decode['toons_rust']:>9}  "
+                f"python-toon={decode['python_toon']:>10}  (json={decode['msgspec_json_context']})"
+            )
+            print(
+                f"  G5: encode={'PASS' if gates['G5_encode_not_slower_than_toons'] else 'FAIL'}  "
+                f"decode={'PASS' if gates['G5_decode_not_slower_than_toons'] else 'FAIL'}\n"
+            )
     print("G5 PASSES AT EVERY SIZE" if all_pass else "G5 FAILURES PRESENT — see rows above")
     sys.exit(0 if all_pass else 1)
 

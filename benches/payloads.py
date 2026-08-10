@@ -82,8 +82,13 @@ def numeric_heavy_tree(records: int) -> dict:
 #: plus a string-heavy and a numeric-heavy variant, so shape-dependence stays
 #: visible instead of being averaged away. Defined here, not in a benchmark,
 #: because the efficiency lock measures exactly this set.
-TOKEN_LADDER = (16, 64, 512, 4096)
-TOKEN_VARIANT_SIZES = (16, 512)
+COMPARATIVE_LADDER = (16, 64, 512, 4096)
+COMPARATIVE_SHAPES = (
+    "uniform-records",
+    "string-heavy",
+    "numeric-heavy",
+    "irregular",
+)
 
 
 def irregular_tree(records: int) -> dict:
@@ -186,11 +191,22 @@ def wide_dict_document(records: int) -> list[dict[str, int]]:
 
 
 def token_payload_matrix() -> list[tuple[str, int, Any]]:
-    cases: list[tuple[str, int, Any]] = []
-    for records in TOKEN_LADDER:
-        cases.append(("uniform-records", records, msgspec.to_builtins(document(records))))
-    for records in TOKEN_VARIANT_SIZES:
-        cases.append(("string-heavy", records, string_heavy_tree(records)))
-        cases.append(("numeric-heavy", records, numeric_heavy_tree(records)))
-        cases.append(("irregular", records, irregular_tree(records)))
-    return cases
+    return [
+        (shape, records, comparative_tree(shape, records))
+        for shape in COMPARATIVE_SHAPES
+        for records in COMPARATIVE_LADDER
+    ]
+
+
+def comparative_tree(shape: str, records: int) -> Any:
+    """Build one value from the shared shape and size benchmark matrix."""
+    builders = {
+        "uniform-records": lambda count: msgspec.to_builtins(document(count)),
+        "string-heavy": string_heavy_tree,
+        "numeric-heavy": numeric_heavy_tree,
+        "irregular": irregular_tree,
+    }
+    try:
+        return builders[shape](records)
+    except KeyError as exc:
+        raise ValueError(f"unknown benchmark shape: {shape}") from exc

@@ -1,0 +1,6 @@
+orders[2]:
+  - id: 1
+    customer:
+      name: Ada
+  - id: 2
+    customer: null

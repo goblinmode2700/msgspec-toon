@@ -1,0 +1,3 @@
+regions[2:]{name,geo{lat,lon}}:
+  eu: Europe,50,10
+  us: America,40,-100

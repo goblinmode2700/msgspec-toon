@@ -1,0 +1,7 @@
+entries[2]:
+  - id: 1
+    meta:
+      a: 1
+  - id: 2
+    meta:
+      b: 2

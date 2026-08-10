@@ -1,5 +1,5 @@
 From 6391020db4185c70e6dbc772a54aace78b2c38b6 Mon Sep 17 00:00:00 2001
-From: Darcy Rose <darcy@fleetmancer.com>
+From: Darcy Rose <goblinmode2700@users.noreply.github.com>
 Date: Sat, 8 Aug 2026 01:26:47 -0700
 Subject: [PATCH] feat: expose versioned Struct access C API
 
@@ -212,4 +212,3 @@ index 0000000..16e6974
 +        function(dict, ctypes.byref(offsets), ctypes.byref(nfields))
 -- 
 2.39.5 (Apple Git-154)
-

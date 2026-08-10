@@ -56,6 +56,34 @@ fn fault_to_pyerr(py: Python<'_>, fault: &Fault) -> PyErr {
     err
 }
 
+#[allow(clippy::too_many_arguments)]
+fn decode_typed<const EXTENDED: bool>(
+    py: Python<'_>,
+    bytes: &[u8],
+    plan: &CompiledPlan,
+    strict: bool,
+    indent_size: usize,
+    dec_hook: Option<Py<PyAny>>,
+    float_hook: Option<Py<PyAny>>,
+) -> PyResult<Py<PyAny>> {
+    let mut consumer = TypedConsumer::<EXTENDED>::new(py, plan, strict, dec_hook, float_hook);
+    let parsed = if EXTENDED {
+        parser::parse_with_object_preflight(bytes, strict, indent_size, &mut consumer)
+    } else {
+        parser::parse(bytes, strict, indent_size, &mut consumer)
+    };
+    if let Err(fault) = parsed {
+        if let Some(err) = consumer.pending_err.take() {
+            return Err(err);
+        }
+        return Err(fault_to_pyerr(py, &fault));
+    }
+    consumer
+        .take_result()
+        .map(Bound::unbind)
+        .ok_or_else(|| NativeFault::new_err(("decoder produced no value",)))
+}
+
 enum InputView<'py> {
     Borrowed(Bound<'py, PyAny>),
     Owned(Vec<u8>),
@@ -99,6 +127,7 @@ fn extract_input<'py>(buf: &Bound<'py, PyAny>) -> PyResult<InputView<'py>> {
 #[pyclass(module = "msgspec_toon._native")]
 struct Decoder {
     plan: Option<Arc<CompiledPlan>>,
+    extended_plan: bool,
     strict: bool,
     indent_size: usize,
     dec_hook: Option<Py<PyAny>>,
@@ -127,8 +156,12 @@ impl Decoder {
             },
             None => None,
         };
+        let extended_plan = compiled
+            .as_ref()
+            .is_some_and(|plan| plan.requires_extended_consumer());
         Ok(Self {
             plan: compiled,
+            extended_plan,
             strict,
             indent_size,
             dec_hook,
@@ -142,26 +175,29 @@ impl Decoder {
 
         match &self.plan {
             Some(plan) => {
-                let mut consumer = TypedConsumer::new(
-                    py,
-                    plan,
-                    self.strict,
-                    self.dec_hook.as_ref().map(|hook| hook.clone_ref(py)),
-                    self.float_hook.as_ref().map(|hook| hook.clone_ref(py)),
-                );
-                match parser::parse(bytes, self.strict, self.indent_size, &mut consumer) {
-                    Ok(()) => {}
-                    Err(fault) => {
-                        if let Some(err) = consumer.pending_err.take() {
-                            return Err(err);
-                        }
-                        return Err(fault_to_pyerr(py, &fault));
-                    }
+                let dec_hook = self.dec_hook.as_ref().map(|hook| hook.clone_ref(py));
+                let float_hook = self.float_hook.as_ref().map(|hook| hook.clone_ref(py));
+                if self.extended_plan {
+                    decode_typed::<true>(
+                        py,
+                        bytes,
+                        plan,
+                        self.strict,
+                        self.indent_size,
+                        dec_hook,
+                        float_hook,
+                    )
+                } else {
+                    decode_typed::<false>(
+                        py,
+                        bytes,
+                        plan,
+                        self.strict,
+                        self.indent_size,
+                        dec_hook,
+                        float_hook,
+                    )
                 }
-                consumer
-                    .take_result()
-                    .map(Bound::unbind)
-                    .ok_or_else(|| NativeFault::new_err(("decoder produced no value",)))
             }
             None => {
                 let mut consumer = UntypedConsumer::new(
@@ -194,6 +230,10 @@ struct Encoder {
 #[pymethods]
 impl Encoder {
     #[new]
+    // This is the explicit keyword-only PyO3 boundary. Keeping each public
+    // option named here preserves inspectable forwarding and avoids an opaque
+    // Python dict on every Encoder construction.
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (*, enc_hook=None, plan_source, struct_base, encode_error, delimiter=",", indent=2))]
     fn new(
         py: Python<'_>,

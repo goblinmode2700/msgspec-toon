@@ -23,6 +23,7 @@ pub struct Line<'a> {
     pub blank_before: bool,
 }
 
+#[derive(Clone)]
 pub struct Scanner<'a> {
     input: &'a [u8],
     offset: usize,
@@ -150,6 +151,7 @@ impl<'a> Scanner<'a> {
 }
 
 /// A one-line lookahead over the scanner, the shape the recursive parser needs.
+#[derive(Clone)]
 pub struct Lines<'a> {
     scanner: Scanner<'a>,
     peeked: Option<Option<Line<'a>>>,

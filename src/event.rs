@@ -25,6 +25,22 @@ pub enum ScalarToken<'a> {
 }
 
 pub trait Consumer {
+    /// Whether the next object plan needs scalar-field lookahead.
+    fn needs_object_preflight(&self) -> bool {
+        false
+    }
+    /// Offer scalar object fields before `start_object`. Typed tagged unions
+    /// use this bounded lookahead to select a plan without buffering a value
+    /// tree. Other consumers ignore it.
+    fn object_scalar_hint(
+        &mut self,
+        key: StringToken<'_>,
+        value: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let _ = (key, value, at);
+        Ok(())
+    }
     /// Announce that every row of the array just started is emitted from one
     /// tabular header — an identical key/structure sequence per row, with
     /// `leaf_count` scalar cells. Consumers may resolve keys positionally for
