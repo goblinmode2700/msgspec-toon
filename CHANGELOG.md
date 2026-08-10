@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0b2
+
+Benchmark visualization.
+
+- Add an empirical speed-token Pareto figure for numeric-heavy and uniform payloads.
+- Distinguish workload scaling trajectories from Pareto membership.
+- Show how msgspec-toon displaces or expands the previously attainable codec set.
+- Use the Pareto figure as the public README and PyPI benchmark summary.
+- Preserve codec behavior, support status, and canonical TOON bytes from `0.2.0b1`.
+
 ## 0.2.0b1
 
 Native scalar encoding and msgspec API parity.

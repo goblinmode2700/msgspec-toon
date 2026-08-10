@@ -2,6 +2,7 @@
 
 suppressPackageStartupMessages({
   library(ggplot2)
+  library(grid)
   library(jsonlite)
   library(scales)
 })
@@ -58,6 +59,16 @@ mean_ci <- function(values) {
   estimate <- mean(values)
   half_width <- qt(0.975, df = n - 1) * sd(values) / sqrt(n)
   c(mean = estimate, lower = max(0, estimate - half_width), upper = estimate + half_width)
+}
+
+pareto_flags <- function(tokens, time_us) {
+  vapply(seq_along(tokens), function(index) {
+    !any(
+      tokens <= tokens[[index]] &
+        time_us <= time_us[[index]] &
+        (tokens < tokens[[index]] | time_us < time_us[[index]])
+    )
+  }, logical(1))
 }
 
 shape_levels <- c("uniform-records", "string-heavy", "numeric-heavy", "irregular")
@@ -262,6 +273,266 @@ p_token_counts <- ggplot(token_counts, aes(tokens, format)) +
   theme(legend.position = "none", axis.text.y = element_text(size = 7.6))
 save_plot(p_token_counts, "token-counts", 15, 12)
 
+pareto_shapes <- c("numeric-heavy", "uniform-records")
+pareto_shape_labels <- c(
+  "numeric-heavy" = "Numeric-heavy",
+  "uniform-records" = "Uniform records"
+)
+pareto_codec_colors <- c(
+  "msgspec-toon" = orange,
+  "msgspec JSON" = wine,
+  "toons (Rust)" = blue,
+  "python-toon" = green
+)
+pareto_token_formats <- c(
+  "compact JSON" = "msgspec JSON",
+  "msgspec-toon canonical" = "msgspec-toon",
+  "toons (Rust)" = "toons (Rust)",
+  "python-toon" = "python-toon"
+)
+
+pareto_times <- codec_times[
+  codec_times$shape %in% pareto_shapes & codec_times$phase == "total",
+  c("shape", "records", "codec", "mean_us", "lower_us", "upper_us")
+]
+pareto_tokens <- token_counts[
+  token_counts$shape %in% pareto_shapes &
+    as.character(token_counts$format) %in% names(pareto_token_formats),
+  c("shape", "records", "format", "tokens")
+]
+pareto_tokens$codec <- unname(pareto_token_formats[as.character(pareto_tokens$format)])
+
+pareto_metrics <- merge(
+  pareto_times,
+  pareto_tokens[c("shape", "records", "codec", "tokens")],
+  by = c("shape", "records", "codec")
+)
+pareto_metrics$shape <- as.character(pareto_metrics$shape)
+pareto_metrics$records <- as.numeric(as.character(pareto_metrics$records))
+pareto_metrics$codec <- as.character(pareto_metrics$codec)
+expected_pareto_rows <- length(pareto_shapes) * length(record_levels) * length(codec_labels)
+if (nrow(pareto_metrics) != expected_pareto_rows || anyNA(pareto_metrics)) {
+  stop("The Pareto dataset is incomplete. Regenerate the report before plotting.")
+}
+if (any(pareto_metrics$tokens <= 0) || any(pareto_metrics$lower_us <= 0)) {
+  stop("The Pareto plot requires positive token counts and time intervals for log scales.")
+}
+pareto_metrics$old_pareto <- NA
+pareto_metrics$new_pareto <- FALSE
+
+for (shape_value in pareto_shapes) {
+  for (record_value in as.numeric(record_levels)) {
+    cell <- which(
+      pareto_metrics$shape == shape_value &
+        pareto_metrics$records == record_value
+    )
+    pareto_metrics$new_pareto[cell] <- pareto_flags(
+      pareto_metrics$tokens[cell],
+      pareto_metrics$mean_us[cell]
+    )
+    old_cell <- cell[pareto_metrics$codec[cell] != "msgspec-toon"]
+    pareto_metrics$old_pareto[old_cell] <- pareto_flags(
+      pareto_metrics$tokens[old_cell],
+      pareto_metrics$mean_us[old_cell]
+    )
+  }
+}
+
+pareto_metrics$status <- with(pareto_metrics, ifelse(
+  codec == "msgspec-toon" & new_pareto,
+  "New Pareto choice",
+  ifelse(
+    codec == "msgspec-toon" & !new_pareto,
+    "New dominated choice",
+    ifelse(
+      old_pareto & new_pareto,
+      "Old Pareto, remains Pareto",
+      ifelse(old_pareto & !new_pareto, "Old Pareto, displaced", "Old dominated choice")
+    )
+  )
+))
+
+pareto_status_levels <- c(
+  "New Pareto choice",
+  "Old Pareto, displaced",
+  "Old Pareto, remains Pareto",
+  "Old dominated choice",
+  "New dominated choice"
+)
+pareto_metrics$status <- factor(pareto_metrics$status, levels = pareto_status_levels)
+pareto_metrics$codec <- factor(pareto_metrics$codec, levels = codec_labels)
+pareto_metrics$shape_facet <- factor(
+  pareto_metrics$shape,
+  levels = pareto_shapes,
+  labels = unname(pareto_shape_labels)
+)
+pareto_metrics <- pareto_metrics[
+  order(pareto_metrics$shape_facet, pareto_metrics$codec, pareto_metrics$records),
+]
+
+new_choice <- pareto_metrics[pareto_metrics$codec == "msgspec-toon", ]
+new_choice$record_label <- comma(new_choice$records)
+new_choice$label_x <- new_choice$tokens * 1.08
+new_choice$label_y <- new_choice$mean_us * 0.96
+
+displaced <- pareto_metrics[pareto_metrics$status == "Old Pareto, displaced", ]
+displacement_arrows <- merge(
+  displaced,
+  new_choice,
+  by = c("shape", "records"),
+  suffixes = c("_old", "_new")
+)
+if (nrow(displacement_arrows)) {
+  displacement_arrows$shape_facet <- factor(
+    displacement_arrows$shape,
+    levels = pareto_shapes,
+    labels = unname(pareto_shape_labels)
+  )
+}
+
+headline_new <- new_choice[new_choice$records == max(new_choice$records), ]
+headline_new$note <- ifelse(
+  headline_new$shape == "numeric-heavy",
+  "same token count\nlower measured time",
+  "new low-token\nPareto choice"
+)
+headline_new$note_x <- headline_new$tokens * 0.72
+headline_new$note_y <- headline_new$mean_us * 1.55
+
+better_note <- do.call(rbind, lapply(
+  split(pareto_metrics, pareto_metrics$shape_facet),
+  function(group) data.frame(
+    shape_facet = group$shape_facet[[1]],
+    x = min(group$tokens),
+    y = max(group$upper_us),
+    label = "better ↙"
+  )
+))
+
+p_pareto <- ggplot(
+  pareto_metrics,
+  aes(tokens, mean_us, colour = codec, group = codec)
+) +
+  geom_path(linewidth = 0.7, alpha = 0.28) +
+  geom_errorbar(
+    aes(ymin = lower_us, ymax = upper_us, alpha = status),
+    width = 0,
+    linewidth = 0.45,
+    show.legend = FALSE
+  ) +
+  geom_segment(
+    data = displacement_arrows,
+    aes(
+      x = tokens_old,
+      y = mean_us_old,
+      xend = tokens_new,
+      yend = mean_us_new
+    ),
+    inherit.aes = FALSE,
+    colour = ink,
+    linewidth = 0.6,
+    linetype = "dashed",
+    arrow = arrow(type = "closed", length = unit(0.10, "inches")),
+    alpha = 0.72
+  ) +
+  geom_point(aes(shape = status, alpha = status), size = 3.8, stroke = 1.0) +
+  geom_text(
+    data = new_choice,
+    aes(x = label_x, y = label_y, label = record_label),
+    inherit.aes = FALSE,
+    colour = orange,
+    hjust = 0,
+    vjust = 0.5,
+    size = 3.1,
+    fontface = "bold"
+  ) +
+  geom_text(
+    data = headline_new,
+    aes(x = note_x, y = note_y, label = note),
+    inherit.aes = FALSE,
+    colour = ink,
+    hjust = 1,
+    vjust = 0,
+    size = 3.15,
+    lineheight = 0.95
+  ) +
+  geom_text(
+    data = better_note,
+    aes(x = x, y = y, label = label),
+    inherit.aes = FALSE,
+    hjust = 0,
+    vjust = 1,
+    colour = "#666B70",
+    size = 3.3
+  ) +
+  facet_wrap(vars(shape_facet), nrow = 1) +
+  scale_x_log10(
+    labels = label_number(big.mark = ","),
+    expand = expansion(mult = c(0.10, 0.24))
+  ) +
+  scale_y_log10(
+    labels = label_number(big.mark = ","),
+    expand = expansion(mult = c(0.12, 0.18))
+  ) +
+  scale_colour_manual(values = pareto_codec_colors, name = NULL) +
+  scale_shape_manual(
+    values = c(
+      "New Pareto choice" = 16,
+      "Old Pareto, displaced" = 24,
+      "Old Pareto, remains Pareto" = 21,
+      "Old dominated choice" = 4,
+      "New dominated choice" = 1
+    ),
+    name = "Empirical Pareto status"
+  ) +
+  scale_alpha_manual(
+    values = c(
+      "New Pareto choice" = 1.00,
+      "Old Pareto, displaced" = 1.00,
+      "Old Pareto, remains Pareto" = 0.95,
+      "Old dominated choice" = 0.22,
+      "New dominated choice" = 0.35
+    ),
+    guide = "none"
+  ) +
+  guides(
+    colour = guide_legend(
+      order = 1,
+      nrow = 1,
+      override.aes = list(alpha = 1, linewidth = 1.2)
+    ),
+    shape = guide_legend(
+      order = 2,
+      nrow = 1,
+      override.aes = list(alpha = 1, colour = ink)
+    )
+  ) +
+  labs(
+    title = "msgspec-toon changes the empirical speed–token Pareto set",
+    subtitle = paste0(
+      "Numeric-heavy: it displaces the previous low-token Pareto choice.  ",
+      "Uniform records: it adds a new low-token Pareto choice."
+    ),
+    x = "Tokens (o200k_base; fewer is better, log scale)",
+    y = expression(paste("Encode + decode time (", mu, "s; lower is better, log scale)")),
+    caption = paste0(
+      "Pareto status is evaluated separately for each payload shape and record count. ",
+      "Lines connect the same implementation across record counts and show workload scaling only;\n",
+      "they are not Pareto frontiers and do not imply unmeasured operating points. ",
+      "Whiskers are two-sided 95% Student t intervals across worker-level total times.\n",
+      "Token counts are deterministic for each generated payload."
+    )
+  ) +
+  theme_report() +
+  theme(
+    panel.grid.major.y = element_line(colour = grid, linewidth = 0.35),
+    legend.box = "vertical",
+    legend.key.width = unit(1.25, "lines"),
+    plot.caption = element_text(colour = "#666B70", size = 8.3, hjust = 0),
+    plot.margin = margin(12, 22, 12, 12)
+  )
+save_plot(p_pareto, "pareto-set-change", 15, 8.4)
+
 fmt <- function(value, digits = 2) {
   format(round(value, digits), nsmall = digits, big.mark = ",")
 }
@@ -302,6 +573,16 @@ md <- c(
   ),
   "",
   "The report keeps time and token results separate. It does not create a combined score.",
+  "",
+  "## Speed and token Pareto set",
+  "",
+  "![Empirical speed-token Pareto set](docs/assets/benchmarks/pareto-set-change.png)",
+  "",
+  paste0(
+    "Pareto status is calculated independently for each payload shape and record count. ",
+    "Lines connect the same implementation across record counts. They show workload scaling, ",
+    "not an unmeasured continuous Pareto curve."
+  ),
   "",
   "## Codec time",
   "",
