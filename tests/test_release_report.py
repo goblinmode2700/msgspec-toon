@@ -51,6 +51,56 @@ def test_current_compatibility_delta_records_native_scalar_support(
             "after": "supported",
         },
         {
+            "feature": "interaction: array_like + kw_only",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: array_like + native scalar",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: array_like + optional",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: array_like + recursive",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: array_like + rename",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: tagged + array_like",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: tagged + constraint",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: tagged + kw_only",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: tagged + native scalar",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "interaction: tagged + recursive",
+            "before": None,
+            "after": "supported",
+        },
+        {
             "feature": "recursive Struct types",
             "before": "unsupported",
             "after": "supported",

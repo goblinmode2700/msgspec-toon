@@ -223,9 +223,10 @@ class _GraphCompiler:
                     tagged = [item for item in non_none if isinstance(item, mi.StructType)]
                     tag_fields = {item.tag_field for item in tagged}
                     tag_values = [item.tag for item in tagged]
+                    array_shapes = {item.array_like for item in tagged}
                     if (
                         len(tagged) != len(non_none)
-                        or any(item.array_like for item in tagged)
+                        or len(array_shapes) != 1
                         or None in tag_fields
                         or len(tag_fields) != 1
                         or len({(type(value), value) for value in tag_values}) != len(tag_values)

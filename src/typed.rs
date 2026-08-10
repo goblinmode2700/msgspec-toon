@@ -6,7 +6,7 @@
 //! wire keys to values. No discardable dict/list tree exists at any point.
 
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyDict};
+use pyo3::types::{PyBool, PyDict, PyInt, PyString};
 
 use crate::containers::{count_struct_instance, new_final_dict, new_final_list, new_final_tuple};
 use crate::error::{Fault, FaultCode, Position};
@@ -53,6 +53,10 @@ enum Frame<'py, 'plan> {
         plan: &'plan StructPlan,
         values: Vec<Option<Bound<'py, PyAny>>>,
         next: usize,
+        tag_pending: bool,
+    },
+    ArrayStructUnion {
+        members: &'plan [usize],
     },
     List {
         items: Vec<Bound<'py, PyAny>>,
@@ -73,6 +77,19 @@ fn scalar_text(token: ScalarToken<'_>) -> Option<std::borrow::Cow<'_, [u8]>> {
         ScalarToken::BareString(bytes) => Some(std::borrow::Cow::Borrowed(bytes)),
         ScalarToken::Quoted { inner, escaped } => Some(unescape(inner, escaped)),
         _ => None,
+    }
+}
+
+/// msgspec dispatches Struct tags by scalar category before value lookup.
+/// Preserve that boundary so Python's cross-type equality (`True == 1`,
+/// `1.0 == 1`) cannot select an integer-tagged variant.
+fn tag_category_matches(tag: &Bound<'_, PyAny>, token: ScalarToken<'_>) -> bool {
+    match token {
+        ScalarToken::Integer(_) => tag.is_exact_instance_of::<PyInt>(),
+        ScalarToken::BareString(_) | ScalarToken::Quoted { .. } => {
+            tag.is_exact_instance_of::<PyString>()
+        }
+        ScalarToken::Null | ScalarToken::Bool(_) | ScalarToken::Float(_) => false,
     }
 }
 
@@ -216,6 +233,7 @@ pub struct TypedConsumer<'py, 'plan, const EXTENDED: bool = false> {
     pending_object_plan: Option<usize>,
     pending_invalid_tag: bool,
     has_tagged_plans: bool,
+    has_array_tags: bool,
 }
 
 impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
@@ -231,6 +249,13 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 PlanKind::Struct(plan) => plan.tag_field.is_some(),
                 PlanKind::Union(union) => union.members.len() > 1,
                 _ => false,
+            });
+        let has_array_tags = EXTENDED
+            && root.nodes.iter().any(|node| {
+                matches!(
+                    &node.kind,
+                    PlanKind::Struct(plan) if plan.array_like && plan.tag_value.is_some()
+                )
             });
         Self {
             py,
@@ -250,6 +275,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             pending_object_plan: None,
             pending_invalid_tag: false,
             has_tagged_plans,
+            has_array_tags,
         }
     }
 
@@ -270,9 +296,19 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 ..
             }) => Some(plan.fields[*index].value),
             Some(Frame::Struct { .. }) => None,
-            Some(Frame::ArrayStruct { plan, next, .. }) => {
-                plan.fields.get(*next).map(|field| field.value)
+            Some(Frame::ArrayStruct {
+                plan,
+                next,
+                tag_pending,
+                ..
+            }) => {
+                if *tag_pending {
+                    None
+                } else {
+                    plan.fields.get(*next).map(|field| field.value)
+                }
             }
+            Some(Frame::ArrayStructUnion { .. }) => None,
             Some(Frame::List { items, item, .. }) => item.at(items.len()),
             Some(Frame::Dict { value, .. }) => Some(*value),
             None => Some(self.root.root),
@@ -290,6 +326,9 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             Some(Frame::List { items, item, .. })
                 if item.expected_length().is_some_and(|len| items.len() >= len) =>
             {
+                Err(Fault::validation_at(FaultCode::TypeMismatch, at))
+            }
+            Some(Frame::ArrayStruct { .. } | Frame::ArrayStructUnion { .. }) => {
                 Err(Fault::validation_at(FaultCode::TypeMismatch, at))
             }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),
@@ -318,6 +357,9 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 if let Err(err) = map.set_item(key, value) {
                     return Err(self.internal(err, at));
                 }
+            }
+            Some(Frame::ArrayStructUnion { .. }) => {
+                return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
             }
             None => self.result = Some(value),
         }
@@ -531,6 +573,81 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         } else {
             Ok(())
         }
+    }
+
+    /// Consume the discriminator before ordinary positional field placement.
+    /// This ports msgspec's `tag_already_read` boundary without adopting its
+    /// private Struct allocation: concrete plans validate the tag, while a
+    /// union selects its compiled Struct plan, then both continue through the
+    /// same public-constructor ArrayStruct frame.
+    fn consume_array_tag(&mut self, token: ScalarToken<'_>, at: Position) -> Result<bool, Fault> {
+        let mut candidates: smallvec::SmallVec<[&'plan StructPlan; 4]> = smallvec::SmallVec::new();
+        let selects_union = match self.stack.last() {
+            Some(Frame::ArrayStruct {
+                plan,
+                tag_pending: true,
+                ..
+            }) => {
+                candidates.push(plan);
+                false
+            }
+            Some(Frame::ArrayStructUnion { members }) => {
+                for &member in *members {
+                    let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    };
+                    if !plan.array_like || plan.tag_value.is_none() {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    }
+                    candidates.push(plan);
+                }
+                true
+            }
+            _ => return Ok(false),
+        };
+
+        let converted = scalar_to_py(self.py, token, self.float_hook.as_ref())
+            .map_err(|err| self.internal(err, at))?;
+        let mut selected = None;
+        for plan in candidates {
+            let Some(tag) = &plan.tag_value else {
+                continue;
+            };
+            let tag = tag.bind(self.py);
+            if !tag_category_matches(tag, token) {
+                continue;
+            }
+            match converted.eq(tag) {
+                Ok(true) => {
+                    selected = Some(plan);
+                    break;
+                }
+                Ok(false) => {}
+                Err(err) => return Err(self.internal(err, at)),
+            }
+        }
+        let selected = selected.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
+
+        if selects_union {
+            let mut values = self.values_pool.pop().unwrap_or_default();
+            values.clear();
+            values.resize(selected.fields.len(), None);
+            let frame = self
+                .stack
+                .last_mut()
+                .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+            *frame = Frame::ArrayStruct {
+                plan: selected,
+                values,
+                next: 0,
+                tag_pending: false,
+            };
+        } else if let Some(Frame::ArrayStruct { tag_pending, .. }) = self.stack.last_mut() {
+            *tag_pending = false;
+        } else {
+            return Err(Fault::syntax_at(FaultCode::Internal, at));
+        }
+        Ok(true)
     }
 
     fn lookup_struct_field(
@@ -848,7 +965,11 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             let Some(tag) = &plan.tag_value else {
                 continue;
             };
-            match converted.eq(tag.bind(self.py)) {
+            let tag = tag.bind(self.py);
+            if !tag_category_matches(tag, value) {
+                continue;
+            }
+            match converted.eq(tag) {
                 Ok(true) => {
                     self.pending_object_plan = Some(member);
                     self.pending_invalid_tag = false;
@@ -1206,6 +1327,23 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     plan,
                     values,
                     next: 0,
+                    tag_pending: plan.tag_value.is_some(),
+                });
+                Ok(())
+            }
+            PlanKind::Union(union)
+                if EXTENDED
+                    && union.members.len() > 1
+                    && union.members.iter().all(|&member| {
+                        matches!(
+                            &self.root.node(member).kind,
+                            PlanKind::Struct(plan)
+                                if plan.array_like && plan.tag_value.is_some()
+                        )
+                    }) =>
+            {
+                self.stack.push(Frame::ArrayStructUnion {
+                    members: &union.members,
                 });
                 Ok(())
             }
@@ -1258,9 +1396,17 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 };
                 self.place(value, at)
             }
-            Some(Frame::ArrayStruct { plan, values, .. }) => {
+            Some(Frame::ArrayStruct {
+                plan,
+                values,
+                tag_pending: false,
+                ..
+            }) => {
                 let value = self.finish_struct(plan, values, at)?;
                 self.place(value, at)
+            }
+            Some(Frame::ArrayStruct { .. } | Frame::ArrayStructUnion { .. }) => {
+                Err(Fault::validation_at(FaultCode::TypeMismatch, at))
             }
             _ => Err(Fault::syntax_at(FaultCode::Internal, at)),
         }
@@ -1277,6 +1423,9 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         }
         if self.top_struct_skips() {
             self.clear_top_skip();
+            return Ok(());
+        }
+        if EXTENDED && self.has_array_tags && self.consume_array_tag(token, at)? {
             return Ok(());
         }
         let expected = self.expected_plan_or_fault(at)?;

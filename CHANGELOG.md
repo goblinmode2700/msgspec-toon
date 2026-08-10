@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Tagged positional decode parity and feature-interaction evidence.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 25 newly supported, 1 removed, 28 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Decode tagged array-like Structs by concrete type and tagged union.
+- Validate or select the positional discriminator before declared field construction.
+- Convert malformed or exhausted tagged positional states to public validation errors.
+- Add executable round trips for all ten feature pairs from the outside-agent review.
+- Preserve canonical bytes, token counts, G2, and the public-constructor boundary.
+
 ## 0.2.0b3
 
 Round-trip parity and executable support evidence.

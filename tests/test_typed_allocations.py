@@ -70,6 +70,14 @@ class TaggedB(msgspec.Struct, tag="b"):
     value: int
 
 
+class TaggedArrayA(msgspec.Struct, tag="a", array_like=True):
+    value: int
+
+
+class TaggedArrayB(msgspec.Struct, tag="b", array_like=True):
+    value: int
+
+
 class NativeScalarRow(msgspec.Struct):
     at: datetime.datetime
     day: datetime.date
@@ -179,7 +187,10 @@ def test_recursive_typed_decode_builds_only_final_structs() -> None:
 def test_array_like_and_tagged_frames_build_only_final_structs() -> None:
     positional_stats = _stats_for(lambda: toon.decode(b"[2]:\n  - 1\n  - x", type=PositionalNode))
     tagged_stats = _stats_for(lambda: toon.decode(b"value: 1\ntype: a", type=TaggedA | TaggedB))
-    for stats in (positional_stats, tagged_stats):
+    tagged_array_stats = _stats_for(
+        lambda: toon.decode(b"[2]: a,1", type=TaggedArrayA | TaggedArrayB)
+    )
+    for stats in (positional_stats, tagged_stats, tagged_array_stats):
         assert stats["builtin_dicts"] == 0
         assert stats["builtin_lists"] == 0
         assert stats["final_structs"] == 1
