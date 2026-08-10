@@ -1,11 +1,27 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the trusted publication of `0.2.0b1`. Read
+_Last updated after preparing the `0.2.0b2` Pareto-report release branch. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
+
+**`0.2.0b2` is prepared on `release/0.2.0b2-pareto-report`, but is not published yet.**
+This plot-only beta adds a generated empirical speed-token Pareto figure for numeric-heavy
+and uniform payloads. The public README/PyPI description now leads with that figure, while
+`BENCHMARKS.md` retains the separate detailed timing, integration, and token charts. The
+generator classifies the old and new attainable sets independently inside each shape and
+record-count cell; lines connect one codec across record counts and are explicitly labeled as
+workload-scaling trajectories, not continuous Pareto curves.
+
+The release metadata is `0.2.0b2` / Cargo `0.2.0-beta.2`. The generated figure was inspected
+at 2700×1512. `make check` passed (39 Rust, 258 Python, 9 expected skips), the official corpus
+passed 538/538 with 84/84 strict-error fixtures, the changelog compatibility check passed, and
+a local abi3 wheel built as `msgspec_toon-0.2.0b2-cp313-abi3-macosx_11_0_arm64.whl`. The wheel
+metadata contains the absolute GitHub URL for `pareto-set-change.png`. Next: sync the bounded
+public file set, run the publication-disabled trusted workflow, then publish only after that
+candidate passes.
 
 **`0.2.0b1` is published and independently verified.** Annotated tag `v0.2.0b1` names public
 revision `222dac4475fa145e56c73c842e08dde214941c6f`. Trusted-publishing

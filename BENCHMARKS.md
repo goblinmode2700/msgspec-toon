@@ -1,8 +1,14 @@
 # Benchmarks
 
-Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-08T10:03:00.205174+00:00.
+Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-10T10:16:12.485451+00:00.
 
 The report keeps time and token results separate. It does not create a combined score.
+
+## Speed and token Pareto set
+
+![Empirical speed-token Pareto set](docs/assets/benchmarks/pareto-set-change.png)
+
+Pareto status is calculated independently for each payload shape and record count. Lines connect the same implementation across record counts. They show workload scaling, not an unmeasured continuous Pareto curve.
 
 ## Codec time
 
@@ -14,10 +20,10 @@ The chart shows encode, decode, and total elapsed time. Every value is a direct 
 
 | Codec | Encode (µs) | Decode (µs) | Total (µs) |
 |---|---:|---:|---:|
-| msgspec-toon | 566.85 | 1,118.16 |  1,685.01 |
-| msgspec JSON | 214.78 | 857.44 |  1,072.22 |
-| toons (Rust) | 7,258.10 | 3,118.85 |  10,376.95 |
-| python-toon | 23,842.26 | 30,570.48 |  54,412.74 |
+| msgspec-toon | 1,183.25 | 2,606.82 |  3,790.07 |
+| msgspec JSON | 459.56 | 2,185.05 |  2,644.61 |
+| toons (Rust) | 16,818.84 | 6,326.35 |  23,145.19 |
+| python-toon | 75,502.45 | 78,803.04 |  154,305.49 |
 
 ## End-to-end time
 
@@ -52,7 +58,7 @@ Compact JSON appears in every facet. This gives a direct reference for each shap
 - The benchmark never uses the minimum time.
 - Codec order is fixed inside each worker. The intervals do not measure order bias.
 - Token counts are deterministic under the named tokenizer.
-- The environment uses Python 3.13.1 and msgspec 0.21.1.
+- The environment uses Python 3.13.14 and msgspec 0.21.1.
 - The build is a release `abi3-py313` build.
 - The freshness check rejects stale and instrumented extensions.
 - Raw evidence is in [`conformance/report.json`](conformance/report.json).

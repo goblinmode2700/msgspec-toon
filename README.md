@@ -182,11 +182,14 @@ Older encoders can fall back to a larger entry form for the same data.
 
 ## Tokens and speed
 
-![Codec elapsed times](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/codec-times.png)
+![Empirical speed-token Pareto set](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/pareto-set-change.png)
 
-![Absolute token counts](https://raw.githubusercontent.com/goblinmode2700/msgspec-toon/main/docs/assets/benchmarks/token-counts.png)
+The figure shows absolute end-to-end time against absolute `o200k_base` token
+count. Pareto status is calculated separately for each payload shape and record
+count. Lines connect the same implementation across record counts. They show
+workload scaling, not an unmeasured continuous Pareto curve.
 
-The generated [benchmark report](https://github.com/goblinmode2700/msgspec-toon/blob/main/BENCHMARKS.md) publishes both axes:
+The generated [benchmark report](https://github.com/goblinmode2700/msgspec-toon/blob/main/BENCHMARKS.md) also publishes the detailed axes:
 
 - Direct encode, decode, and total time for each measured codec.
 - Absolute token counts, including compact JSON, under tiktoken `o200k_base`.
