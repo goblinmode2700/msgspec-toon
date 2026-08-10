@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0b3
 
 Round-trip parity and executable support evidence.
 
