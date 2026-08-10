@@ -160,10 +160,12 @@ The codec does not implement sorted or deterministic output. Both encoder entry
 points raise `NotImplementedError` for these `order` values. They never ignore
 an accepted option.
 
-Typed decode supports recursive Structs, array-like Structs, object-form tagged Struct unions,
-native scalar values, and permissive scalar conversion. Tagged array-like unions fail during
-plan construction. Set `strict=False` to accept the same bool, integer, and float string
-conversions as msgspec 0.21.1. Strict mode stays the default.
+Typed decode supports recursive Structs, array-like Structs, tagged Struct unions in both object
+and positional forms, native scalar values, and permissive scalar conversion. For a tagged
+`array_like` Struct, position zero is the discriminator and the declared fields follow it. A union
+must use one shape throughout: mixing object-form and array-like Struct variants fails during plan
+construction. Set `strict=False` to accept the same bool, integer, and float string conversions as
+msgspec 0.21.1. Strict mode stays the default.
 
 Non-string mapping keys are intentionally rejected in 0.2.0b1. See the
 [mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).

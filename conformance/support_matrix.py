@@ -122,6 +122,54 @@ class Recursive(msgspec.Struct):
     child: Recursive | None = None
 
 
+# Supported-feature interactions are executable rows, not prose. These ten
+# pairs came from the post-0.2.0b3 outside-agent cross-product review.
+class TaggedArrayCat(msgspec.Struct, tag="cat", array_like=True):
+    name: str
+
+
+class TaggedArrayDog(msgspec.Struct, tag="dog", array_like=True):
+    name: str
+
+
+class TaggedRecursive(msgspec.Struct, tag="tagged_recursive"):
+    value: int
+    child: TaggedRecursive | None = None
+
+
+class TaggedNativeScalar(msgspec.Struct, tag="tagged_native"):
+    value: datetime.datetime
+
+
+class TaggedKeywordOnly(msgspec.Struct, tag="tagged_kw", kw_only=True):
+    value: int
+
+
+class TaggedConstrained(msgspec.Struct, tag="tagged_constraint"):
+    value: Annotated[int, msgspec.Meta(ge=10)]
+
+
+class ArrayRecursive(msgspec.Struct, array_like=True):
+    value: int
+    child: ArrayRecursive | None = None
+
+
+class ArrayNativeScalar(msgspec.Struct, array_like=True):
+    value: datetime.datetime
+
+
+class ArrayRenamed(msgspec.Struct, array_like=True, rename="camel"):
+    user_name: str
+
+
+class ArrayOptional(msgspec.Struct, array_like=True):
+    value: int | None = None
+
+
+class ArrayKeywordOnly(msgspec.Struct, array_like=True, kw_only=True):
+    value: int
+
+
 MATRIX: tuple[SupportEntry, ...] = (
     # --- Tier 0 -------------------------------------------------------------
     SupportEntry(
@@ -270,6 +318,112 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b'[1,"x"]', type=Positional),
         "positional frames construct the Struct without an intermediate mapping",
         round_trip=lambda: _round_trip(Positional(1, "x"), Positional),
+    ),
+    # --- Supported feature interactions -----------------------------------
+    SupportEntry(
+        "interaction: tagged + array_like",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"[2]: dog,rex", type=TaggedArrayCat | TaggedArrayDog),
+        lambda: msgspec.json.decode(b'["dog","rex"]', type=TaggedArrayCat | TaggedArrayDog),
+        "the positional discriminator selects the Struct plan before declared fields",
+        round_trip=lambda: _round_trip(TaggedArrayDog("rex"), TaggedArrayCat | TaggedArrayDog),
+    ),
+    SupportEntry(
+        "interaction: tagged + recursive",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"type: tagged_recursive\nvalue: 1\nchild: null", type=TaggedRecursive),
+        lambda: msgspec.json.decode(
+            b'{"type":"tagged_recursive","value":1,"child":null}', type=TaggedRecursive
+        ),
+        "tag validation and recursive plan references compose",
+        round_trip=lambda: _round_trip(TaggedRecursive(1), TaggedRecursive),
+    ),
+    SupportEntry(
+        "interaction: tagged + native scalar",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(
+            b'type: tagged_native\nvalue: "2026-01-01T00:00:00Z"', type=TaggedNativeScalar
+        ),
+        lambda: msgspec.json.decode(
+            b'{"type":"tagged_native","value":"2026-01-01T00:00:00Z"}',
+            type=TaggedNativeScalar,
+        ),
+        "tag selection retains native scalar conversion",
+        round_trip=lambda: _round_trip(
+            TaggedNativeScalar(datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)),
+            TaggedNativeScalar,
+        ),
+    ),
+    SupportEntry(
+        "interaction: tagged + kw_only",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"type: tagged_kw\nvalue: 1", type=TaggedKeywordOnly),
+        lambda: msgspec.json.decode(b'{"type":"tagged_kw","value":1}', type=TaggedKeywordOnly),
+        "tag validation retains keyword-only constructor placement",
+        round_trip=lambda: _round_trip(TaggedKeywordOnly(value=1), TaggedKeywordOnly),
+    ),
+    SupportEntry(
+        "interaction: tagged + constraint",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"type: tagged_constraint\nvalue: 10", type=TaggedConstrained),
+        lambda: msgspec.json.decode(
+            b'{"type":"tagged_constraint","value":10}', type=TaggedConstrained
+        ),
+        "tag validation retains declared scalar constraints",
+        round_trip=lambda: _round_trip(TaggedConstrained(10), TaggedConstrained),
+    ),
+    SupportEntry(
+        "interaction: array_like + recursive",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"[2]: 1,null", type=ArrayRecursive),
+        lambda: msgspec.json.decode(b"[1,null]", type=ArrayRecursive),
+        "positional frames retain bounded recursive references",
+        round_trip=lambda: _round_trip(ArrayRecursive(1), ArrayRecursive),
+    ),
+    SupportEntry(
+        "interaction: array_like + native scalar",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(b'[1]: "2026-01-01T00:00:00Z"', type=ArrayNativeScalar),
+        lambda: msgspec.json.decode(b'["2026-01-01T00:00:00Z"]', type=ArrayNativeScalar),
+        "positional field conversion retains native scalar targets",
+        round_trip=lambda: _round_trip(
+            ArrayNativeScalar(datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)),
+            ArrayNativeScalar,
+        ),
+    ),
+    SupportEntry(
+        "interaction: array_like + rename",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"[1]: x", type=ArrayRenamed),
+        lambda: msgspec.json.decode(b'["x"]', type=ArrayRenamed),
+        "rename metadata does not alter positional field order",
+        round_trip=lambda: _round_trip(ArrayRenamed("x"), ArrayRenamed),
+    ),
+    SupportEntry(
+        "interaction: array_like + optional",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"[1]: null", type=ArrayOptional),
+        lambda: msgspec.json.decode(b"[null]", type=ArrayOptional),
+        "optional scalar plans retain positional placement",
+        round_trip=lambda: _round_trip(ArrayOptional(None), ArrayOptional),
+    ),
+    SupportEntry(
+        "interaction: array_like + kw_only",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(b"[1]: 1", type=ArrayKeywordOnly),
+        lambda: msgspec.json.decode(b"[1]", type=ArrayKeywordOnly),
+        "positional wire order composes with keyword-only constructor calls",
+        round_trip=lambda: _round_trip(ArrayKeywordOnly(value=1), ArrayKeywordOnly),
     ),
     SupportEntry(
         "strict=False scalar coercion",

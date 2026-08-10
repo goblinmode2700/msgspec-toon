@@ -37,6 +37,26 @@ class ArrayDog(msgspec.Struct, array_like=True, tag="dog"):
     name: str
 
 
+class ArrayEmpty(msgspec.Struct, array_like=True, tag="empty"):
+    pass
+
+
+class ArrayOne(msgspec.Struct, array_like=True, tag=1, tag_field="kind"):
+    value: int
+
+
+class ArrayTwo(msgspec.Struct, array_like=True, tag=2, tag_field="kind"):
+    value: int
+
+
+class ObjectOne(msgspec.Struct, tag=1, tag_field="kind"):
+    value: int
+
+
+class ObjectTwo(msgspec.Struct, tag=2, tag_field="kind"):
+    value: int
+
+
 @pytest.mark.parametrize(
     ("document", "json_document", "type_"),
     [
@@ -103,8 +123,68 @@ def test_missing_unknown_and_duplicate_tags_are_static_errors(document: str) -> 
     assert "SENTINEL" not in str(caught.value)
 
 
-def test_tagged_array_like_union_is_rejected_at_plan_construction() -> None:
+@pytest.mark.parametrize(
+    ("value", "type_", "document", "json_document"),
+    [
+        (ArrayEmpty(), ArrayEmpty, b"[1]: empty", b'["empty"]'),
+        (ArrayDog("rex"), ArrayDog, b"[2]: dog,rex", b'["dog","rex"]'),
+        (ArrayDog("rex"), ArrayCat | ArrayDog, b"[2]: dog,rex", b'["dog","rex"]'),
+        (ArrayTwo(4), ArrayOne | ArrayTwo, b"[2]: 2,4", b"[2,4]"),
+    ],
+)
+def test_tagged_array_like_round_trips_like_msgspec_json(
+    value: msgspec.Struct, type_: object, document: bytes, json_document: bytes
+) -> None:
+    assert toon.encode(value) == document
+    assert toon.decode(document, type=type_) == value
+    assert msgspec.json.decode(json_document, type=type_) == value
+
+
+def test_tagged_array_like_union_round_trips_when_nested_in_a_list() -> None:
+    values = [ArrayCat("mio"), ArrayDog("rex")]
+    assert toon.decode(toon.encode(values), type=list[ArrayCat | ArrayDog]) == values
+
+
+def test_mixed_object_and_array_like_tagged_union_is_rejected() -> None:
     with pytest.raises(toon.TypePlanError) as caught:
-        toon.Decoder(ArrayCat | ArrayDog)
-    assert caught.value.code == "unsupported_union"
+        toon.Decoder(Cat | ArrayDog)
+    # msgspec.inspect rejects the mixed-shape annotation before the membrane
+    # can lower it to our narrower unsupported_union code.
+    assert caught.value.code == "unsupported_annotation"
     assert caught.value.path == ()
+
+
+@pytest.mark.parametrize(
+    ("document", "type_"),
+    [
+        (b"[0]:", ArrayDog),
+        (b"[1]: cat", ArrayDog),
+        (b"[2]: SENTINEL,rex", ArrayCat | ArrayDog),
+        (b"[3]: dog,rex,extra", ArrayDog),
+    ],
+)
+def test_invalid_tagged_array_like_never_reports_internal_error(
+    document: bytes, type_: object
+) -> None:
+    with pytest.raises(msgspec.DecodeError) as caught:
+        toon.decode(document, type=type_)
+    assert "internal error" not in str(caught.value)
+    assert "SENTINEL" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("document", "json_document", "type_"),
+    [
+        (b"[2]: true,4", b"[true,4]", ArrayOne | ArrayTwo),
+        (b"[2]: 1.0,4", b"[1.0,4]", ArrayOne | ArrayTwo),
+        (b"kind: true\nvalue: 4", b'{"kind":true,"value":4}', ObjectOne | ObjectTwo),
+        (b"kind: 1.0\nvalue: 4", b'{"kind":1.0,"value":4}', ObjectOne | ObjectTwo),
+    ],
+)
+def test_integer_tag_rejects_python_equal_scalar_categories(
+    document: bytes, json_document: bytes, type_: object
+) -> None:
+    with pytest.raises(msgspec.DecodeError):
+        toon.decode(document, type=type_)
+    with pytest.raises(msgspec.DecodeError):
+        msgspec.json.decode(json_document, type=type_)
