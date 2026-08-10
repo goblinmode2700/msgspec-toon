@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0b4
 
 Tagged positional decode parity and feature-interaction evidence.
 
