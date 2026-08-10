@@ -25,6 +25,6 @@
 
 - [x] 4.1 Run focused tests, OpenSpec strict validation, `make check`, corpus, and G2.
 - [x] 4.2 Run same-session relevant encode/decode timing and confirm canonical token/byte locks.
-- [ ] 4.3 Update the handoff, last-mile ledger, and GitHub issue with evidence.
-- [ ] 4.4 Export the public repair and qualify the next beta without publication.
-- [ ] 4.5 Publish only after the qualified artifact set passes and owner authority remains valid.
+- [x] 4.3 Update the handoff, last-mile ledger, and GitHub issue with evidence.
+- [x] 4.4 Export the public repair and qualify the next beta without publication.
+- [x] 4.5 Publish only after the qualified artifact set passes and owner authority remains valid.

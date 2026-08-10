@@ -1,11 +1,50 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the trusted `0.2.0b3` round-trip-repair release. Read
+_Last updated after the trusted `0.2.0b4` tagged-array repair release. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
+
+**Outside-agent issue 06 is fixed, published, and independently verified in `0.2.0b4`.** The
+encoder already emitted tagged `array_like` Structs as `[tag, field0, ...]`; typed decode treated
+the tag as field zero and rejected the union plan. The repair ports msgspec 0.21.1's C decoder
+boundary: consume and type-check the positional discriminator first, then validate a concrete plan
+or select a homogeneous tagged positional union member before declared field placement. Python's
+cross-type equality cannot misdispatch integer tags: `true` and `1.0` do not match tag `1`.
+
+Construction still uses the public Struct constructor with no intermediate dictionary or list
+tree. Mixed object and positional tagged union variants remain a plan error. Ten outside-agent
+feature pairs now have named executable round trips. The generated matrix reports 36 supported,
+2 parity rejects, 4 unsupported, 1 required TOON-format divergence, and zero silent failures.
+Canonical bytes and token counts did not change.
+
+Final local gates pass 39 Rust tests and 308 Python tests with 8 expected skips, the 538/538
+official corpus with 84/84 strict-error fixtures, seven G2 probes, the efficiency lock, and strict
+validation of all seven authoritative specs. Exact pre-repair A/B shows no significant ordinary
+positional-decode change at 4, 46, 512, or 4096 records. At 46 records, the repeated higher-power
+control was +1.01% with MDE 3.48%. Candidate absolute means were 4.33 microseconds untagged, 5.15
+microseconds concrete tagged, and 5.79 microseconds tagged union. No before/after speed claim is
+made for operations the baseline could not execute.
+
+Annotated tag `v0.2.0b4` names exact qualified public revision
+`2d458ab19bd0186b8758b4824c266c9d240200a1`. Publication-disabled run `31436015350` and trusted
+OIDC run `31438123425` passed the 12-wheel plus sdist build, target-native verification,
+exact-set collection, evidence, publication, and GitHub prerelease gates. PyPI exposes exactly the
+13 manifest files with matching SHA-256 values; all 13 PEP 740 attestations verify against
+`goblinmode2700/msgspec-toon`. Fresh PyPI installs pass the repaired concrete, union, and
+wrong-scalar-category cases on CPython 3.13 ABI3 and CPython 3.14t with the GIL disabled. The
+GitHub release assets are byte-identical to trusted workflow evidence. Public evidence commit
+`165536b` updates the trusted report and generated figures on `main`. Issue
+[#6](https://github.com/goblinmode2700/msgspec-toon/issues/6) is closed with credit and proof.
+Trusted artifacts are retained under `.git/public-origin/.git/release-runs/31438123425/`.
+
+There is no remaining unblocked item from this outside-agent round. Stop unless new evidence or an
+explicit task opens another round. Time-gated PyO3 maintenance and the unimplemented GitHub Actions
+benchmark-sharding proposal remain separate work.
+
+## Previous release state
 
 **The five post-release reports from 2026-08-10 are resolved, and their repair is published as
 `0.2.0b3`.** GitHub issues

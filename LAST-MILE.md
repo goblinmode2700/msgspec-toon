@@ -1484,3 +1484,67 @@ CPython 3.13.1 loaded the ABI3 extension; CPython 3.14.7 free-threaded loaded th
 with the GIL disabled. Trusted artifacts, PyPI JSON, and evidence are retained under
 `.git/public-origin/.git/release-runs/31407671281/`. The feedback round has reached its stop
 condition: every reported issue is closed and no measured optimization lead remains.
+
+#### Checkpoint 41 — tagged array-like decode repair
+
+Outside-agent issue 06 showed that `0.2.0b3` could encode a tagged `array_like` Struct but could
+not decode the same bytes. The concrete path treated the discriminator as field zero and could
+reach `internal error`; Python plan lowering rejected the union path.
+
+The repair ports the relevant msgspec 0.21.1 C decoder boundary. The first positional scalar is a
+discriminator prelude. A concrete plan validates it; a homogeneous tagged array-like union uses
+it to select a compiled member plan. Declared field placement starts afterward. Selection matches
+the scalar category before equality, so Python's `True == 1` and `1.0 == 1` rules cannot select an
+integer tag. Mixed object and positional variants remain a plan error. Construction still uses the
+public Struct constructor and allocates no intermediate dictionary or list tree.
+
+The support matrix adds the ten feature pairs from the outside-agent review as executable round
+trips. The generated report now records 36 supported entries, 2 parity rejects, 4 unsupported
+entries, 1 fixture-required format divergence, and zero silent failures. Canonical bytes and token
+counts are unchanged.
+
+Final gates: 39 Rust tests and 308 Python tests pass with 8 expected skips; the official corpus is
+538/538 with 84/84 strict-error fixtures; all seven G2 probes pass; all seven authoritative specs
+and the active change validate strictly. The complete ten-worker report records G2, G3, and G5
+pass and the known G4 miss.
+
+Focused A/B used exact pre-repair commit `1f07cf5`, not the older `v0.4.0` tag. Ordinary
+positional decode showed no significant difference at 4, 46, 512, or 4096 records. The 46-record
+control was repeated at double power: +1.01%, MDE 3.48%, no significant difference. Candidate
+absolute means at 46 records were 4.33 microseconds for untagged positional decode, 5.15
+microseconds for concrete tagged positional decode, and 5.79 microseconds for tagged-union
+positional decode. No before/after speed claim is possible for the repaired operations because the
+baseline could not execute them.
+
+Internal repair commit `1935432` preserves the active OpenSpec change. Public source commit
+`bb45915` and release candidate `2d458ab` export only package, test, benchmark, README, changelog,
+and generated-evidence surfaces. GitHub issue 6 tracks the repair. Publication-disabled artifact
+qualification run `31436015350` is in progress; no `v0.2.0b4` tag exists yet.
+
+#### Checkpoint 42 — `0.2.0b4` qualified, published, and verified
+
+Local canonical qualification passed on public release candidate
+`2d458ab19bd0186b8758b4824c266c9d240200a1`. Default-branch validation run `31435888269` then
+passed on the same revision. Publication-disabled run `31436015350` completed 29 jobs
+successfully and skipped only PyPI publication and GitHub release attachment. It built and
+target-verified twelve wheels plus one sdist, collected exactly thirteen unique files, and
+generated a report bound to version `0.2.0b4`, revision `2d458ab`, and the verified manifest.
+
+After that gate passed, annotated tag `v0.2.0b4` triggered trusted-publishing run `31438123425`.
+Every canonical validation, build, target-native verification, exact-set collection, evidence,
+PyPI OIDC publication, and GitHub prerelease-attachment job passed. PyPI contains exactly the
+trusted run's twelve wheels and one sdist. There are no missing, extra, or SHA-256-mismatched
+files. Pinned `pypi-attestations==0.0.30` verifies all thirteen PEP 740 attestations against
+repository identity `https://github.com/goblinmode2700/msgspec-toon`.
+
+Fresh PyPI installs outside the repository cooldown configuration pass concrete and union tagged
+`array_like` round trips and reject boolean/float tokens for integer tags. CPython 3.13.1 loads
+the ABI3 wheel. CPython 3.14.7 free-threaded loads the cp314t wheel with the GIL disabled. The
+GitHub release is a non-draft prerelease. Its `report.json` and `verified-release.json` are
+byte-identical to the trusted workflow artifacts.
+
+Public evidence commit `165536b` places the trusted report and regenerated benchmark figures on
+`main`; it changes no tagged package artifact. Issue 6 is closed with release and verification
+evidence and thanks the outside agents that found the cross-feature hole. Trusted artifacts,
+qualification inputs, manifest, report, and release assets are retained below
+`.git/public-origin/.git/release-runs/31438123425/`.
