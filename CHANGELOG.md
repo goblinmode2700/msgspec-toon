@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Recoverable indentation-option mismatch diagnostics.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 25 newly supported, 1 removed, 28 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Report the observed leading-space count when decode receives the wrong `indent_size`.
+- Keep the specification default of two and require producer/consumer widths to agree.
+- Round-trip nested mappings, tables, and typed Structs at widths 1, 2, and 4 when configured.
+- Document UTF-8 BOM and CRLF input acceptance.
+- Preserve canonical bytes, token counts, G2, and official explicit-width fixture behavior.
+
 ## 0.2.0b4
 
 Tagged positional decode parity and feature-interaction evidence.
