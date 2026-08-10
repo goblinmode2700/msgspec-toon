@@ -353,6 +353,12 @@
       "method": "add one Consumer::scalar_field event whose default is the old key then scalar sequence, specialize only the typed Struct path, and compare with the exact S3 wheel for eight B-C-C-B rounds at 64, 512, and 4096 records; run the same untyped rows as a control",
       "result": "typed decode improved -4.4% at 64 records (MDE 0.9%), -5.7% at 512 (MDE 1.5%), and -4.1% at 4096 (MDE 0.7%). The untyped control was no significant difference at 64 and 4096 and -1.6% at 512. Against the immutable phase-8 checkpoint, 64 was parity, 512 was -5.0%, and 4096 was -3.1%.",
       "ruling": "ADOPTED. The generic event sequence remains the semantic fallback, nested field groups are unchanged, and the typed path removes only the redundant awaiting-state round trip. make check passed 39 Rust and 259 Python tests with 7 expected skips; corpus remained 538/538 with 84/84 strict errors; G2, every G3 row, and every G5 row passed. The known encode-only G4 misses through 512 are unchanged. Artifacts: benches/ab-s4-base.json, benches/ab-s4-untyped.json, and benches/ab-phase8-current.json."
+    },
+    "typed_nested_field_open_fusion_S5": {
+      "question": "after leaf fusion, do nested tabular field groups still pay a redundant key-to-awaiting-to-expected-plan transition before opening their child frame?",
+      "method": "add Consumer::start_object_field with the old key then start_object sequence as its default; specialize only the typed Struct path to carry the resolved child plan into frame setup; compare with the exact S4 wheel for eight B-C-C-B rounds and run untyped decode as the control",
+      "result": "typed decode improved -1.6% at 64 records (MDE 0.8%), -1.9% at 512 (MDE 0.7%), and -1.1% at 4096 (MDE 0.8%). Untyped decode was no significant difference at all three sizes.",
+      "ruling": "ADOPTED. The post-S4 symbolized profile showed nested start_object at 24 of 536 native samples, with expected_plan and place also visible. S5 removes only opening-time rediscovery; generic, skipped, Any, Dict, and non-Struct paths retain the original event sequence. make check, 538/538 corpus, 84/84 strict errors, and all six G2 probes passed. Artifacts: benches/ab-s5-base.json and benches/ab-s5-untyped.json."
     }
   },
   "harness_findings": {

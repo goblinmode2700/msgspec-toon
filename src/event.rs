@@ -50,6 +50,13 @@ pub trait Consumer {
         Ok(())
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
+    /// Offer an adjacent object key and nested object opening as one
+    /// operation. The default preserves the ordinary event sequence; typed
+    /// consumers may carry the resolved child plan directly into frame setup.
+    fn start_object_field(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
+        self.key(key, at)?;
+        self.start_object(at)
+    }
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault>;
     /// Offer an adjacent object key and scalar as one operation. The default
     /// preserves the ordinary event sequence; typed consumers may fuse field

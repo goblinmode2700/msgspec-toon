@@ -564,6 +564,54 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         index
     }
 
+    fn start_object_for_plan(&mut self, declared: usize, at: Position) -> Result<(), Fault> {
+        let expected = match &self.root.node(declared).kind {
+            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => self
+                .pending_object_plan
+                .take()
+                .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
+            _ => self.root.resolve_container(declared),
+        };
+        let expected_node = self.root.node(expected);
+        match &expected_node.kind {
+            PlanKind::Struct(plan) if !plan.array_like => {
+                // A struct opening directly under an array frame starts a
+                // new row: rewind the array's key memo for replay.
+                if matches!(self.stack.last(), Some(Frame::List { .. }))
+                    && let Some(memo) = self.row_memos.last_mut()
+                {
+                    memo.cursor = 0;
+                }
+                let field_count = plan.fields.len();
+                let mut values = self.values_pool.pop().unwrap_or_default();
+                values.clear();
+                values.resize(field_count, None);
+                self.stack.push(Frame::Struct {
+                    plan,
+                    values,
+                    awaiting: None,
+                    skip_value: false,
+                });
+                Ok(())
+            }
+            PlanKind::Dict(_, value) => {
+                self.stack.push(Frame::Dict {
+                    map: new_final_dict(self.py),
+                    pending: None,
+                    value: *value,
+                    constraints: expected_node.constraints.as_deref(),
+                });
+                Ok(())
+            }
+            PlanKind::Any => self.begin_any(AnyEvent::StartObject, at, None),
+            PlanKind::Custom(class) if self.dec_hook.is_some() => {
+                let class = class.clone_ref(self.py);
+                self.begin_any(AnyEvent::StartObject, at, Some(class))
+            }
+            _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
+        }
+    }
+
     #[inline(always)]
     fn finish_struct(
         &mut self,
@@ -833,51 +881,58 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
         }
         let declared = self.expected_plan_or_fault(at)?;
-        let expected = match &self.root.node(declared).kind {
-            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => self
-                .pending_object_plan
-                .take()
-                .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
-            _ => self.root.resolve_container(declared),
-        };
-        let expected_node = self.root.node(expected);
-        match &expected_node.kind {
-            PlanKind::Struct(plan) if !plan.array_like => {
-                // A struct opening directly under an array frame starts a
-                // new row: rewind the array's key memo for replay.
-                if matches!(self.stack.last(), Some(Frame::List { .. }))
-                    && let Some(memo) = self.row_memos.last_mut()
-                {
-                    memo.cursor = 0;
-                }
-                let field_count = plan.fields.len();
-                let mut values = self.values_pool.pop().unwrap_or_default();
-                values.clear();
-                values.resize(field_count, None);
-                self.stack.push(Frame::Struct {
-                    plan,
-                    values,
-                    awaiting: None,
-                    skip_value: false,
-                });
-                Ok(())
-            }
-            PlanKind::Dict(_, value) => {
-                self.stack.push(Frame::Dict {
-                    map: new_final_dict(self.py),
-                    pending: None,
-                    value: *value,
-                    constraints: expected_node.constraints.as_deref(),
-                });
-                Ok(())
-            }
-            PlanKind::Any => self.begin_any(AnyEvent::StartObject, at, None),
-            PlanKind::Custom(class) if self.dec_hook.is_some() => {
-                let class = class.clone_ref(self.py);
-                self.begin_any(AnyEvent::StartObject, at, Some(class))
-            }
-            _ => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
+        self.start_object_for_plan(declared, at)
+    }
+
+    fn start_object_field(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
+        if self.any_sub.is_some() || self.skip_depth > 0 {
+            self.key(key, at)?;
+            return self.start_object(at);
         }
+
+        let strict = self.strict;
+        let declared = match self.stack.last_mut() {
+            Some(Frame::Struct {
+                plan,
+                values,
+                awaiting,
+                skip_value,
+            }) => {
+                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
+                match looked_up {
+                    Some(index) if EXTENDED && index == usize::MAX => {
+                        *skip_value = true;
+                        None
+                    }
+                    Some(index) => {
+                        if values[index].is_some() && strict {
+                            return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
+                        }
+                        *awaiting = Some(index);
+                        Some(plan.fields[index].value)
+                    }
+                    None if plan.forbid_unknown => {
+                        return Err(Fault::validation_at(FaultCode::UnknownField, at));
+                    }
+                    None => {
+                        *skip_value = true;
+                        None
+                    }
+                }
+            }
+            _ => {
+                self.key(key, at)?;
+                return self.start_object(at);
+            }
+        };
+
+        let Some(declared) = declared else {
+            return self.start_object(at);
+        };
+        if EXTENDED && std::mem::take(&mut self.pending_invalid_tag) {
+            return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+        }
+        self.start_object_for_plan(declared, at)
     }
 
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {

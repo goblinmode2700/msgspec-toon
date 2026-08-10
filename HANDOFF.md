@@ -1,6 +1,6 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at the qualified S4 typed-decode checkpoint. Read
+_Last updated at the qualified S5 typed-decode checkpoint. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
@@ -18,7 +18,15 @@ Against the immutable phase-8 capability checkpoint, 64 records is now parity; 5
 faster; and 4096 is 3.1% faster. OpenSpec tasks 11.5 and 12.4 are complete. The remaining release
 work is task 14.3's full artifact workflow, task 14.4's final evidence/archive checkpoint, and the
 authorized publication stop in 14.5. Do not start a larger row-program rewrite without a new
-symbolized profile showing a mechanism beyond the accepted scalar-field fusion.
+symbolized profile showing a mechanism beyond the accepted fused field events.
+
+Checkpoint 34 adopted S5 after that profile showed nested group opening still paid the generic
+`key` then `start_object` plan transition. `start_object_field` now defaults to the old sequence,
+while the typed Struct override carries the already resolved child plan directly into frame setup.
+Against the exact S4 wheel, typed decode improved 1.6% at 64 records, 1.9% at 512, and 1.1% at
+4096. Untyped controls were unchanged. The next measured mechanism is nested Struct return:
+`end_object`, `expected_plan`, and generic `place` remain visible in the post-S4 profile. Change
+frame ownership only as one separately measured S6 slice; do not combine it with a row VM.
 
 The capability implementation, sustained fuzzing,
 canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
@@ -28,8 +36,8 @@ MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). S3 and S4 together remove all three misse
 release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster. The closer phase-8
 comparison now also passes the qualification requirement.
 
-Two mechanism-led remedies are accepted: restoring `finish_struct` inlining and fusing tabular
-leaf field dispatch. Four earlier remedies were rejected and reverted: direct references into
+Three mechanism-led remedies are accepted: restoring `finish_struct` inlining, fusing tabular
+leaf field dispatch, and fusing nested field-group opening. Four earlier remedies were rejected and reverted: direct references into
 the plan arena, merging array-like and object Struct frames, and compile-time strict/permissive
 specialization.
 A final cold outlining of permissive scalar conversion also failed to remove the effect and was

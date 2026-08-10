@@ -1301,3 +1301,26 @@ containers. G3 and every G5 cell passed. `make bench` returns nonzero only for t
 encode misses through 512 records; S4 does not touch encode. Artifacts:
 `benches/ab-s4-base.json`, `benches/ab-s4-untyped.json`, and
 `benches/ab-phase8-current.json`. OpenSpec tasks 11.5 and 12.4 are complete.
+
+#### Checkpoint 34 — S5 fuses nested field-group opening
+
+Hypothesis: after S4 removed the leaf-cell awaiting-state round trip, nested field groups still
+paid `key`, then `start_object`, then `expected_plan_or_fault` for every row. Passing the resolved
+child plan directly into frame setup should remove this repeated discovery without changing the
+generic event contract.
+
+Confirmed. `Consumer::start_object_field` defaults to the original `key` then `start_object`
+sequence. The parser uses it only for nested tabular field groups. The typed Struct override keeps
+the same memo lookup, duplicate/unknown/tag handling, then opens the child with the resolved plan.
+
+Against the exact S4 wheel, the eight-round focused A/B measured typed decode **-1.6% at 64
+records (MDE 0.8%)**, **-1.9% at 512 (MDE 0.7%)**, and **-1.1% at 4096 (MDE 0.8%)**. Every row
+resolved faster. The untyped control stayed within its MDE at all three sizes. `make check` passed
+39 Rust tests and 259 Python tests with 7 expected skips; the official corpus remained 538/538
+with 84/84 strict errors; all six G2 probes passed with zero intermediate builtin containers.
+Artifacts: `benches/ab-s5-base.json` and `benches/ab-s5-untyped.json`.
+
+The S4 symbolized 4096-row profile selected this slice: nested `start_object` accounted for 24 of
+536 native decode samples, while nested `end_object` accounted for 47 and generic
+`expected_plan`/`place` remained visible. S5 changes only opening. S6 may test direct child-return
+placement, but it must be a separate frame-layout candidate with its own exact S5 baseline.

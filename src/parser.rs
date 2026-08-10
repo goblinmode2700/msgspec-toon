@@ -536,8 +536,7 @@ fn emit_row_fields<C: Consumer>(
             consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
             *cursor += 1;
         } else {
-            consumer.key(node.name, at)?;
-            consumer.start_object(at)?;
+            consumer.start_object_field(node.name, at)?;
             emit_row_fields(&node.children, cells, cursor, at, consumer)?;
             consumer.end_object(at)?;
         }
