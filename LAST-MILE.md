@@ -1451,3 +1451,6 @@ corpus remains 538/538 and 84/84. Seven G2 probes pass, including the new native
 with zero intermediate built-in containers. The fresh ten-worker report records G2, G3, and G5
 pass, the known G4 miss, 26 supported matrix entries, zero silent failures, and zero shared locked
 wire changes. Both the bounded OpenSpec change and all authoritative specs validate in strict mode.
+Public commit `90ef919` is on `origin/main`, and issues #1, #2, #3, and #5 are closed with the
+evidence above. The completed OpenSpec change is archived as
+`2026-08-10-repair-roundtrip-parity-after-0-2-0b2`.

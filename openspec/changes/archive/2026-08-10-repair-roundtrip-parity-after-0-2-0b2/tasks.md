@@ -30,4 +30,4 @@
 
 - [x] 5.1 Run focused tests, OpenSpec validation, `make check`, the official corpus, and G2/G3/G5.
 - [x] 5.2 Update `LAST-MILE.md`, `HANDOFF.md`, and release notes with measured results.
-- [ ] 5.3 Post evidence to GitHub issues, close resolved issues, and leave the branch ready for review.
+- [x] 5.3 Post evidence to GitHub issues, close resolved issues, and leave the branch ready for review.

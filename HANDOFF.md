@@ -33,8 +33,12 @@ Current gates: `make check` passes 39 Rust tests and 285 Python tests with 8 exp
 official corpus passes 538/538 with 84/84 strict-error fixtures. `make g2` passes seven probes;
 the new native-scalar Struct probe records zero built-in dictionaries and lists. A fresh complete
 ten-worker `make report` records G2, G3, and G5 pass, the known G4 miss, and zero shared locked-wire
-changes. OpenSpec change `repair-roundtrip-parity-after-0-2-0b2` and all seven authoritative specs
-pass strict validation. The branch is not versioned, committed, pushed, tagged, or published yet.
+changes. The completed OpenSpec change is archived as
+`2026-08-10-repair-roundtrip-parity-after-0-2-0b2`; all seven authoritative specs pass strict
+validation. Public commit `90ef91926ea59b13a600184c9902f5a232692fc3` is on
+`origin/main`. The public export contains no handoff, objective, active-change ledger, or local
+benchmark history. Issues #1, #2, #3, and #5 are closed with evidence. No new version is tagged
+or published yet.
 
 **`0.2.0b2` is published and independently verified.** Annotated tag `v0.2.0b2` names
 public revision `256e014e534ff969bc1ca037d7bb600ab9e2dbf4`. This plot-only beta adds a
