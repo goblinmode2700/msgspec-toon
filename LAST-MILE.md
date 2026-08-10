@@ -1256,3 +1256,23 @@ Struct frames, compile-time strict specialization, and cold permissive-conversio
 Tasks 11.5 and 12.4 therefore remain open. Publication authority exists, but the qualification
 stop fires first. Do not tag or publish `0.2.0b1` without a new measured mechanism that closes the
 closer regression, or a separately approved OpenSpec change that explicitly revises this gate.
+
+#### Checkpoint 32 — S3 restores ordinary Struct-completion inlining
+
+Hypothesis: array-like Struct support added a second `finish_struct` call site, which changed
+LLVM's release inlining decision. The phase-8 binary had no standalone `finish_struct` symbol;
+the current binary outlined a 2,064-byte function and called it once per completed Struct row.
+Forcing that unchanged body inline should recover a per-row typed-decode cost.
+
+Confirmed. The only source change is `#[inline(always)]` on `finish_struct`. Against an immutable
+wheel from the immediately preceding source, an eight-round focused comparison measured typed
+decode **-3.3% at 64 records (MDE 1.2%)**, **-2.8% at 512 (MDE 0.6%)**, and **-2.3% at 4096
+(MDE 2.1%)**. Every relevant row resolved faster. `make check` passed 39 Rust tests and 259 Python
+tests with 7 expected skips; the official corpus remained 538/538 with 84/84 strict errors; all
+six G2 probes passed with zero intermediate builtin containers.
+
+Against the immutable phase-8 checkpoint, initial slowdown flags at 64 (+1.6%) and 512 (+1.2%)
+did not reproduce under the gate's double-power confirmation. The 4096 row still reproduced at
+**+1.8%**, so tasks 11.5 and 12.4 remain open and publication remains stopped. Next: S4, one fused
+typed `scalar_field` event for tabular leaves, with the generic key-then-scalar fallback retained
+as the semantic oracle during the experiment.

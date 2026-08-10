@@ -1,7 +1,5 @@
 {
   "records": [
-    4,
-    16,
     64,
     512,
     4096
@@ -33,192 +31,124 @@
   ],
   "baseline_instrumented": false,
   "canary": {
-    "metric": "typed decode@4",
+    "metric": "typed decode@64",
     "reads_us": [
-      1.75,
-      1.78,
-      1.78
+      16.09,
+      14.73,
+      14.88
     ],
-    "spread_pct": 1.7142857142857157,
+    "spread_pct": 9.232858112695176,
     "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
   },
   "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
   "results": [
     {
-      "metric": "typed decode@4",
+      "metric": "typed decode@64",
       "baseline_us": [
-        1.76,
-        1.78,
-        1.78,
-        1.78,
-        1.77,
-        1.83,
-        1.79,
-        1.79,
-        1.81,
-        1.79
+        14.51,
+        14.45,
+        14.92,
+        14.76,
+        14.57,
+        14.51,
+        14.68,
+        14.89,
+        14.65,
+        14.86
       ],
       "current_us": [
-        1.83,
-        1.84,
-        1.78,
-        1.83,
-        1.86,
-        1.84,
-        1.83,
-        1.88,
-        1.81,
-        1.82
+        14.81,
+        15.02,
+        14.85,
+        14.96,
+        14.86,
+        14.89,
+        15.04,
+        14.8,
+        14.92,
+        15.0
       ],
       "verdict": "slowdown did not reproduce",
       "confirmation": {
-        "change_pct": 2.476609796367635,
+        "change_pct": -0.6457351826837477,
         "significant": false,
-        "minimum_detectable_effect_pct": 3.0567429320855593
+        "minimum_detectable_effect_pct": 3.499152847308206
       },
-      "change_pct": 2.460850111856838,
+      "change_pct": 1.600817438692094,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.2460272478356826
-    },
-    {
-      "metric": "typed decode@16",
-      "baseline_us": [
-        4.42,
-        4.41,
-        4.44,
-        4.4,
-        5.21,
-        4.46,
-        4.39,
-        4.52,
-        4.46,
-        4.6
-      ],
-      "current_us": [
-        4.57,
-        4.6,
-        4.56,
-        4.6,
-        4.61,
-        4.6,
-        4.63,
-        4.68,
-        4.64,
-        4.63
-      ],
-      "verdict": "no significant difference",
-      "confirmation": null,
-      "change_pct": 1.7876848377841426,
-      "significant": false,
-      "minimum_detectable_effect_pct": 3.6552217720002735
-    },
-    {
-      "metric": "typed decode@64",
-      "baseline_us": [
-        14.65,
-        14.96,
-        14.93,
-        14.86,
-        14.78,
-        14.7,
-        14.78,
-        15.08,
-        14.96,
-        15.09
-      ],
-      "current_us": [
-        15.99,
-        15.64,
-        15.41,
-        15.29,
-        15.43,
-        15.78,
-        15.47,
-        15.74,
-        15.62,
-        15.55
-      ],
-      "verdict": "SLOWER",
-      "confirmation": {
-        "change_pct": 4.138276553106227,
-        "significant": true,
-        "minimum_detectable_effect_pct": 0.6203562627755864
-      },
-      "change_pct": 4.791988708918605,
-      "significant": true,
-      "minimum_detectable_effect_pct": 1.1443086075781035
+      "minimum_detectable_effect_pct": 0.8695833925205663
     },
     {
       "metric": "typed decode@512",
       "baseline_us": [
-        113.09,
-        113.42,
-        117.23,
-        114.06,
-        113.25,
-        113.61,
-        113.17,
-        115.69,
-        115.2,
-        116.44
+        113.66,
+        115.11,
+        113.4,
+        114.4,
+        114.12,
+        115.98,
+        113.05,
+        116.1,
+        115.14,
+        115.01
       ],
       "current_us": [
-        121.57,
-        119.0,
-        118.34,
-        119.14,
-        118.68,
-        119.29,
-        122.12,
-        121.49,
-        121.2,
-        119.34
+        114.07,
+        116.08,
+        116.2,
+        116.11,
+        114.8,
+        116.21,
+        117.44,
+        115.64,
+        116.87,
+        115.76
       ],
-      "verdict": "SLOWER",
+      "verdict": "slowdown did not reproduce",
       "confirmation": {
-        "change_pct": 4.51400158386021,
-        "significant": true,
-        "minimum_detectable_effect_pct": 0.6469804609802186
+        "change_pct": 0.7586523723450369,
+        "significant": false,
+        "minimum_detectable_effect_pct": 0.7608427602523645
       },
-      "change_pct": 4.803695553459782,
+      "change_pct": 1.1527352373971378,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.198179668594041
+      "minimum_detectable_effect_pct": 0.8219277939456139
     },
     {
       "metric": "typed decode@4096",
       "baseline_us": [
-        1017.63,
-        1025.08,
-        1018.76,
-        1040.9,
-        1026.51,
-        1005.18,
-        1024.72,
-        1033.48,
-        1024.71,
-        1039.81
+        1011.6,
+        1023.18,
+        1006.32,
+        1015.19,
+        1022.89,
+        1022.11,
+        1027.9,
+        1016.79,
+        1009.06,
+        1018.57
       ],
       "current_us": [
-        1059.84,
-        1056.6,
-        1051.74,
-        1050.75,
-        1054.47,
-        1055.76,
-        1082.61,
-        1072.99,
-        1080.1,
-        1072.2
+        1031.27,
+        1041.6,
+        1047.89,
+        1028.24,
+        1034.48,
+        1032.49,
+        1042.67,
+        1030.74,
+        1038.04,
+        1027.47
       ],
       "verdict": "SLOWER",
       "confirmation": {
-        "change_pct": 4.038783035048635,
+        "change_pct": 2.4934142188227617,
         "significant": true,
-        "minimum_detectable_effect_pct": 0.544415136900195
+        "minimum_detectable_effect_pct": 0.5011955921150983
       },
-      "change_pct": 3.7075963411518806,
+      "change_pct": 1.781865041022796,
       "significant": true,
-      "minimum_detectable_effect_pct": 1.0439005471704164
+      "minimum_detectable_effect_pct": 0.6327785370442894
     }
   ]
 }

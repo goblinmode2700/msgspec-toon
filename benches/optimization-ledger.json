@@ -341,6 +341,12 @@
       "method": "compare the final reverted source with the immutable phase-8 wheel in one session using five B-C-C-B rounds per size and independent double-power confirmation of every initial slowdown",
       "result": "+2.5% at 4 records (confirmation did not reproduce), +1.8% at 16 (MDE 3.7%), +4.8% at 64 (MDE 1.1%, reproduced), +4.8% at 512 (MDE 1.2%, reproduced), and +3.7% at 4096 (MDE 1.0%, reproduced). The complete frozen v0.4.0 release guard separately passes and shows typed decode 3.6-6.1% faster at every size.",
       "ruling": "RELEASE STOP. The parser preflight entry split reduced the initial 14-23% ordinary-path regression, but a closer 3-5% residual remains. Direct arena references, merged Struct frames, compile-time strict specialization, and cold permissive-conversion outlining were measured, rejected, and fully reverted. Do not tag or publish 0.2.0b1 without a new measured mechanism or an explicit OpenSpec change that revises this gate. Artifact: benches/ab-phase8-current.json."
+    },
+    "typed_finish_struct_inlining_S3": {
+      "question": "did the second finish_struct call site added for array-like Structs cause LLVM to outline the ordinary row-completion body that phase 8 had inlined?",
+      "method": "add only #[inline(always)] to finish_struct, compare with an immutable wheel from the immediately preceding source, and time only typed decode at 64, 512, and 4096 records with eight B-C-C-B rounds per metric",
+      "result": "typed decode improved -3.3% at 64 records (MDE 1.2%), -2.8% at 512 (MDE 0.6%), and -2.3% at 4096 (MDE 2.1%); every row resolved faster. Against the immutable phase-8 capability checkpoint, the 64 and 512 slowdown flags did not reproduce, while 4096 still reproduced at +1.8%.",
+      "ruling": "ADOPTED. The machine-code localization was causal: restoring the old inlining decision recovers a per-row cost without changing semantics. make check passed 39 Rust and 259 Python tests with 7 expected skips; the official corpus remained 538/538 with 84/84 strict errors; all six G2 probes passed with zero intermediate builtin containers. The release stop narrows to typed decode@4096; proceed to fused scalar-field dispatch rather than retrying plan-node lookup candidates. Artifacts: benches/ab-s3-base.json and benches/ab-phase8-current.json."
     }
   },
   "harness_findings": {

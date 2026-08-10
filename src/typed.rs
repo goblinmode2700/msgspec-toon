@@ -515,6 +515,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         }
     }
 
+    #[inline(always)]
     fn finish_struct(
         &mut self,
         plan: &'plan StructPlan,

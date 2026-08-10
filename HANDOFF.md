@@ -7,16 +7,25 @@ CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**STOP: do not tag or publish `0.2.0b1`.** The capability implementation, sustained fuzzing,
+**STOP: do not tag or publish `0.2.0b1`.** Checkpoint 32 adopted S3, restoring the phase-8
+`finish_struct` inlining decision. Against the immediately preceding immutable wheel, typed
+decode improved 3.3% at 64 records, 2.8% at 512, and 2.3% at 4096; every row resolved faster.
+The 64 and 512 phase-8 slowdown flags no longer reproduce. The 4096 comparison still reproduces
+at +1.8%, so OpenSpec tasks 11.5 and 12.4 remain open. The next mechanism is S4: fuse the typed
+consumer's adjacent key and scalar events for tabular leaf cells, preserving the generic event
+fallback and parser/Python membrane.
+
+The capability implementation, sustained fuzzing,
 canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
 are complete, but OpenSpec tasks 11.5 and 12.4 remain open. Against the immutable phase-8
-checkpoint, the reverted final source reproduces typed-decode slowdowns at 64 records (+4.8%,
-MDE 1.1%), 512 (+4.8%, MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). At 4 records the initial +2.5%
-flag did not reproduce; at 16 the +1.8% observation was below its 3.7% MDE. The complete
+checkpoint, the pre-S3 source reproduced typed-decode slowdowns at 64 records (+4.8%, MDE 1.1%),
+512 (+4.8%, MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). S3 removes the first two reproduced misses
+and reduces, but does not close, the last. The complete
 release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster, but that does not
 erase the closer feature-checkpoint regression required by tasks 11.5 and 12.4.
 
-Three mechanism-led remedies were rejected and reverted: direct references into the plan arena,
+One mechanism-led remedy is now accepted: restoring `finish_struct` inlining. Four earlier
+remedies were rejected and reverted: direct references into the plan arena,
 merging array-like and object Struct frames, and compile-time strict/permissive specialization.
 A final cold outlining of permissive scalar conversion also failed to remove the effect and was
 reverted. The accepted default-Encoder cache and parser preflight split repair separate functional
