@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0b5
 
 Recoverable indentation-option mismatch diagnostics.
 
