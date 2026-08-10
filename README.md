@@ -107,12 +107,22 @@ The public surface follows `msgspec.json` where support exists:
 - strict decoding by default
 - msgspec-compatible encode, decode, and validation errors
 
-TOON wire options are explicit:
+The encoder can use one through 16 spaces per indentation level. The decoder default is
+two spaces. If you select another width, the producer and consumer must use the same
+setting:
 
 ```python
-toon.encode(value, delimiter="\t", indent=1)
+wire = toon.encode(value, delimiter="\t", indent=1)
 toon.decode(wire, indent_size=1)
 ```
+
+If they do not match, the decode error reports the observed leading-space count and tells
+the caller to pass the matching `indent_size`. Using `indent=1` can reduce tokens in nested
+documents, but it makes the width an out-of-band pipeline setting. Payload shape still
+decides whether TOON uses fewer tokens than compact JSON.
+
+Decode accepts a leading UTF-8 byte order mark, Windows `CRLF` line endings, and a final
+newline. These inputs normalize only while reading; encoding does not emit a byte order mark.
 
 The functional and reusable decoders both accept `float_hook`:
 

@@ -66,6 +66,27 @@ def test_reusable_decoder_and_encoder() -> None:
         assert encoder.encode(value) == TEXT
 
 
+@pytest.mark.parametrize("indent", [1, 2, 4])
+def test_typed_decoder_uses_explicit_indent_width(indent: int) -> None:
+    value = Document(
+        workers=[
+            Worker(
+                pid=9_007_199_254_740_993,
+                provider="claude",
+                metadata=Metadata(alias="worker-a", region="west"),
+            )
+        ]
+    )
+    wire = toon.encode(value, indent=indent)
+    assert toon.decode(wire, type=Document, indent_size=indent) == value
+    assert toon.Decoder(Document, indent_size=indent).decode(wire) == value
+    if indent == 2:
+        assert toon.decode(wire, type=Document) == value
+    else:
+        with pytest.raises(msgspec.DecodeError, match=f"observed indentation is {indent}"):
+            toon.decode(wire, type=Document)
+
+
 class Renamed(msgspec.Struct, rename="camel"):
     worker_id: int
     display_name: str

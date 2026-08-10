@@ -50,6 +50,19 @@ def test_untyped_error_never_echoes_payload() -> None:
     assert info.value.line == 1
 
 
+def test_indent_diagnostic_reports_only_a_coordinate() -> None:
+    sentinel = "SENTINEL_2077_DO_NOT_LEAK"
+    malformed = f"outer:\n {sentinel}: 1".encode()
+
+    with pytest.raises(toon.DecodeError) as info:
+        toon.decode(malformed)
+    _assert_no_leak(info.value, sentinel)
+    assert info.value.code == "invalid_indent"
+    assert info.value.line == 2
+    assert info.value.column == 2
+    assert "observed indentation is 1 space" in str(info.value)
+
+
 def test_validation_error_never_echoes_payload() -> None:
     sentinel = "SENTINEL_5150_DO_NOT_LEAK"
     text = f"workers[1]{{pid,provider,metadata{{alias,region}}}}:\n  {sentinel},x,y,z".encode()

@@ -144,11 +144,53 @@ def test_delimiter_options_round_trip() -> None:
     assert tab == b"tags[2\t]: a\tb"
 
 
-def test_indent_options_round_trip() -> None:
-    value = {"outer": {"inner": {"deep": 1}}, "rows": [{"x": 1}, {"x": 2}]}
-    encoded = toon.encode(value, indent=4)
-    assert b"    inner:" in encoded
-    assert toon.decode(encoded, indent_size=4) == value
+@pytest.mark.parametrize("indent", [1, 2, 4])
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"outer": {"inner": {"deep": 1}}},
+        [{"x": 1, "label": "a"}, {"x": 2, "label": "b"}],
+    ],
+    ids=["nested_mapping", "table"],
+)
+def test_indent_width_contract_is_recoverable(indent: int, value: object) -> None:
+    encoded = toon.encode(value, indent=indent)
+    assert toon.decode(encoded, indent_size=indent) == value
+    assert toon.Decoder(indent_size=indent).decode(encoded) == value
+    if indent == 2:
+        assert toon.decode(encoded) == value
+    else:
+        unit = "space" if indent == 1 else "spaces"
+        action = "pass the matching" if indent == 1 else "check"
+        message = rf"observed indentation is {indent} {unit}; .*{action}.*indent_size"
+        with pytest.raises(msgspec.DecodeError, match=message):
+            toon.decode(encoded)
+        with pytest.raises(msgspec.DecodeError, match=message):
+            toon.Decoder().decode(encoded)
+
+
+def test_explicit_indent_size_remains_a_strict_override() -> None:
+    encoded = toon.encode({"outer": {"inner": 1}}, indent=1)
+    with pytest.raises(msgspec.DecodeError, match="observed indentation is 1 space"):
+        toon.decode(encoded, indent_size=2)
+    assert toon.decode(encoded, indent_size=1) == {"outer": {"inner": 1}}
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        b"outer:\n inner: 1",
+        bytearray(b"outer:\n inner: 1"),
+        memoryview(b"outer:\n inner: 1"),
+        "outer:\n inner: 1",
+    ],
+)
+def test_indent_diagnostic_supports_every_input_buffer(document: object) -> None:
+    with pytest.raises(msgspec.DecodeError, match="observed indentation is 1 space") as caught:
+        toon.decode(document)  # type: ignore[arg-type]
+    assert caught.value.line == 2
+    assert caught.value.column == 2
+    assert caught.value.code == "invalid_indent"
 
 
 def test_default_options_are_byte_identical() -> None:

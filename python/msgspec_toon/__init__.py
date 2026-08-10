@@ -168,12 +168,59 @@ class ValidationError(msgspec.ValidationError):
         self.code = code
 
 
-def _translate_fault(exc: _native.NativeFault) -> BaseException:
+def _observed_indent(buf: bytes | bytearray | memoryview | str, line: int) -> int | None:
+    """Return a structural count only; never retain or format source text."""
+    if line < 1:
+        return None
+    source = buf if isinstance(buf, str) else memoryview(buf).cast("B")
+    newline = "\n" if isinstance(source, str) else 10
+    space = " " if isinstance(source, str) else 32
+    start = 0
+    current_line = 1
+    for index, value in enumerate(source):
+        if current_line == line:
+            start = index
+            break
+        if value == newline:
+            current_line += 1
+    else:
+        if current_line != line:
+            return None
+        start = len(source)
+
+    indent = 0
+    while start + indent < len(source) and source[start + indent] == space:
+        indent += 1
+    return indent
+
+
+def _translate_fault(
+    exc: _native.NativeFault,
+    *,
+    buf: bytes | bytearray | memoryview | str | None = None,
+) -> BaseException:
     cls = ValidationError if exc.validation else DecodeError
+    message = exc.safe_message
+    column = exc.column
+    if buf is not None and exc.code in {"invalid_indent", "depth_jump", "wrong_array_length"}:
+        observed = _observed_indent(buf, exc.line)
+        if observed:
+            unit = "space" if observed == 1 else "spaces"
+            column = observed + 1
+            if exc.code == "invalid_indent":
+                action = "pass the matching indent_size"
+            elif exc.code == "depth_jump":
+                action = "indentation increased by more than one level; check indent_size"
+            else:
+                action = "check indent_size and the declared row count"
+            message = (
+                f"observed indentation is {observed} {unit}; {action} "
+                f"at line {exc.line}, column {column}"
+            )
     return cls(
-        exc.safe_message,
+        message,
         line=exc.line,
-        column=exc.column,
+        column=column,
         code=exc.code,
     )
 
@@ -252,7 +299,7 @@ class Decoder:
         try:
             return self._native.decode(buf)
         except _native.NativeFault as exc:
-            raise _translate_fault(exc) from None
+            raise _translate_fault(exc, buf=buf) from None
 
 
 _DEFAULT_ENCODER: Final = Encoder()

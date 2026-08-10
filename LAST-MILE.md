@@ -1548,3 +1548,44 @@ Public evidence commit `165536b` places the trusted report and regenerated bench
 evidence and thanks the outside agents that found the cross-feature hole. Trusted artifacts,
 qualification inputs, manifest, report, and release assets are retained below
 `.git/public-origin/.git/release-runs/31438123425/`.
+
+#### Checkpoint 43 — issue-07 recoverable indentation mismatch
+
+The outside-agent option-surface review found that `encode(..., indent=1)` emits a document the
+default width-two decoder rejects, while the old error did not expose the setting needed to repair
+the call. The wire carries no indentation declaration. GitHub issue 7 credits the agents and
+tracks the repair. Their triple-feature probes also confirm the issue-06 tagged positional vein is
+exhausted.
+
+The report allowed inference or a recoverable error. Automatic inference was implemented first:
+omission differed from explicit configuration and scanner state selected the first positive data
+indentation once, without copy or retry. Correctness passed, but exact-source A/B against `8f25b9a`
+reproduced reusable typed decode 2.0-2.3% slower at 46 records. A same-binary automatic/explicit
+control was neutral, and forcing explicit width two on both A/B sides remained slower. With the
+cause unresolved, C9 rejected the candidate. A native error-path variant then reproduced
+functional decode +2.8% at 46 and was also removed.
+
+The adopted repair changes no Rust source. The Python exception veneer activates only after a
+native `invalid_indent`, `depth_jump`, or row-count fault. It scans to the native line coordinate,
+counts leading spaces through a zero-copy view, discards the view, and reports only that structural
+coordinate plus the recovery action. Source lines, keys, cells, scalar values, and sentinel text
+never enter the exception. Bytes, bytearray, memoryview, and str inputs share the behavior.
+
+```text
+gate                                      result
+────                                      ──────
+focused width/error tests                 30 passed
+make check                                39 Rust + 322 Python passed; 8 expected skips
+official corpus                           538/538; 84/84 strict errors
+G2                                        seven probes; zero intermediate builtin trees
+efficiency lock                           exact; canonical bytes/tokens unchanged
+strict OpenSpec                           seven specs + active change pass
+functional decode A/B                     no significant difference at 4/46/512/4096
+typed decode A/B                          no significant difference at 4/46/512/4096
+untyped decode A/B                        46/4096 flags did not reproduce; all rows pass
+```
+
+README states that nondefault `indent` and `indent_size` must agree and documents BOM/CRLF input.
+Rejected and adopted timing artifacts are private below `.git/internal-notes/issue-07-benchmarks/`.
+Next: public `0.2.0b5` qualification and trusted publication; do not close issue 7 before fresh
+artifact and attestation verification.
