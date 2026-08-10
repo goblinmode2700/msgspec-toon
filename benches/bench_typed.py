@@ -71,6 +71,7 @@ def sample_run(records: int) -> dict[str, Any]:
         assert untyped_decoder.decode(keyed_text) == keyed_document(records)
 
     typed_decode = measure("decode.typed_direct", lambda: typed_decoder.decode(text)).us
+    decoder_construction = measure("decode.decoder_construction", lambda: toon.Decoder(Document)).us
     functional_decode = measure("decode.functional", lambda: toon.decode(text, type=Document)).us
     untyped_decode = measure("decode.untyped_tree", lambda: untyped_decoder.decode(text)).us
     keyed_decode = measure("decode.keyed_document", lambda: untyped_decoder.decode(keyed_text)).us
@@ -119,6 +120,7 @@ def sample_run(records: int) -> dict[str, Any]:
             "incumbent_pipeline_python_toon_plus_convert": incumbent_decode,
             "msgspec_json_native": json_native_decode,
         },
+        "plan_us": {"decoder_construction_cached": decoder_construction},
         "encode_us": {
             "typed_direct_whole": typed_encode,
             "functional": functional_encode,

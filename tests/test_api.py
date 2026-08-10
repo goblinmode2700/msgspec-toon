@@ -170,9 +170,6 @@ def test_unimplemented_encoder_options_fail_loudly() -> None:
             toon.Encoder(**{option: value})
     with pytest.raises(NotImplementedError):
         toon.encode({"a": 1}, order="sorted")
-    with pytest.raises(NotImplementedError):
-        toon.Encoder(decimal_format="number")
-
     # Defaults stay silent, including when spelled out.
     assert (
         toon.Encoder(order=None, decimal_format="string", uuid_format="canonical").encode(

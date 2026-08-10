@@ -33,7 +33,7 @@ from msgspec_toon import _native
 from support_matrix import as_report as support_matrix_report
 
 ROOT = Path(__file__).resolve().parent.parent
-BASELINE_VERSION = os.environ.get("MSGSPEC_TOON_RELEASE_BASELINE", "0.1.0b2")
+BASELINE_VERSION = os.environ.get("MSGSPEC_TOON_RELEASE_BASELINE", "0.1.0b3")
 REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE") == "1"
 CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
 CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"

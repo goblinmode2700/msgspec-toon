@@ -485,6 +485,36 @@
           "cl100k_base": 87419
         }
       }
+    },
+    "msgspec-native-scalars@7": {
+      "json_compact": {
+        "bytes": 132,
+        "tokens": {
+          "o200k_base": 68,
+          "cl100k_base": 68
+        }
+      },
+      "toon_comma": {
+        "bytes": 133,
+        "tokens": {
+          "o200k_base": 70,
+          "cl100k_base": 70
+        }
+      },
+      "toon_tab": {
+        "bytes": 134,
+        "tokens": {
+          "o200k_base": 81,
+          "cl100k_base": 81
+        }
+      },
+      "toon_pipe": {
+        "bytes": 134,
+        "tokens": {
+          "o200k_base": 76,
+          "cl100k_base": 76
+        }
+      }
     }
   }
 }

@@ -33,7 +33,7 @@ _UNSET = object()
 class FieldSpec:
     python_name: str
     wire_name: str
-    plan: PlanSpec
+    plan: int
     required: bool
     default: Any = _UNSET
     default_factory: Any = None
@@ -43,9 +43,9 @@ class FieldSpec:
 class PlanSpec:
     kind: PlanKind
     python_type: Any = None
-    item: PlanSpec | None = None
-    key: PlanSpec | None = None
-    value: PlanSpec | None = None
+    item: int | None = None
+    key: int | None = None
+    value: int | None = None
     items: tuple[Any, ...] = ()
     fields: tuple[FieldSpec, ...] = ()
     tag_field: str | None = None
@@ -58,3 +58,20 @@ class PlanSpec:
     #: constructor signature and records the answer here.
     keyword_only: bool = False
     constraints: tuple[tuple[str, Any], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class PlanGraph:
+    """An indexed, immutable annotation graph.
+
+    Child edges are node indexes. This permits recursive annotations without
+    creating recursive Python owners and gives the native compiler one bounded
+    arena to validate before decoding starts.
+    """
+
+    nodes: tuple[PlanSpec, ...]
+    root: int
+
+    @property
+    def root_spec(self) -> PlanSpec:
+        return self.nodes[self.root]

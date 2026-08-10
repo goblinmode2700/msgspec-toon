@@ -114,6 +114,48 @@ toon.encode(value, delimiter="\t", indent=1)
 toon.decode(wire, indent_size=1)
 ```
 
+The functional and reusable decoders both accept `float_hook`:
+
+```python
+from decimal import Decimal
+
+value = toon.decode(b"1.25", float_hook=Decimal)
+decoder = toon.Decoder(float_hook=Decimal)
+
+assert value == decoder.decode(b"1.25") == Decimal("1.25")
+```
+
+The encoder supports msgspec-native date, time, UUID, Decimal, and Enum values.
+It normalizes these values before it calls `enc_hook`. Decimal values keep all
+their digits and trailing zeroes.
+
+```python
+from decimal import Decimal
+from uuid import UUID
+
+toon.encode(Decimal("1.2300"))
+# b'"1.2300"'
+
+toon.encode(Decimal("1.2300"), decimal_format="number")
+# b'1.2300'
+
+toon.encode(UUID("12345678-1234-5678-1234-567812345678"), uuid_format="hex")
+# b'"12345678123456781234567812345678"'
+```
+
+The codec does not implement sorted or deterministic output. Both encoder entry
+points raise `NotImplementedError` for these `order` values. They never ignore
+an accepted option.
+
+Typed decode supports recursive Structs, array-like Structs, object-form tagged Struct unions,
+and permissive scalar conversion. Tagged array-like unions fail during plan construction. Set
+`strict=False` to accept the same bool,
+integer, and float string conversions as msgspec 0.21.1. Strict mode stays the
+default.
+
+Non-string mapping keys are intentionally rejected in 0.2.0b1. See the
+[mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).
+
 ## Why not wrap another TOON codec?
 
 A wrapper must first convert a Struct into built-in containers. Typed decode

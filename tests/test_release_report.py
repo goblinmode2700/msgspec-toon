@@ -20,12 +20,50 @@ def report_module() -> ModuleType:
     return module
 
 
-def test_current_compatibility_delta_is_empty(report_module: ModuleType) -> None:
+def test_current_compatibility_delta_records_native_scalar_support(
+    report_module: ModuleType,
+) -> None:
     locked = json.loads((ROOT / "conformance" / "efficiency.lock.json").read_text())
     delta = report_module.compatibility_delta(
         report_module.support_matrix_report(), {"payloads": locked["payloads"]}
     )
-    assert delta["support_changes"] == []
+    assert delta["support_changes"] == [
+        {
+            "feature": "Encoder(decimal_format=..., uuid_format=...)",
+            "before": "unsupported",
+            "after": "supported",
+        },
+        {
+            "feature": "array_like Structs",
+            "before": "unsupported",
+            "after": "supported",
+        },
+        {
+            "feature": "date/time, UUID, and Decimal encoding",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "recursive Struct types",
+            "before": "unsupported",
+            "after": "supported",
+        },
+        {
+            "feature": "strict=False scalar coercion",
+            "before": "unsupported",
+            "after": "supported",
+        },
+        {
+            "feature": "string and integer Enum encoding",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "tagged unions",
+            "before": "unsupported",
+            "after": "supported",
+        },
+    ]
     assert delta["wire_output_changes_for_shared_locked_payloads"] == []
     report_module.check_changelog_compatibility(delta)
 

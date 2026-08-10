@@ -10,12 +10,18 @@ The supported substitution is::
 
 from __future__ import annotations
 
+import datetime
+import decimal
+import enum
+import uuid
 from collections.abc import Callable
 from typing import Any, Final, cast
 
 import msgspec
 
 from . import _native  # type: ignore[attr-defined]
+from ._exceptions import TypePlanError
+from ._options import ENCODER_OPTIONS, validate_python_options
 from ._plan import compile_native_plan, encode_plan_for
 
 __all__ = [
@@ -23,12 +29,85 @@ __all__ = [
     "Decoder",
     "EncodeError",
     "Encoder",
+    "TypePlanError",
     "ValidationError",
     "decode",
     "encode",
 ]
 
 EncodeError: Final = msgspec.EncodeError
+
+# Stable type identities and the exact-pinned msgspec datetime normalizer.
+_NATIVE_SCALAR_TYPES: Final = (
+    datetime.datetime,
+    datetime.date,
+    datetime.time,
+    datetime.timedelta,
+    uuid.UUID,
+    decimal.Decimal,
+    enum.Enum,
+)
+_MSGSPEC_JSON_ENCODE: Final = msgspec.json.encode
+
+
+class _RawScalar(str):
+    """Private, exact-type marker for an already formatted TOON scalar."""
+
+
+_NOT_NATIVE: Final = object()
+
+
+def _is_native_scalar(value: Any) -> bool:
+    return isinstance(value, _NATIVE_SCALAR_TYPES)
+
+
+class _EncodeHook:
+    __slots__ = ("decimal_format", "user_hook", "uuid_format")
+
+    def __init__(
+        self,
+        user_hook: Callable[[Any], Any] | None,
+        decimal_format: str,
+        uuid_format: str,
+    ) -> None:
+        self.user_hook = user_hook
+        self.decimal_format = decimal_format
+        self.uuid_format = uuid_format
+
+    def __call__(self, value: Any) -> Any:
+        normalized = self._normalize(value)
+        if normalized is not _NOT_NATIVE:
+            return normalized
+        if self.user_hook is not None:
+            return self.user_hook(value)
+        raise msgspec.EncodeError(f"unsupported type: {type(value).__name__}")
+
+    def _normalize(self, value: Any) -> Any:
+        if isinstance(
+            value,
+            (datetime.datetime, datetime.date, datetime.time, datetime.timedelta),
+        ):
+            return _RawScalar(_MSGSPEC_JSON_ENCODE(value).decode())
+        if isinstance(value, uuid.UUID):
+            text = value.hex if self.uuid_format == "hex" else str(value)
+            return _RawScalar(f'"{text}"')
+        if isinstance(value, decimal.Decimal):
+            if self.decimal_format == "number":
+                if not value.is_finite():
+                    raise msgspec.EncodeError(
+                        "non-finite Decimal values are not encodable as TOON numbers"
+                    )
+                return _RawScalar(str(value))
+            return _RawScalar(f'"{value}"')
+        if isinstance(value, enum.Enum):
+            return value.value
+        return _NOT_NATIVE
+
+
+_plan_source = cast(Any, encode_plan_for)
+_plan_source.__toon_raw_scalar_type__ = _RawScalar
+_plan_source.__toon_is_native_scalar__ = _is_native_scalar
+_plan_source.__toon_default_encode_hook__ = _EncodeHook(None, "string", "canonical")
 
 
 class DecodeError(msgspec.DecodeError):
@@ -79,34 +158,6 @@ def _translate_fault(exc: _native.NativeFault) -> BaseException:
     )
 
 
-#: Encoder options msgspec defines that this codec has not implemented. Each
-#: names the values msgspec accepts and the subset that behaves correctly here.
-#: Silent acceptance is not compatibility: a caller who passes
-#: `order="sorted"` and receives insertion order has been given a wrong answer,
-#: so an unimplemented value fails instead of being dropped. The domain check
-#: runs first, so a value msgspec would reject raises the same ValueError it
-#: raises — the difference between "not a thing" and "not yet" stays visible.
-_ENCODER_OPTIONS: Final = (
-    ("order", frozenset({None, "deterministic", "sorted"}), frozenset({None})),
-    ("decimal_format", frozenset({"string", "number"}), frozenset({"string"})),
-    ("uuid_format", frozenset({"canonical", "hex"}), frozenset({"canonical"})),
-)
-
-
-def _check_encoder_options(**values: Any) -> None:
-    for name, accepted, implemented in _ENCODER_OPTIONS:
-        value = values[name]
-        hashable = isinstance(value, str) or value is None
-        if not hashable or value not in accepted:
-            spelled = ", ".join(sorted(repr(item) for item in accepted))
-            raise ValueError(f"`{name}` must be one of {{{spelled}}}, got {value!r}")
-        if value not in implemented:
-            raise NotImplementedError(
-                f"msgspec-toon does not implement `{name}={value!r}` yet; "
-                f"only {min(repr(item) for item in implemented)} is supported"
-            )
-
-
 class Encoder:
     __slots__ = ("_native",)
 
@@ -120,9 +171,21 @@ class Encoder:
         delimiter: str = ",",
         indent: int = 2,
     ) -> None:
-        _check_encoder_options(order=order, decimal_format=decimal_format, uuid_format=uuid_format)
+        validate_python_options(
+            ENCODER_OPTIONS,
+            {
+                "decimal_format": decimal_format,
+                "uuid_format": uuid_format,
+                "order": order,
+            },
+        )
+        native_hook = (
+            None
+            if enc_hook is None and decimal_format == "string" and uuid_format == "canonical"
+            else _EncodeHook(enc_hook, decimal_format, uuid_format)
+        )
         self._native = _native.Encoder(
-            enc_hook=enc_hook,
+            enc_hook=native_hook,
             plan_source=encode_plan_for,
             struct_base=msgspec.Struct,
             encode_error=msgspec.EncodeError,
@@ -149,7 +212,7 @@ class Decoder:
         dec_hook: Callable[[type, Any], Any] | None = None,
         float_hook: Callable[[str], Any] | None = None,
     ) -> None:
-        plan = None if type is Any else compile_native_plan(type)
+        plan = None if type is Any else compile_native_plan(type, allow_custom=dec_hook is not None)
         self._type = type
         self._native = _native.Decoder(
             plan=plan,
@@ -166,15 +229,36 @@ class Decoder:
             raise _translate_fault(exc) from None
 
 
+_DEFAULT_ENCODER: Final = Encoder()
+
+
 def encode(
     obj: Any,
     *,
     enc_hook: Callable[[Any], Any] | None = None,
+    decimal_format: str = "string",
+    uuid_format: str = "canonical",
     order: str | None = None,
     delimiter: str = ",",
     indent: int = 2,
 ) -> bytes:
-    return Encoder(enc_hook=enc_hook, order=order, delimiter=delimiter, indent=indent).encode(obj)
+    if (
+        enc_hook is None
+        and decimal_format == "string"
+        and uuid_format == "canonical"
+        and order is None
+        and delimiter == ","
+        and indent == 2
+    ):
+        return _DEFAULT_ENCODER.encode(obj)
+    return Encoder(
+        enc_hook=enc_hook,
+        decimal_format=decimal_format,
+        uuid_format=uuid_format,
+        order=order,
+        delimiter=delimiter,
+        indent=indent,
+    ).encode(obj)
 
 
 def decode(
@@ -184,5 +268,12 @@ def decode(
     strict: bool = True,
     indent_size: int = 2,
     dec_hook: Callable[[type, Any], Any] | None = None,
+    float_hook: Callable[[str], Any] | None = None,
 ) -> Any:
-    return Decoder(type, strict=strict, indent_size=indent_size, dec_hook=dec_hook).decode(buf)
+    return Decoder(
+        type,
+        strict=strict,
+        indent_size=indent_size,
+        dec_hook=dec_hook,
+        float_hook=float_hook,
+    ).decode(buf)

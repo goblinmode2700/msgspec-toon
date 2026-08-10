@@ -25,6 +25,22 @@ pub enum ScalarToken<'a> {
 }
 
 pub trait Consumer {
+    /// Whether the next object plan needs scalar-field lookahead.
+    fn needs_object_preflight(&self) -> bool {
+        false
+    }
+    /// Offer scalar object fields before `start_object`. Typed tagged unions
+    /// use this bounded lookahead to select a plan without buffering a value
+    /// tree. Other consumers ignore it.
+    fn object_scalar_hint(
+        &mut self,
+        key: StringToken<'_>,
+        value: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let _ = (key, value, at);
+        Ok(())
+    }
     /// Announce that every row of the array just started is emitted from one
     /// tabular header — an identical key/structure sequence per row, with
     /// `leaf_count` scalar cells. Consumers may resolve keys positionally for
@@ -34,7 +50,33 @@ pub trait Consumer {
         Ok(())
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
+    /// Offer an adjacent object key and nested object opening as one
+    /// operation. The default preserves the ordinary event sequence; typed
+    /// consumers may carry the resolved child plan directly into frame setup.
+    fn start_object_field(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
+        self.key(key, at)?;
+        self.start_object(at)
+    }
+    /// Close an object opened by `start_object_field`. The default preserves
+    /// the ordinary event sequence; typed consumers may return a completed
+    /// child directly to its known parent field.
+    fn end_object_field(&mut self, at: Position) -> Result<(), Fault> {
+        self.end_object(at)
+    }
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault>;
+    /// Offer an adjacent object key and scalar as one operation. The default
+    /// preserves the ordinary event sequence; typed consumers may fuse field
+    /// resolution, scalar conversion, and placement without an awaiting-key
+    /// state round-trip.
+    fn scalar_field(
+        &mut self,
+        key: StringToken<'_>,
+        value: ScalarToken<'_>,
+        at: Position,
+    ) -> Result<(), Fault> {
+        self.key(key, at)?;
+        self.scalar(value, at)
+    }
     fn end_object(&mut self, at: Position) -> Result<(), Fault>;
     fn start_array(&mut self, declared_len: usize, at: Position) -> Result<(), Fault>;
     fn end_array(&mut self, at: Position) -> Result<(), Fault>;

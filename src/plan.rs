@@ -14,12 +14,12 @@ pub enum PlanKind {
     Int,
     Float,
     Str,
-    List(Box<CompiledPlan>),
-    TupleVar(Box<CompiledPlan>),
+    List(usize),
+    TupleVar(usize),
     /// `tuple[A, B, C]`: one plan per position, and the length is part of the
     /// type rather than a property of the document.
-    TupleFixed(Vec<CompiledPlan>),
-    Dict(Box<CompiledPlan>, Box<CompiledPlan>),
+    TupleFixed(Vec<usize>),
+    Dict(usize, usize),
     Struct(Box<StructPlan>),
     Union(Box<UnionPlan>),
     Literal(Vec<Py<PyAny>>),
@@ -27,6 +27,11 @@ pub enum PlanKind {
 }
 
 pub struct CompiledPlan {
+    pub nodes: Vec<PlanNode>,
+    pub root: usize,
+}
+
+pub struct PlanNode {
     pub kind: PlanKind,
     /// `None` is the unconstrained fast path. Constraint-bearing annotations
     /// pay for Python comparisons or regex matching only after conversion.
@@ -139,6 +144,9 @@ pub struct StructPlan {
     pub fields: Vec<FieldPlan>,
     pub by_wire: FxHashMap<Vec<u8>, usize>,
     pub forbid_unknown: bool,
+    pub array_like: bool,
+    pub tag_field: Option<Vec<u8>>,
+    pub tag_value: Option<Py<PyAny>>,
     /// Present when the class must be constructed with keyword arguments: the
     /// field names in constructor order, ready to hand to a vectorcall. The
     /// ordinary case keeps `None` and the positional fast path.
@@ -148,7 +156,7 @@ pub struct StructPlan {
 pub struct FieldPlan {
     pub python_name: Py<PyString>,
     pub wire_name: Vec<u8>,
-    pub value: CompiledPlan,
+    pub value: usize,
     pub default: DefaultPlan,
 }
 
@@ -160,7 +168,7 @@ pub enum DefaultPlan {
 
 pub struct UnionPlan {
     pub nullable: bool,
-    pub members: Vec<CompiledPlan>,
+    pub members: Vec<usize>,
 }
 
 impl CompiledPlan {
@@ -169,10 +177,34 @@ impl CompiledPlan {
             .import("msgspec_toon._types")?
             .getattr("_UNSET")?
             .unbind();
-        Self::lower(py, spec, &unset)
+        let root = spec.getattr("root")?.extract::<usize>()?;
+        let specs = spec.getattr("nodes")?;
+        let node_count = specs.len()?;
+        if root >= node_count || node_count > 4096 {
+            return Err(PyValueError::new_err("invalid plan graph bounds"));
+        }
+        let mut nodes = Vec::with_capacity(node_count);
+        for node in specs.try_iter()? {
+            nodes.push(Self::lower_node(py, &node?, &specs, &unset, node_count)?);
+        }
+        Ok(Self { nodes, root })
     }
 
-    fn lower(py: Python<'_>, spec: &Bound<'_, PyAny>, unset: &Py<PyAny>) -> PyResult<Self> {
+    fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<usize> {
+        let edge = spec.getattr(name)?.extract::<usize>()?;
+        if edge >= node_count {
+            return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+        }
+        Ok(edge)
+    }
+
+    fn lower_node(
+        py: Python<'_>,
+        spec: &Bound<'_, PyAny>,
+        graph_nodes: &Bound<'_, PyAny>,
+        unset: &Py<PyAny>,
+        node_count: usize,
+    ) -> PyResult<PlanNode> {
         let kind_obj = spec.getattr("kind")?;
         let kind_text = kind_obj.extract::<&str>()?;
         let kind = match kind_text {
@@ -182,35 +214,36 @@ impl CompiledPlan {
             "int" => PlanKind::Int,
             "float" => PlanKind::Float,
             "str" => PlanKind::Str,
-            "list" => {
-                let item = Self::lower(py, &spec.getattr("item")?, unset)?;
-                PlanKind::List(Box::new(item))
-            }
-            "tuple_var" => {
-                let item = Self::lower(py, &spec.getattr("item")?, unset)?;
-                PlanKind::TupleVar(Box::new(item))
-            }
+            "list" => PlanKind::List(Self::edge(spec, "item", node_count)?),
+            "tuple_var" => PlanKind::TupleVar(Self::edge(spec, "item", node_count)?),
             "tuple_fixed" => {
                 let mut plans = Vec::new();
                 for item in spec.getattr("items")?.try_iter()? {
-                    plans.push(Self::lower(py, &item?, unset)?);
+                    let edge = item?.extract::<usize>()?;
+                    if edge >= node_count {
+                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+                    }
+                    plans.push(edge);
                 }
                 PlanKind::TupleFixed(plans)
             }
-            "dict" => {
-                let key = Self::lower(py, &spec.getattr("key")?, unset)?;
-                let value = Self::lower(py, &spec.getattr("value")?, unset)?;
-                PlanKind::Dict(Box::new(key), Box::new(value))
-            }
+            "dict" => PlanKind::Dict(
+                Self::edge(spec, "key", node_count)?,
+                Self::edge(spec, "value", node_count)?,
+            ),
             "union" => {
                 let mut nullable = false;
                 let mut members = Vec::new();
                 for member in spec.getattr("items")?.try_iter()? {
-                    let member = member?;
+                    let edge = member?.extract::<usize>()?;
+                    if edge >= node_count {
+                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+                    }
+                    let member = graph_nodes.get_item(edge)?;
                     if member.getattr("kind")?.extract::<&str>()? == "none" {
                         nullable = true;
                     } else {
-                        members.push(Self::lower(py, &member, unset)?);
+                        members.push(edge);
                     }
                 }
                 PlanKind::Union(Box::new(UnionPlan { nullable, members }))
@@ -236,7 +269,10 @@ impl CompiledPlan {
                         .getattr("wire_name")?
                         .extract::<String>()?
                         .into_bytes();
-                    let value = Self::lower(py, &field.getattr("plan")?, unset)?;
+                    let value = field.getattr("plan")?.extract::<usize>()?;
+                    if value >= node_count {
+                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+                    }
                     let required = field.getattr("required")?.extract::<bool>()?;
                     let default_factory = field.getattr("default_factory")?;
                     let default_value = field.getattr("default")?;
@@ -258,6 +294,16 @@ impl CompiledPlan {
                     });
                 }
                 let forbid_unknown = spec.getattr("forbid_unknown_fields")?.extract::<bool>()?;
+                let array_like = spec.getattr("array_like")?.extract::<bool>()?;
+                let tag_field = spec
+                    .getattr("tag_field")?
+                    .extract::<Option<String>>()?
+                    .map(String::into_bytes);
+                let tag_value_obj = spec.getattr("tag_value")?;
+                let tag_value = (!tag_value_obj.is_none()).then(|| tag_value_obj.unbind());
+                if let Some(tag_field) = &tag_field {
+                    by_wire.insert(tag_field.clone(), usize::MAX);
+                }
                 let keyword_names = if spec.getattr("keyword_only")?.extract::<bool>()? {
                     let names = fields
                         .iter()
@@ -272,6 +318,9 @@ impl CompiledPlan {
                     fields,
                     by_wire,
                     forbid_unknown,
+                    array_like,
+                    tag_field,
+                    tag_value,
                     keyword_names,
                 }))
             }
@@ -281,16 +330,35 @@ impl CompiledPlan {
             }
         };
         let constraints = Constraints::from_python(spec)?;
-        Ok(Self { kind, constraints })
+        Ok(PlanNode { kind, constraints })
     }
 
     /// Unwrap `Optional[T]`-shaped unions to their single non-none member.
-    pub fn resolve_container(&self) -> &CompiledPlan {
-        if let PlanKind::Union(union) = &self.kind
-            && union.members.len() == 1
-        {
-            return &union.members[0];
+    pub fn resolve_container(&self, mut index: usize) -> usize {
+        for _ in 0..=self.nodes.len() {
+            if let PlanKind::Union(union) = &self.nodes[index].kind
+                && union.members.len() == 1
+            {
+                index = union.members[0];
+                continue;
+            }
+            return index;
         }
-        self
+        self.root
+    }
+
+    #[inline(always)]
+    pub fn node(&self, index: usize) -> &PlanNode {
+        // Every edge is range-checked once while the immutable arena is
+        // compiled. Runtime node IDs originate only from those checked edges.
+        unsafe { self.nodes.get_unchecked(index) }
+    }
+
+    pub fn requires_extended_consumer(&self) -> bool {
+        self.nodes.iter().any(|node| match &node.kind {
+            PlanKind::Struct(plan) => plan.array_like || plan.tag_field.is_some(),
+            PlanKind::Union(union) => union.members.len() > 1,
+            _ => false,
+        })
     }
 }

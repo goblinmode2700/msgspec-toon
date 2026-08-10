@@ -37,6 +37,10 @@ pub struct EncodeContext {
     pub indent: usize,
 }
 
+const RAW_SCALAR_TYPE_ATTR: &str = "__toon_raw_scalar_type__";
+const NATIVE_SCALAR_CHECK_ATTR: &str = "__toon_is_native_scalar__";
+const DEFAULT_ENCODE_HOOK_ATTR: &str = "__toon_default_encode_hook__";
+
 pub struct EncodePlan {
     /// Pins the class so the pointer cache key cannot be reused.
     #[allow(dead_code)]
@@ -65,7 +69,10 @@ enum StructAccess {
 enum Val<'py> {
     None,
     Bool(bool),
-    Int(Bound<'py, PyAny>),
+    /// Ordinary Python integers, plus private preformatted scalar text from
+    /// the cold native-scalar hook. Both use the existing exact-text fallback
+    /// when `i64` extraction is not applicable.
+    IntegerOrRaw(Bound<'py, PyAny>),
     Float(f64),
     Str(Bound<'py, PyString>),
     Seq(Vec<Bound<'py, PyAny>>),
@@ -89,21 +96,28 @@ fn plan_for(
     if let Some(plan) = ctx.cache.lock().unwrap().get(&key) {
         return Ok(plan.clone());
     }
-    let spec = ctx.plan_source.bind(py).call1((class,))?;
-    let plan = plan_from_spec(ctx, py, class, &spec)?;
+    let graph = ctx.plan_source.bind(py).call1((class,))?;
+    let root = graph.getattr("root")?.extract::<usize>()?;
+    let mut visiting = vec![key];
+    let plan = plan_from_spec(ctx, py, class, &graph, root, &mut visiting)?;
     ctx.cache.lock().unwrap().insert(key, plan.clone());
     Ok(plan)
 }
 
 /// Is a field's declared type always a tabular leaf (a primitive or an
 /// optional/union of primitives)?
-fn spec_is_leaf(spec: &Bound<'_, PyAny>) -> PyResult<bool> {
+fn graph_node<'py>(graph: &Bound<'py, PyAny>, index: usize) -> PyResult<Bound<'py, PyAny>> {
+    graph.getattr("nodes")?.get_item(index)
+}
+
+fn spec_is_leaf(graph: &Bound<'_, PyAny>, spec: &Bound<'_, PyAny>) -> PyResult<bool> {
     let kind = spec.getattr("kind")?.extract::<String>()?;
     match kind.as_str() {
         "none" | "bool" | "int" | "float" | "str" => Ok(true),
         "union" => {
             for member in spec.getattr("items")?.try_iter()? {
-                if !spec_is_leaf(&member?)? {
+                let member = graph_node(graph, member?.extract::<usize>()?)?;
+                if !spec_is_leaf(graph, &member)? {
                     return Ok(false);
                 }
             }
@@ -117,8 +131,11 @@ fn plan_from_spec(
     ctx: &EncodeContext,
     py: Python<'_>,
     class: &Bound<'_, PyAny>,
-    spec: &Bound<'_, PyAny>,
+    graph: &Bound<'_, PyAny>,
+    node_index: usize,
+    visiting: &mut Vec<usize>,
 ) -> PyResult<Arc<EncodePlan>> {
+    let spec = graph_node(graph, node_index)?;
     let mut fields = Vec::new();
     let mut shape: Option<Vec<ShapeNode>> = Some(Vec::new());
     let offsets = ctx
@@ -146,22 +163,31 @@ fn plan_from_spec(
             None => StructAccess::Attr(attr),
         };
         let wire = field.getattr("wire_name")?.extract::<String>()?;
-        let value_spec = field.getattr("plan")?;
+        let value_index = field.getattr("plan")?.extract::<usize>()?;
+        let value_spec = graph_node(graph, value_index)?;
 
         if let Some(nodes) = shape.as_mut() {
             let kind = value_spec.getattr("kind")?.extract::<String>()?;
             if kind == "struct" {
                 let nested_class = value_spec.getattr("python_type")?;
-                let nested = plan_for_nested(ctx, py, &nested_class, &value_spec)?;
-                match &nested.static_shape {
-                    Some(children) => nodes.push(ShapeNode {
-                        wire: wire.clone(),
-                        access: access.clone_ref(py).into(),
-                        children: clone_nodes(py, children),
-                    }),
-                    None => shape = None,
+                let nested_key = nested_class.as_ptr() as usize;
+                if visiting.contains(&nested_key) {
+                    shape = None;
+                } else {
+                    visiting.push(nested_key);
+                    let nested =
+                        plan_for_nested(ctx, py, &nested_class, graph, value_index, visiting)?;
+                    visiting.pop();
+                    match &nested.static_shape {
+                        Some(children) => nodes.push(ShapeNode {
+                            wire: wire.clone(),
+                            access: access.clone_ref(py).into(),
+                            children: clone_nodes(py, children),
+                        }),
+                        None => shape = None,
+                    }
                 }
-            } else if spec_is_leaf(&value_spec)? {
+            } else if spec_is_leaf(graph, &value_spec)? {
                 nodes.push(ShapeNode {
                     wire: wire.clone(),
                     access: access.clone_ref(py).into(),
@@ -197,13 +223,15 @@ fn plan_for_nested(
     ctx: &EncodeContext,
     py: Python<'_>,
     class: &Bound<'_, PyAny>,
-    spec: &Bound<'_, PyAny>,
+    graph: &Bound<'_, PyAny>,
+    node_index: usize,
+    visiting: &mut Vec<usize>,
 ) -> PyResult<Arc<EncodePlan>> {
     let key = class.as_ptr() as usize;
     if let Some(plan) = ctx.cache.lock().unwrap().get(&key) {
         return Ok(plan.clone());
     }
-    let plan = plan_from_spec(ctx, py, class, spec)?;
+    let plan = plan_from_spec(ctx, py, class, graph, node_index, visiting)?;
     ctx.cache.lock().unwrap().insert(key, plan.clone());
     Ok(plan)
 }
@@ -244,7 +272,7 @@ fn classify<'py>(
         return Ok(Val::Bool(obj.extract::<bool>()?));
     }
     if obj.is_instance_of::<PyInt>() {
-        return Ok(Val::Int(obj.clone()));
+        return Ok(Val::IntegerOrRaw(obj.clone()));
     }
     if obj.is_instance_of::<PyFloat>() {
         let value = obj.extract::<f64>()?;
@@ -279,14 +307,16 @@ fn classify<'py>(
             return Err(encode_err(ctx, py, "enc_hook recursion limit exceeded"));
         }
         let replaced = hook.bind(py).call1((obj,))?;
+        if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
+            return Ok(Val::IntegerOrRaw(raw.into_any()));
+        }
         return classify(ctx, py, &replaced, hook_depth + 1);
     }
-    let type_name = obj.get_type().name()?.to_string();
-    Err(encode_err(
-        ctx,
-        py,
-        &format!("unsupported type: {type_name}"),
-    ))
+    let replaced = default_encode_hook(ctx, py, obj)?;
+    if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
+        return Ok(Val::IntegerOrRaw(raw.into_any()));
+    }
+    classify(ctx, py, &replaced, hook_depth + 1)
 }
 
 /// A pending entry key: a wire name borrowed from the plan inside the `Val`,
@@ -469,7 +499,23 @@ fn write_array<'py>(
         return Ok(());
     }
 
-    if items.iter().all(is_scalar_obj) {
+    let tabular_eligible = key.is_some() || !inline;
+    let mut discovered_shape = if tabular_eligible && !is_exact_scalar_obj(&items[0]) {
+        build_shape(ctx, py, items, nesting)?
+    } else {
+        None
+    };
+
+    let mut all_scalars = discovered_shape.is_none();
+    if all_scalars {
+        for item in items {
+            if !is_scalar_obj(ctx, py, item)? {
+                all_scalars = false;
+                break;
+            }
+        }
+    }
+    if all_scalars {
         header(writer, ": ");
         for (index, item) in items.iter().enumerate() {
             if index > 0 {
@@ -483,9 +529,10 @@ fn write_array<'py>(
 
     // Tabular form applies to named arrays and the root array; an anonymous
     // array in list-item position always uses list form.
-    if (key.is_some() || !inline)
-        && let Some(shape) = build_shape(ctx, py, items, nesting)?
-    {
+    if tabular_eligible && discovered_shape.is_none() {
+        discovered_shape = build_shape(ctx, py, items, nesting)?;
+    }
+    if let Some(shape) = discovered_shape {
         let nodes = shape.nodes();
         if !inline {
             writer.indent(depth);
@@ -771,7 +818,7 @@ impl Shape {
 }
 
 /// Fast scalar-primitive check that never touches the plan cache.
-fn is_scalar_obj(obj: &Bound<'_, PyAny>) -> bool {
+fn is_scalar_obj(ctx: &EncodeContext, py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<bool> {
     let type_ptr = exact_type(obj);
     {
         use std::ptr::addr_of_mut;
@@ -780,14 +827,39 @@ fn is_scalar_obj(obj: &Bound<'_, PyAny>) -> bool {
             || type_ptr == addr_of_mut!(pyo3::ffi::PyFloat_Type)
             || type_ptr == addr_of_mut!(pyo3::ffi::PyBool_Type)
         {
-            return true;
+            return Ok(true);
         }
     }
-    obj.is_none()
-        || obj.is_instance_of::<PyBool>()
+    if obj.is_none() {
+        return Ok(true);
+    }
+    if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyDict_Type) {
+        return Ok(false);
+    }
+    if obj.is_instance(ctx.struct_base.bind(py))? || obj.is_instance_of::<PyDict>() {
+        return Ok(false);
+    }
+    if obj.is_instance_of::<PyBool>()
         || obj.is_instance_of::<PyInt>()
         || obj.is_instance_of::<PyFloat>()
         || obj.is_instance_of::<PyString>()
+    {
+        return Ok(true);
+    }
+    ctx.plan_source
+        .bind(py)
+        .getattr(NATIVE_SCALAR_CHECK_ATTR)?
+        .call1((obj,))?
+        .is_truthy()
+}
+
+#[inline]
+fn is_exact_scalar_obj(obj: &Bound<'_, PyAny>) -> bool {
+    let type_ptr = exact_type(obj);
+    type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyUnicode_Type)
+        || type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyLong_Type)
+        || type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyFloat_Type)
+        || type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyBool_Type)
 }
 
 /// Classify a row array once. All rows must share one shape — the same
@@ -875,7 +947,17 @@ fn build_shape<'py>(
             };
             column.push(item);
         }
-        if column.iter().all(is_scalar_obj) {
+        let mut all_scalars = true;
+        for item in &column {
+            if is_exact_scalar_obj(item) || item.is_none() {
+                continue;
+            }
+            if !is_scalar_obj(ctx, py, item)? {
+                all_scalars = false;
+                break;
+            }
+        }
+        if all_scalars {
             shape.push(ShapeNode {
                 wire,
                 access,
@@ -987,6 +1069,33 @@ fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
     unsafe { pyo3::ffi::Py_TYPE(obj.as_ptr()) }
 }
 
+#[cold]
+#[inline(never)]
+fn raw_scalar<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    obj: &Bound<'py, PyAny>,
+) -> PyResult<Option<Bound<'py, PyString>>> {
+    let marker = ctx.plan_source.bind(py).getattr(RAW_SCALAR_TYPE_ATTR)?;
+    if obj.get_type().as_any().is(&marker) {
+        return Ok(Some(obj.cast::<PyString>()?.clone()));
+    }
+    Ok(None)
+}
+
+#[cold]
+#[inline(never)]
+fn default_encode_hook<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    obj: &Bound<'py, PyAny>,
+) -> PyResult<Bound<'py, PyAny>> {
+    ctx.plan_source
+        .bind(py)
+        .getattr(DEFAULT_ENCODE_HOOK_ATTR)?
+        .call1((obj,))
+}
+
 fn write_scalar_obj<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
@@ -1077,7 +1186,15 @@ fn write_scalar_obj<'py>(
         }
         return Ok(());
     }
-    Err(encode_err(ctx, py, "value changed shape during encoding"))
+    let replaced = match ctx.enc_hook.as_ref() {
+        Some(hook) => hook.bind(py).call1((obj,))?,
+        None => default_encode_hook(ctx, py, obj)?,
+    };
+    if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
+        writer.text(raw.to_str()?);
+        return Ok(());
+    }
+    write_scalar_obj(ctx, py, writer, &replaced)
 }
 
 fn write_float(writer: &mut Writer, number: f64) {
@@ -1144,7 +1261,7 @@ fn write_scalar<'py>(
         Val::None => writer.bytes(b"null"),
         Val::Bool(true) => writer.bytes(b"true"),
         Val::Bool(false) => writer.bytes(b"false"),
-        Val::Int(obj) => match obj.extract::<i64>() {
+        Val::IntegerOrRaw(obj) => match obj.extract::<i64>() {
             Ok(small) => {
                 let mut buffer = itoa::Buffer::new();
                 writer.text(buffer.format(small));
@@ -1302,6 +1419,11 @@ mod tests {
 #[cfg(test)]
 mod e5_differential {
     use super::*;
+
+    #[test]
+    fn classified_value_stays_compact() {
+        assert_eq!(std::mem::size_of::<Val<'_>>(), 24);
+    }
 
     /// The implementations E5 replaced, kept as the differential oracle: a
     /// classify pass, an independent numeric-like pass, then a forbidden-byte

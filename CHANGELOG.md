@@ -1,12 +1,26 @@
 # Changelog
 
+## 0.2.0b1
+
+Native scalar encoding and msgspec API parity.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 7 newly supported, 0 removed, 7 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Encode date, datetime, time, timedelta, UUID, Decimal, and Enum values before `enc_hook`.
+- Support exact Decimal number output and UUID hex output in both encoder entry points.
+- Preserve all locked canonical bytes shared with `0.1.0b3`.
+- Decode self-recursive and mutually recursive Structs through bounded graph plans.
+- Decode array-like Structs through positional frames.
+- Select tagged Struct union variants before direct construction.
+- Match msgspec 0.21.1 permissive bool, integer, and float scalar conversion.
+
 ## 0.1.0b3
 
 Release qualification and provenance.
 
-<!-- release-compatibility:start -->
 - Compatibility since `0.1.0b2`: no support changes and no canonical-wire changes for shared locked payloads.
-<!-- release-compatibility:end -->
 
 - Run one canonical validation gate for pull requests, the default branch, and releases.
 - Build distributions once, verify installed artifacts on their target runners, and publish only
