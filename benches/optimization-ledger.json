@@ -9,6 +9,35 @@
       "guard": "v0.2.0 (.venv-guard) \u2014 the latest release, and the only thing `make ab` gates against. Re-cut it at every release or it decays into the same blind spot"
     }
   },
+  "release_qualification": {
+    "version": "0.2.0b1",
+    "internal_revision": "b5dd2fd",
+    "public_revision": "222dac4475fa145e56c73c842e08dde214941c6f",
+    "publication_disabled_run": 31372936154,
+    "failed_closed_run": {
+      "run": 31372177264,
+      "cause": "the deterministic fuzz seed generator used the Windows CP1252 locale for UTF-8 official fixtures",
+      "resolution": "read fixture JSON with encoding=utf-8; rerun the complete matrix from a new public commit"
+    },
+    "artifacts": {
+      "wheels": 12,
+      "sdists": 1,
+      "unique_sha256": 13,
+      "source_revision": "222dac4475fa145e56c73c842e08dde214941c6f"
+    },
+    "gates": {
+      "strict_openspec": "passed",
+      "canonical_qualification": "passed",
+      "corpus": "538/538; strict errors 84/84",
+      "G2": "passed",
+      "G3": "passed",
+      "G4": "known miss retained and reported",
+      "G5": "passed at every cell",
+      "release_guard": "passed with no reproduced slowdown",
+      "fuzz_smoke": "both targets completed without crash artifacts"
+    },
+    "publication": "disabled; PyPI and GitHub release jobs skipped"
+  },
   "candidates": [
     {
       "id": "E1",

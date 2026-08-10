@@ -1,11 +1,21 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the completed S3-S7 typed-decode recovery program. Read
+_Last updated after the publication-disabled `0.2.0b1` artifact qualification. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
+
+**Tag and publish the already qualified public revision.** Public revision
+`222dac4475fa145e56c73c842e08dde214941c6f` passed canonical validation and the complete
+publication-disabled workflow in [GitHub Actions run 31372936154](https://github.com/goblinmode2700/msgspec-toon/actions/runs/31372936154):
+12 wheels plus one sdist, 13 unique digests, target-native installed-artifact tests, 538/538
+corpus, G2, G3, and every G5 cell. Publication and GitHub release jobs were intentionally
+skipped. Owner publication authority is explicit. Create annotated tag `v0.2.0b1` at that exact
+public revision, let the trusted `wheels.yml` path rebuild and publish, then verify PyPI files,
+attestations, release attachments, and fresh ABI3/free-threaded installs. Do not archive the
+OpenSpec change until those checks close task 14.5.
 
 **The typed-decode qualification stop is cleared.** Checkpoint 33 adopted S4: tabular leaf cells
 now use one fused `scalar_field` event. The default consumer implementation remains the original
@@ -63,11 +73,14 @@ Current completed evidence: 19 supported, 2 parity rejects, 8 unsupported, zero 
 tests passed; six G2 probes passed with zero intermediate builtin containers; both 900-second fuzz
 targets completed 166.9 million total executions with zero artifacts. `make bench` passes every
 G3 and G5 cell and records the known G4 miss through 512 records, with G4 passing at 4096.
-`make report` generated `conformance/report.json` for `0.2.0b1`. The 12-wheel-plus-sdist workflow
-has not run for this candidate because the closer A/B stop fired first.
+`make report` generated `conformance/report.json` for `0.2.0b1`. Publication-disabled run
+`31372936154` bound the report to public revision `222dac4` and verified 12 target-native wheels
+plus one sdist with 13 unique digests. An earlier candidate run (`31372177264`) correctly failed
+closed when the new fuzz seed generator read UTF-8 fixtures through Windows CP1252; the explicit
+UTF-8 fix is in both the qualified public revision and internal commit `b5dd2fd`.
 
 The active OpenSpec change remains `qualify-beta-release-and-expand-msgspec-parity`. Tasks 11.5,
-12.4, 13.5, 14.1, and 14.2 are complete. Tasks 14.3-14.5 remain open. Do not archive it.
+12.4, 13.5, and 14.1-14.3 are complete. Tasks 14.4 and 14.5 remain open. Do not archive it.
 
 ## Previous published checkpoint
 

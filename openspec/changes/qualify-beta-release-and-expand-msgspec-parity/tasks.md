@@ -182,7 +182,7 @@
       locked bytes.
 - [x] 14.2 Bump all public package version sources to `0.2.0b1`; generate the changelog and release
       compatibility evidence against `0.1.0b3` from executable data.
-- [ ] 14.3 Run strict OpenSpec validation, canonical qualification, complete corpus, containment,
+- [x] 14.3 Run strict OpenSpec validation, canonical qualification, complete corpus, containment,
       G2, G3/G5, release-guard A/B, fuzz smoke, full wheel/sdist verification, and report
       generation; record misses without masking them.
 - [ ] 14.4 Update `HANDOFF.md`, `LAST-MILE.md`, generated evidence, and the optimization ledger

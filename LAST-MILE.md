@@ -1368,3 +1368,30 @@ regression and then removed three separately measured tabular event transitions.
 profile is dominated by cell splitting, scalar classification/conversion, Python string and
 Struct construction, and parser loop attribution. No remaining redundant dispatch mechanism is
 named. The row-dispatch improvement loop stops here under C9.
+
+#### Checkpoint 37 — `0.2.0b1` publication-disabled artifact qualification
+
+Hypothesis: the capability beta can pass the complete build-once, target-native verification
+matrix and bind its generated evidence to one public source revision without reaching a
+publication job.
+
+The first public candidate exposed one cross-platform defect and failed closed. Run
+`31372177264` built all 13 artifacts, but the Windows x86_64 ABI3 installed-wheel suite found that
+`scripts/seed_fuzz_corpus.py` read the official UTF-8 fixtures through the CP1252 locale. The
+artifact round trip itself passed. No collection, evidence, publication, or release job ran. The
+generator now requests UTF-8 explicitly; internal commit `b5dd2fd` and public commit `222dac4`
+contain the fix.
+
+Canonical validation run `31372838214` passed on public revision
+`222dac4475fa145e56c73c842e08dde214941c6f`. Publication-disabled run `31372936154` then completed
+29 jobs successfully and skipped only PyPI publication and GitHub release attachment. It built
+and verified 12 wheels plus one sdist across CPython 3.13 ABI3 and CPython 3.14t on macOS, Linux,
+and Windows, x86_64 and arm64. The combined manifest contains 13 unique SHA-256 digests and names
+only version `0.2.0b1` and source revision `222dac4`.
+
+The generated report is bound to the same revision and manifest. It records 538/538 official
+fixtures, 84/84 strict errors, G2 pass, G3 pass, every G5 cell pass, and the known honest G4 miss.
+The exact downloaded report, qualification summary, manifest, and artifacts are retained under
+`.git/release-runs/31372936154/`; they are not part of the public repository. OpenSpec task 14.3
+is complete. Owner authority permits the task-14.5 trusted publication step; task 14.4 remains
+open until post-publication evidence is recorded and the completed change can be archived.
