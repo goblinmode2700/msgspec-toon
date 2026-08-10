@@ -1,21 +1,28 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the publication-disabled `0.2.0b1` artifact qualification. Read
+_Last updated after the trusted publication of `0.2.0b1`. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**Tag and publish the already qualified public revision.** Public revision
-`222dac4475fa145e56c73c842e08dde214941c6f` passed canonical validation and the complete
-publication-disabled workflow in [GitHub Actions run 31372936154](https://github.com/goblinmode2700/msgspec-toon/actions/runs/31372936154):
-12 wheels plus one sdist, 13 unique digests, target-native installed-artifact tests, 538/538
-corpus, G2, G3, and every G5 cell. Publication and GitHub release jobs were intentionally
-skipped. Owner publication authority is explicit. Create annotated tag `v0.2.0b1` at that exact
-public revision, let the trusted `wheels.yml` path rebuild and publish, then verify PyPI files,
-attestations, release attachments, and fresh ABI3/free-threaded installs. Do not archive the
-OpenSpec change until those checks close task 14.5.
+**`0.2.0b1` is published and independently verified.** Annotated tag `v0.2.0b1` names public
+revision `222dac4475fa145e56c73c842e08dde214941c6f`. Trusted-publishing
+[GitHub Actions run 31376466704](https://github.com/goblinmode2700/msgspec-toon/actions/runs/31376466704)
+completed all 31 jobs: 12 target-native wheels, one sdist, exact-set collection, generated
+evidence, OIDC publication, and GitHub release attachment. PyPI exposes exactly those 13 files
+and every SHA-256 matches the verified manifest. `pypi-attestations==0.0.30` cryptographically
+verified every file against `goblinmode2700/msgspec-toon`. Clean CPython 3.13 ABI3 and CPython
+3.14t GIL-disabled installs passed typed Struct round trips. The attached report and manifest
+are byte-identical to the workflow artifacts. The beta release is marked prerelease.
+
+The next infrastructure candidate is now specified, not implemented:
+`openspec/changes/shard-benchmark-evidence-on-github-actions`. It ports the existing native
+matrix/artifact/collector pattern to 36 complete benchmark cells across twelve bounded Linux
+shards, while preserving one calibration plus ten measured workers per cell. Hetzner, GCP,
+larger runners, and self-hosted runners are deferred. Do not make distributed absolute times
+canonical until the three-run qualification and twofold wall-time gate pass.
 
 **The typed-decode qualification stop is cleared.** Checkpoint 33 adopted S4: tabular leaf cells
 now use one fused `scalar_field` event. The default consumer implementation remains the original
@@ -25,9 +32,8 @@ duplicate check, and direct placement. Against the exact S3 wheel, typed decode 
 faster at 512, so the change did not move cost into the generic fallback.
 
 Against the immutable phase-8 capability checkpoint, 64 records is now parity; 512 is 5.0%
-faster; and 4096 is 3.1% faster. OpenSpec tasks 11.5 and 12.4 are complete. The remaining release
-work is task 14.3's full artifact workflow, task 14.4's final evidence/archive checkpoint, and the
-authorized publication stop in 14.5. Do not start a larger row-program rewrite without a new
+faster; and 4096 is 3.1% faster. OpenSpec tasks 11.5, 12.4, and 14.1-14.5 are complete. The
+capability change is ready for its spec-sync/archive checkpoint. Do not start a larger row-program rewrite without a new
 symbolized profile showing a mechanism beyond the accepted fused field events.
 
 Checkpoint 34 adopted S5 after that profile showed nested group opening still paid the generic
@@ -65,22 +71,25 @@ the plan arena, merging array-like and object Struct frames, and compile-time st
 specialization.
 A final cold outlining of permissive scalar conversion also failed to remove the effect and was
 reverted. The accepted default-Encoder cache and parser preflight split repair separate functional
-encode and ordinary parser costs. Do not retry these four designs. Owner publication authority was
-explicitly granted; the remaining stop is the full release-artifact qualification workflow.
+encode and ordinary parser costs. Do not retry these four designs. The release-artifact
+qualification and trusted publication workflow are complete.
 
 Current completed evidence: 19 supported, 2 parity rejects, 8 unsupported, zero silent failures;
 538/538 corpus and 84/84 strict errors; 259 Python tests passed with 7 expected skips; 39 Rust
 tests passed; six G2 probes passed with zero intermediate builtin containers; both 900-second fuzz
 targets completed 166.9 million total executions with zero artifacts. `make bench` passes every
 G3 and G5 cell and records the known G4 miss through 512 records, with G4 passing at 4096.
-`make report` generated `conformance/report.json` for `0.2.0b1`. Publication-disabled run
-`31372936154` bound the report to public revision `222dac4` and verified 12 target-native wheels
-plus one sdist with 13 unique digests. An earlier candidate run (`31372177264`) correctly failed
+`make report` generated `conformance/report.json` for `0.2.0b1`. Trusted publication run
+`31376466704` bound the final report to public revision `222dac4`, published 12 target-native
+wheels plus one sdist with 13 exact digests, and attached the report and manifest. An earlier
+candidate run (`31372177264`) correctly failed
 closed when the new fuzz seed generator read UTF-8 fixtures through Windows CP1252; the explicit
 UTF-8 fix is in both the qualified public revision and internal commit `b5dd2fd`.
 
-The active OpenSpec change remains `qualify-beta-release-and-expand-msgspec-parity`. Tasks 11.5,
-12.4, 13.5, and 14.1-14.3 are complete. Tasks 14.4 and 14.5 remain open. Do not archive it.
+The completed capability OpenSpec change is
+`qualify-beta-release-and-expand-msgspec-parity`; all tasks are complete and it is ready for
+spec sync and archive. The newly stubbed, unimplemented infrastructure change is
+`shard-benchmark-evidence-on-github-actions`.
 
 ## Previous published checkpoint
 

@@ -14,6 +14,7 @@
     "internal_revision": "b5dd2fd",
     "public_revision": "222dac4475fa145e56c73c842e08dde214941c6f",
     "publication_disabled_run": 31372936154,
+    "publication_run": 31376466704,
     "failed_closed_run": {
       "run": 31372177264,
       "cause": "the deterministic fuzz seed generator used the Windows CP1252 locale for UTF-8 official fixtures",
@@ -36,7 +37,20 @@
       "release_guard": "passed with no reproduced slowdown",
       "fuzz_smoke": "both targets completed without crash artifacts"
     },
-    "publication": "disabled; PyPI and GitHub release jobs skipped"
+    "publication": {
+      "status": "published and independently verified",
+      "tag": "v0.2.0b1",
+      "pypi_files": 13,
+      "digests_exact": true,
+      "attestations_verified": 13,
+      "fresh_installs": [
+        "CPython 3.13.1 ABI3",
+        "CPython 3.14.7 free-threaded with GIL disabled"
+      ],
+      "github_release_evidence_exact": true,
+      "evidence_job_seconds": 1168,
+      "post_release_workflow_fix": "public main f4c280b marks future beta GitHub releases as prereleases"
+    }
   },
   "candidates": [
     {

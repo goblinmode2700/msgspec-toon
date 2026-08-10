@@ -185,10 +185,10 @@
 - [x] 14.3 Run strict OpenSpec validation, canonical qualification, complete corpus, containment,
       G2, G3/G5, release-guard A/B, fuzz smoke, full wheel/sdist verification, and report
       generation; record misses without masking them.
-- [ ] 14.4 Update `HANDOFF.md`, `LAST-MILE.md`, generated evidence, and the optimization ledger
+- [x] 14.4 Update `HANDOFF.md`, `LAST-MILE.md`, generated evidence, and the optimization ledger
       before the checkpoint commit; archive the OpenSpec change only after every task and delta is
       complete.
-- [ ] 14.5 Stop at the publication checkpoint. Publish `0.2.0b1` only with explicit owner
+- [x] 14.5 Stop at the publication checkpoint. Publish `0.2.0b1` only with explicit owner
       authorization through the trusted, verified-artifact workflow, then verify PyPI files,
       attestations, GitHub release evidence, and fresh installs on representative ABI3 and
       free-threaded targets.

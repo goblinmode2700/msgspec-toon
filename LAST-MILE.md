@@ -1395,3 +1395,27 @@ The exact downloaded report, qualification summary, manifest, and artifacts are 
 `.git/release-runs/31372936154/`; they are not part of the public repository. OpenSpec task 14.3
 is complete. Owner authority permits the task-14.5 trusted publication step; task 14.4 remains
 open until post-publication evidence is recorded and the completed change can be archived.
+
+#### Checkpoint 38 — `0.2.0b1` trusted publication
+
+The owner explicitly authorized publication. Annotated tag `v0.2.0b1` names exact qualified
+public revision `222dac4475fa145e56c73c842e08dde214941c6f`. Trusted-publishing run
+`31376466704` completed 31 jobs successfully: canonical qualification, twelve wheel builds,
+twelve target-native wheel verifications, sdist build and verification, exact-set collection,
+generated evidence, PyPI publication through OIDC, and GitHub release attachment. The evidence
+job ran from `09:56:52Z` to `10:16:20Z` (19 minutes 28 seconds), a hosted-runner control for the
+new benchmark-sharding proposal.
+
+PyPI contains exactly twelve wheels and one sdist. All thirteen SHA-256 values match the
+workflow's verified manifest with no missing, extra, or mismatched file. Pinned
+`pypi-attestations==0.0.30` cryptographically verified all thirteen files against repository
+identity `https://github.com/goblinmode2700/msgspec-toon`. Fresh isolated installs passed a typed
+Struct encode/decode round trip on CPython 3.13.1 ABI3 and CPython 3.14.7 free-threaded with the
+GIL disabled. The GitHub release's `report.json` and `verified-release.json` are byte-identical
+to the tagged workflow evidence retained under `.git/release-runs/31376466704/`.
+
+The workflow created the beta release without GitHub's prerelease flag. The public release was
+corrected immediately, and public main commit `f4c280b` adds `--prerelease` plus a regression
+test; all 18 release-workflow tests pass. This post-tag workflow fix changes no published wheel,
+sdist, report, or tag. OpenSpec tasks 14.4 and 14.5 are complete. The capability change is ready
+for spec sync and archive.
