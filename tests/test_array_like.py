@@ -30,6 +30,18 @@ def test_array_like_nested_in_declared_list() -> None:
     assert toon.decode(document, type=Shape) == Shape([Point(1, "a"), Point(2)])
 
 
+def test_array_like_struct_encode_is_positional_and_round_trips() -> None:
+    point = Point(2, "east")
+    document = toon.encode(point)
+    assert document == b"[2]: 2,east"
+    assert toon.decode(document, type=Point) == point
+
+
+def test_array_like_struct_nested_encode_round_trips() -> None:
+    shape = Shape([Point(1, "a"), Point(2)])
+    assert toon.decode(toon.encode(shape), type=Shape) == shape
+
+
 @pytest.mark.parametrize(
     "document",
     [

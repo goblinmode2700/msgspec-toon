@@ -40,6 +40,9 @@ PARITY_REJECTS = "parity_rejects"
 UNSUPPORTED = "unsupported"
 SILENTLY_IGNORED = "silently_ignored"
 SILENTLY_WRONG = "silently_wrong"
+# The wire format deliberately differs from msgspec.json, and the difference
+# is required by the pinned TOON corpus rather than being an implementation gap.
+FORMAT_DIVERGENCE = "format_divergence"
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,11 @@ class SupportEntry:
     reference: Callable[[], Any]
     detail: str
     plan_rejection: bool = False
+    round_trip: Callable[[], bool] | None = None
+
+
+def _round_trip(value: Any, type_: Any) -> bool:
+    return toon.decode(toon.encode(value), type=type_) == value
 
 
 # --- probes -----------------------------------------------------------------
@@ -117,12 +125,34 @@ class Recursive(msgspec.Struct):
 MATRIX: tuple[SupportEntry, ...] = (
     # --- Tier 0 -------------------------------------------------------------
     SupportEntry(
-        "scalars (int, float, str, bool, null)",
+        "integer, string, boolean, and null scalars",
         0,
         SUPPORTED,
-        lambda: toon.decode(b"a: 1\nb: 1.5\nc: x\nd: true\ne: null"),
-        lambda: msgspec.json.decode(b'{"a":1,"b":1.5,"c":"x","d":true,"e":null}'),
+        lambda: toon.decode(b"a: 1\nc: x\nd: true\ne: null"),
+        lambda: msgspec.json.decode(b'{"a":1,"c":"x","d":true,"e":null}'),
         "including integers beyond 2**53, which round-trip exactly",
+        round_trip=lambda: _round_trip(
+            {"integer": 2**80, "string": "x", "boolean": True, "null": None}, dict[str, Any]
+        ),
+    ),
+    SupportEntry(
+        "fractional and exponent floats",
+        0,
+        SUPPORTED,
+        lambda: toon.decode(b"a: 1.5\nb: 1e+100"),
+        lambda: msgspec.json.decode(b'{"a":1.5,"b":1e100}'),
+        "untyped decode returns float and finite values round-trip exactly",
+        round_trip=lambda: _round_trip([0.1, 1.5, 1e100, 5e-324], list[float]),
+    ),
+    SupportEntry(
+        "whole floats and negative zero",
+        0,
+        FORMAT_DIVERGENCE,
+        lambda: (toon.encode([0.0, -0.0, 1.0, float(2**53 + 1)]), type(toon.decode(b"1"))),
+        lambda: (msgspec.json.encode([0.0, -0.0, 1.0, float(2**53 + 1)]), float),
+        "TOON 4.1 canonicalizes whole floats to integer-looking scalars and -0.0 to 0; "
+        "untyped decode therefore returns int, while typed float decode recovers float except "
+        "for the sign of negative zero",
     ),
     SupportEntry(
         "nested Structs in a tabular array",
@@ -135,6 +165,7 @@ MATRIX: tuple[SupportEntry, ...] = (
             b'[{"pid":1,"metadata":{"alias":"a","region":"b"},"provider":"c"}]', type=list[Worker]
         ),
         "the challenge shape: nested field groups keep a record on one row",
+        round_trip=lambda: _round_trip([Worker(1, Metadata("a", "b"), "c")], list[Worker]),
     ),
     SupportEntry(
         "Optional and defaults",
@@ -145,6 +176,7 @@ MATRIX: tuple[SupportEntry, ...] = (
             b'{"pid":1,"metadata":{"alias":"a","region":"b"}}', type=Worker
         ),
         "an omitted field takes its declared default",
+        round_trip=lambda: _round_trip(Worker(1, Metadata("a", "b")), Worker),
     ),
     SupportEntry(
         "field renaming",
@@ -153,6 +185,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"userName: x", type=Renamed),
         lambda: msgspec.json.decode(b'{"userName":"x"}', type=Renamed),
         "rename policies are read through the plan compiler",
+        round_trip=lambda: _round_trip(Renamed("x"), Renamed),
     ),
     # --- Tier 1: working ----------------------------------------------------
     SupportEntry(
@@ -162,6 +195,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"a: 1\nb: 2", type=dict[str, int]),
         lambda: msgspec.json.decode(b'{"a":1,"b":2}', type=dict[str, int]),
         "string-keyed mappings only; see the dict[int, T] entry",
+        round_trip=lambda: _round_trip({"a": 1, "b": 2}, dict[str, int]),
     ),
     SupportEntry(
         "variable-length tuple",
@@ -170,6 +204,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"[2]: 1,2", type=tuple[int, ...]),
         lambda: msgspec.json.decode(b"[1,2]", type=tuple[int, ...]),
         "",
+        round_trip=lambda: _round_trip((1, 2), tuple[int, ...]),
     ),
     SupportEntry(
         "Literal[str]",
@@ -178,6 +213,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"a", type=Literal["a", "b"]),
         lambda: msgspec.json.decode(b'"a"', type=Literal["a", "b"]),
         "",
+        round_trip=lambda: _round_trip("a", Literal["a", "b"]),
     ),
     SupportEntry(
         "forbid_unknown_fields",
@@ -186,6 +222,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"a: 1", type=Strict),
         lambda: msgspec.json.decode(b'{"a":1}', type=Strict),
         "the accepted document round-trips; both reject an unknown field (tests/test_api.py)",
+        round_trip=lambda: _round_trip(Strict(1), Strict),
     ),
     # --- Tier 1: gaps -------------------------------------------------------
     SupportEntry(
@@ -195,6 +232,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"[2]: 1,x", type=tuple[int, str]),
         lambda: msgspec.json.decode(b'[1,"x"]', type=tuple[int, str]),
         "one plan per position; a length mismatch is a type error",
+        round_trip=lambda: _round_trip((1, "x"), tuple[int, str]),
     ),
     SupportEntry(
         "fixed-length tuple rejects a wrong length",
@@ -212,6 +250,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b'{"x":1}', type=KeywordOnly),
         "the plan carries a keyword-name tuple and the class is "
         "constructed through the keyword half of the vectorcall",
+        round_trip=lambda: _round_trip(KeywordOnly(x=1), KeywordOnly),
     ),
     SupportEntry(
         "tagged unions",
@@ -221,6 +260,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b'{"type":"cat","name":"x"}', type=Cat | Dog),
         "object-form only; bounded scalar preflight selects the compiled Struct plan before "
         "construction; tagged array-like unions fail at plan construction",
+        round_trip=lambda: _round_trip(Cat("x"), Cat | Dog),
     ),
     SupportEntry(
         "array_like Structs",
@@ -229,6 +269,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"[2]:\n  - 1\n  - x", type=Positional),
         lambda: msgspec.json.decode(b'[1,"x"]', type=Positional),
         "positional frames construct the Struct without an intermediate mapping",
+        round_trip=lambda: _round_trip(Positional(1, "x"), Positional),
     ),
     SupportEntry(
         "strict=False scalar coercion",
@@ -237,6 +278,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b'"1"', type=int, strict=False),
         lambda: msgspec.json.decode(b'"1"', type=int, strict=False),
         "table-driven bool, int, and float conversion matches pinned msgspec 0.21.1",
+        round_trip=lambda: _round_trip(1, int),
     ),
     SupportEntry(
         "recursive Struct types",
@@ -245,6 +287,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"value: 1\nchild: null", type=Recursive),
         lambda: msgspec.json.decode(b'{"value":1,"child":null}', type=Recursive),
         "identity-keyed graph plans support bounded direct recursive construction",
+        round_trip=lambda: _round_trip(Recursive(1), Recursive),
     ),
     SupportEntry(
         "constraints (msgspec.Meta)",
@@ -254,6 +297,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b'{"x":10}', type=Constrained),
         "numeric bounds and multiples, string length and patterns, and collection length "
         "constraints are enforced; accepted and rejected boundaries are differential-tested",
+        round_trip=lambda: _round_trip(Constrained(10), Constrained),
     ),
     SupportEntry(
         "Literal[int]",
@@ -262,6 +306,7 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: toon.decode(b"2", type=Literal[1, 2]),
         lambda: msgspec.json.decode(b"2", type=Literal[1, 2]),
         "",
+        round_trip=lambda: _round_trip(2, Literal[1, 2]),
     ),
     SupportEntry(
         "Literal with mixed member types",
@@ -294,46 +339,84 @@ MATRIX: tuple[SupportEntry, ...] = (
         "construction instead of returning {'1': 2} where msgspec returns {1: 2}",
         plan_rejection=True,
     ),
-    # --- Tier 2: absent -----------------------------------------------------
+    # --- Tier 2 -------------------------------------------------------------
     SupportEntry(
-        "enum members",
+        "string Enum",
         2,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b"red", type=Color),
         lambda: msgspec.json.decode(b'"red"', type=Color),
-        "native encoding is supported; typed decoding requires native scalar support or an "
-        "explicit dec_hook",
-        plan_rejection=True,
+        "typed decode uses msgspec's public scalar converter without building a container tree",
+        round_trip=lambda: _round_trip(Color.RED, Color),
+    ),
+    SupportEntry(
+        "integer Enum",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(b"2", type=Priority),
+        lambda: msgspec.json.decode(b"2", type=Priority),
+        "typed decode uses the declared integer member value",
+        round_trip=lambda: _round_trip(Priority.HIGH, Priority),
     ),
     SupportEntry(
         "datetime",
         2,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b'"2026-01-01T00:00:00Z"', type=datetime.datetime),
         lambda: msgspec.json.decode(b'"2026-01-01T00:00:00Z"', type=datetime.datetime),
-        "native encoding is supported; typed decoding requires native scalar support or an "
-        "explicit dec_hook",
-        plan_rejection=True,
+        "aware values and msgspec.Meta(tz=...) constraints retain msgspec semantics",
+        round_trip=lambda: _round_trip(
+            datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC), datetime.datetime
+        ),
+    ),
+    SupportEntry(
+        "date",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(b'"2026-08-09"', type=datetime.date),
+        lambda: msgspec.json.decode(b'"2026-08-09"', type=datetime.date),
+        "native date scalar encode and typed decode",
+        round_trip=lambda: _round_trip(datetime.date(2026, 8, 9), datetime.date),
+    ),
+    SupportEntry(
+        "time",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(b'"01:02:03.000456"', type=datetime.time),
+        lambda: msgspec.json.decode(b'"01:02:03.000456"', type=datetime.time),
+        "msgspec.Meta(tz=...) constraints retain msgspec semantics",
+        round_trip=lambda: _round_trip(datetime.time(1, 2, 3, 456), datetime.time),
+    ),
+    SupportEntry(
+        "timedelta",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(b'"P2DT3.000004S"', type=datetime.timedelta),
+        lambda: msgspec.json.decode(b'"P2DT3.000004S"', type=datetime.timedelta),
+        "native duration scalar encode and typed decode",
+        round_trip=lambda: _round_trip(
+            datetime.timedelta(days=2, seconds=3, microseconds=4), datetime.timedelta
+        ),
     ),
     SupportEntry(
         "UUID",
         2,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b'"12345678-1234-5678-1234-567812345678"', type=uuid.UUID),
         lambda: msgspec.json.decode(b'"12345678-1234-5678-1234-567812345678"', type=uuid.UUID),
-        "native encoding is supported; typed decoding requires native scalar support or an "
-        "explicit dec_hook",
-        plan_rejection=True,
+        "native UUID scalar encode and typed decode",
+        round_trip=lambda: _round_trip(
+            uuid.UUID("12345678-1234-5678-1234-567812345678"), uuid.UUID
+        ),
     ),
     SupportEntry(
         "Decimal",
         2,
-        UNSUPPORTED,
+        SUPPORTED,
         lambda: toon.decode(b'"1.5"', type=decimal.Decimal),
         lambda: msgspec.json.decode(b'"1.5"', type=decimal.Decimal),
-        "native encoding is supported; typed decoding requires native scalar support or an "
-        "explicit dec_hook",
-        plan_rejection=True,
+        "the default string form preserves exact digits and trailing zeroes",
+        round_trip=lambda: _round_trip(decimal.Decimal("1.2300"), decimal.Decimal),
     ),
     SupportEntry(
         "dataclasses",
@@ -356,30 +439,6 @@ MATRIX: tuple[SupportEntry, ...] = (
         "rejects still raises the same ValueError",
     ),
     SupportEntry(
-        "date/time, UUID, and Decimal encoding",
-        2,
-        SUPPORTED,
-        lambda: (
-            toon.encode(datetime.date(2026, 8, 9)),
-            toon.encode(uuid.UUID("12345678-1234-5678-1234-567812345678")),
-            toon.encode(decimal.Decimal("1.2300")),
-        ),
-        lambda: (
-            msgspec.json.encode(datetime.date(2026, 8, 9)),
-            msgspec.json.encode(uuid.UUID("12345678-1234-5678-1234-567812345678")),
-            msgspec.json.encode(decimal.Decimal("1.2300")),
-        ),
-        "normalization runs before enc_hook and Decimal digits never pass through float",
-    ),
-    SupportEntry(
-        "string and integer Enum encoding",
-        2,
-        SUPPORTED,
-        lambda: toon.decode(toon.encode([Color.RED, Priority.HIGH])),
-        lambda: msgspec.json.decode(msgspec.json.encode([Color.RED, Priority.HIGH])),
-        "Enum members encode through their declared scalar values",
-    ),
-    SupportEntry(
         "Encoder(decimal_format=..., uuid_format=...)",
         2,
         SUPPORTED,
@@ -396,6 +455,20 @@ MATRIX: tuple[SupportEntry, ...] = (
             ),
         ),
         "both reusable and functional encoders implement each documented format value",
+        round_trip=lambda: (
+            toon.decode(
+                toon.Encoder(decimal_format="number").encode(decimal.Decimal("1.2300")),
+                type=decimal.Decimal,
+            )
+            == decimal.Decimal("1.2300")
+            and toon.decode(
+                toon.Encoder(uuid_format="hex").encode(
+                    uuid.UUID("12345678-1234-5678-1234-567812345678")
+                ),
+                type=uuid.UUID,
+            )
+            == uuid.UUID("12345678-1234-5678-1234-567812345678")
+        ),
     ),
 )
 
@@ -421,6 +494,14 @@ def check_supported(entry: SupportEntry) -> None:
         assert entry.ours() == entry.reference(), (
             f"{entry.feature}: declared supported but disagrees with msgspec.json"
         )
+    assert entry.round_trip is not None, (
+        f"{entry.feature}: supported value shape has no round-trip probe"
+    )
+    round_trip_error = _raised(entry.round_trip)
+    assert round_trip_error is None, (
+        f"{entry.feature}: round-trip probe raised {round_trip_error!r}"
+    )
+    assert entry.round_trip(), f"{entry.feature}: round-trip value changed"
 
 
 def check_parity_rejects(entry: SupportEntry) -> None:
@@ -466,12 +547,21 @@ def check_silently_wrong(entry: SupportEntry) -> None:
         )
 
 
+def check_format_divergence(entry: SupportEntry) -> None:
+    assert _raised(entry.ours) is None
+    assert _raised(entry.reference) is None
+    assert entry.ours() != entry.reference(), (
+        f"{entry.feature}: declared a wire-format divergence but agrees with msgspec.json"
+    )
+
+
 CHECKERS: dict[str, Callable[[SupportEntry], None]] = {
     SUPPORTED: check_supported,
     PARITY_REJECTS: check_parity_rejects,
     UNSUPPORTED: check_unsupported,
     SILENTLY_IGNORED: check_silently_ignored,
     SILENTLY_WRONG: check_silently_wrong,
+    FORMAT_DIVERGENCE: check_format_divergence,
 }
 
 
@@ -483,10 +573,11 @@ def as_report() -> dict[str, Any]:
             "tier": entry.tier,
             "status": entry.status,
             "detail": entry.detail,
+            "round_trip": "verified" if entry.round_trip is not None else "not_applicable",
         }
         for entry in MATRIX
     ]
-    matching = {SUPPORTED, PARITY_REJECTS}
+    matching = {SUPPORTED, PARITY_REJECTS, FORMAT_DIVERGENCE}
     gaps = [entry for entry in entries if entry["status"] not in matching]
     return {
         "source": "conformance/support_matrix.py, verified by tests/test_support_matrix.py",
@@ -498,6 +589,7 @@ def as_report() -> dict[str, Any]:
         "known_gaps": gaps,
         "severity_note": (
             "`silently_wrong` and `silently_ignored` outrank `unsupported`: a rejection is "
-            "visible to a caller, a wrong value is not."
+            "visible to a caller, a wrong value is not. `format_divergence` is a declared, "
+            "fixture-locked difference required by TOON 4.1."
         ),
     }

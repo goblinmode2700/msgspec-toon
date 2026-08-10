@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Round-trip parity and executable support evidence.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 15 newly supported, 1 removed, 18 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Encode tagged Struct discriminators and array-like Structs from msgspec metadata.
+- Decode datetime, date, time, timedelta, UUID, Decimal, string Enum, and integer Enum values.
+- Require a value round trip for each supported value-shape entry in the support matrix.
+- Split integer, fractional-float, and whole-float behavior in generated evidence.
+- Document the TOON 4.1 rules that encode `1.0` as `1` and `-0.0` as `0`.
+
 ## 0.2.0b2
 
 Benchmark visualization.
@@ -14,9 +28,7 @@ Benchmark visualization.
 
 Native scalar encoding and msgspec API parity.
 
-<!-- release-compatibility:start -->
 - Compatibility since `0.1.0b3`: 7 newly supported, 0 removed, 7 total support-status changes, and 0 shared canonical-wire changes.
-<!-- release-compatibility:end -->
 
 - Encode date, datetime, time, timedelta, UUID, Decimal, and Enum values before `enc_hook`.
 - Support exact Decimal number output and UUID hex output in both encoder entry points.

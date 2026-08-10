@@ -23,6 +23,7 @@ PlanKind = Literal[
     "struct",
     "union",
     "literal",
+    "native_scalar",
     "custom",
 ]
 

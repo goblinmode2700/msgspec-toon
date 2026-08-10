@@ -479,6 +479,24 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                     .call1((class, raw))
                     .map_err(|err| self.internal(err, at))
             }
+            PlanKind::NativeScalar(class) => {
+                let Some(hook) = self.dec_hook.as_ref() else {
+                    return Err(Fault::validation_at(FaultCode::UnsupportedType, at));
+                };
+                let raw = match scalar_to_py(py, token, self.float_hook.as_ref()) {
+                    Ok(value) => value,
+                    Err(err) => return Err(self.internal(err, at)),
+                };
+                let hook = hook.clone_ref(py);
+                let class = class.clone_ref(py);
+                match hook.bind(py).call1((class, raw)) {
+                    Ok(value) => self.validate_scalar(plan, value, at),
+                    // msgspec conversion errors may include the rejected
+                    // scalar. Discard them at this boundary and return the
+                    // codec's coordinate-only validation fault.
+                    Err(_) => Err(Fault::validation_at(FaultCode::TypeMismatch, at)),
+                }
+            }
             PlanKind::List(_)
             | PlanKind::TupleVar(_)
             | PlanKind::TupleFixed(_)

@@ -83,6 +83,16 @@ def test_non_finite_floats_raise_encode_error() -> None:
         toon.encode({"bad": float("inf")})
 
 
+@pytest.mark.parametrize(
+    ("value", "wire"),
+    [(0.0, b"0"), (-0.0, b"0"), (1.0, b"1"), (float(2**53 + 1), b"9007199254740992")],
+)
+def test_whole_float_bytes_and_untyped_result_are_explicit(value: float, wire: bytes) -> None:
+    assert toon.encode(value) == wire
+    assert type(toon.decode(wire)) is int
+    assert toon.decode(wire, type=float) == float(wire)
+
+
 def test_empty_containers() -> None:
     # Canonical empty array is the literal `[]`; `[0]:` stays decodable.
     assert toon.encode({"empty_list": []}) == b"empty_list: []"

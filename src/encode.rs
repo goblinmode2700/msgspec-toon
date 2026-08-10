@@ -46,10 +46,17 @@ pub struct EncodePlan {
     #[allow(dead_code)]
     class: Py<PyAny>,
     fields: Vec<EncodeField>,
+    array_like: bool,
+    tag: Option<EncodeTag>,
     /// Precomputed tabular shape when the class's type plan proves every
     /// field is a primitive leaf or a (recursively static) nested Struct —
     /// rows of such a class need no runtime column scan at all.
     static_shape: Option<Arc<Vec<ShapeNode>>>,
+}
+
+struct EncodeTag {
+    wire: String,
+    value: Py<PyAny>,
 }
 
 struct EncodeField {
@@ -137,7 +144,24 @@ fn plan_from_spec(
 ) -> PyResult<Arc<EncodePlan>> {
     let spec = graph_node(graph, node_index)?;
     let mut fields = Vec::new();
-    let mut shape: Option<Vec<ShapeNode>> = Some(Vec::new());
+    let array_like = spec.getattr("array_like")?.extract::<bool>()?;
+    let tag_field = spec.getattr("tag_field")?.extract::<Option<String>>()?;
+    let tag_value = spec.getattr("tag_value")?;
+    let tag = match (tag_field, tag_value.is_none()) {
+        (Some(wire), false) => Some(EncodeTag {
+            wire,
+            value: tag_value.unbind(),
+        }),
+        _ => None,
+    };
+    let mut shape: Option<Vec<ShapeNode>> = (!array_like).then(Vec::new);
+    if let (Some(nodes), Some(tag)) = (shape.as_mut(), tag.as_ref()) {
+        nodes.push(ShapeNode {
+            wire: tag.wire.clone(),
+            access: Access::Constant(tag.value.clone_ref(py)),
+            children: Vec::new(),
+        });
+    }
     let offsets = ctx
         .struct_api
         .as_ref()
@@ -215,6 +239,8 @@ fn plan_from_spec(
     Ok(Arc::new(EncodePlan {
         class: class.clone().unbind(),
         fields,
+        array_like,
+        tag,
         static_shape,
     }))
 }
@@ -253,6 +279,7 @@ fn clone_nodes(py: Python<'_>, nodes: &[ShapeNode]) -> Vec<ShapeNode> {
                     offset: *offset,
                 },
                 Access::Item(key) => Access::Item(key.clone_ref(py)),
+                Access::Constant(value) => Access::Constant(value.clone_ref(py)),
             },
             children: clone_nodes(py, &node.children),
         })
@@ -354,7 +381,16 @@ fn object_pairs<'value, 'py>(
             Ok(pairs)
         }
         Val::Struct(instance, plan) => {
-            let mut pairs = Vec::with_capacity(plan.fields.len());
+            if plan.array_like {
+                return Err(encode_err(ctx, py, "array-like Struct is not an object"));
+            }
+            let mut pairs = Vec::with_capacity(plan.fields.len() + usize::from(plan.tag.is_some()));
+            if let Some(tag) = &plan.tag {
+                pairs.push((
+                    EntryText::Wire(tag.wire.as_str()),
+                    tag.value.bind(py).clone(),
+                ));
+            }
             for field in &plan.fields {
                 let item = struct_field(py, instance, &field.access)?;
                 pairs.push((EntryText::Wire(field.wire.as_str()), item));
@@ -365,6 +401,21 @@ fn object_pairs<'value, 'py>(
     }
 }
 
+fn struct_sequence<'py>(
+    py: Python<'py>,
+    instance: &Bound<'py, PyAny>,
+    plan: &EncodePlan,
+) -> PyResult<Vec<Bound<'py, PyAny>>> {
+    let mut items = Vec::with_capacity(plan.fields.len() + usize::from(plan.tag.is_some()));
+    if let Some(tag) = &plan.tag {
+        items.push(tag.value.bind(py).clone());
+    }
+    for field in &plan.fields {
+        items.push(struct_field(py, instance, &field.access)?);
+    }
+    Ok(items)
+}
+
 pub fn encode_root(
     ctx: &EncodeContext,
     py: Python<'_>,
@@ -373,6 +424,10 @@ pub fn encode_root(
     let mut writer = Writer::with_capacity(256, ctx.indent);
     let value = classify(ctx, py, obj, 0)?;
     match &value {
+        Val::Struct(instance, plan) if plan.array_like => {
+            let items = struct_sequence(py, instance, plan)?;
+            write_array(ctx, py, &mut writer, None, &items, 0, 0, false)?;
+        }
         Val::Dict(_) | Val::Struct(_, _) => {
             if let Some(keyed) = keyed_shape(ctx, py, &value, 0)? {
                 write_keyed(ctx, py, &mut writer, None, &keyed, 0, false)?;
@@ -421,6 +476,10 @@ fn write_entry<'py>(
     let value = classify(ctx, py, item, 0)?;
     match &value {
         Val::Seq(items) => write_array(ctx, py, writer, Some(key), items, depth, 0, inline),
+        Val::Struct(instance, plan) if plan.array_like => {
+            let items = struct_sequence(py, instance, plan)?;
+            write_array(ctx, py, writer, Some(key), &items, depth, 0, inline)
+        }
         Val::Dict(_) | Val::Struct(_, _) => {
             if let Some(keyed) = keyed_shape(ctx, py, &value, depth)? {
                 return write_keyed(ctx, py, writer, Some(key), &keyed, depth, inline);
@@ -585,6 +644,12 @@ fn write_list_item<'py>(
 ) -> PyResult<()> {
     let value = classify(ctx, py, item, 0)?;
     match &value {
+        Val::Struct(instance, plan) if plan.array_like => {
+            let items = struct_sequence(py, instance, plan)?;
+            writer.indent(depth);
+            writer.bytes(b"- ");
+            write_array(ctx, py, writer, None, &items, depth, nesting + 1, true)
+        }
         Val::Dict(_) | Val::Struct(_, _) => {
             let pairs = object_pairs(ctx, py, &value)?;
             if pairs.is_empty() {
@@ -729,6 +794,7 @@ enum Access {
         offset: usize,
     },
     Item(Py<PyAny>),
+    Constant(Py<PyAny>),
 }
 
 impl StructAccess {
@@ -886,13 +952,22 @@ fn build_shape<'py>(
             return Ok(None);
         }
         let plan = plan_for(ctx, py, class.as_any())?;
+        if plan.array_like {
+            return Ok(None);
+        }
         if let Some(static_nodes) = &plan.static_shape {
             return Ok(Some(Shape::Shared(static_nodes.clone())));
         }
-        plan.fields
-            .iter()
-            .map(|field| (field.wire.clone(), field.access.clone_ref(py).into()))
-            .collect()
+        let mut accessors = Vec::with_capacity(plan.fields.len() + usize::from(plan.tag.is_some()));
+        if let Some(tag) = &plan.tag {
+            accessors.push((tag.wire.clone(), Access::Constant(tag.value.clone_ref(py))));
+        }
+        accessors.extend(
+            plan.fields
+                .iter()
+                .map(|field| (field.wire.clone(), field.access.clone_ref(py).into())),
+        );
+        accessors
     } else if let Ok(first_map) = first.cast::<PyDict>() {
         let mut first_keys = Vec::with_capacity(first_map.len());
         for key in first_map.keys() {
@@ -944,6 +1019,7 @@ fn build_shape<'py>(
                     },
                     Err(_) => return Ok(None),
                 },
+                Access::Constant(value) => value.bind(py).clone(),
             };
             column.push(item);
         }
@@ -1043,6 +1119,7 @@ fn write_row_obj<'py>(
                     .ok_or_else(|| encode_err(ctx, py, "row lost a classified column"))?,
                 Err(_) => return Err(encode_err(ctx, py, "row lost its classified shape")),
             },
+            Access::Constant(value) => value.bind(py).clone(),
         };
         if node.children.is_empty() {
             if !*first {
