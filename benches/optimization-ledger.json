@@ -365,6 +365,12 @@
       "method": "add Consumer::end_object_field with ordinary end_object as its default; specialize only the typed two-Struct-frame case to finish the child and store it through the parent's existing awaiting index; compare with the exact S5 wheel and put sixteen rounds only on the initially noisy 64-row decision",
       "result": "typed decode improved -0.8% at 64 records (MDE 0.5%), -1.5% at 512 (MDE 1.1%), and -1.1% at 4096 (MDE 1.0%). Untyped decode was no significant difference at all three sizes.",
       "ruling": "ADOPTED. Frame layout is unchanged. Any, skipped, Dict, root-row, and generic paths retain ordinary end_object. make check, 538/538 corpus, 84/84 strict errors, and all six G2 probes passed. The post-S6 profile removes expected_plan_or_fault from top stacks and leaves generic place at 6 samples; emit_row_fields becomes the final parser-local row-dispatch candidate. Artifacts: benches/ab-s6-ladder.json, benches/ab-s6-64-confirmation.json, and benches/ab-s6-untyped.json."
+    },
+    "flat_header_row_program_S7": {
+      "question": "does compiling the recursive FieldNode tree once into a flat borrowed op tape remove the remaining emit_row_fields self-time?",
+      "method": "compile StartObject, Scalar, and EndObject operations once per parsed header, replay the same consumer calls per row, and compare typed and untyped decode with the exact S6 wheel for eight B-C-C-B rounds at 64, 512, and 4096 records",
+      "result": "typed decode was no significant difference: +1.5% at 64 (MDE 1.6%), +1.5% at 512 (MDE 3.1%), and +0.1% at 4096 (MDE 1.9%). Untyped decode improved -2.1% at 64 but was parity at 512 and 4096.",
+      "ruling": "REJECTED and reverted. The large rows that should amortize one-time compilation did not move, while typed decode had no win and trended slower at 64 and 512. One small untyped cell does not support the proposed mechanism or justify a second row representation. The row-dispatch program stops at S6. Artifacts: benches/ab-s7-typed.json and benches/ab-s7-untyped.json."
     }
   },
   "harness_findings": {

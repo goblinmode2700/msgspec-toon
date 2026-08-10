@@ -211,3 +211,26 @@ select public attribute access. `make fastpath-build` creates a separate, hash-p
 patched-msgspec environment and fails unless the capsule path activates. Published wheels
 remain stock-compatible; the next external action is upstream review of the preserved
 patch, and the remaining small-payload floor still has no in-repository mechanism.
+
+## Typed-decode capability recovery program (2026-08-09 to 2026-08-10)
+
+The owner explicitly reopened one bounded program after array-like Structs, tagged unions, and
+permissive conversion left ordinary typed decode 3-5% slower than the phase-8 capability
+checkpoint. The queue used exact preceding wheels and one mechanism per checkpoint:
+
+1. S3 restored the earlier `finish_struct` inlining decision and improved typed decode 2.3-3.3%.
+2. S4 fused tabular leaf key/scalar dispatch and improved it another 4.1-5.7%.
+3. S5 carried a resolved nested child plan directly into object opening, improving 1.1-1.9%.
+4. S6 returned a completed nested Struct directly to its known parent field, improving 0.8-1.5%.
+5. S7 compiled the header tree into a flat row-op tape. Typed decode did not improve, so it was
+   rejected and reverted.
+
+Every accepted slice passed `make check`, the 538-fixture corpus, 84 strict-error fixtures, and
+G2. Untyped controls stayed neutral. S4 cleared the phase-8 regression at every gated size; S5 and
+S6 are additional same-session wins. The post-S6 profile names no remaining redundant event or
+frame transition: the visible costs are cell splitting, scalar work, Python object construction,
+and parser-loop attribution.
+
+**Exit condition: met at checkpoint 36.** S7's falsifier fired and the candidate was reverted.
+Further row-machine work requires a new profile with a named mechanism and a separately stated
+objective. Do not infer an invitation to build a larger VM from `emit_row_fields` attribution.

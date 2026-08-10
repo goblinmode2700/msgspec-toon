@@ -1348,3 +1348,23 @@ samples, beside `split_cells_into` at 70. S7 may compile the recursive header tr
 flat borrowed op tape. Its falsifier is no resolved typed or untyped decode win against exact S6;
 if it fires, revert S7 and stop. Artifacts: `benches/ab-s6-ladder.json`,
 `benches/ab-s6-64-confirmation.json`, and `benches/ab-s6-untyped.json`.
+
+#### Checkpoint 36 — S7 flat row-op tape rejected; program stop
+
+Hypothesis: `emit_row_fields` self-time reflects repeated recursive traversal and dynamic
+leaf/group classification of the same header tree on every row. Compiling the borrowed header
+tokens once into `StartObject`, `Scalar`, and `EndObject` operations should remove that work.
+
+Falsified for the typed objective. Against the exact S6 wheel, eight-round typed decode was no
+significant difference at every size: **+1.5% at 64 (MDE 1.6%)**, **+1.5% at 512 (MDE 3.1%)**,
+and **+0.1% at 4096 (MDE 1.9%)**. Untyped decode improved 2.1% at 64 but was parity at 512 and
+4096. The large rows, which should best amortize one-time compilation, did not move. The lone
+small untyped result does not support the proposed recursive-traversal mechanism and does not
+justify the typed trend in the wrong direction.
+
+S7 is fully reverted. Artifacts: `benches/ab-s7-typed.json` and
+`benches/ab-s7-untyped.json`. The accepted program is S3 through S6. It recovered the capability
+regression and then removed three separately measured tabular event transitions. The post-S6
+profile is dominated by cell splitting, scalar classification/conversion, Python string and
+Struct construction, and parser loop attribution. No remaining redundant dispatch mechanism is
+named. The row-dispatch improvement loop stops here under C9.

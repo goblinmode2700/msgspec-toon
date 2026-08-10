@@ -1,6 +1,6 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at the qualified S6 typed-decode checkpoint. Read
+_Last updated after the completed S3-S7 typed-decode recovery program. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
@@ -35,7 +35,10 @@ The post-S6 profile no longer shows `expected_plan_or_fault` as a top stack and 
 `FieldNode` tree once into a flat, borrowed row-op tape and interpret it for each row. The profile
 shows `emit_row_fields` as the largest native self-time (78 samples), but that attribution includes
 loop and inlined event work. Adopt S7 only if exact-S6 typed and untyped ladders resolve a win;
-otherwise revert it and stop the row-dispatch program.
+otherwise revert it and stop the row-dispatch program. S7 was measured and rejected: typed decode
+was parity with +1.5% trends at 64/512, and untyped improved only at 64 while 512/4096 were parity.
+The candidate was fully reverted. The row-dispatch program is closed at S6; do not build a larger
+row VM without a new profile and a new objective.
 
 The capability implementation, sustained fuzzing,
 canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
