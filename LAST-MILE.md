@@ -1417,5 +1417,8 @@ to the tagged workflow evidence retained under `.git/release-runs/31376466704/`.
 The workflow created the beta release without GitHub's prerelease flag. The public release was
 corrected immediately, and public main commit `f4c280b` adds `--prerelease` plus a regression
 test; all 18 release-workflow tests pass. This post-tag workflow fix changes no published wheel,
-sdist, report, or tag. OpenSpec tasks 14.4 and 14.5 are complete. The capability change is ready
-for spec sync and archive.
+sdist, report, or tag. OpenSpec tasks 14.4 and 14.5 are complete. The capability change's twelve
+added and four modified requirements were synced into seven strict-valid authoritative specs,
+then the complete change was archived as
+`2026-08-10-qualify-beta-release-and-expand-msgspec-parity`. The active change is now the
+unimplemented GitHub Actions benchmark-sharding proposal.

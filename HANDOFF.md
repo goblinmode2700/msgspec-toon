@@ -33,7 +33,7 @@ faster at 512, so the change did not move cost into the generic fallback.
 
 Against the immutable phase-8 capability checkpoint, 64 records is now parity; 512 is 5.0%
 faster; and 4096 is 3.1% faster. OpenSpec tasks 11.5, 12.4, and 14.1-14.5 are complete. The
-capability change is ready for its spec-sync/archive checkpoint. Do not start a larger row-program rewrite without a new
+capability change is synced and archived. Do not start a larger row-program rewrite without a new
 symbolized profile showing a mechanism beyond the accepted fused field events.
 
 Checkpoint 34 adopted S5 after that profile showed nested group opening still paid the generic
@@ -86,10 +86,10 @@ candidate run (`31372177264`) correctly failed
 closed when the new fuzz seed generator read UTF-8 fixtures through Windows CP1252; the explicit
 UTF-8 fix is in both the qualified public revision and internal commit `b5dd2fd`.
 
-The completed capability OpenSpec change is
-`qualify-beta-release-and-expand-msgspec-parity`; all tasks are complete and it is ready for
-spec sync and archive. The newly stubbed, unimplemented infrastructure change is
-`shard-benchmark-evidence-on-github-actions`.
+The completed capability OpenSpec change is archived at
+`openspec/changes/archive/2026-08-10-qualify-beta-release-and-expand-msgspec-parity`; its twelve
+added and four modified requirements are synced into the authoritative specs. The active,
+unimplemented infrastructure change is `shard-benchmark-evidence-on-github-actions`.
 
 ## Previous published checkpoint
 
