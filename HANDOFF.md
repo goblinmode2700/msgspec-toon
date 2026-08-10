@@ -38,7 +38,8 @@ changes. The completed OpenSpec change is archived as
 validation. Public commit `90ef91926ea59b13a600184c9902f5a232692fc3` is on
 `origin/main`. The public export contains no handoff, objective, active-change ledger, or local
 benchmark history. Issues #1, #2, #3, and #5 are closed with evidence. No new version is tagged
-or published yet.
+or published yet. Public evidence commit `a0a3866` adds the exact report behind the refreshed
+benchmark tables and figures; its `source_revision` names tested package commit `90ef919`.
 
 **`0.2.0b2` is published and independently verified.** Annotated tag `v0.2.0b2` names
 public revision `256e014e534ff969bc1ca037d7bb600ab9e2dbf4`. This plot-only beta adds a

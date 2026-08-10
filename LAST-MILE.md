@@ -1453,4 +1453,5 @@ pass, the known G4 miss, 26 supported matrix entries, zero silent failures, and 
 wire changes. Both the bounded OpenSpec change and all authoritative specs validate in strict mode.
 Public commit `90ef919` is on `origin/main`, and issues #1, #2, #3, and #5 are closed with the
 evidence above. The completed OpenSpec change is archived as
-`2026-08-10-repair-roundtrip-parity-after-0-2-0b2`.
+`2026-08-10-repair-roundtrip-parity-after-0-2-0b2`. Public evidence commit `a0a3866` carries the
+report and regenerated figures bound to tested package revision `90ef919`.
