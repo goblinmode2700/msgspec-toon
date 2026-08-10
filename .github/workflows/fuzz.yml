@@ -31,6 +31,7 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - run: rustup toolchain install "$NIGHTLY_TOOLCHAIN" --profile minimal
       - run: cargo +"$NIGHTLY_TOOLCHAIN" install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked
+      - run: python scripts/seed_fuzz_corpus.py
       - run: cargo +"$NIGHTLY_TOOLCHAIN" fuzz build --fuzz-dir fuzz ${{ matrix.target }}
       - run: cargo +"$NIGHTLY_TOOLCHAIN" fuzz run --fuzz-dir fuzz ${{ matrix.target }} -- -max_total_time=20
 
@@ -51,7 +52,7 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - run: rustup toolchain install "$NIGHTLY_TOOLCHAIN" --profile minimal
       - run: cargo +"$NIGHTLY_TOOLCHAIN" install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked
-      - run: uv run --no-sync python scripts/seed_fuzz_corpus.py
+      - run: python scripts/seed_fuzz_corpus.py
       - run: cargo +"$NIGHTLY_TOOLCHAIN" fuzz run --fuzz-dir fuzz ${{ matrix.target }} -- -max_total_time=900
       - name: Upload failures
         if: failure()
