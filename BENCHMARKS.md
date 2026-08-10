@@ -1,6 +1,6 @@
 # Benchmarks
 
-Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-10T14:52:33.484358+00:00.
+Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-10T22:49:53.134674+00:00.
 
 The report keeps time and token results separate. It does not create a combined score.
 
@@ -20,10 +20,10 @@ The chart shows encode, decode, and total elapsed time. Every value is a direct 
 
 | Codec | Encode (µs) | Decode (µs) | Total (µs) |
 |---|---:|---:|---:|
-| msgspec-toon | 567.14 | 1,061.74 |  1,628.88 |
-| msgspec JSON | 214.47 | 815.45 |  1,029.92 |
-| toons (Rust) | 6,476.01 | 3,035.96 |  9,511.97 |
-| python-toon | 24,226.87 | 29,357.10 |  53,583.97 |
+| msgspec-toon | 1,175.01 | 2,743.49 |  3,918.50 |
+| msgspec JSON | 463.88 | 2,190.52 |  2,654.40 |
+| toons (Rust) | 17,546.80 | 6,799.94 |  24,346.74 |
+| python-toon | 75,808.50 | 74,928.79 |  150,737.29 |
 
 ## End-to-end time
 
@@ -58,7 +58,7 @@ Compact JSON appears in every facet. This gives a direct reference for each shap
 - The benchmark never uses the minimum time.
 - Codec order is fixed inside each worker. The intervals do not measure order bias.
 - Token counts are deterministic under the named tokenizer.
-- The environment uses Python 3.13.1 and msgspec 0.21.1.
+- The environment uses Python 3.13.14 and msgspec 0.21.1.
 - The build is a release `abi3-py313` build.
 - The freshness check rejects stale and instrumented extensions.
 - Raw evidence is in [`conformance/report.json`](conformance/report.json).
