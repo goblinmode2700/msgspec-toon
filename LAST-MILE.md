@@ -1324,3 +1324,27 @@ The S4 symbolized 4096-row profile selected this slice: nested `start_object` ac
 536 native decode samples, while nested `end_object` accounted for 47 and generic
 `expected_plan`/`place` remained visible. S5 changes only opening. S6 may test direct child-return
 placement, but it must be a separate frame-layout candidate with its own exact S5 baseline.
+
+#### Checkpoint 35 — S6 fuses nested field-group return
+
+Hypothesis: a nested tabular Struct still closed through generic `end_object` and `place`, even
+though the parser knows this close corresponds to the field group opened immediately before it.
+A fused close can finish the child and store it through the parent's existing awaiting index
+without changing frame layout.
+
+Confirmed. `Consumer::end_object_field` defaults to ordinary `end_object`. The parser uses it
+only for nested tabular groups. The typed fast path activates only when the top two frames are
+Structs; `Any`, skipped values, Dicts, root rows, and all other shapes retain the original path.
+
+The eight-round exact-S5 ladder measured typed decode **-1.5% at 512 (MDE 1.1%)** and **-1.1% at
+4096 (MDE 1.0%)**. Its 64-row samples were noisy, so a separate sixteen-round run put power only
+on that decision and resolved **-0.8% (MDE 0.5%)**. Untyped decode remained within MDE at 64,
+512, and 4096. `make check` passed 39 Rust tests and 259 Python tests with 7 expected skips; the
+corpus remained 538/538 with 84/84 strict errors; all six G2 probes passed.
+
+The post-S6 symbolized profile no longer lists `expected_plan_or_fault` among top stacks and shows
+generic `place` at only 6 samples. `emit_row_fields` is now the largest native self-time at 78
+samples, beside `split_cells_into` at 70. S7 may compile the recursive header tree once into a
+flat borrowed op tape. Its falsifier is no resolved typed or untyped decode win against exact S6;
+if it fires, revert S7 and stop. Artifacts: `benches/ab-s6-ladder.json`,
+`benches/ab-s6-64-confirmation.json`, and `benches/ab-s6-untyped.json`.

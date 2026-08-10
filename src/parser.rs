@@ -538,7 +538,7 @@ fn emit_row_fields<C: Consumer>(
         } else {
             consumer.start_object_field(node.name, at)?;
             emit_row_fields(&node.children, cells, cursor, at, consumer)?;
-            consumer.end_object(at)?;
+            consumer.end_object_field(at)?;
         }
     }
     Ok(())

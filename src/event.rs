@@ -57,6 +57,12 @@ pub trait Consumer {
         self.key(key, at)?;
         self.start_object(at)
     }
+    /// Close an object opened by `start_object_field`. The default preserves
+    /// the ordinary event sequence; typed consumers may return a completed
+    /// child directly to its known parent field.
+    fn end_object_field(&mut self, at: Position) -> Result<(), Fault> {
+        self.end_object(at)
+    }
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault>;
     /// Offer an adjacent object key and scalar as one operation. The default
     /// preserves the ordinary event sequence; typed consumers may fuse field

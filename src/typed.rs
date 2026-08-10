@@ -935,6 +935,37 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         self.start_object_for_plan(declared, at)
     }
 
+    fn end_object_field(&mut self, at: Position) -> Result<(), Fault> {
+        if self.any_sub.is_some() || self.skip_depth > 0 {
+            return self.end_object(at);
+        }
+
+        let struct_pair = matches!(
+            self.stack.as_slice(),
+            [.., Frame::Struct { .. }, Frame::Struct { .. }]
+        );
+        if !struct_pair {
+            return self.end_object(at);
+        }
+
+        let Some(Frame::Struct { plan, values, .. }) = self.stack.pop() else {
+            unreachable!("struct_pair checked above")
+        };
+        let value = self.finish_struct(plan, values, at)?;
+        match self.stack.last_mut() {
+            Some(Frame::Struct {
+                values, awaiting, ..
+            }) => {
+                let index = awaiting
+                    .take()
+                    .ok_or(Fault::syntax_at(FaultCode::Internal, at))?;
+                values[index] = Some(value);
+                Ok(())
+            }
+            _ => unreachable!("struct_pair checked above"),
+        }
+    }
+
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
         if self.any_sub.is_some() {
             let consumed = self.any_forward(AnyEvent::Key(key), at)?;

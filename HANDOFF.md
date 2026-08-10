@@ -1,6 +1,6 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated at the qualified S5 typed-decode checkpoint. Read
+_Last updated at the qualified S6 typed-decode checkpoint. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
@@ -25,8 +25,17 @@ Checkpoint 34 adopted S5 after that profile showed nested group opening still pa
 while the typed Struct override carries the already resolved child plan directly into frame setup.
 Against the exact S4 wheel, typed decode improved 1.6% at 64 records, 1.9% at 512, and 1.1% at
 4096. Untyped controls were unchanged. The next measured mechanism is nested Struct return:
-`end_object`, `expected_plan`, and generic `place` remain visible in the post-S4 profile. Change
-frame ownership only as one separately measured S6 slice; do not combine it with a row VM.
+Checkpoint 35 then adopted S6: `end_object_field` completes a nested Struct directly into its
+known parent field, while every non-Struct, `Any`, skipped, and generic consumer path retains
+ordinary `end_object`. Against the exact S5 wheel, typed decode improved 0.8% at 64 records under
+a high-power focused run, 1.5% at 512, and 1.1% at 4096. Untyped controls were unchanged.
+
+The post-S6 profile no longer shows `expected_plan_or_fault` as a top stack and reduces generic
+`place` to 6 samples. The remaining parser-local candidate is S7: compile the header's recursive
+`FieldNode` tree once into a flat, borrowed row-op tape and interpret it for each row. The profile
+shows `emit_row_fields` as the largest native self-time (78 samples), but that attribution includes
+loop and inlined event work. Adopt S7 only if exact-S6 typed and untyped ladders resolve a win;
+otherwise revert it and stop the row-dispatch program.
 
 The capability implementation, sustained fuzzing,
 canonical qualification, corpus, G2, G3, G5, release guard, version delta, and generated report
@@ -36,8 +45,9 @@ MDE 1.2%), and 4096 (+3.7%, MDE 1.0%). S3 and S4 together remove all three misse
 release guard against `v0.4.0` passes and shows typed decode 3.6-6.1% faster. The closer phase-8
 comparison now also passes the qualification requirement.
 
-Three mechanism-led remedies are accepted: restoring `finish_struct` inlining, fusing tabular
-leaf field dispatch, and fusing nested field-group opening. Four earlier remedies were rejected and reverted: direct references into
+Four mechanism-led remedies are accepted: restoring `finish_struct` inlining, fusing tabular
+leaf field dispatch, fusing nested field-group opening, and returning nested Structs directly to
+their parent field. Four earlier remedies were rejected and reverted: direct references into
 the plan arena, merging array-like and object Struct frames, and compile-time strict/permissive
 specialization.
 A final cold outlining of permissive scalar conversion also failed to remove the effect and was
