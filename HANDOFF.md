@@ -17,10 +17,13 @@ G2 passes nine probes; canonical byte and token locks match.
 
 The correctness repair has one visible cost. Repeated concrete tagged nested rows are 7-9% slower
 than `v0.2.0b5`, which did not validate their discriminator. Ordinary typed, root tagged, and
-untyped nested controls show no reproduced regression. A research handoff on the owner's Desktop
-asks whether the parsed header and type plan can compile one body-scoped field/tag program and
-remove enough repeated dispatch to pay for correctness. Do not hide this measurement or call the
-program release-ready until it is resolved or explicitly accepted.
+untyped nested controls show no reproduced regression. The returned research spike proposed a
+body-scoped learned selection table. Its disposable CP0 improved the repaired path by 3.2% at
+4096 rows but still left a reproduced 4.7% slowdown against `v0.2.0b5`; the 512-row improvement
+was below the measured resolution. This recovered less than half of the known tax, so the spike's
+own falsifier fired and the patch was discarded. Do not implement its `RowShape` follow-ups
+without a new profile and mechanism. Do not hide this measurement or call the program
+release-ready until the remaining cost is resolved or explicitly accepted.
 
 Issue 08 closed through existing mechanisms. `object` lowers to the same requested open-value plan
 as `Any`. Primitive scalar unions use exact token categories before widening and use msgspec's
@@ -30,9 +33,9 @@ executable. Absolute ten-worker timings are in `benches/type-parity-latest.json`
 the `Any` control. Mixed object/scalar and untagged container unions remain explicit plan errors.
 
 The next local-selection task is to remove `pending_object_plan` and `pending_invalid_tag` from
-ordinary/root object preflight without losing parser purity or static dispatch. Await the research
-spike if it returns a smaller header-scoped boundary. Issue 09 remains an observation gate after
-encoder render consolidation.
+ordinary/root object preflight without losing parser purity or static dispatch. The header-scoped
+cache proposal is now measured dead under its own threshold. Issue 09 remains an observation gate
+after encoder render consolidation.
 
 _Last updated after the verified `0.2.0b5` issue-07 release. Read
 **`OBJECTIVE.md`** first — it states what this project is

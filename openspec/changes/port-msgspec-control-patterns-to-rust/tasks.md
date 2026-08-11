@@ -29,6 +29,7 @@
 - [x] 3.8 Run the focused interaction suite and allocation probes.
 - [x] 3.9 Run focused same-session A/B for tagged, ordinary typed, array-like, and untyped controls.
 - [x] 3.10 Run all protected gates and record the checkpoint result.
+- [x] 3.11 Falsify the outside `RowShape` proposal with a disposable learned-cache CP0 and discard it after it recovered less than half of the nested-tag tax.
 
 ## 4. Make Plan and Field State Explicit
 

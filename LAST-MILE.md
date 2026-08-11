@@ -52,6 +52,7 @@ Do not modify canonical output to improve a selected payload.
 - [x] Repair nested concrete and union tag selection with a borrowed local probe.
 - [x] Compile tag values to native string or signed-integer metadata.
 - [x] Support issue-08 `object` and primitive scalar unions through existing direct paths.
+- [x] Run and discard the outside spike's learned-cache CP0 after it recovered less than half of the correctness tax.
 - [ ] Replace ordinary/root object pending-tag flags with container-local state.
 - [ ] Continue phases 4-10 in `port-msgspec-control-patterns-to-rust/tasks.md`.
 - [ ] Qualify 0.3.0b1 only after the repeated nested-tag correctness cost is resolved or accepted.
@@ -59,8 +60,11 @@ Do not modify canonical output to improve a selected payload.
 Measured checkpoint finding: ordinary typed, root tagged, and untyped nested controls did not show
 a reproduced slowdown. Nested concrete tagged rows cost 7-9% against `v0.2.0b5`, which skipped tag
 validation. The first Python-equality repair cost 15-27%; native tag metadata removed most, but not
-all, of that cost. The open hypothesis is that compiling header positions and type actions once
-per tabular body can delete repeated dispatch and make the correct path neutral or faster.
+all, of that cost. A disposable learned-cache CP0 tested the body-scoped compilation hypothesis.
+It improved the repaired build by 3.2% at 4096 rows but still measured 4.7% slower than
+`v0.2.0b5`; 512 rows did not resolve. That is less than half of the 7-9% tax, so the candidate was
+discarded under its stated falsifier. A new profile and mechanism are required before more
+header-scoped compilation work.
 
 ### A. Containment repairs — DONE (checkpoint 1)
 

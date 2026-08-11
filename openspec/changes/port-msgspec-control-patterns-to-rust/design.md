@@ -234,3 +234,19 @@ Python scalar construction and equality and was 15-27% slower. Native compiled t
 reduced the cost to 7-9%. Ordinary typed, root tagged, and untyped nested controls had no
 reproduced regression. All protected semantic gates passed. This cost remains open evidence, not
 an accepted performance result.
+
+### Rejected candidate: body-scoped learned selection
+
+An outside research spike proposed compiling the stable header-to-plan relationship once per
+tabular body. Its required CP0 was a disposable first-row learned cache for one flat, concrete
+nested tag. The experiment passed all 13 focused semantic tests and was then measured only on the
+named nested case and its ordinary and untyped controls.
+
+Against the repaired checkpoint `942d7c4`, CP0 improved nested concrete decode by 2.1% at 512 rows
+(MDE 2.2%, unresolved) and 3.2% at 4096 rows (MDE 0.9%, significant). The ordinary and untyped
+controls were neutral. Against `v0.2.0b5`, however, the CP0 build still reproduced a 4.7% slowdown
+at 4096 rows (MDE 1.7%). This recovers less than half of the established 7-9% correctness tax, so
+the spike's own falsifier fired. The CP0 patch was discarded. Do not proceed to its leaf-count,
+`RowShape`, union-dispatch, keyed-body, or probe-deletion checkpoints without a new profile and a
+new mechanism. The internal raw results are `.git/research/cp0-*.json` and are not release
+evidence.
