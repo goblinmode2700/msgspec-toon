@@ -1589,3 +1589,35 @@ README states that nondefault `indent` and `indent_size` must agree and document
 Rejected and adopted timing artifacts are private below `.git/internal-notes/issue-07-benchmarks/`.
 Next: public `0.2.0b5` qualification and trusted publication; do not close issue 7 before fresh
 artifact and attestation verification.
+
+#### Checkpoint 44 — `0.2.0b5` qualified, published, and verified
+
+Public source commit `2d71d03`, release metadata commit `a2dc4c9`, and lock commit `6d12753`
+exported only the issue-07 package, tests, documentation, and release surfaces. Local canonical
+qualification passed 39 Rust tests, 322 Python tests with 8 expected skips, the 538/538 official
+corpus, 84/84 strict-error fixtures, and all seven G2 probes. Default-branch validation run
+`31443406791` passed on release revision `6d12753400ce82b6719529da71fa450494e72b1d`.
+
+Publication-disabled run `31443504775` then completed every applicable job successfully. It built
+and target-verified twelve wheels plus one sdist, collected exactly thirteen unique files, and
+generated a report bound to version `0.2.0b5`, revision `6d12753`, and the verified manifest. Only
+PyPI publication and GitHub release attachment were structurally skipped.
+
+Annotated tag `v0.2.0b5` triggered trusted-publishing run `31445176169`. Canonical validation,
+fresh builds, target-native verification, exact-set collection, the complete ten-worker report,
+PyPI OIDC publication, and GitHub prerelease attachment all passed. PyPI exposes exactly the
+trusted manifest's thirteen files with no missing, extra, or SHA-256-mismatched artifacts. Pinned
+`pypi-attestations==0.0.30` cryptographically verifies all thirteen PEP 740 attestations against
+`https://github.com/goblinmode2700/msgspec-toon`.
+
+Fresh installs outside the repository cooldown configuration passed on CPython 3.13.1 ABI3 and
+CPython 3.14.7 free-threaded with the GIL disabled. Both typed round-tripped widths one and four
+when configured explicitly and produced the new observed-indentation recovery message under the
+default width. The GitHub release is a non-draft prerelease; its report and manifest are
+byte-identical to trusted workflow artifacts.
+
+Public evidence commit `98c67de` carries the trusted report and regenerated R figures. Validation
+run `31446911918` passed on it. Issue 7 is closed with the evidence above and thanks the outside
+agents who found the option-surface mismatch. Trusted candidate and publication artifacts remain
+under `.git/public-origin/.git/release-runs/31443504775/` and `31445176169/`. The feedback round has
+reached its stop condition.

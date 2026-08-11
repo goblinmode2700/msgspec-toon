@@ -1,14 +1,14 @@
 # HANDOFF — state of the world for the next agent
 
-_Last updated after the issue-07 indentation diagnostic repair checkpoint. Read
+_Last updated after the verified `0.2.0b5` issue-07 release. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then
 CLAUDE.md (or AGENTS.md, same file), then `LAST-MILE.md`._
 
 ## Next action
 
-**Outside-agent issue 07 is repaired locally and tracked at
-[#7](https://github.com/goblinmode2700/msgspec-toon/issues/7); release qualification is next.**
+**Outside-agent issue 07 is repaired, published as `0.2.0b5`, independently verified, and
+closed at [#7](https://github.com/goblinmode2700/msgspec-toon/issues/7).**
 `encode(..., indent=1)` writes valid TOON that the default width-two decoder cannot read without
 an out-of-band `indent_size=1`. The wire contains no indentation declaration, and four spaces are
 ambiguous between one level at width four and a forbidden two-level jump at width two.
@@ -27,17 +27,25 @@ reusable tests. Mismatches report one or four observed spaces across bytes, byte
 and str inputs. README states that nondefault indentation travels out of band beside the indent=1
 token advice and documents existing BOM/CRLF acceptance.
 
-Current gates: 39 Rust tests and 322 Python tests pass with 8 expected skips; corpus 538/538 and
-strict errors 84/84; all seven G2 probes pass; efficiency lock matches; all seven authoritative
-specs and the active `make-indent-mismatch-recoverable` change validate strictly. Exact-source A/B
-for the adopted Python-only diagnostic reports no significant functional or typed decode change at
-4, 46, 512, or 4096 records. Untyped flags at 46 and 4096 did not reproduce at double power.
+Final gates: 39 Rust tests and 322 Python tests pass with 8 expected skips; corpus 538/538 and
+strict errors 84/84; all seven G2 probes pass; efficiency lock matches. Exact-source A/B for the
+adopted Python-only diagnostic reports no significant functional or typed decode change at 4, 46,
+512, or 4096 records. Untyped flags at 46 and 4096 did not reproduce at double power.
 
-Next: checkpoint the repair, export it to the clean public checkout, prepare `0.2.0b5`, run local
-and publication-disabled qualification, then publish under the standing owner authority only if
-every artifact gate passes. After trusted verification, close issue 7, sync/archive the OpenSpec
-change, update generated public evidence, and stop. Time-gated PyO3 maintenance and the
-unimplemented GitHub Actions benchmark-sharding proposal remain separate work.
+Public release revision `6d12753400ce82b6719529da71fa450494e72b1d` is tagged `v0.2.0b5`.
+Publication-disabled run `31443504775` and trusted-publishing run `31445176169` both passed.
+The trusted run built and target-verified twelve wheels plus one sdist, generated release-bound
+evidence, published through PyPI OIDC, and attached byte-identical report and manifest assets to a
+non-draft GitHub prerelease. PyPI exposes exactly those 13 files; all SHA-256 values match, and
+`pypi-attestations==0.0.30` verifies every PEP 740 attestation against this repository. Fresh
+CPython 3.13.1 ABI3 and CPython 3.14.7 free-threaded installs pass the width matrix and recovery
+diagnostics. Public evidence commit `98c67de` and validation run `31446911918` are green.
+The completed OpenSpec change is archived as
+`2026-08-10-make-indent-mismatch-recoverable`; all seven authoritative specs validate strictly.
+
+There is no unblocked correctness or performance item from this feedback round. Stop unless new
+evidence or an explicit task opens a new round. Time-gated PyO3 maintenance and the unimplemented
+GitHub Actions benchmark-sharding proposal remain separate work.
 
 ## Previous release state
 

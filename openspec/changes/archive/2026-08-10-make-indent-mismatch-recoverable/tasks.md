@@ -17,7 +17,7 @@
 - [x] 3.1 Document the matching-width contract, indent=1 token trade-off, and UTF-8 BOM acceptance.
 - [x] 3.2 Preserve official fixture behavior, payload safety, and the focused rejected-candidate
   measurements.
-- [ ] 3.3 Sync the authoritative specs and regenerate support/report evidence.
+- [x] 3.3 Sync the authoritative specs and regenerate support/report evidence.
 
 ## 4. Gates and Release
 
@@ -25,7 +25,7 @@
   lock.
 - [x] 4.2 Run only relevant same-session decode timing and confirm the adopted error-only repair is
   neutral.
-- [ ] 4.3 Update HANDOFF, LAST-MILE, and GitHub issue 7 with evidence; archive and commit the change.
-- [ ] 4.4 Export and qualify the next beta without publication.
-- [ ] 4.5 Publish under existing owner authority only after qualification passes; verify PyPI files,
+- [x] 4.3 Update HANDOFF, LAST-MILE, and GitHub issue 7 with evidence; archive and commit the change.
+- [x] 4.4 Export and qualify the next beta without publication.
+- [x] 4.5 Publish under existing owner authority only after qualification passes; verify PyPI files,
   attestations, GitHub release evidence, and fresh installs before closing issue 7.

@@ -8,9 +8,7 @@ specification fixture corpus. The parser is the Rust core (`src/scan.rs`, `src/h
 it emits borrowed Rust events into a `Consumer` trait shared by the untyped, typed, and
 validation consumers (canvas AD-002). Sources: `docs/original-spec/spec.md` §1–§3,
 `docs/implementation-spec/toon-native-codec-implementation-canvas.md` §5–§7.
-
 ## Requirements
-
 ### Requirement: Decode conformance is exact against the official fixture corpus
 
 The parser SHALL produce the declared value for every decode fixture in the pinned TOON 4.1
@@ -32,9 +30,9 @@ execute against an unpinned or mismatched fixture tree.
 ### Requirement: The scanner is zero-copy and line-incremental
 
 The scanner SHALL iterate lines of the input buffer by borrowing slices; it SHALL NOT build a
-second full copy of the document. It SHALL track 1-based line numbers and 1-based columns,
-strip a leading UTF-8 BOM on line one only, strip a trailing `\r`, skip blank and `#` comment
-lines, and compute indentation depth from leading spaces.
+second full copy of the document. It SHALL track 1-based line numbers and 1-based columns, strip a
+leading UTF-8 BOM on line one only, strip a trailing `\r`, skip blank and `#` comment lines, and
+compute indentation depth from leading spaces.
 
 #### Scenario: Peak memory does not double on a large document
 
@@ -44,8 +42,10 @@ lines, and compute indentation depth from leading spaces.
 #### Scenario: Strict mode rejects malformed indentation
 
 - **WHEN** a line is indented with a tab, or with a space count that is not a multiple of the
-  indent size, and `strict=True`
-- **THEN** a decode error is raised carrying the line and column of the violation
+  configured indent size, and `strict=True`
+- **THEN** a decode error is raised carrying the line and first content column
+- **AND** a space-indentation error reports the observed leading-space count and names
+  `indent_size` as the recovery option
 
 ### Requirement: Headers support tabular arrays and nested field groups
 
