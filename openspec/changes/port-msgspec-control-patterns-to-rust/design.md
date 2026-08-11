@@ -250,3 +250,28 @@ the spike's own falsifier fired. The CP0 patch was discarded. Do not proceed to 
 `RowShape`, union-dispatch, keyed-body, or probe-deletion checkpoints without a new profile and a
 new mechanism. The internal raw results are `.git/research/cp0-*.json` and are not release
 evidence.
+
+### Follow-up experiment: minimal selection memo and compiled tag matcher
+
+The rejected CP0 still resolved one mechanism: its combined body-scoped memo treatment improved
+the repaired nested concrete case by 3.2% at 4096 rows, above that session's 0.9% resolution
+floor. It did not prove which individual memo operation caused the improvement, and it did not
+meet the original requirement to recover at least half of the complete correctness cost.
+
+A new experiment can test a smaller production design. This decision is prospective: it is
+recorded before the production candidate is implemented or measured. First, add four contrasts
+without changing codec source: nested union rows, tag-last nested rows, quoted nested tags, and
+integer nested tags. Then test a minimal body-scoped selection memo without the rejected
+`RowShape` interpreter. Adopt it only if the current repaired build improves by at least 2% at
+4096 nested-concrete rows, the tag-last and union cases have the predicted direction, and the
+ordinary typed and untyped controls remain neutral within the same-session resolution floor.
+The 512-row result is expected to be below its prior 2.2% resolution floor and is not an adoption
+gate.
+
+If the memo passes, test a plan-compiled spelling matcher as a separate checkpoint. A raw-byte
+hot match can select only spellings already accepted by the current exact classifier and tag
+comparison. Every hot miss must use the current complete path with the same fault coordinates.
+Adopt it only when an affected 4096-row case improves by at least the measured resolution floor
+and the quoted cold-path and unaffected controls do not regress beyond that floor. Do not use a
+tag-column prepass: it can report a later-row tag fault before an earlier-row field fault and thus
+changes observable error order.

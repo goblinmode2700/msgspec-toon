@@ -30,6 +30,10 @@
 - [x] 3.9 Run focused same-session A/B for tagged, ordinary typed, array-like, and untyped controls.
 - [x] 3.10 Run all protected gates and record the checkpoint result.
 - [x] 3.11 Falsify the outside `RowShape` proposal with a disposable learned-cache CP0 and discard it after it recovered less than half of the nested-tag tax.
+- [x] 3.12 Add nested-union, nested-tag-last, nested-quoted-tag, and nested-integer-tag timing contrasts before another codec source change.
+- [ ] 3.13 Test a minimal production selection memo against the prospectively recorded 4096-row gate; adopt or revert it as one checkpoint.
+- [ ] 3.14 If the memo adopts, test a plan-compiled exact-spelling matcher with the current classifier and tag matcher as its complete cold fallback.
+- [ ] 3.15 Attribute any remaining nested-tag cost before attempting an inline hot/cold split; otherwise record the measured residual and stop this performance branch.
 
 ## 4. Make Plan and Field State Explicit
 

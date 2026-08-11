@@ -43,6 +43,20 @@ class ConcreteRow(msgspec.Struct):
     pet: ConcretePet
 
 
+class UnionRow(msgspec.Struct):
+    row_id: int
+    pet: Cat | Dog
+
+
+class IntegerPet(msgspec.Struct, tag=1, tag_field="kind"):
+    x: int
+
+
+class IntegerRow(msgspec.Struct):
+    row_id: int
+    pet: IntegerPet
+
+
 def _rows(records: int, fields: bytes, row: bytes) -> bytes:
     return (
         b"["
@@ -54,21 +68,49 @@ def _rows(records: int, fields: bytes, row: bytes) -> bytes:
     )
 
 
+def _alternating_rows(records: int, fields: bytes, rows: tuple[bytes, ...]) -> bytes:
+    return (
+        b"["
+        + str(records).encode()
+        + b"]{"
+        + fields
+        + b"}:\n  "
+        + b"\n  ".join(rows[index % len(rows)] for index in range(records))
+    )
+
+
 def sample_run(records: int) -> dict[str, Any]:
     ordinary = _rows(records, b"row_id,pet{x}", b"1,2")
     tagged_first = _rows(records, b"type,x", b"cat,2")
     tagged_last = _rows(records, b"x,type", b"2,dog")
     nested_concrete = _rows(records, b"row_id,pet{type,x}", b"1,pet,2")
+    nested_union = _alternating_rows(
+        records,
+        b"row_id,pet{type,x}",
+        (b"1,cat,2", b"2,dog,3"),
+    )
+    nested_tag_last = _rows(records, b"row_id,pet{x,type}", b"1,2,pet")
+    nested_quoted_tag = _rows(records, b"row_id,pet{type,x}", b'1,"pet",2')
+    nested_int_tag = _rows(records, b"row_id,pet{kind,x}", b"1,1,2")
 
     ordinary_decoder = toon.Decoder(list[PlainRow])
     tagged_decoder = toon.Decoder(list[Cat | Dog])
     nested_decoder = toon.Decoder(list[ConcreteRow])
+    nested_union_decoder = toon.Decoder(list[UnionRow])
+    nested_int_decoder = toon.Decoder(list[IntegerRow])
     untyped_decoder = toon.Decoder()
 
     assert len(ordinary_decoder.decode(ordinary)) == records
     assert len(tagged_decoder.decode(tagged_first)) == records
     assert len(tagged_decoder.decode(tagged_last)) == records
     assert len(nested_decoder.decode(nested_concrete)) == records
+    union_values = nested_union_decoder.decode(nested_union)
+    assert len(union_values) == records
+    assert isinstance(union_values[0].pet, Cat)
+    assert isinstance(union_values[1].pet, Dog)
+    assert len(nested_decoder.decode(nested_tag_last)) == records
+    assert len(nested_decoder.decode(nested_quoted_tag)) == records
+    assert len(nested_int_decoder.decode(nested_int_tag)) == records
     assert len(untyped_decoder.decode(nested_concrete)) == records
 
     return {
@@ -86,6 +128,22 @@ def sample_run(records: int) -> dict[str, Any]:
             "nested_concrete": measure(
                 "control.decode.nested_concrete",
                 lambda: nested_decoder.decode(nested_concrete),
+            ).us,
+            "nested_union": measure(
+                "control.decode.nested_union",
+                lambda: nested_union_decoder.decode(nested_union),
+            ).us,
+            "nested_tag_last": measure(
+                "control.decode.nested_tag_last",
+                lambda: nested_decoder.decode(nested_tag_last),
+            ).us,
+            "nested_quoted_tag": measure(
+                "control.decode.nested_quoted_tag",
+                lambda: nested_decoder.decode(nested_quoted_tag),
+            ).us,
+            "nested_int_tag": measure(
+                "control.decode.nested_int_tag",
+                lambda: nested_int_decoder.decode(nested_int_tag),
             ).us,
             "untyped_nested": measure(
                 "control.decode.untyped_nested",
