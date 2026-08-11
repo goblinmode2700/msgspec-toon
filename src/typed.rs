@@ -6,13 +6,14 @@
 //! wire keys to values. No discardable dict/list tree exists at any point.
 
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyDict, PyInt, PyString};
+use pyo3::types::{PyBool, PyDict};
 
 use crate::containers::{count_struct_instance, new_final_dict, new_final_list, new_final_tuple};
 use crate::error::{Fault, FaultCode, Position};
-use crate::event::{Consumer, ScalarToken, StringToken};
+use crate::event::{Consumer, ObjectProbe, ObjectSelectionResult, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
-use crate::plan::{CompiledPlan, Constraints, DefaultPlan, PlanKind, StructPlan};
+use crate::parser::classify_value;
+use crate::plan::{CompiledPlan, Constraints, DefaultPlan, PlanKind, StructPlan, TagValue};
 use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_token_to_py};
 use crate::scalar::unescape;
 use crate::untyped::UntypedConsumer;
@@ -72,6 +73,17 @@ enum Frame<'py, 'plan> {
     },
 }
 
+#[derive(Default)]
+pub enum ObjectFieldSelection {
+    #[default]
+    Passthrough,
+    Skip,
+    StructField {
+        index: usize,
+        selected_plan: usize,
+    },
+}
+
 fn scalar_text(token: ScalarToken<'_>) -> Option<std::borrow::Cow<'_, [u8]>> {
     match token {
         ScalarToken::BareString(bytes) => Some(std::borrow::Cow::Borrowed(bytes)),
@@ -80,16 +92,46 @@ fn scalar_text(token: ScalarToken<'_>) -> Option<std::borrow::Cow<'_, [u8]>> {
     }
 }
 
-/// msgspec dispatches Struct tags by scalar category before value lookup.
-/// Preserve that boundary so Python's cross-type equality (`True == 1`,
-/// `1.0 == 1`) cannot select an integer-tagged variant.
-fn tag_category_matches(tag: &Bound<'_, PyAny>, token: ScalarToken<'_>) -> bool {
-    match token {
-        ScalarToken::Integer(_) => tag.is_exact_instance_of::<PyInt>(),
-        ScalarToken::BareString(_) | ScalarToken::Quoted { .. } => {
-            tag.is_exact_instance_of::<PyString>()
+/// Compare a discriminator with the compiled native tag. Category is part of
+/// the match, so Python's cross-type equality (`True == 1`, `1.0 == 1`) never
+/// selects an integer-tagged variant.
+fn tag_matches(tag: &TagValue, token: ScalarToken<'_>) -> bool {
+    match (tag, token) {
+        (TagValue::String(expected), ScalarToken::BareString(actual)) => expected == actual,
+        (TagValue::String(expected), ScalarToken::Quoted { inner, escaped }) => {
+            expected.as_slice() == unescape(inner, escaped).as_ref()
         }
-        ScalarToken::Null | ScalarToken::Bool(_) | ScalarToken::Float(_) => false,
+        (TagValue::Integer(expected), ScalarToken::Integer(digits)) => {
+            // The document has already passed UTF-8 validation, and the
+            // integer classifier admits only the JSON integer grammar.
+            let text = unsafe { std::str::from_utf8_unchecked(digits) };
+            text.parse::<i64>().ok().as_ref() == Some(expected)
+        }
+        _ => false,
+    }
+}
+
+fn scalar_plan_exactly_matches(kind: &PlanKind, token: ScalarToken<'_>) -> bool {
+    matches!(
+        (kind, token),
+        (PlanKind::NoneT, ScalarToken::Null)
+            | (PlanKind::Bool, ScalarToken::Bool(_))
+            | (PlanKind::Int, ScalarToken::Integer(_))
+            | (PlanKind::Float, ScalarToken::Float(_))
+            | (
+                PlanKind::Str,
+                ScalarToken::BareString(_) | ScalarToken::Quoted { .. }
+            )
+    )
+}
+
+fn scalar_plan_fallback_rank(kind: &PlanKind) -> u8 {
+    match kind {
+        PlanKind::Int => 0,
+        PlanKind::Float => 1,
+        PlanKind::Bool => 2,
+        PlanKind::Str => 3,
+        _ => 4,
     }
 }
 
@@ -472,11 +514,38 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                         Err(Fault::validation_at(FaultCode::TypeMismatch, at))
                     };
                 }
+                // msgspec chooses an exact scalar category before a widening
+                // conversion. In particular, `float | int` decodes `1` as an
+                // int even though the float plan can also accept integer
+                // tokens. The second pass preserves that widening only when
+                // no exact member exists, as in `float | str`.
                 for &member in &union.members {
+                    if !scalar_plan_exactly_matches(&self.root.node(member).kind, token) {
+                        continue;
+                    }
                     match self.convert_scalar(member, token, at) {
                         Ok(value) => return Ok(value),
                         Err(fault) if fault.code == FaultCode::TypeMismatch => continue,
                         Err(fault) => return Err(fault),
+                    }
+                }
+                // In permissive mode msgspec's scalar conversion priority is
+                // int, float, then bool, independent of union declaration
+                // order. This makes `float | int` decode the string "1" as
+                // int, while `bool | float` decodes it as float.
+                for rank in 0..=4 {
+                    for &member in &union.members {
+                        let kind = &self.root.node(member).kind;
+                        if scalar_plan_exactly_matches(kind, token)
+                            || scalar_plan_fallback_rank(kind) != rank
+                        {
+                            continue;
+                        }
+                        match self.convert_scalar(member, token, at) {
+                            Ok(value) => return Ok(value),
+                            Err(fault) if fault.code == FaultCode::TypeMismatch => continue,
+                            Err(fault) => return Err(fault),
+                        }
                     }
                 }
                 Err(Fault::validation_at(FaultCode::TypeMismatch, at))
@@ -606,24 +675,14 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             _ => return Ok(false),
         };
 
-        let converted = scalar_to_py(self.py, token, self.float_hook.as_ref())
-            .map_err(|err| self.internal(err, at))?;
         let mut selected = None;
         for plan in candidates {
             let Some(tag) = &plan.tag_value else {
                 continue;
             };
-            let tag = tag.bind(self.py);
-            if !tag_category_matches(tag, token) {
-                continue;
-            }
-            match converted.eq(tag) {
-                Ok(true) => {
-                    selected = Some(plan);
-                    break;
-                }
-                Ok(false) => {}
-                Err(err) => return Err(self.internal(err, at)),
+            if tag_matches(tag, token) {
+                selected = Some(plan);
+                break;
             }
         }
         let selected = selected.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
@@ -707,6 +766,10 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
             _ => self.root.resolve_container(declared),
         };
+        self.start_selected_object_plan(expected, at)
+    }
+
+    fn start_selected_object_plan(&mut self, expected: usize, at: Position) -> Result<(), Fault> {
         let expected_node = self.root.node(expected);
         match &expected_node.kind {
             PlanKind::Struct(plan) if !plan.array_like => {
@@ -905,6 +968,8 @@ enum AnyEvent<'a> {
 }
 
 impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
+    type ObjectSelection = ObjectFieldSelection;
+
     fn needs_object_preflight(&self) -> bool {
         if !EXTENDED || !self.has_tagged_plans {
             return false;
@@ -923,7 +988,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         &mut self,
         key: StringToken<'_>,
         value: ScalarToken<'_>,
-        at: Position,
+        _at: Position,
     ) -> Result<(), Fault> {
         let Some(declared) = self.expected_plan() else {
             return Ok(());
@@ -953,8 +1018,6 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         if members.is_empty() {
             return Ok(());
         }
-        let converted = scalar_to_py(self.py, value, self.float_hook.as_ref())
-            .map_err(|err| self.internal(err, at))?;
         for member in members {
             let PlanKind::Struct(plan) = &self.root.node(member).kind else {
                 continue;
@@ -965,18 +1028,10 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             let Some(tag) = &plan.tag_value else {
                 continue;
             };
-            let tag = tag.bind(self.py);
-            if !tag_category_matches(tag, value) {
-                continue;
-            }
-            match converted.eq(tag) {
-                Ok(true) => {
-                    self.pending_object_plan = Some(member);
-                    self.pending_invalid_tag = false;
-                    return Ok(());
-                }
-                Ok(false) => {}
-                Err(err) => return Err(self.internal(err, at)),
+            if tag_matches(tag, value) {
+                self.pending_object_plan = Some(member);
+                self.pending_invalid_tag = false;
+                return Ok(());
             }
         }
         self.pending_invalid_tag = true;
@@ -1072,6 +1127,152 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
         }
         self.start_object_for_plan(declared, at)
+    }
+
+    #[inline(never)]
+    fn select_object_field(
+        &mut self,
+        key: StringToken<'_>,
+        probe: ObjectProbe<'_, '_>,
+        at: Position,
+    ) -> Result<ObjectSelectionResult<Self::ObjectSelection>, Fault> {
+        if self.any_sub.is_some() || self.skip_depth > 0 {
+            return Ok(ObjectSelectionResult::new(
+                ObjectFieldSelection::Passthrough,
+            ));
+        }
+
+        let strict = self.strict;
+        let (index, declared) = match self.stack.last_mut() {
+            Some(Frame::Struct { plan, values, .. }) => {
+                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
+                match looked_up {
+                    Some(index) if EXTENDED && index == usize::MAX => {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    }
+                    Some(index) => {
+                        if values[index].is_some() && strict {
+                            return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
+                        }
+                        (index, plan.fields[index].value)
+                    }
+                    None if plan.forbid_unknown => {
+                        return Err(Fault::validation_at(FaultCode::UnknownField, at));
+                    }
+                    None => return Ok(ObjectSelectionResult::new(ObjectFieldSelection::Skip)),
+                }
+            }
+            _ => {
+                return Ok(ObjectSelectionResult::new(
+                    ObjectFieldSelection::Passthrough,
+                ));
+            }
+        };
+
+        let mut skip_field = None;
+        let selected_plan = match &self.root.node(declared).kind {
+            PlanKind::Struct(plan) if EXTENDED && plan.tag_field.is_some() => {
+                let tag_field = plan.tag_field.as_deref().expect("checked above");
+                let mut matching_tag = None;
+                for (field_index, probe_key, raw) in probe.scalar_cells() {
+                    let probe_key = match probe_key {
+                        StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+                        StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
+                    };
+                    if probe_key.as_ref() == tag_field {
+                        matching_tag = Some(classify_value(raw, at)?);
+                        skip_field = Some(field_index);
+                        break;
+                    }
+                }
+                if let Some(token) = matching_tag {
+                    let tag = plan
+                        .tag_value
+                        .as_ref()
+                        .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
+                    if !tag_matches(tag, token) {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    }
+                }
+                declared
+            }
+            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => {
+                let tag_field =
+                    union
+                        .members
+                        .iter()
+                        .find_map(|&member| match &self.root.node(member).kind {
+                            PlanKind::Struct(plan) => plan.tag_field.as_deref(),
+                            _ => None,
+                        });
+                let tag_field =
+                    tag_field.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
+                let mut tag_token = None;
+                for (field_index, probe_key, raw) in probe.scalar_cells() {
+                    let probe_key = match probe_key {
+                        StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+                        StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
+                    };
+                    if probe_key.as_ref() == tag_field {
+                        tag_token = Some(classify_value(raw, at)?);
+                        skip_field = Some(field_index);
+                        break;
+                    }
+                }
+                let token = tag_token.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
+                let mut selected = None;
+                for &member in &union.members {
+                    let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                        continue;
+                    };
+                    let Some(tag) = &plan.tag_value else {
+                        continue;
+                    };
+                    if tag_matches(tag, token) {
+                        selected = Some(member);
+                        break;
+                    }
+                }
+                selected.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?
+            }
+            _ => self.root.resolve_container(declared),
+        };
+
+        Ok(ObjectSelectionResult {
+            selection: ObjectFieldSelection::StructField {
+                index,
+                selected_plan,
+            },
+            skip_field,
+        })
+    }
+
+    fn start_selected_object_field(
+        &mut self,
+        key: StringToken<'_>,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        match selection {
+            ObjectFieldSelection::Passthrough => self.start_object_field(key, at),
+            ObjectFieldSelection::Skip => {
+                let Some(Frame::Struct { skip_value, .. }) = self.stack.last_mut() else {
+                    return Err(Fault::syntax_at(FaultCode::Internal, at));
+                };
+                *skip_value = true;
+                self.start_object(at)
+            }
+            ObjectFieldSelection::StructField {
+                index,
+                selected_plan,
+            } => {
+                let Some(Frame::Struct { awaiting, .. }) = self.stack.last_mut() else {
+                    return Err(Fault::syntax_at(FaultCode::Internal, at));
+                };
+                *awaiting = Some(index);
+                self.start_selected_object_plan(selected_plan, at)
+            }
+        }
     }
 
     fn end_object_field(&mut self, at: Position) -> Result<(), Fault> {

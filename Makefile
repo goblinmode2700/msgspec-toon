@@ -49,10 +49,11 @@ FASTPATH_PYTHON := $(FASTPATH_VENV)/bin/python
 # that baseline by 15-20%. Re-cut GUARD at every release or it decays into the
 # same blind spot.
 BASELINE_TAG := v0.1.0-conformant
-# Derived, never hardcoded: a guard pinned by hand silently ages into the blind
-# spot it exists to prevent. `benches/ab.py` re-derives this and refuses to gate
-# against a guard built from an older tag.
-GUARD_TAG := $(shell git tag -l 'v*' --sort=-v:refname | head -1)
+# The public-release guard is explicit because this development repository also
+# carries internal milestone tags that are not PyPI releases. The release
+# process advances this one-line pointer; `benches/ab.py` reads the same file
+# and refuses a guard built from any other tag.
+GUARD_TAG := $(shell tr -d '[:space:]' < benches/GUARD_TAG)
 
 .PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock baseline guard ab ab-story g2 efficiency \
 	fastpath-source fastpath-build fastpath-check fastpath-bench fastpath-gates fastpath-clean

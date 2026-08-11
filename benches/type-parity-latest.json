@@ -1,0 +1,435 @@
+{
+  "python": "3.13.1",
+  "msgspec": "0.21.1",
+  "method": "estimator: mean-across-workers \u2014 the loop count is calibrated once, then 10 independent worker processes each discard their first sample as a warmup and report the mean of 3 samples; the published figure is the mean across workers, with the standard deviation across workers alongside it. The minimum is deliberately not used: it reports the best case the machine ever reached, not what a caller sees",
+  "results": [
+    {
+      "records": 4,
+      "decode_us": {
+        "int_control": 0.2,
+        "scalar_union": 0.24,
+        "object": 0.22,
+        "any_control": 0.22
+      },
+      "worker_observations": [
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.21,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.23
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.21,
+            "scalar_union": 0.25,
+            "object": 0.23,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.25,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.23
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.22,
+            "any_control": 0.22
+          }
+        },
+        {
+          "records": 4,
+          "decode_us": {
+            "int_control": 0.2,
+            "scalar_union": 0.24,
+            "object": 0.23,
+            "any_control": 0.23
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.int_control": 2.09,
+        "decode_us.scalar_union": 1.74,
+        "decode_us.object": 1.9,
+        "decode_us.any_control": 2.17
+      }
+    },
+    {
+      "records": 64,
+      "decode_us": {
+        "int_control": 1.3,
+        "scalar_union": 1.77,
+        "object": 1.56,
+        "any_control": 1.56
+      },
+      "worker_observations": [
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.76,
+            "object": 1.57,
+            "any_control": 1.58
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.77,
+            "object": 1.56,
+            "any_control": 1.55
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.79,
+            "object": 1.57,
+            "any_control": 1.56
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.78,
+            "object": 1.55,
+            "any_control": 1.58
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.78,
+            "object": 1.56,
+            "any_control": 1.58
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.34,
+            "scalar_union": 1.75,
+            "object": 1.57,
+            "any_control": 1.56
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.29,
+            "scalar_union": 1.76,
+            "object": 1.57,
+            "any_control": 1.56
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.3,
+            "scalar_union": 1.72,
+            "object": 1.55,
+            "any_control": 1.57
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.28,
+            "scalar_union": 1.77,
+            "object": 1.56,
+            "any_control": 1.55
+          }
+        },
+        {
+          "records": 64,
+          "decode_us": {
+            "int_control": 1.31,
+            "scalar_union": 1.78,
+            "object": 1.57,
+            "any_control": 1.56
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.int_control": 1.31,
+        "decode_us.scalar_union": 1.14,
+        "decode_us.object": 0.53,
+        "decode_us.any_control": 0.75
+      }
+    },
+    {
+      "records": 512,
+      "decode_us": {
+        "int_control": 10.62,
+        "scalar_union": 13.61,
+        "object": 12.19,
+        "any_control": 11.96
+      },
+      "worker_observations": [
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.59,
+            "scalar_union": 13.47,
+            "object": 11.89,
+            "any_control": 11.82
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.46,
+            "scalar_union": 13.49,
+            "object": 11.84,
+            "any_control": 11.91
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.56,
+            "scalar_union": 13.61,
+            "object": 12.11,
+            "any_control": 12.01
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.6,
+            "scalar_union": 13.41,
+            "object": 12.02,
+            "any_control": 12.0
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.7,
+            "scalar_union": 14.45,
+            "object": 13.28,
+            "any_control": 11.98
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.62,
+            "scalar_union": 13.25,
+            "object": 12.38,
+            "any_control": 11.89
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.57,
+            "scalar_union": 13.47,
+            "object": 11.95,
+            "any_control": 11.91
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.68,
+            "scalar_union": 13.68,
+            "object": 12.15,
+            "any_control": 12.13
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.78,
+            "scalar_union": 13.59,
+            "object": 12.0,
+            "any_control": 11.94
+          }
+        },
+        {
+          "records": 512,
+          "decode_us": {
+            "int_control": 10.61,
+            "scalar_union": 13.63,
+            "object": 12.27,
+            "any_control": 11.96
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.int_control": 0.82,
+        "decode_us.scalar_union": 2.37,
+        "decode_us.object": 3.43,
+        "decode_us.any_control": 0.7
+      }
+    },
+    {
+      "records": 4096,
+      "decode_us": {
+        "int_control": 92.71,
+        "scalar_union": 116.17,
+        "object": 103.87,
+        "any_control": 104.0
+      },
+      "worker_observations": [
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 92.39,
+            "scalar_union": 116.27,
+            "object": 102.56,
+            "any_control": 103.59
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 91.51,
+            "scalar_union": 116.66,
+            "object": 104.26,
+            "any_control": 103.58
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 93.33,
+            "scalar_union": 114.38,
+            "object": 104.66,
+            "any_control": 105.19
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 91.52,
+            "scalar_union": 118.32,
+            "object": 103.8,
+            "any_control": 105.22
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 93.04,
+            "scalar_union": 115.56,
+            "object": 103.03,
+            "any_control": 102.23
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 94.91,
+            "scalar_union": 116.19,
+            "object": 105.94,
+            "any_control": 104.06
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 92.53,
+            "scalar_union": 116.04,
+            "object": 103.91,
+            "any_control": 103.89
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 92.73,
+            "scalar_union": 114.96,
+            "object": 102.61,
+            "any_control": 102.5
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 93.92,
+            "scalar_union": 116.75,
+            "object": 103.92,
+            "any_control": 104.72
+          }
+        },
+        {
+          "records": 4096,
+          "decode_us": {
+            "int_control": 91.21,
+            "scalar_union": 116.59,
+            "object": 103.98,
+            "any_control": 105.06
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.int_control": 1.25,
+        "decode_us.scalar_union": 0.93,
+        "decode_us.object": 0.97,
+        "decode_us.any_control": 1.03
+      }
+    }
+  ]
+}

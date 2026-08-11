@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-10
+goal: Decide and qualify native encoding or deliberate refusal for set,
+  frozenset, and bytes.

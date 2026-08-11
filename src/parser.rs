@@ -14,8 +14,8 @@
 use rustc_hash::FxHashSet;
 
 use crate::error::{Fault, FaultCode, Position};
-use crate::event::{Consumer, ScalarToken, StringToken};
-use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
+use crate::event::{Consumer, FieldNode, ObjectProbe, ScalarToken, StringToken};
+use crate::header::{Header, HeaderOutcome, parse_header, parse_string_token};
 use crate::scalar::{
     LineMarks, classify_bare, find_unquoted, resolved_colon, scan_line_marks, scan_quoted,
     split_cells, split_cells_into, trim_spaces, unescape,
@@ -175,7 +175,7 @@ fn entry_colon(content: &[u8], colon: Option<usize>) -> Option<usize> {
     (index + 1 == content.len() || content[index + 1] == b' ').then_some(index)
 }
 
-fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, Fault> {
+pub(crate) fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, Fault> {
     if value.first() == Some(&b'"') {
         let (end, escaped) = scan_quoted(value, 0, at)?;
         if end != value.len() {
@@ -432,7 +432,14 @@ fn parse_array_body<C: Consumer, const PREFLIGHT: bool>(
             }
             consumer.start_object(row.position)?;
             let mut cursor = 0usize;
-            emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
+            emit_row_fields(
+                &header.fields,
+                &cells,
+                &mut cursor,
+                None,
+                row.position,
+                consumer,
+            )?;
             consumer.end_object(row.position)
         })?;
     } else if let Some(inline) = header.inline_values {
@@ -499,7 +506,14 @@ fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
         }
         consumer.start_object(row.position)?;
         let mut cursor = 0usize;
-        emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
+        emit_row_fields(
+            &header.fields,
+            &cells,
+            &mut cursor,
+            None,
+            row.position,
+            consumer,
+        )?;
         consumer.end_object(row.position)
     })?;
     consumer.end_object(at)?;
@@ -528,16 +542,30 @@ fn emit_row_fields<C: Consumer>(
     fields: &[FieldNode<'_>],
     cells: &[&[u8]],
     cursor: &mut usize,
+    skip_field: Option<usize>,
     at: Position,
     consumer: &mut C,
 ) -> Result<(), Fault> {
-    for node in fields {
+    for (field_index, node) in fields.iter().enumerate() {
         if node.children.is_empty() {
-            consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
+            if skip_field != Some(field_index) {
+                consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
+            }
             *cursor += 1;
         } else {
-            consumer.start_object_field(node.name, at)?;
-            emit_row_fields(&node.children, cells, cursor, at, consumer)?;
+            let leaf_count = node.leaf_count();
+            let end = *cursor + leaf_count;
+            let probe = ObjectProbe::new(&node.children, &cells[*cursor..end]);
+            let selected = consumer.select_object_field(node.name, probe, at)?;
+            consumer.start_selected_object_field(node.name, selected.selection, at)?;
+            emit_row_fields(
+                &node.children,
+                cells,
+                cursor,
+                selected.skip_field,
+                at,
+                consumer,
+            )?;
             consumer.end_object_field(at)?;
         }
     }
@@ -703,6 +731,8 @@ mod tests {
     }
 
     impl Consumer for Recorder {
+        type ObjectSelection = ();
+
         fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
             self.events.push(Ev::So);
             Ok(())

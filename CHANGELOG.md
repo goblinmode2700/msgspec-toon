@@ -5,7 +5,7 @@
 Recoverable indentation-option mismatch diagnostics.
 
 <!-- release-compatibility:start -->
-- Compatibility since `0.1.0b3`: 25 newly supported, 1 removed, 28 total support-status changes, and 0 shared canonical-wire changes.
+- Compatibility since `0.1.0b3`: 27 newly supported, 1 removed, 30 total support-status changes, and 0 shared canonical-wire changes.
 <!-- release-compatibility:end -->
 
 - Report the observed leading-space count when decode receives the wrong `indent_size`.
@@ -13,6 +13,10 @@ Recoverable indentation-option mismatch diagnostics.
 - Round-trip nested mappings, tables, and typed Structs at widths 1, 2, and 4 when configured.
 - Document UTF-8 BOM and CRLF input acceptance.
 - Preserve canonical bytes, token counts, G2, and official explicit-width fixture behavior.
+- Validate concrete tags and select tagged-union members inside nested field groups.
+- Decode `object` through the requested open-value path.
+- Decode unions of bool, int, float, and str with msgspec-compatible category priority.
+- Pin the performance guard to the preceding public release instead of internal milestone tags.
 
 ## 0.2.0b4
 

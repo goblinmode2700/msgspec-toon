@@ -147,11 +147,16 @@ pub struct StructPlan {
     pub forbid_unknown: bool,
     pub array_like: bool,
     pub tag_field: Option<Vec<u8>>,
-    pub tag_value: Option<Py<PyAny>>,
+    pub tag_value: Option<TagValue>,
     /// Present when the class must be constructed with keyword arguments: the
     /// field names in constructor order, ready to hand to a vectorcall. The
     /// ordinary case keeps `None` and the positional fast path.
     pub keyword_names: Option<Py<pyo3::types::PyTuple>>,
+}
+
+pub enum TagValue {
+    String(Vec<u8>),
+    Integer(i64),
 }
 
 pub struct FieldPlan {
@@ -305,7 +310,13 @@ impl CompiledPlan {
                     .extract::<Option<String>>()?
                     .map(String::into_bytes);
                 let tag_value_obj = spec.getattr("tag_value")?;
-                let tag_value = (!tag_value_obj.is_none()).then(|| tag_value_obj.unbind());
+                let tag_value = if tag_value_obj.is_none() {
+                    None
+                } else if let Ok(text) = tag_value_obj.cast::<PyString>() {
+                    Some(TagValue::String(text.to_str()?.as_bytes().to_vec()))
+                } else {
+                    Some(TagValue::Integer(tag_value_obj.extract::<i64>()?))
+                };
                 if let Some(tag_field) = &tag_field {
                     by_wire.insert(tag_field.clone(), usize::MAX);
                 }

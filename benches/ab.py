@@ -47,6 +47,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from _timing import LOOPS_ENV
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
+GUARD_TAG_FILE = REPO / "benches" / "GUARD_TAG"
 #: The gate measures against the latest release, not the distant frozen tag: a
 #: baseline the current build already beats by 15-20% cannot detect a
 #: regression. Measured — a 24% typed-decode slowdown read as "+2.2%, no
@@ -114,6 +115,41 @@ METRICS = (
     ),
     ("bench_codecs", "decode_us", "msgspec_toon", "decode.msgspec_toon", "untyped decode"),
     ("bench_codecs", "encode_us", "msgspec_toon", "encode.msgspec_toon", "untyped encode"),
+    (
+        "bench_control_patterns",
+        "decode_us",
+        "ordinary",
+        "control.decode.ordinary",
+        "control ordinary decode",
+    ),
+    (
+        "bench_control_patterns",
+        "decode_us",
+        "tagged_first",
+        "control.decode.tagged_first",
+        "control tagged-first decode",
+    ),
+    (
+        "bench_control_patterns",
+        "decode_us",
+        "tagged_last",
+        "control.decode.tagged_last",
+        "control tagged-last decode",
+    ),
+    (
+        "bench_control_patterns",
+        "decode_us",
+        "nested_concrete",
+        "control.decode.nested_concrete",
+        "control nested-tag decode",
+    ),
+    (
+        "bench_control_patterns",
+        "decode_us",
+        "untyped_nested",
+        "control.decode.untyped_nested",
+        "control untyped decode",
+    ),
 )
 
 #: One block: one bench module's worker-side sampler at one size, reporting the
@@ -135,16 +171,11 @@ print(json.dumps({
 
 
 def latest_release_tag() -> str | None:
-    """The tag the guard must be built from, derived rather than remembered."""
-    proc = subprocess.run(
-        ["git", "tag", "-l", "v*", "--sort=-v:refname"],
-        cwd=REPO,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    tags = [line for line in proc.stdout.splitlines() if line.strip()]
-    return tags[0] if tags else None
+    """Read the explicit public-release guard tag."""
+    if not GUARD_TAG_FILE.is_file():
+        return None
+    tag = GUARD_TAG_FILE.read_text(encoding="utf-8").strip()
+    return tag or None
 
 
 def require_current_guard(venv: str) -> None:
@@ -336,6 +367,12 @@ def main() -> None:
         action="store_true",
         help="report only; do not exit non-zero on a significant slowdown",
     )
+    parser.add_argument(
+        "--output",
+        type=pathlib.Path,
+        default=None,
+        help="write this focused run to a separate JSON file",
+    )
     arguments = parser.parse_args()
 
     # Only the gating run needs a current guard; a story or ad-hoc comparison is
@@ -499,7 +536,10 @@ def main() -> None:
             arguments.current_venv.removeprefix(".venv-").removeprefix(".venv") or "current"
         )
         role = f"{role}-vs-{current_role}"
-    out = REPO / "benches" / f"ab-{role}.json"
+    out = arguments.output or (REPO / "benches" / f"ab-{role}.json")
+    if not out.is_absolute():
+        out = REPO / out
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps(
             {

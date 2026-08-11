@@ -95,6 +95,8 @@ impl<'py> UntypedConsumer<'py> {
 }
 
 impl Consumer for UntypedConsumer<'_> {
+    type ObjectSelection = ();
+
     fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
         self.stack.push(Builder::Dict {
             map: new_builtin_dict(self.py),

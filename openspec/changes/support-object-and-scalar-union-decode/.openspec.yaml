@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-10
+goal: Decide and qualify msgspec-compatible typed decode for object annotations
+  and non-optional scalar unions.

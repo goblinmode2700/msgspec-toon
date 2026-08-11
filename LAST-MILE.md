@@ -45,6 +45,23 @@ Do not modify canonical output to improve a selected payload.
 
 ## Ordered work queue
 
+### 0.3.0b1 control-pattern program — ACTIVE
+
+- [x] Record outside-agent issues 08 and 09 as separate strict OpenSpec changes.
+- [x] Freeze the public `v0.2.0b5` guard and add the nested-tag interaction/timing matrix.
+- [x] Repair nested concrete and union tag selection with a borrowed local probe.
+- [x] Compile tag values to native string or signed-integer metadata.
+- [x] Support issue-08 `object` and primitive scalar unions through existing direct paths.
+- [ ] Replace ordinary/root object pending-tag flags with container-local state.
+- [ ] Continue phases 4-10 in `port-msgspec-control-patterns-to-rust/tasks.md`.
+- [ ] Qualify 0.3.0b1 only after the repeated nested-tag correctness cost is resolved or accepted.
+
+Measured checkpoint finding: ordinary typed, root tagged, and untyped nested controls did not show
+a reproduced slowdown. Nested concrete tagged rows cost 7-9% against `v0.2.0b5`, which skipped tag
+validation. The first Python-equality repair cost 15-27%; native tag metadata removed most, but not
+all, of that cost. The open hypothesis is that compiling header positions and type actions once
+per tabular body can delete repeated dispatch and make the correct path neutral or faster.
+
 ### A. Containment repairs — DONE (checkpoint 1)
 
 - [x] F-01 cap array reservation hints without changing declared-count validation.

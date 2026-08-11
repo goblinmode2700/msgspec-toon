@@ -1,5 +1,39 @@
 # HANDOFF — state of the world for the next agent
 
+## Active 0.3.0b1 control-pattern program
+
+The owner opened `port-msgspec-control-patterns-to-rust` for the complete parser, typed-state,
+encoder, unsafe-contract, schema-path, and buffer-lifetime scope. Two outside-agent reports are
+separate follow-up changes: `support-object-and-scalar-union-decode` and
+`decide-set-frozenset-and-bytes-encoding`.
+
+The first checkpoint repairs nested field-group tags. A borrowed field-group probe now validates
+a concrete tag or selects a tagged-union member before the exact child frame opens. The selected
+plan travels directly into that frame. Native string and signed-64-bit tag metadata avoids Python
+object construction. Thirteen focused interaction tests now pass, including tag-first, tag-last,
+sibling, adjacent-row, deep, keyed-tabular, wrong-category, and payload-safety cases. The full
+suite passes 366 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
+G2 passes nine probes; canonical byte and token locks match.
+
+The correctness repair has one visible cost. Repeated concrete tagged nested rows are 7-9% slower
+than `v0.2.0b5`, which did not validate their discriminator. Ordinary typed, root tagged, and
+untyped nested controls show no reproduced regression. A research handoff on the owner's Desktop
+asks whether the parsed header and type plan can compile one body-scoped field/tag program and
+remove enough repeated dispatch to pay for correctness. Do not hide this measurement or call the
+program release-ready until it is resolved or explicitly accepted.
+
+Issue 08 closed through existing mechanisms. `object` lowers to the same requested open-value plan
+as `Any`. Primitive scalar unions use exact token categories before widening and use msgspec's
+int, float, bool fallback priority in non-strict mode. The full issue table, nested and recursive
+composition, non-strict priority, payload safety, support matrix, README, and allocation proof are
+executable. Absolute ten-worker timings are in `benches/type-parity-latest.json`; `object` tracks
+the `Any` control. Mixed object/scalar and untagged container unions remain explicit plan errors.
+
+The next local-selection task is to remove `pending_object_plan` and `pending_invalid_tag` from
+ordinary/root object preflight without losing parser purity or static dispatch. Await the research
+spike if it returns a smaller header-scoped boundary. Issue 09 remains an observation gate after
+encoder render consolidation.
+
 _Last updated after the verified `0.2.0b5` issue-07 release. Read
 **`OBJECTIVE.md`** first — it states what this project is
 minimizing, the constraints it may not break, and why the optimization has converged. Then

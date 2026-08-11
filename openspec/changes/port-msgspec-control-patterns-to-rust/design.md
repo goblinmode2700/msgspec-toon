@@ -1,0 +1,236 @@
+## Context
+
+See `proposal.md` for the reason for this program. The current codec already uses a pure-Rust
+parser, borrowed tokens, an immutable plan arena, explicit frames, pooled constructor slots, and
+one public Struct constructor call.
+
+The missing part is the control boundary. The parser recognizes a TOON container form, while the
+typed consumer derives a plan from separate frame state. Object tags use consumer-wide pending
+flags. This split caused the nested field-group tag defect.
+
+The program also covers the remaining gaps from the source audit. These gaps include structural
+skip, typed IDs, encoder decision ownership, unsafe contracts, schema paths, and selected
+allocation paths.
+
+The constraints in `OBJECTIVE.md` remain authoritative. Canonical bytes, C1 through C9, and the
+existing timing estimator remain fixed.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- Port the schema-directed control pattern from msgspec without copying the C object representation.
+- Make the wire form and declared plan meet before each typed container opens.
+- Remove invalid combinations from typed state where Rust types can express the rule.
+- Use one grammar for selected values and skipped values.
+- Use one encoder decision for classification, validation, and rendering.
+- Measure each performance mechanism in a small checkpoint before full qualification.
+
+**Non-Goals:**
+
+- Do not change TOON 4.1 grammar or canonical output.
+- Do not use msgspec private Struct memory layout.
+- Do not add a parser framework, trait object, shared interior mutability, or runtime dependency.
+- Do not add internal decode threads or a bytecode virtual machine.
+- Do not combine independent mechanisms in one measured checkpoint.
+- Do not claim full `msgspec.json` type parity.
+
+## Decisions
+
+### 1. Use an explicit wire-form and plan-selection boundary
+
+The parser will pass a small closed wire-form value at each container boundary. The typed target
+will combine that form with the declared plan. The result will identify the selected plan, a skip
+action, or a validation fault.
+
+The first implementation slice will cover nested field groups. Later slices can use the same
+boundary for ordinary objects, tabular rows, keyed tabular values, and positional Structs.
+
+The parser will remain generic and free of PyO3. The target will own all schema and Python work.
+Static dispatch will remain in the scalar loop.
+
+Alternative: add another tag-specific callback. This option is rejected because each feature pair
+adds another protocol side channel.
+
+Alternative: replace the complete `Consumer` trait in one change. This option is rejected because
+it creates a large correctness and performance step without a narrow falsifier.
+
+### 2. Keep selection state with one container
+
+The selection result will travel directly into the frame for the selected container. Object tags
+will stop using consumer-wide `pending_object_plan` and `pending_invalid_tag` state.
+
+The nested field-group probe will use a borrowed view of the header tree and row cells. It will
+scan only the cells for that field group. Then the normal decoder will consume those cells once.
+The probe will not create a dictionary, list, or owned scalar tree.
+
+Concrete tagged Structs will validate their tag before construction. Tagged unions will select a
+member before construction. The selection rules will preserve msgspec scalar categories.
+
+Alternative: recurse through the existing top-level hint callback. This option is rejected because
+the callback still names the parent plan during nested preflight.
+
+### 3. Introduce typed plan and field actions in separate checkpoints
+
+A private `PlanId` will distinguish plan identity from field position. A closed field action will
+distinguish a declared field, discriminator, skip, and rejection. The design will remove
+`usize::MAX` from tag policy.
+
+The migration will start at plan compilation and container selection. Later checkpoints will move
+the remaining frame and lookup sites. Each checkpoint must compile and pass the focused semantic
+tests before the next checkpoint starts.
+
+Index width will remain `usize`. A narrower integer is a separate data-layout experiment and is
+not part of this program.
+
+### 4. Add structural skip through the shared grammar
+
+Unknown typed values currently avoid Python construction but still dispatch all typed events. The
+new path will consume unknown subtrees with parser-owned structural logic or a zero-work target.
+
+The skip path will reuse header, indentation, quote, duplicate, row-count, and depth logic. It
+will not implement a second permissive grammar. The G2 probes will include nested unknown objects,
+arrays, tabular rows, and malformed unknown values.
+
+The checkpoint will compare event dispatch and allocation before and after the change. It will
+include an untyped control because parser code changes.
+
+### 5. Measure duplicate-key ownership before changing it
+
+Strict object parsing currently owns bytes for every key. A profile and allocation probe will
+first determine whether this cost resolves on wide and repeated objects.
+
+If the cost resolves, the candidate can use borrowed keys or stable fingerprints with exact
+collision checks. Escaped and unescaped forms must compare by decoded key bytes. Strict duplicate
+behavior cannot change.
+
+If the cost does not resolve, the candidate will be rejected and recorded.
+
+### 6. Give encoding one authoritative render decision
+
+The encoder will produce one render decision for each container. The decision will contain the
+selected object or sequence view and any shape witness that rendering needs.
+
+Classification will validate through the same witness that rendering consumes. The encode plan
+will remain the only authority for tags, renames, defaults, `array_like`, and field access.
+
+The migration will start with one reproduced shape or profile mechanism. Root, entry, list-item,
+keyed, and tabular paths will move in separate checkpoints. Canonical byte locks will run after
+each checkpoint.
+
+The rejected decode row-operation virtual machine will not return. An encoder render witness and
+a decode virtual machine are different designs.
+
+### 7. Audit unsafe code as a local contract
+
+Each unsafe block will state the borrowed and owned references, pointer lifetime, stealing rules,
+failure conversion, and free-threaded critical section where applicable.
+
+Unchecked UTF-8 and arena access will state their local proof. If the proof cannot remain local,
+the code will use a checked operation. A safe replacement that changes hot-path work will use a
+focused A/B.
+
+The optional msgspec capsule path will run on the existing CPython free-threaded target. No private
+offset fallback will enter release wheels.
+
+### 8. Add compact schema paths to runtime faults
+
+Typed frames will derive path parts from compiled schema metadata and structural indexes. Native
+faults will store compact path state only when typed decode needs it.
+
+The public error veneer will expose the path without payload keys or values. The design will keep
+path work off untyped decode. A frame-size check and focused typed A/B will protect the common path.
+
+### 9. Treat mutable-buffer borrowing as a safety-gated candidate
+
+Bytes and strings already provide borrowed source slices. Bytearray and memoryview inputs copy to
+protect mutation and free-threaded lifetimes.
+
+The candidate will proceed only with a stable-ABI buffer lifetime proof. It must hold the exporter
+for the complete decode and prevent unsafe mutation races. It must pass CPython 3.13 ABI3 and the
+free-threaded target.
+
+If the proof or focused large-buffer measurement fails, the copy remains and the report records the
+candidate as rejected.
+
+### 10. Use one interaction design and one timing authority
+
+The semantic matrix will cross these dimensions where they apply:
+
+- wire form: ordinary object, tabular row, nested field group, keyed tabular, and positional Struct.
+- plan shape: concrete Struct, tagged union, recursive position, optional value, and unknown field.
+- nesting: root, row child, deeper child, sibling, and adjacent row.
+- discriminator: correct, wrong, missing, duplicate, unknown, and wrong scalar category.
+
+The focused timing matrix will use one small case and one repeated-row case. It will include the
+affected typed case, an ordinary typed control, and an untyped control for parser changes.
+
+`benches/_timing.py` remains the only timing authority. Every A/B uses the mean across ten worker
+processes, the preceding release guard, raw repetitions, spread, significance, and the measured
+resolution floor.
+
+### 11. Treat issues 08 and 09 as observation gates
+
+The interaction matrix will rerun `object` and non-optional scalar unions after local plan
+selection. The encoder matrix will rerun set-like values and bytes after render consolidation.
+
+Each family has a separate follow-up OpenSpec change. A family enters `0.3.0b1` only when an
+existing mechanism closes it through a separate measured checkpoint. Otherwise, its follow-up
+change remains open with executable evidence and documented refusal.
+
+## Risks / Trade-offs
+
+- **Risk: The selection seam grows the common frame or event size.** → Measure type sizes and the
+  ordinary typed control before adoption.
+- **Risk: Probe and replay scan a discriminator twice.** → Bound the probe to one container and
+  reject any design that scans the selected container more than once before real decode.
+- **Risk: Structural skip accepts malformed unknown data.** → Use shared grammar primitives and
+  hostile differentials for every skipped container form.
+- **Risk: Typed IDs create a large mechanical diff.** → Move one boundary at a time and retain
+  checked conversion during migration.
+- **Risk: Encoder consolidation changes canonical bytes.** → Run byte and token locks after each
+  render-path checkpoint.
+- **Risk: Schema paths add hot-path work.** → Derive paths from existing frames and measure frame
+  size plus focused decode controls.
+- **Risk: Mutable-buffer borrowing is unsafe on free-threaded Python.** → Keep the current copy
+  unless the lifetime proof and target matrix pass.
+- **Risk: A correct repair conflicts with a performance floor.** → Stop qualification and present
+  the measured conflict to the owner. Do not publish a hidden trade.
+
+## Migration Plan
+
+1. Freeze `v0.2.0b5` as the release guard for this program.
+2. Add the failing interaction matrix before the first source change.
+3. Complete each checkpoint with its focused semantic and timing gates.
+4. Revert each rejected performance candidate before the next checkpoint.
+5. Run the complete repository gates after every adopted architecture checkpoint.
+6. Generate the final report from one clean `0.3.0b1` candidate revision.
+7. Qualify all target wheels before any publication action.
+
+Rollback is a checkpoint revert before release. After release, a defect uses the next beta patch.
+
+## Checkpoint 1-3 evidence
+
+The pre-change source revision was `52c743315c3339624d2ca2b66b35340baf18fe98`. The public
+release guard is `v0.2.0b5`, revision `6d12753400ce82b6719529da71fa450494e72b1d`. Internal
+milestone tags are not public releases, so `benches/GUARD_TAG` is now the single offline pointer
+used by the Makefile and A/B harness.
+
+The measurement toolchain was Rust 1.93.1, cargo 1.93.1, uv 0.12.2, CPython 3.13.1, and
+`msgspec==0.21.1` on Apple arm64. The release extension was rebuilt before each measurement.
+
+Before source changes, the focused mean-across-ten-worker absolute decode times in microseconds
+were:
+
+| records | ordinary | tagged first | tagged last | nested concrete | untyped nested |
+|---:|---:|---:|---:|---:|---:|
+| 4 | 0.89 | 0.78 | 0.80 | 0.97 | 0.99 |
+| 64 | 8.16 | 7.82 | 8.35 | 8.46 | 9.41 |
+| 512 | 61.34 | 61.48 | 64.82 | 64.51 | 78.97 |
+| 4096 | 575.70 | 505.86 | 534.88 | 619.44 | 705.01 |
+
+The old nested-concrete row did not validate its discriminator. The first correct repair used
+Python scalar construction and equality and was 15-27% slower. Native compiled tag metadata
+reduced the cost to 7-9%. Ordinary typed, root tagged, and untyped nested controls had no
+reproduced regression. All protected semantic gates passed. This cost remains open evidence, not
+an accepted performance result.
