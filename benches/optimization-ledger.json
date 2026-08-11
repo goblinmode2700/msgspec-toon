@@ -420,6 +420,12 @@
       "method": "add four diagnostic contrasts before source changes, reuse the existing trusted row-memo cursor, store only parent/plan/discriminator coordinates from row one, and compare with the preserved repaired checkpoint at 512 and 4096 rows using the mean-across-ten-worker A/B harness; confirm the affected cases and untyped control at double block count",
       "result": "the confirmation measured nested concrete -4.3%/-3.4%, nested union -3.7%/-3.3%, and tag-last -4.6%/-3.5% at 512/4096. Untyped decode was no significant difference. An initial ordinary-control slowdown at 4096 did not reproduce. Tag-last did not improve more than tag-first.",
       "ruling": "ADOPTED. The prospectively declared 2% gate at 4096 passed. The memo adds no parser ordinal or row interpreter and does not cache tag validity or a selected union member. make check, corpus 538/538, strict errors 84/84, G2, G3, G5, and byte/token locks passed; the known G4 small-payload misses remained. The result confirms combined structural selection savings but rejects the stronger claim that tag position multiplies the gain. Raw artifacts: .git/research/e1-*.json."
+    },
+    "compiled_exact_tag_matcher_CP_T": {
+      "question": "does a plan-compiled exact raw spelling remove enough tag classification and comparison work after structural memoization to resolve on common nested tags without moving unaffected paths?",
+      "method": "compile exact spellings only for canonical bare strings and integers, retain the current complete classifier and comparison on every miss, and compare with the immutable CP-S wheel at 512 and 4096 rows using four B-C-C-B rounds",
+      "result": "at 4096, nested concrete was -3.8% with 4.9% MDE and nested union +1.5% with 4.6% MDE, both unresolved. Integer tags improved -1.5% with 1.3% MDE; quoted cold-path was neutral. Untyped decode at 512 reproduced +1.0% slower with 0.8% MDE.",
+      "ruling": "REJECTED and fully reverted. The common-case effect did not resolve, and a typed-plan-only change caused protected binary-layout collateral in untyped decode. Do not retry without a profile that explains both observations. Raw artifacts: .git/research/e2-*.json."
     }
   },
   "harness_findings": {

@@ -1669,3 +1669,16 @@ containers, the byte/token lock tests passed, G3 and G5 passed at every size, an
 small-payload misses remained. Next: test the plan-compiled exact-spelling
 matcher as a separate checkpoint with the present classifier and tag comparison as the complete
 cold fallback.
+
+#### Checkpoint 46 — exact-spelling tag matcher rejected
+
+The candidate compiled one exact raw spelling per ordinary bare string or integer tag. A hit
+bypassed scalar classification and exact tag comparison. Every miss used the unchanged complete
+path, so quoted spellings, escaped strings, `-0`, wrong categories, and faults retained current
+semantics. The focused semantic suite passed 41 tests.
+
+At 4096 rows, nested concrete measured -3.8% with a 4.9% MDE and nested union +1.5% with a 4.6%
+MDE; neither result resolved. Integer tags improved -1.5% with a 1.3% MDE. The quoted cold path
+was neutral. The untyped 512-row control reproduced +1.0% slower with a 0.8% MDE even though it
+cannot use a typed plan. This is binary-layout collateral and violates the protected-control gate.
+The matcher was fully reverted. Raw results remain under `.git/research/e2-*.json`.

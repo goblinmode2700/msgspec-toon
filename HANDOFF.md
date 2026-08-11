@@ -29,6 +29,13 @@ but tag-last did not outperform tag-first, so field position is not established 
 multiplier proposed by the report. The remaining correctness cost against `v0.2.0b5` must be
 remeasured after the separate compiled-tag-matcher checkpoint; it is not assumed closed.
 
+That compiled exact-spelling checkpoint has now run and was rejected. Common bare nested concrete
+and union cases did not resolve at 4096, while an integer-tag case improved 1.5%. The quoted cold
+path was neutral, but the untyped 512-row control reproduced a 1.0% slowdown. The matcher patch was
+fully removed. Do not retry it without a profile that explains both the missing common-case effect
+and the unrelated binary-layout movement. The next decision is attribution of the remaining
+residual, followed by either one measured inline hot/cold split or explicit acceptance.
+
 Issue 08 closed through existing mechanisms. `object` lowers to the same requested open-value plan
 as `Any`. Primitive scalar unions use exact token categories before widening and use msgspec's
 int, float, bool fallback priority in non-strict mode. The full issue table, nested and recursive

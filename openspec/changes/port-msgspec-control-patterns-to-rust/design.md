@@ -288,3 +288,11 @@ sizes. An initial ordinary-control slowdown at 4096 did not reproduce under the 
 independent confirmation. Tag-last did not improve more than tag-first, so the measurement
 supports memoized structural selection but does not support the report's stronger claim that
 tag-field scan position multiplies the gain. Raw runs are retained below `.git/research/`.
+
+The separate exact-spelling matcher was tested and reverted. It stored one plan-time exact raw
+spelling for ordinary bare string and integer tags, returned immediately on a hit, and ran the
+unchanged classifier and tag comparison on every miss. At 4096 rows, nested concrete measured
+-3.8% with a 4.9% MDE and nested union +1.5% with a 4.6% MDE; neither resolved. Integer tags
+improved 1.5% with a 1.3% MDE, and the quoted cold path was neutral. The untyped 512-row control,
+which cannot use a typed plan matcher, reproduced a 1.0% slowdown with a 0.8% MDE. The candidate
+therefore failed both the common-case and protected-control conditions. No matcher code remains.
