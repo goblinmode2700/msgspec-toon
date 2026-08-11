@@ -236,6 +236,18 @@ struct RowMemo {
     /// re-reading key bytes. An untrusted sealed memo still verifies each key
     /// by byte comparison before replaying.
     trusted: bool,
+    /// Tagged nested-field selection learned from the first row. The header
+    /// fixes both the parent field and discriminator cell for the body; only
+    /// the discriminator value and union member remain row-dependent.
+    tagged_selections: Vec<Option<TaggedSelectionMemo>>,
+}
+
+#[derive(Clone, Copy)]
+struct TaggedSelectionMemo {
+    index: usize,
+    declared: usize,
+    tag_cell: Option<usize>,
+    skip_field: Option<usize>,
 }
 
 impl RowMemo {
@@ -769,6 +781,49 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         self.start_selected_object_plan(expected, at)
     }
 
+    fn select_nested_tagged_plan(
+        &self,
+        declared: usize,
+        raw_tag: Option<&[u8]>,
+        at: Position,
+    ) -> Result<usize, Fault> {
+        match &self.root.node(declared).kind {
+            PlanKind::Struct(plan) if EXTENDED && plan.tag_field.is_some() => {
+                if let Some(raw) = raw_tag {
+                    let token = classify_value(raw, at)?;
+                    let tag = plan
+                        .tag_value
+                        .as_ref()
+                        .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
+                    if !tag_matches(tag, token) {
+                        return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
+                    }
+                }
+                Ok(declared)
+            }
+            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => {
+                let token = classify_value(
+                    raw_tag.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
+                    at,
+                )?;
+                union
+                    .members
+                    .iter()
+                    .copied()
+                    .find(|&member| {
+                        let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                            return false;
+                        };
+                        plan.tag_value
+                            .as_ref()
+                            .is_some_and(|tag| tag_matches(tag, token))
+                    })
+                    .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))
+            }
+            _ => Ok(self.root.resolve_container(declared)),
+        }
+    }
+
     fn start_selected_object_plan(&mut self, expected: usize, at: Position) -> Result<(), Fault> {
         let expected_node = self.root.node(expected);
         match &expected_node.kind {
@@ -1142,7 +1197,45 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             ));
         }
 
+        let memoized = self.row_memos.last_mut().and_then(|memo| {
+            if memo.disabled || !memo.complete || !memo.trusted {
+                return None;
+            }
+            let selection = memo.tagged_selections.get(memo.cursor).copied().flatten();
+            if selection.is_some() {
+                // This replaces the parent field lookup that normally moves
+                // the positional row memo forward by one entry.
+                memo.cursor += 1;
+            }
+            selection
+        });
+        if let Some(memoized) = memoized {
+            let Some(Frame::Struct { values, .. }) = self.stack.last_mut() else {
+                return Err(Fault::syntax_at(FaultCode::Internal, at));
+            };
+            if values[memoized.index].is_some() && self.strict {
+                return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
+            }
+            let raw_tag = match memoized.tag_cell {
+                Some(cell) => Some(
+                    probe
+                        .raw_cell(cell)
+                        .ok_or(Fault::syntax_at(FaultCode::Internal, at))?,
+                ),
+                None => None,
+            };
+            let selected_plan = self.select_nested_tagged_plan(memoized.declared, raw_tag, at)?;
+            return Ok(ObjectSelectionResult {
+                selection: ObjectFieldSelection::StructField {
+                    index: memoized.index,
+                    selected_plan,
+                },
+                skip_field: memoized.skip_field,
+            });
+        }
+
         let strict = self.strict;
+        let memo_slot = self.row_memos.last().map(|memo| memo.cursor);
         let (index, declared) = match self.stack.last_mut() {
             Some(Frame::Struct { plan, values, .. }) => {
                 let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
@@ -1170,11 +1263,14 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         };
 
         let mut skip_field = None;
+        let mut tag_cell = None;
+        let mut tagged_selection = false;
         let selected_plan = match &self.root.node(declared).kind {
             PlanKind::Struct(plan) if EXTENDED && plan.tag_field.is_some() => {
+                tagged_selection = true;
                 let tag_field = plan.tag_field.as_deref().expect("checked above");
                 let mut matching_tag = None;
-                for (field_index, probe_key, raw) in probe.scalar_cells() {
+                for (field_index, cell_index, probe_key, raw) in probe.scalar_cells() {
                     let probe_key = match probe_key {
                         StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
                         StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
@@ -1182,6 +1278,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     if probe_key.as_ref() == tag_field {
                         matching_tag = Some(classify_value(raw, at)?);
                         skip_field = Some(field_index);
+                        tag_cell = Some(cell_index);
                         break;
                     }
                 }
@@ -1197,6 +1294,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 declared
             }
             PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => {
+                tagged_selection = true;
                 let tag_field =
                     union
                         .members
@@ -1208,7 +1306,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 let tag_field =
                     tag_field.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
                 let mut tag_token = None;
-                for (field_index, probe_key, raw) in probe.scalar_cells() {
+                for (field_index, cell_index, probe_key, raw) in probe.scalar_cells() {
                     let probe_key = match probe_key {
                         StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
                         StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
@@ -1216,6 +1314,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     if probe_key.as_ref() == tag_field {
                         tag_token = Some(classify_value(raw, at)?);
                         skip_field = Some(field_index);
+                        tag_cell = Some(cell_index);
                         break;
                     }
                 }
@@ -1237,6 +1336,22 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             }
             _ => self.root.resolve_container(declared),
         };
+
+        if tagged_selection
+            && let (Some(slot), Some(memo)) = (memo_slot, self.row_memos.last_mut())
+            && !memo.disabled
+            && !memo.complete
+        {
+            if memo.tagged_selections.len() <= slot {
+                memo.tagged_selections.resize(slot + 1, None);
+            }
+            memo.tagged_selections[slot] = Some(TaggedSelectionMemo {
+                index,
+                declared,
+                tag_cell,
+                skip_field,
+            });
+        }
 
         Ok(ObjectSelectionResult {
             selection: ObjectFieldSelection::StructField {

@@ -275,3 +275,16 @@ Adopt it only when an affected 4096-row case improves by at least the measured r
 and the quoted cold-path and unaffected controls do not regress beyond that floor. Do not use a
 tag-column prepass: it can report a later-row tag fault before an earlier-row field fault and thus
 changes observable error order.
+
+The minimal memo adopted. It reuses the existing trusted row-memo cursor and adds no parser
+ordinal, callback parameter, or row interpreter. The first row records only the parent field,
+declared plan, discriminator field, and raw-cell offset. Later rows still classify and validate
+their own discriminator, and tagged unions still select their own member.
+
+Against the preserved repaired-build environment, the higher-power confirmation improved
+nested-concrete decode by 4.3% at 512 rows (MDE 1.2%) and 3.4% at 4096 (MDE 1.5%). Nested union
+improved 3.7% and 3.3%; tag-last improved 4.6% and 3.5%. The untyped control was neutral at both
+sizes. An initial ordinary-control slowdown at 4096 did not reproduce under the harness's
+independent confirmation. Tag-last did not improve more than tag-first, so the measurement
+supports memoized structural selection but does not support the report's stronger claim that
+tag-field scan position multiplies the gain. Raw runs are retained below `.git/research/`.

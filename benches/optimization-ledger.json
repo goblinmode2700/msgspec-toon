@@ -414,6 +414,12 @@
       "method": "compile StartObject, Scalar, and EndObject operations once per parsed header, replay the same consumer calls per row, and compare typed and untyped decode with the exact S6 wheel for eight B-C-C-B rounds at 64, 512, and 4096 records",
       "result": "typed decode was no significant difference: +1.5% at 64 (MDE 1.6%), +1.5% at 512 (MDE 3.1%), and +0.1% at 4096 (MDE 1.9%). Untyped decode improved -2.1% at 64 but was parity at 512 and 4096.",
       "ruling": "REJECTED and reverted. The large rows that should amortize one-time compilation did not move, while typed decode had no win and trended slower at 64 and 512. One small untyped cell does not support the proposed mechanism or justify a second row representation. The row-dispatch program stops at S6. Artifacts: benches/ab-s7-typed.json and benches/ab-s7-untyped.json."
+    },
+    "nested_tag_selection_memo_CP_S": {
+      "question": "can a minimal body-scoped memo remove repeated header-to-plan binding and discriminator-location work while still validating every nested tag and selecting every union member per row?",
+      "method": "add four diagnostic contrasts before source changes, reuse the existing trusted row-memo cursor, store only parent/plan/discriminator coordinates from row one, and compare with the preserved repaired checkpoint at 512 and 4096 rows using the mean-across-ten-worker A/B harness; confirm the affected cases and untyped control at double block count",
+      "result": "the confirmation measured nested concrete -4.3%/-3.4%, nested union -3.7%/-3.3%, and tag-last -4.6%/-3.5% at 512/4096. Untyped decode was no significant difference. An initial ordinary-control slowdown at 4096 did not reproduce. Tag-last did not improve more than tag-first.",
+      "ruling": "ADOPTED. The prospectively declared 2% gate at 4096 passed. The memo adds no parser ordinal or row interpreter and does not cache tag validity or a selected union member. make check, corpus 538/538, strict errors 84/84, G2, G3, G5, and byte/token locks passed; the known G4 small-payload misses remained. The result confirms combined structural selection savings but rejects the stronger claim that tag position multiplies the gain. Raw artifacts: .git/research/e1-*.json."
     }
   },
   "harness_findings": {

@@ -131,6 +131,25 @@ def test_nested_union_selection_is_local_to_siblings_and_rows() -> None:
     assert toon.decode(document, type=list[PairRow]) == expected
 
 
+@pytest.mark.parametrize(
+    ("document", "type_"),
+    [
+        (
+            b"[2]{row_id,pet{type,x}}:\n  1,pet,2\n  2,SENTINEL_WRONG_TAG,3",
+            list[ConcreteRow],
+        ),
+        (
+            b"[2]{row_id,pet{type,x}}:\n  1,cat,2\n  2,SENTINEL_UNKNOWN_TAG,3",
+            list[UnionRow],
+        ),
+    ],
+)
+def test_nested_selection_memo_revalidates_each_row(document: bytes, type_: object) -> None:
+    with pytest.raises(msgspec.DecodeError) as caught:
+        toon.decode(document, type=type_)
+    assert "SENTINEL" not in str(caught.value)
+
+
 def test_deep_nested_union_selects_only_its_own_plan() -> None:
     document = b"[1]{box{pet{type,x}}}:\n  cat,2"
     assert toon.decode(document, type=list[DeepRow]) == [DeepRow(Box(Cat(2)))]

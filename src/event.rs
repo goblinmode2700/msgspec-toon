@@ -67,6 +67,10 @@ impl<'fields, 'input> ObjectProbe<'fields, 'input> {
             field_index: 0,
         }
     }
+
+    pub fn raw_cell(self, cell_index: usize) -> Option<&'input [u8]> {
+        self.cells.get(cell_index).copied()
+    }
 }
 
 pub struct ObjectScalarCells<'fields, 'input> {
@@ -77,7 +81,7 @@ pub struct ObjectScalarCells<'fields, 'input> {
 }
 
 impl<'input> Iterator for ObjectScalarCells<'_, 'input> {
-    type Item = (usize, StringToken<'input>, &'input [u8]);
+    type Item = (usize, usize, StringToken<'input>, &'input [u8]);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -85,9 +89,10 @@ impl<'input> Iterator for ObjectScalarCells<'_, 'input> {
             let field_index = self.field_index;
             self.field_index += 1;
             if field.children.is_empty() {
+                let cell_index = self.cursor;
                 let value = *self.cells.get(self.cursor)?;
                 self.cursor += 1;
-                return Some((field_index, field.name, value));
+                return Some((field_index, cell_index, field.name, value));
             }
             self.cursor += field.leaf_count();
         }

@@ -1642,3 +1642,30 @@ run `31446911918` passed on it. Issue 7 is closed with the evidence above and th
 agents who found the option-surface mismatch. Trusted candidate and publication artifacts remain
 under `.git/public-origin/.git/release-runs/31443504775/` and `31445176169/`. The feedback round has
 reached its stop condition.
+
+#### Checkpoint 45 — minimal nested-tag selection memo adopted
+
+The schema-compiled tag-matcher spike split the nested-tag correctness cost into structural
+selection and tag validation. Before codec source changed, four timing contrasts were added for
+nested unions, tag-last groups, quoted tags, and integer tags. A prospective gate required at
+least a 2% improvement at 4096 nested-concrete rows with ordinary and untyped controls protected.
+
+The candidate reuses the existing trusted row-memo cursor. The first row records the parent field,
+declared plan, discriminator field, and raw-cell offset. Later rows bypass repeated header-to-plan
+and discriminator-location work. They do not bypass correctness: each row still classifies and
+validates its own tag, and each union row independently selects its member. No row program, parser
+ordinal, extra callback argument, Python container, or payload-derived error state was added.
+
+The higher-power A/B against the preserved repaired build measured nested concrete -4.3% at 512
+(MDE 1.2%) and -3.4% at 4096 (MDE 1.5%); nested union measured -3.7%/-3.3%; tag-last measured
+-4.6%/-3.5%. Untyped decode was neutral. An initial ordinary 4096 slowdown did not reproduce.
+Tag-last matched rather than exceeded tag-first, so the stronger scan-position multiplier theory
+is not supported. Raw A/B artifacts remain private under `.git/research/e1-*.json`.
+
+`make check` passed 39 Rust tests and 366 Python tests with 10 expected skips before two focused
+memo-revalidation regressions were added. The official corpus
+passed 538/538 with 84/84 strict errors. All nine G2 probes passed with zero intermediate builtin
+containers, the byte/token lock tests passed, G3 and G5 passed at every size, and the known G4
+small-payload misses remained. Next: test the plan-compiled exact-spelling
+matcher as a separate checkpoint with the present classifier and tag comparison as the complete
+cold fallback.

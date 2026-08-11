@@ -15,15 +15,19 @@ sibling, adjacent-row, deep, keyed-tabular, wrong-category, and payload-safety c
 suite passes 366 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
 G2 passes nine probes; canonical byte and token locks match.
 
-The correctness repair has one visible cost. Repeated concrete tagged nested rows are 7-9% slower
-than `v0.2.0b5`, which did not validate their discriminator. Ordinary typed, root tagged, and
-untyped nested controls show no reproduced regression. The returned research spike proposed a
-body-scoped learned selection table. Its disposable CP0 improved the repaired path by 3.2% at
-4096 rows but still left a reproduced 4.7% slowdown against `v0.2.0b5`; the 512-row improvement
-was below the measured resolution. This recovered less than half of the known tax, so the spike's
-own falsifier fired and the patch was discarded. Do not implement its `RowShape` follow-ups
-without a new profile and mechanism. Do not hide this measurement or call the program
-release-ready until the remaining cost is resolved or explicitly accepted.
+The correctness repair initially cost 7-9% on repeated concrete tagged nested rows against
+`v0.2.0b5`, which did not validate their discriminator. A disposable CP0 then established a
+smaller structural-selection mechanism but failed its original half-recovery gate. A later spike
+separated that mechanism from the rejected `RowShape` interpreter. The adopted production memo
+reuses the existing trusted row-memo cursor and stores only header/schema coordinates; every row
+still classifies and validates its tag, and every union row still selects its member.
+
+Against the preserved repaired checkpoint, the higher-power same-session confirmation improved
+nested-concrete decode by 4.3% at 512 rows and 3.4% at 4096, nested union by 3.7% and 3.3%, and
+tag-last by 4.6% and 3.5%. Untyped decode was neutral. The result supports structural memoization,
+but tag-last did not outperform tag-first, so field position is not established as the causal
+multiplier proposed by the report. The remaining correctness cost against `v0.2.0b5` must be
+remeasured after the separate compiled-tag-matcher checkpoint; it is not assumed closed.
 
 Issue 08 closed through existing mechanisms. `object` lowers to the same requested open-value plan
 as `Any`. Primitive scalar unions use exact token categories before widening and use msgspec's
