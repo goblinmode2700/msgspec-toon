@@ -12,7 +12,7 @@ a concrete tag or selects a tagged-union member before the exact child frame ope
 plan travels directly into that frame. Native string and signed-64-bit tag metadata avoids Python
 object construction. Thirteen focused interaction tests now pass, including tag-first, tag-last,
 sibling, adjacent-row, deep, keyed-tabular, wrong-category, and payload-safety cases. The full
-suite passes 366 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
+suite passes 368 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
 G2 passes nine probes; canonical byte and token locks match.
 
 The correctness repair initially cost 7-9% on repeated concrete tagged nested rows against
@@ -35,6 +35,17 @@ path was neutral, but the untyped 512-row control reproduced a 1.0% slowdown. Th
 fully removed. Do not retry it without a profile that explains both the missing common-case effect
 and the unrelated binary-layout movement. The next decision is attribution of the remaining
 residual, followed by either one measured inline hot/cold split or explicit acceptance.
+
+E3 completed that attribution and chose explicit acceptance. A session-adjusted HC3 slope model
+over 128 worker-process means estimates CP-S at 151.34 ns/row, the correct pre-memo repair at
+153.80 ns/row, and `v0.2.0b5` at 145.38 ns/row. CP-S recovers 2.46 ns/row from the repair but
+remains 5.96 ns/row slower than the release that skipped validation; both contrasts have 95%
+intervals excluding zero. A symbolized profile confirms structural selection shrank:
+`select_object_field` self-samples fell from 41/835 to 23/837. The remaining selection work
+contains mandatory validation, while row emission, cell splitting, Python scalar/Struct
+construction, and GC dominate the surrounding profile. No separate call-overhead mechanism is
+visible, so the proposed inline split is not attempted. The nested-tag performance branch is
+closed with the 5.96 ns/row correctness residual explicit.
 
 Issue 08 closed through existing mechanisms. `object` lowers to the same requested open-value plan
 as `Any`. Primitive scalar unions use exact token categories before widening and use msgspec's

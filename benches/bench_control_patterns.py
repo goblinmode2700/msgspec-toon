@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import build_freshness  # noqa: F401
 import msgspec
 import msgspec_toon as toon
-from _timing import DEFAULT_WORKERS, measure, methodology
+from _timing import DEFAULT_WORKERS, measure, methodology, selected_metric
 from _workers import across_workers
 
 LADDER = (4, 64, 512, 4096)
@@ -80,6 +80,11 @@ def _alternating_rows(records: int, fields: bytes, rows: tuple[bytes, ...]) -> b
 
 
 def sample_run(records: int) -> dict[str, Any]:
+    only = selected_metric()
+
+    def selected(name: str) -> bool:
+        return only is None or only == name
+
     ordinary = _rows(records, b"row_id,pet{x}", b"1,2")
     tagged_first = _rows(records, b"type,x", b"cat,2")
     tagged_last = _rows(records, b"x,type", b"2,dog")
@@ -100,18 +105,27 @@ def sample_run(records: int) -> dict[str, Any]:
     nested_int_decoder = toon.Decoder(list[IntegerRow])
     untyped_decoder = toon.Decoder()
 
-    assert len(ordinary_decoder.decode(ordinary)) == records
-    assert len(tagged_decoder.decode(tagged_first)) == records
-    assert len(tagged_decoder.decode(tagged_last)) == records
-    assert len(nested_decoder.decode(nested_concrete)) == records
-    union_values = nested_union_decoder.decode(nested_union)
-    assert len(union_values) == records
-    assert isinstance(union_values[0].pet, Cat)
-    assert isinstance(union_values[1].pet, Dog)
-    assert len(nested_decoder.decode(nested_tag_last)) == records
-    assert len(nested_decoder.decode(nested_quoted_tag)) == records
-    assert len(nested_int_decoder.decode(nested_int_tag)) == records
-    assert len(untyped_decoder.decode(nested_concrete)) == records
+    if selected("control.decode.ordinary"):
+        assert len(ordinary_decoder.decode(ordinary)) == records
+    if selected("control.decode.tagged_first"):
+        assert len(tagged_decoder.decode(tagged_first)) == records
+    if selected("control.decode.tagged_last"):
+        assert len(tagged_decoder.decode(tagged_last)) == records
+    if selected("control.decode.nested_concrete"):
+        assert len(nested_decoder.decode(nested_concrete)) == records
+    if selected("control.decode.nested_union"):
+        union_values = nested_union_decoder.decode(nested_union)
+        assert len(union_values) == records
+        assert isinstance(union_values[0].pet, Cat)
+        assert isinstance(union_values[1].pet, Dog)
+    if selected("control.decode.nested_tag_last"):
+        assert len(nested_decoder.decode(nested_tag_last)) == records
+    if selected("control.decode.nested_quoted_tag"):
+        assert len(nested_decoder.decode(nested_quoted_tag)) == records
+    if selected("control.decode.nested_int_tag"):
+        assert len(nested_int_decoder.decode(nested_int_tag)) == records
+    if selected("control.decode.untyped_nested"):
+        assert len(untyped_decoder.decode(nested_concrete)) == records
 
     return {
         "records": records,

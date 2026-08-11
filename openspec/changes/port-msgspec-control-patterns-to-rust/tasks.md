@@ -33,7 +33,7 @@
 - [x] 3.12 Add nested-union, nested-tag-last, nested-quoted-tag, and nested-integer-tag timing contrasts before another codec source change.
 - [x] 3.13 Test a minimal production selection memo against the prospectively recorded 4096-row gate; adopt or revert it as one checkpoint.
 - [x] 3.14 Test and reject a plan-compiled exact-spelling matcher because common 4096-row cases did not resolve and an untyped control regressed.
-- [ ] 3.15 Attribute any remaining nested-tag cost before attempting an inline hot/cold split; otherwise record the measured residual and stop this performance branch.
+- [x] 3.15 Attribute the remaining nested-tag cost with a worker-level slope model and symbolized profiles; reject an inline split without a measured call-overhead mechanism and accept the correctness residual.
 
 ## 4. Make Plan and Field State Explicit
 

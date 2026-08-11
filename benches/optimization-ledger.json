@@ -426,6 +426,12 @@
       "method": "compile exact spellings only for canonical bare strings and integers, retain the current complete classifier and comparison on every miss, and compare with the immutable CP-S wheel at 512 and 4096 rows using four B-C-C-B rounds",
       "result": "at 4096, nested concrete was -3.8% with 4.9% MDE and nested union +1.5% with 4.6% MDE, both unresolved. Integer tags improved -1.5% with 1.3% MDE; quoted cold-path was neutral. Untyped decode at 512 reproduced +1.0% slower with 0.8% MDE.",
       "ruling": "REJECTED and fully reverted. The common-case effect did not resolve, and a typed-plan-only change caused protected binary-layout collateral in untyped decode. Do not retry without a profile that explains both observations. Raw artifacts: .git/research/e2-*.json."
+    },
+    "nested_tag_residual_attribution_E3": {
+      "question": "after CP-S adopts and CP-T rejects, where does the remaining nested-tag correctness cost live, and does a separate inline call-overhead mechanism justify CP-T2?",
+      "method": "fit time_us ~ session + build + build:records with HC3 covariance over 128 worker-process means from two four-round A/B ladders, then compare ten-second macOS sample profiles of release-optimized symbolized builds for v0.2.0b5, the correct repair, and CP-S",
+      "result": "slopes in ns/row: CP-S 151.34 (95% CI 150.35-152.34), repair 153.80 (152.75-154.85), v0.2.0b5 145.38 (144.05-146.71). CP-S minus repair is -2.46 (-3.91 to -1.01); CP-S minus v0.2.0b5 is +5.96 (4.30-7.63). select_object_field self-samples fall from 41/835 on the repair to 23/837 on CP-S; remaining selection includes mandatory validation and no separate call-overhead bucket resolves.",
+      "ruling": "ATTRIBUTED; CP-T2 NOT ATTEMPTED; RESIDUAL ACCEPTED. CP-S measurably removes structural rediscovery. The remaining 5.96 ns/row against v0.2.0b5 is the measured cost of semantics that release skipped, distributed among validation and the protected event/frame architecture. Row emission, cell splitting, Python conversion/construction, and GC dominate the surrounding profile. Without a distinct call-overhead mechanism, an inline split would be speculative and would reopen CP-T's binary-layout risk. Raw artifacts: .git/research/e3-*; advisory model: benches/slope.R."
     }
   },
   "harness_findings": {

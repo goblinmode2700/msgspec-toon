@@ -1682,3 +1682,28 @@ MDE; neither result resolved. Integer tags improved -1.5% with a 1.3% MDE. The q
 was neutral. The untyped 512-row control reproduced +1.0% slower with a 0.8% MDE even though it
 cannot use a typed plan. This is binary-layout collateral and violates the protected-control gate.
 The matcher was fully reverted. Raw results remain under `.git/research/e2-*.json`.
+
+#### Checkpoint 47 — E3 attributes and accepts the nested-tag residual
+
+E3 changed no codec source. The existing A/B harness collected four-round nested-concrete ladders
+for the correct repaired build versus CP-S and for `v0.2.0b5` versus CP-S. A benchmark-only repair
+made metric selection skip unrelated assertions, allowing an older guard to measure the selected
+case without executing newer union diagnostics.
+
+`benches/slope.R` fits absolute microseconds from 128 worker-process means with a session effect,
+build-specific record slopes, and HC3 covariance. CP-S is 151.34 ns/row (95% CI
+150.35-152.34), the correct repair is 153.80 (152.75-154.85), and `v0.2.0b5` is 145.38
+(144.05-146.71). The CP-S-minus-repair contrast is -2.46 ns/row (CI -3.91 to -1.01). The
+CP-S-minus-release contrast is +5.96 ns/row (CI 4.30-7.63). The interleaved A/B remains the
+release authority; this model is attribution only.
+
+Symbolized ten-second macOS profiles were collected from isolated release-optimized builds with
+symbols retained. They were not used for timing claims. `select_object_field` self-samples fall
+from 41/835 on the repair to 23/837 on CP-S. The remaining selection work includes the required
+per-row tag check. Row emission, cell splitting, scalar/Python conversion, Struct allocation, and
+GC remain larger surrounding costs. No separate call-overhead bucket supports CP-T2, and CP-T
+already demonstrated binary-layout collateral. The inline split is not attempted. The remaining
+5.96 ns/row versus `v0.2.0b5` is accepted as the measured correctness cost under the present
+architecture. Private raw A/B, model output, workload, and profiles are under `.git/research/e3-*`.
+Final `make check` passed 39 Rust tests and 368 Python tests with 10 expected skips. Strict
+OpenSpec validation passed.

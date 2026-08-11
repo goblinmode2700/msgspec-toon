@@ -296,3 +296,27 @@ unchanged classifier and tag comparison on every miss. At 4096 rows, nested conc
 improved 1.5% with a 1.3% MDE, and the quoted cold path was neutral. The untyped 512-row control,
 which cannot use a typed plan matcher, reproduced a 1.0% slowdown with a 0.8% MDE. The candidate
 therefore failed both the common-case and protected-control conditions. No matcher code remains.
+
+### E3 attribution and stop
+
+E3 used the existing A/B worker outputs, not a new timing harness. Two four-round ladders measured
+the repaired build versus CP-S and `v0.2.0b5` versus CP-S at 4, 64, 512, and 4096 rows. CP-S was
+the shared build across sessions. An advisory R model fit absolute time as
+`time_us ~ session + build + build:records` with HC3 covariance over 128 worker-process means.
+
+The estimated slopes were 151.34 ns/row for CP-S (95% CI 150.35-152.34), 153.80 for the correct
+pre-memo repair (152.75-154.85), and 145.38 for `v0.2.0b5` (144.05-146.71). CP-S therefore saves
+2.46 ns/row against the correct repair (CI -3.91 to -1.01) while remaining 5.96 ns/row slower than
+the release that skipped validation (CI 4.30-7.63). The model is advisory; the interleaved A/B
+results remain the performance authority.
+
+Ten-second symbolized macOS profiles used isolated release-optimized builds with DWARF retained.
+They were not timed. `select_object_field` self-samples fell from 41/835 on the correct repair to
+23/837 on CP-S, which confirms the memo removed structural-selection work. The remaining samples
+inside selection include required tag validation, not a separately visible call-overhead bucket.
+The dominant surrounding costs are row emission, cell splitting, scalar/Python conversion,
+Struct allocation, and garbage collection. An inline hot/cold split has no measured mechanism
+large enough to recover the 5.96 ns/row residual and would reopen the binary-layout risk already
+seen in CP-T. E4 is not attempted. The residual is accepted as the measured cost of enforcing
+nested tags under the current no-VM, public-constructor architecture, and this performance branch
+stops.
