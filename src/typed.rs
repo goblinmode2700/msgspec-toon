@@ -74,9 +74,11 @@ enum Frame<'py, 'plan> {
 }
 
 #[derive(Default)]
-pub enum ObjectFieldSelection {
+pub enum TypedObjectSelection {
     #[default]
     Passthrough,
+    SelectedPlan(usize),
+    InvalidTag,
     Skip,
     StructField {
         index: usize,
@@ -283,9 +285,6 @@ pub struct TypedConsumer<'py, 'plan, const EXTENDED: bool = false> {
     arguments_scratch: Vec<Bound<'py, PyAny>>,
     /// One memo per open array frame, scoped like the frame stack.
     row_memos: Vec<RowMemo>,
-    /// Variant selected by bounded parser lookahead for the next object.
-    pending_object_plan: Option<usize>,
-    pending_invalid_tag: bool,
     has_tagged_plans: bool,
     has_array_tags: bool,
 }
@@ -326,8 +325,6 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             values_pool: Vec::new(),
             arguments_scratch: Vec::new(),
             row_memos: Vec::new(),
-            pending_object_plan: None,
-            pending_invalid_tag: false,
             has_tagged_plans,
             has_array_tags,
         }
@@ -771,13 +768,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
     }
 
     fn start_object_for_plan(&mut self, declared: usize, at: Position) -> Result<(), Fault> {
-        let expected = match &self.root.node(declared).kind {
-            PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => self
-                .pending_object_plan
-                .take()
-                .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?,
-            _ => self.root.resolve_container(declared),
-        };
+        let expected = self.root.resolve_container(declared);
         self.start_selected_object_plan(expected, at)
     }
 
@@ -1023,7 +1014,7 @@ enum AnyEvent<'a> {
 }
 
 impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
-    type ObjectSelection = ObjectFieldSelection;
+    type ObjectSelection = TypedObjectSelection;
 
     fn needs_object_preflight(&self) -> bool {
         if !EXTENDED || !self.has_tagged_plans {
@@ -1041,6 +1032,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
 
     fn object_scalar_hint(
         &mut self,
+        selection: &mut Self::ObjectSelection,
         key: StringToken<'_>,
         value: ScalarToken<'_>,
         _at: Position,
@@ -1084,12 +1076,11 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 continue;
             };
             if tag_matches(tag, value) {
-                self.pending_object_plan = Some(member);
-                self.pending_invalid_tag = false;
+                *selection = TypedObjectSelection::SelectedPlan(member);
                 return Ok(());
             }
         }
-        self.pending_invalid_tag = true;
+        *selection = TypedObjectSelection::InvalidTag;
         Ok(())
     }
 
@@ -1126,11 +1117,25 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             self.skip_depth = 1;
             return Ok(());
         }
-        if EXTENDED && std::mem::take(&mut self.pending_invalid_tag) {
-            return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
-        }
         let declared = self.expected_plan_or_fault(at)?;
         self.start_object_for_plan(declared, at)
+    }
+
+    fn start_selected_object(
+        &mut self,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        match selection {
+            TypedObjectSelection::SelectedPlan(plan) => self.start_selected_object_plan(plan, at),
+            TypedObjectSelection::InvalidTag => {
+                Err(Fault::validation_at(FaultCode::TypeMismatch, at))
+            }
+            TypedObjectSelection::Passthrough => self.start_object(at),
+            TypedObjectSelection::Skip | TypedObjectSelection::StructField { .. } => {
+                Err(Fault::syntax_at(FaultCode::Internal, at))
+            }
+        }
     }
 
     fn start_object_field(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
@@ -1178,9 +1183,6 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let Some(declared) = declared else {
             return self.start_object(at);
         };
-        if EXTENDED && std::mem::take(&mut self.pending_invalid_tag) {
-            return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
-        }
         self.start_object_for_plan(declared, at)
     }
 
@@ -1193,7 +1195,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
     ) -> Result<ObjectSelectionResult<Self::ObjectSelection>, Fault> {
         if self.any_sub.is_some() || self.skip_depth > 0 {
             return Ok(ObjectSelectionResult::new(
-                ObjectFieldSelection::Passthrough,
+                TypedObjectSelection::Passthrough,
             ));
         }
 
@@ -1226,7 +1228,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             };
             let selected_plan = self.select_nested_tagged_plan(memoized.declared, raw_tag, at)?;
             return Ok(ObjectSelectionResult {
-                selection: ObjectFieldSelection::StructField {
+                selection: TypedObjectSelection::StructField {
                     index: memoized.index,
                     selected_plan,
                 },
@@ -1252,12 +1254,12 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     None if plan.forbid_unknown => {
                         return Err(Fault::validation_at(FaultCode::UnknownField, at));
                     }
-                    None => return Ok(ObjectSelectionResult::new(ObjectFieldSelection::Skip)),
+                    None => return Ok(ObjectSelectionResult::new(TypedObjectSelection::Skip)),
                 }
             }
             _ => {
                 return Ok(ObjectSelectionResult::new(
-                    ObjectFieldSelection::Passthrough,
+                    TypedObjectSelection::Passthrough,
                 ));
             }
         };
@@ -1354,7 +1356,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         }
 
         Ok(ObjectSelectionResult {
-            selection: ObjectFieldSelection::StructField {
+            selection: TypedObjectSelection::StructField {
                 index,
                 selected_plan,
             },
@@ -1369,15 +1371,18 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         at: Position,
     ) -> Result<(), Fault> {
         match selection {
-            ObjectFieldSelection::Passthrough => self.start_object_field(key, at),
-            ObjectFieldSelection::Skip => {
+            TypedObjectSelection::Passthrough => self.start_object_field(key, at),
+            TypedObjectSelection::SelectedPlan(_) | TypedObjectSelection::InvalidTag => {
+                Err(Fault::syntax_at(FaultCode::Internal, at))
+            }
+            TypedObjectSelection::Skip => {
                 let Some(Frame::Struct { skip_value, .. }) = self.stack.last_mut() else {
                     return Err(Fault::syntax_at(FaultCode::Internal, at));
                 };
                 *skip_value = true;
                 self.start_object(at)
             }
-            ObjectFieldSelection::StructField {
+            TypedObjectSelection::StructField {
                 index,
                 selected_plan,
             } => {

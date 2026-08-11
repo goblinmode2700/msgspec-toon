@@ -320,3 +320,24 @@ large enough to recover the 5.96 ns/row residual and would reopen the binary-lay
 seen in CP-T. E4 is not attempted. The residual is accepted as the measured cost of enforcing
 nested tags under the current no-VM, public-constructor architecture, and this performance branch
 stops.
+
+### Task 3.7: local ordinary-object selection
+
+The applicable pattern is container-local schema selection. msgspec's C decoder carries the
+current `TypeNode` through its recursive decode calls. Serde's `Visitor` and `DeserializeSeed`
+interfaces likewise attach caller schema state to one deserialization operation. This codec's
+nested field-group path already implements the useful local form: selection is returned and
+passed directly to the exact child object.
+
+Verdict: **port** that value flow into the existing generic event boundary. Do not adopt a new
+dependency, replace the complete `Consumer` trait, or hand-roll a second parser protocol.
+`object_scalar_hint` updates an `ObjectSelection` owned by the parser invocation. The parser then
+passes it into `start_selected_object` for the exact root, ordinary child, tabular row, keyed row,
+or list-item object. The typed consumer has no global pending plan or invalid-tag flags.
+
+The seven-way matrix covers root, child, deeper child, siblings, optional, recursive, and adjacent
+objects. Against exact preceding source `f7a0d00`, ordinary and nested-tag decode were neutral at
+4, 64, 512, and 4096 rows. Root tagged-union decode was unresolved through 512 and 2.1% faster at
+4096 with a 1.9% MDE. This is adopted for state ownership and correctness locality; the resolved
+large-row improvement is supporting evidence, not permission to combine phase 4 representation
+changes into this checkpoint.

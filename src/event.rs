@@ -127,11 +127,12 @@ pub trait Consumer {
     /// tree. Other consumers ignore it.
     fn object_scalar_hint(
         &mut self,
+        selection: &mut Self::ObjectSelection,
         key: StringToken<'_>,
         value: ScalarToken<'_>,
         at: Position,
     ) -> Result<(), Fault> {
-        let _ = (key, value, at);
+        let _ = (selection, key, value, at);
         Ok(())
     }
     /// Announce that every row of the array just started is emitted from one
@@ -143,6 +144,17 @@ pub trait Consumer {
         Ok(())
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
+    /// Open an object using the preflight result produced for this exact
+    /// container. The default ignores selection and preserves the ordinary
+    /// event sequence.
+    fn start_selected_object(
+        &mut self,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let _ = selection;
+        self.start_object(at)
+    }
     /// Offer an adjacent object key and nested object opening as one
     /// operation. The default preserves the ordinary event sequence; typed
     /// consumers may carry the resolved child plan directly into frame setup.

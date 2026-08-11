@@ -102,10 +102,18 @@ fn parse_root_object<C: Consumer, const PREFLIGHT: bool>(
     consumer: &mut C,
     at: Position,
 ) -> Result<(), Fault> {
+    let mut selection = C::ObjectSelection::default();
     if PREFLIGHT && consumer.needs_object_preflight() {
-        preflight_object_body(&mut lines.clone(), 0, None, strict, consumer)?;
+        preflight_object_body(
+            &mut lines.clone(),
+            0,
+            None,
+            strict,
+            consumer,
+            &mut selection,
+        )?;
     }
-    consumer.start_object(at)?;
+    consumer.start_selected_object(selection, at)?;
     parse_object_body::<C, PREFLIGHT>(lines, 0, None, strict, consumer)?;
     consumer.end_object(at)?;
     Ok(())
@@ -116,6 +124,7 @@ fn hint_entry<C: Consumer>(
     at: Position,
     strict: bool,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     let marks = scan_line_marks(content);
     if matches!(
@@ -136,7 +145,12 @@ fn hint_entry<C: Consumer>(
         line: at.line,
         column: at.column + colon as u32 + 2,
     };
-    consumer.object_scalar_hint(key, classify_value(&rest[1..], value_at)?, value_at)
+    consumer.object_scalar_hint(
+        selection,
+        key,
+        classify_value(&rest[1..], value_at)?,
+        value_at,
+    )
 }
 
 fn preflight_object_body<C: Consumer>(
@@ -145,16 +159,17 @@ fn preflight_object_body<C: Consumer>(
     first: Option<(&[u8], Position)>,
     strict: bool,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     if let Some((content, at)) = first {
-        hint_entry(content, at, strict, consumer)?;
+        hint_entry(content, at, strict, consumer, selection)?;
     }
     while let Some(line) = lines.peek()? {
         if line.depth != depth {
             break;
         }
         lines.advance()?;
-        hint_entry(line.content, line.position, strict, consumer)?;
+        hint_entry(line.content, line.position, strict, consumer, selection)?;
     }
     Ok(())
 }
@@ -287,10 +302,18 @@ fn parse_entry<C: Consumer, const PREFLIGHT: bool>(
             }
             _ => false,
         };
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && nested && consumer.needs_object_preflight() {
-            preflight_object_body(&mut lines.clone(), depth + 1, None, strict, consumer)?;
+            preflight_object_body(
+                &mut lines.clone(),
+                depth + 1,
+                None,
+                strict,
+                consumer,
+                &mut selection,
+            )?;
         }
-        consumer.start_object(at)?;
+        consumer.start_selected_object(selection, at)?;
         if nested {
             parse_object_body::<C, PREFLIGHT>(lines, depth + 1, None, strict, consumer)?;
         }
@@ -427,10 +450,17 @@ fn parse_array_body<C: Consumer, const PREFLIGHT: bool>(
             if cells.len() != leaf_count {
                 return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
             }
+            let mut selection = C::ObjectSelection::default();
             if PREFLIGHT && consumer.needs_object_preflight() {
-                hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+                hint_row_fields(
+                    &header.fields,
+                    &cells,
+                    row.position,
+                    consumer,
+                    &mut selection,
+                )?;
             }
-            consumer.start_object(row.position)?;
+            consumer.start_selected_object(selection, row.position)?;
             let mut cursor = 0usize;
             emit_row_fields(
                 &header.fields,
@@ -501,10 +531,17 @@ fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
             return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
         }
         consumer.key(row_key, row.position)?;
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && consumer.needs_object_preflight() {
-            hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+            hint_row_fields(
+                &header.fields,
+                &cells,
+                row.position,
+                consumer,
+                &mut selection,
+            )?;
         }
-        consumer.start_object(row.position)?;
+        consumer.start_selected_object(selection, row.position)?;
         let mut cursor = 0usize;
         emit_row_fields(
             &header.fields,
@@ -525,11 +562,17 @@ fn hint_row_fields<C: Consumer>(
     cells: &[&[u8]],
     at: Position,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     let mut cursor = 0usize;
     for node in fields {
         if node.children.is_empty() {
-            consumer.object_scalar_hint(node.name, classify_value(cells[cursor], at)?, at)?;
+            consumer.object_scalar_hint(
+                selection,
+                node.name,
+                classify_value(cells[cursor], at)?,
+                at,
+            )?;
             cursor += 1;
         } else {
             cursor += node.leaf_count();
@@ -620,10 +663,18 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
             // An object item whose first entry is an array; the item's fields
             // sit two levels below the list base, so the array body's rows
             // sit at depth + 3.
+            let mut selection = C::ObjectSelection::default();
             if PREFLIGHT && consumer.needs_object_preflight() {
-                preflight_object_body(&mut lines.clone(), depth + 2, None, strict, consumer)?;
+                preflight_object_body(
+                    &mut lines.clone(),
+                    depth + 2,
+                    None,
+                    strict,
+                    consumer,
+                    &mut selection,
+                )?;
             }
-            consumer.start_object(item_at)?;
+            consumer.start_selected_object(selection, item_at)?;
             let key = header.key.as_ref().expect("checked above");
             let mut seen = FxHashSet::default();
             seen.insert(token_owned_bytes(key));
@@ -649,6 +700,7 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
     if entry_colon(item, resolved_colon(item, &marks)).is_some() {
         // An object item: first key/value on the dash line, the rest two
         // levels deeper (the `- ` prefix occupies one indent unit).
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && consumer.needs_object_preflight() {
             preflight_object_body(
                 &mut lines.clone(),
@@ -656,9 +708,10 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
                 Some((item, item_at)),
                 strict,
                 consumer,
+                &mut selection,
             )?;
         }
-        consumer.start_object(item_at)?;
+        consumer.start_selected_object(selection, item_at)?;
         let mut seen = FxHashSet::default();
         parse_entry::<C, PREFLIGHT>(
             item,

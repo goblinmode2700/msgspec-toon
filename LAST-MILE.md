@@ -53,7 +53,7 @@ Do not modify canonical output to improve a selected payload.
 - [x] Compile tag values to native string or signed-integer metadata.
 - [x] Support issue-08 `object` and primitive scalar unions through existing direct paths.
 - [x] Run and discard the outside spike's learned-cache CP0 after it recovered less than half of the correctness tax.
-- [ ] Replace ordinary/root object pending-tag flags with container-local state.
+- [x] Replace ordinary/root object pending-tag flags with container-local state.
 - [ ] Continue phases 4-10 in `port-msgspec-control-patterns-to-rust/tasks.md`.
 - [ ] Qualify 0.3.0b1 only after the repeated nested-tag correctness cost is resolved or accepted.
 
@@ -1707,3 +1707,29 @@ already demonstrated binary-layout collateral. The inline split is not attempted
 architecture. Private raw A/B, model output, workload, and profiles are under `.git/research/e3-*`.
 Final `make check` passed 39 Rust tests and 368 Python tests with 10 expected skips. Strict
 OpenSpec validation passed.
+
+#### Checkpoint 48 — object preflight selection becomes container-local
+
+Pattern: container-local schema selection. The exact msgspec C decoder carries its current
+`TypeNode` through the recursive decode call, Serde carries caller state through a visitor or
+seed, and this codec's nested field-group path already returns selection directly to one object.
+The adopted verdict is to port that value flow into ordinary/root preflight, not to replace the
+`Consumer` trait or add another callback side channel.
+
+`object_scalar_hint` now updates parser-owned `ObjectSelection`. The parser passes that value to
+`start_selected_object` for the exact root, ordinary child, tabular row, keyed row, or list-item
+object. `TypedConsumer` no longer contains `pending_object_plan` or `pending_invalid_tag`.
+Selection, invalid-tag, skip, and nested-field results cannot outlive or cross the parser call
+that owns their container. The parser remains generic and PyO3-free.
+
+A seven-case locality matrix covers root, child, deeper child, siblings, optional, recursive, and
+adjacent list objects. Same-session four-round A/B against exact preceding source `f7a0d00` found
+ordinary decode neutral at 4-4096 rows and nested-tag decode neutral at every size. Root
+tagged-union decode was unresolved through 512 and 2.1% faster at 4096 with a 1.9% MDE. Raw runs
+are private under `.git/research/s37-*.json`.
+
+`make check` passed 39 Rust tests and 375 Python tests with 10 expected skips. Corpus conformance
+passed 538/538 with 84/84 strict errors. All nine G2 probes passed, the efficiency lock matched,
+and strict OpenSpec validation passed. No canonical byte, token, Python API, dependency, or unsafe
+boundary changed. Next: task 4.1, define the bounded `PlanId` and field-action hypothesis before
+changing representation.

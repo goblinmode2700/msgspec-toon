@@ -12,7 +12,7 @@ a concrete tag or selects a tagged-union member before the exact child frame ope
 plan travels directly into that frame. Native string and signed-64-bit tag metadata avoids Python
 object construction. Thirteen focused interaction tests now pass, including tag-first, tag-last,
 sibling, adjacent-row, deep, keyed-tabular, wrong-category, and payload-safety cases. The full
-suite passes 368 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
+suite passes 375 tests with 10 expected release-wheel skips; corpus 538/538 and strict errors 84/84;
 G2 passes nine probes; canonical byte and token locks match.
 
 The correctness repair initially cost 7-9% on repeated concrete tagged nested rows against
@@ -54,10 +54,14 @@ composition, non-strict priority, payload safety, support matrix, README, and al
 executable. Absolute ten-worker timings are in `benches/type-parity-latest.json`; `object` tracks
 the `Any` control. Mixed object/scalar and untagged container unions remain explicit plan errors.
 
-The next local-selection task is to remove `pending_object_plan` and `pending_invalid_tag` from
-ordinary/root object preflight without losing parser purity or static dispatch. The header-scoped
-cache proposal is now measured dead under its own threshold. Issue 09 remains an observation gate
-after encoder render consolidation.
+Task 3.7 now removes `pending_object_plan` and `pending_invalid_tag`. Parser preflight owns one
+selection value and passes it directly into the exact root, ordinary, tabular-row, keyed-row, or
+list-item object. A seven-way matrix covers root, child, deeper child, siblings, optional,
+recursive, and adjacent objects. Against exact preceding source `f7a0d00`, ordinary and nested-tag
+decode were neutral across 4-4096 rows. Root tagged-union decode was neutral through 512 and 2.1%
+faster at 4096 with a 1.9% MDE. The next checkpoint is phase 4.1: record the bounded hypothesis
+for private `PlanId` and explicit field actions before changing either representation. Issue 09
+remains an observation gate after encoder render consolidation.
 
 _Last updated after the verified `0.2.0b5` issue-07 release. Read
 **`OBJECTIVE.md`** first — it states what this project is

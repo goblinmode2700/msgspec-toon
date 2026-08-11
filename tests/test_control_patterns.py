@@ -42,6 +42,46 @@ class DeepRow(msgspec.Struct):
     box: Box
 
 
+class OptionalRow(msgspec.Struct):
+    pet: Cat | Dog | None
+
+
+class RecursiveTagged(msgspec.Struct, tag="node"):
+    value: int
+    child: RecursiveTagged | None = None
+
+
+@pytest.mark.parametrize(
+    ("document", "type_", "expected"),
+    [
+        ("type: cat\nx: 1", Cat | Dog, Cat(1)),
+        ("pet:\n  type: dog\n  x: 2", Box, Box(Dog(2))),
+        ("box:\n  pet:\n    type: cat\n    x: 3", DeepRow, DeepRow(Box(Cat(3)))),
+        (
+            "left:\n  type: cat\n  x: 1\nright:\n  type: dog\n  x: 2",
+            PairRow,
+            PairRow(Cat(1), Dog(2)),
+        ),
+        ("pet:\n  type: dog\n  x: 4", OptionalRow, OptionalRow(Dog(4))),
+        (
+            "type: node\nvalue: 1\nchild:\n  type: node\n  value: 2",
+            RecursiveTagged,
+            RecursiveTagged(1, RecursiveTagged(2)),
+        ),
+        (
+            "[2]:\n  - type: cat\n    x: 1\n  - type: dog\n    x: 2",
+            list[Cat | Dog],
+            [Cat(1), Dog(2)],
+        ),
+    ],
+    ids=("root", "child", "deep", "siblings", "optional", "recursive", "adjacent"),
+)
+def test_object_selection_is_local_to_exact_container(
+    document: str, type_: object, expected: object
+) -> None:
+    assert toon.decode(document, type=type_) == expected
+
+
 @pytest.mark.parametrize(
     ("toon_document", "json_document", "accepted"),
     [

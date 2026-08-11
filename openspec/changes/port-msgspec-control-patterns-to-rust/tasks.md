@@ -11,7 +11,7 @@
 - [x] 2.1 Add concrete tagged Struct cases for correct, wrong, missing, duplicate, and unknown tags.
 - [x] 2.2 Add tagged-union cases for each discriminator outcome and scalar category.
 - [x] 2.3 Cross ordinary objects, tabular rows, nested field groups, keyed tabular values, and positional Structs.
-- [ ] 2.4 Cross root, child, deeper-child, sibling, adjacent-row, optional, and recursive positions where valid.
+- [x] 2.4 Cross root, child, deeper-child, sibling, adjacent-row, optional, and recursive positions where valid.
 - [x] 2.5 Compare each applicable typed result with equivalent `msgspec.json` behavior.
 - [x] 2.6 Add value-to-text-to-typed-value probes for each encodable interaction.
 - [x] 2.7 Make the matrix fail on the current nested field-group tag defect.
@@ -25,7 +25,7 @@
 - [x] 3.4 Select a nested concrete tagged Struct before its constructor frame opens.
 - [x] 3.5 Select a nested tagged-union member before its constructor frame opens.
 - [x] 3.6 Keep tag-category matching equal to `msgspec==0.21.1`.
-- [ ] 3.7 Remove consumer-wide object-tag pending state after all object paths use local selection.
+- [x] 3.7 Remove consumer-wide object-tag pending state after all object paths use local selection.
 - [x] 3.8 Run the focused interaction suite and allocation probes.
 - [x] 3.9 Run focused same-session A/B for tagged, ordinary typed, array-like, and untyped controls.
 - [x] 3.10 Run all protected gates and record the checkpoint result.
