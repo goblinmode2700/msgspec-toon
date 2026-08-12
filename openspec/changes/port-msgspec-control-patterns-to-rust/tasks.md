@@ -41,7 +41,7 @@
 - [x] 4.2 Add a private `PlanId` with checked construction at the plan boundary.
 - [x] 4.3 Replace the tag sentinel with explicit field, tag, skip, and reject actions.
 - [x] 4.4 Move plan compilation, lookup, and selection to the typed state model.
-- [ ] 4.5 Move frames and recursive edges to `PlanId` in bounded checkpoints.
+- [x] 4.5 Move frames and recursive edges to `PlanId` in bounded checkpoints.
 - [ ] 4.6 Replace the root-plan fallback with plan validation or a static internal fault.
 - [ ] 4.7 Run union, recursive, fixed-tuple, row-memo, and malformed-plan tests after each checkpoint.
 - [ ] 4.8 Measure type sizes and focused typed decode after each layout change.

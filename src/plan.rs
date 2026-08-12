@@ -14,12 +14,12 @@ pub enum PlanKind {
     Int,
     Float,
     Str,
-    List(usize),
-    TupleVar(usize),
+    List(PlanId),
+    TupleVar(PlanId),
     /// `tuple[A, B, C]`: one plan per position, and the length is part of the
     /// type rather than a property of the document.
-    TupleFixed(Vec<usize>),
-    Dict(usize, usize),
+    TupleFixed(Vec<PlanId>),
+    Dict(PlanId, PlanId),
     Struct(Box<StructPlan>),
     Union(Box<UnionPlan>),
     Literal(Vec<Py<PyAny>>),
@@ -265,7 +265,7 @@ pub enum DefaultPlan {
 
 pub struct UnionPlan {
     pub nullable: bool,
-    pub members: Vec<usize>,
+    pub members: Vec<PlanId>,
 }
 
 impl CompiledPlan {
@@ -288,12 +288,8 @@ impl CompiledPlan {
         Ok(Self { nodes, root })
     }
 
-    fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<usize> {
-        let edge = spec.getattr(name)?.extract::<usize>()?;
-        if edge >= node_count {
-            return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-        }
-        Ok(edge)
+    fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<PlanId> {
+        PlanId::checked(spec.getattr(name)?.extract()?, node_count)
     }
 
     fn lower_node(
@@ -317,11 +313,7 @@ impl CompiledPlan {
             "tuple_fixed" => {
                 let mut plans = Vec::new();
                 for item in spec.getattr("items")?.try_iter()? {
-                    let edge = item?.extract::<usize>()?;
-                    if edge >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
-                    plans.push(edge);
+                    plans.push(PlanId::checked(item?.extract()?, node_count)?);
                 }
                 PlanKind::TupleFixed(plans)
             }
@@ -333,11 +325,8 @@ impl CompiledPlan {
                 let mut nullable = false;
                 let mut members = Vec::new();
                 for member in spec.getattr("items")?.try_iter()? {
-                    let edge = member?.extract::<usize>()?;
-                    if edge >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
-                    let member = graph_nodes.get_item(edge)?;
+                    let edge = PlanId::checked(member?.extract()?, node_count)?;
+                    let member = graph_nodes.get_item(edge.index())?;
                     if member.getattr("kind")?.extract::<&str>()? == "none" {
                         nullable = true;
                     } else {
@@ -439,38 +428,24 @@ impl CompiledPlan {
     }
 
     /// Unwrap `Optional[T]`-shaped unions to their single non-none member.
-    pub fn resolve_container(&self, mut index: usize) -> usize {
+    #[inline(always)]
+    pub fn resolve_container(&self, mut id: PlanId) -> PlanId {
         for _ in 0..=self.nodes.len() {
-            if let PlanKind::Union(union) = &self.nodes[index].kind
+            if let PlanKind::Union(union) = &self.node(id).kind
                 && union.members.len() == 1
             {
-                index = union.members[0];
+                id = union.members[0];
                 continue;
             }
-            return index;
+            return id;
         }
-        self.root.index()
+        self.root
     }
 
     #[inline(always)]
     pub(crate) fn node(&self, id: PlanId) -> &PlanNode {
         // `PlanId` is constructed only after the arena bound is known.
         unsafe { self.nodes.get_unchecked(id.index()) }
-    }
-
-    /// Transitional conversion for graph edges not moved until task 4.5.
-    #[inline(always)]
-    pub(crate) fn plan_id(&self, index: usize) -> PlanId {
-        debug_assert!(index < self.nodes.len());
-        PlanId(index)
-    }
-
-    /// Transitional raw-index lookup for container edges not moved until 4.5.
-    #[inline(always)]
-    pub fn node_index(&self, index: usize) -> &PlanNode {
-        // Every edge is range-checked once while the immutable arena is
-        // compiled. Runtime node IDs originate only from those checked edges.
-        unsafe { self.nodes.get_unchecked(index) }
     }
 
     pub fn requires_extended_consumer(&self) -> bool {

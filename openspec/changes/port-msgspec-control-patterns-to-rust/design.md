@@ -454,3 +454,23 @@ All protected layouts remain fixed: `PlanId` 8 bytes, `FieldPlan` 56, `TypedObje
 Against exact preceding source, typed decode measured -1.0% at 512 rows with a 1.9% MDE and +0.0%
 at 4096 with a 0.6% MDE. Nested-tag decode measured +0.6% at both sizes with MDEs of 4.2% and
 3.1%. No difference resolves, so this checkpoint claims typed state only and no speed change.
+
+### Task 4.5: typed container edges and frames
+
+All remaining plan-arena edges now store `PlanId`: list and tuple items, fixed tuple positions,
+dictionary key/value plans, union members, and Struct fields. Runtime sequence, dictionary, union,
+selection-memo, and expected-plan state carry the same type. The transitional raw-index arena
+lookup is removed.
+
+The first complete candidate preserved all semantics and layouts but failed its nested-tag
+performance control at 4096 rows: +0.75% with a 0.70% MDE, then +1.35% with a 1.11% MDE on the
+required confirmation. The candidate was preserved privately and revised before adoption.
+
+The revised candidate forces the now-typed `resolve_container` boundary inline. A double-power
+rerun of the failed cell measured +0.6% with a 1.1% MDE and did not reproduce the regression.
+Ordinary typed decode measured -3.2% at 512 rows with an 8.3% MDE and -1.7% at 4096 with a 2.3%
+MDE. No speed change is claimed.
+
+`PlanKind` remains 32 bytes, `UnionPlan` 32, `SequencePlan` 16, `Frame` 56, `RowMemo` 64,
+`TypedObjectSelection` 24, and the object-selection result 48. Forty Rust tests and the 108-test
+focused interaction set pass.
