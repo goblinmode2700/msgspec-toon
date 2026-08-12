@@ -428,14 +428,14 @@ pub fn encode_root(
             let items = struct_sequence(py, instance, plan)?;
             write_array(ctx, py, &mut writer, None, &items, 0, 0, false)?;
         }
-        Val::Dict(_) | Val::Struct(_, _) => {
-            if let Some(keyed) = keyed_shape(ctx, py, &value, 0)? {
+        Val::Dict(_) | Val::Struct(_, _) => match root_object_decision(ctx, py, &value, 0)? {
+            ObjectRenderDecision::Keyed(keyed) => {
                 write_keyed(ctx, py, &mut writer, None, &keyed, 0, false)?;
-            } else {
-                let pairs = object_pairs(ctx, py, &value)?;
+            }
+            ObjectRenderDecision::Entries(pairs) => {
                 write_entries(ctx, py, &mut writer, &pairs, 0)?;
             }
-        }
+        },
         Val::Seq(items) => write_array(ctx, py, &mut writer, None, items, 0, 0, false)?,
         _ => {
             write_scalar(ctx, py, &mut writer, &value)?;
@@ -699,6 +699,54 @@ fn write_list_item<'py>(
 struct KeyedShape<'py> {
     entries: Vec<(Bound<'py, PyString>, Bound<'py, PyAny>)>,
     shape: Shape,
+}
+
+/// One root-object decision. The fallback entry view survives a failed keyed
+/// classification, so validation and rendering consume the same dictionary
+/// walk instead of rebuilding it through `object_pairs`.
+enum ObjectRenderDecision<'value, 'py> {
+    Entries(Vec<(EntryText<'value, 'py>, Bound<'py, PyAny>)>),
+    Keyed(KeyedShape<'py>),
+}
+
+fn root_object_decision<'value, 'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    value: &'value Val<'py>,
+    depth: usize,
+) -> PyResult<ObjectRenderDecision<'value, 'py>> {
+    let Val::Dict(map) = value else {
+        return Ok(ObjectRenderDecision::Entries(object_pairs(ctx, py, value)?));
+    };
+
+    let mut entries = Vec::with_capacity(map.len());
+    let mut rows = (map.len() >= 2).then(|| Vec::with_capacity(map.len()));
+    for (key, item) in map.iter() {
+        let Ok(key_text) = key.cast_into::<PyString>() else {
+            return Err(encode_err(ctx, py, "object keys must be strings"));
+        };
+        if let Some(candidate_rows) = rows.as_mut() {
+            if item.is_instance_of::<PyDict>() || item.is_instance(ctx.struct_base.bind(py))? {
+                candidate_rows.push(item.clone());
+            } else {
+                rows = None;
+            }
+        }
+        entries.push((key_text, item));
+    }
+
+    if let Some(rows) = rows
+        && let Some(shape) = build_shape(ctx, py, &rows, depth)?
+    {
+        return Ok(ObjectRenderDecision::Keyed(KeyedShape { entries, shape }));
+    }
+
+    Ok(ObjectRenderDecision::Entries(
+        entries
+            .into_iter()
+            .map(|(key, item)| (EntryText::Object(key), item))
+            .collect(),
+    ))
 }
 
 fn keyed_shape<'py>(

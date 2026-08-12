@@ -568,3 +568,19 @@ collected entries into fallback rendering without a second dictionary walk or a 
 allocation. Root moves first; entry and list-item call sites move in later checkpoints. Adopt only
 if canonical bytes are exact, a late keyed-miss workload improves beyond its session floor, and
 keyed-success plus ordinary controls have no confirmed regression.
+
+### Tasks 7.3-7.6: root object render decision
+
+The root dictionary path now produces one closed render decision: fallback entries, or keyed
+entries plus the exact `Shape` witness that rendering consumes. It validates string keys and
+collects candidate rows during one dictionary walk. If a later value invalidates keyed form, the
+already collected entry view becomes the fallback; `object_pairs` does not walk the dictionary a
+second time. Struct roots retain their plan-owned field/tag view, so tags, renames, defaults,
+`array_like`, attribute access, and optional offset access remain controlled only by `EncodePlan`.
+
+The adversarial 512-entry workload makes 511 values look keyed-compatible and invalidates the
+candidate with the last value. Against exact preceding source it improved 4.48% with a 1.11% MDE.
+Keyed success measured +1.92% with a 3.40% MDE and did not resolve; the irregular root control
+measured -0.02% with a 1.11% MDE. The official corpus remains 538/538 with all 84 strict errors,
+and the byte/token efficiency lock is exact. The root checkpoint is adopted; entry and list-item
+paths remain unchanged for their separate rulings.

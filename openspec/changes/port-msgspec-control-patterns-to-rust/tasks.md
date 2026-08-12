@@ -73,10 +73,10 @@
 
 - [x] 7.1 Profile duplicate container classification across root, entry, list-item, keyed, and tabular paths.
 - [x] 7.2 Record one falsifiable render-decision hypothesis for the largest resolved path.
-- [ ] 7.3 Define one render decision that carries the selected view and shape witness.
-- [ ] 7.4 Make classification and validation use the same witness that rendering consumes.
-- [ ] 7.5 Keep the encode plan authoritative for tags, renames, defaults, `array_like`, and access mode.
-- [ ] 7.6 Move only the profiled render path in the first checkpoint.
+- [x] 7.3 Define one render decision that carries the selected view and shape witness.
+- [x] 7.4 Make classification and validation use the same witness that rendering consumes.
+- [x] 7.5 Keep the encode plan authoritative for tags, renames, defaults, `array_like`, and access mode.
+- [x] 7.6 Move only the profiled render path in the first checkpoint.
 - [ ] 7.7 Move each remaining resolved path in a separate checkpoint.
 - [ ] 7.8 Run canonical corpus bytes, byte locks, and token locks after each checkpoint.
 - [ ] 7.9 Run focused A/B for uniform, nested, keyed, irregular, tagged, and array-like shapes.
