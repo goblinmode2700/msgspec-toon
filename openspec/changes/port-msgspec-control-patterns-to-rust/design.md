@@ -418,3 +418,24 @@ plan-error tests pass.
 The same-session exact-source A/B used ten worker blocks per side with the repository estimator.
 Typed decode measured +1.6% at 512 rows with a 2.1% MDE and +0.1% at 4096 rows with a 0.9% MDE;
 neither difference resolves. The checkpoint is adopted as a zero-layout typed-state boundary.
+
+### Task 4.3: explicit field actions
+
+`StructPlan` now returns one closed action for every wire key: declared field, discriminator tag,
+allowed skip, or forbidden reject. The tag policy no longer stores or compares `usize::MAX`.
+Row memos cache the same action that normal lookup returns, so trusted and byte-checked replay use
+one decision model.
+
+The first direct payload-enum representation was rejected. It was 16 bytes, twice the old map
+value width. Ordinary typed decode at 512 rows reproduced a +1.72% slowdown with a 0.89% MDE;
+nested-tag decode reproduced +0.69% with a 0.51% MDE. No code from that representation remains.
+
+The adopted revision stores an explicit one-byte kind and a plan-checked `u32` field index in an
+8-byte `FieldAction`. An out-of-range field count fails plan compilation. `StructPlan` remains 128
+bytes, `RowMemo` 64, `Frame` 56, `PlanNode` 40, and the object-selection result 48. Thirty-nine
+Rust tests and 108 focused Python tests pass.
+
+Against exact preceding source, ordinary typed first-pass signals at 512 and 4096 rows did not
+survive the required double-power confirmations. The nested-tag run had 16.2% observed canary
+spread and resolved neither +2.3% at 512 nor -0.7% at 4096. The checkpoint therefore claims state
+clarity and sentinel removal only; it claims no speed change.

@@ -13,7 +13,10 @@ use crate::error::{Fault, FaultCode, Position};
 use crate::event::{Consumer, ObjectProbe, ObjectSelectionResult, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
 use crate::parser::classify_value;
-use crate::plan::{CompiledPlan, Constraints, DefaultPlan, PlanKind, StructPlan, TagValue};
+use crate::plan::{
+    CompiledPlan, Constraints, DefaultPlan, FieldAction, FieldActionKind, PlanKind, StructPlan,
+    TagValue,
+};
 use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_token_to_py};
 use crate::scalar::unescape;
 use crate::untyped::UntypedConsumer;
@@ -229,7 +232,7 @@ fn exact_integer_text(text: &[u8]) -> Option<Vec<u8>> {
 /// disables the memo for that array and falls back to hashing.
 #[derive(Default)]
 struct RowMemo {
-    entries: Vec<(Vec<u8>, Option<usize>)>,
+    entries: Vec<(Vec<u8>, FieldAction)>,
     cursor: usize,
     complete: bool,
     disabled: bool,
@@ -718,11 +721,11 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         Ok(true)
     }
 
-    fn lookup_struct_field(
+    fn lookup_field_action(
         plan: &StructPlan,
         mut memo: Option<&mut RowMemo>,
         key: StringToken<'_>,
-    ) -> Option<usize> {
+    ) -> FieldAction {
         // D1 memo: replay the first row's resolution positionally. A trusted
         // tabular memo resolves without reading the repeated key bytes.
         if let Some(memo) = memo.as_deref_mut()
@@ -756,15 +759,15 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             }
         }
 
-        let index = plan.by_wire.get(raw.as_ref()).copied();
+        let action = plan.field_action(raw.as_ref());
         if let Some(memo) = memo
             && !memo.disabled
             && !memo.complete
         {
-            memo.entries.push((raw.into_owned(), index));
+            memo.entries.push((raw.into_owned(), action));
             memo.cursor += 1;
         }
-        index
+        action
     }
 
     fn start_object_for_plan(&mut self, declared: usize, at: Position) -> Result<(), Fault> {
@@ -1152,23 +1155,24 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 awaiting,
                 skip_value,
             }) => {
-                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
-                match looked_up {
-                    Some(index) if EXTENDED && index == usize::MAX => {
+                let action = Self::lookup_field_action(plan, self.row_memos.last_mut(), key);
+                match action.kind() {
+                    FieldActionKind::Tag => {
                         *skip_value = true;
                         None
                     }
-                    Some(index) => {
+                    FieldActionKind::Field => {
+                        let index = action.field_index();
                         if values[index].is_some() && strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
                         }
                         *awaiting = Some(index);
                         Some(plan.fields[index].value)
                     }
-                    None if plan.forbid_unknown => {
+                    FieldActionKind::Reject => {
                         return Err(Fault::validation_at(FaultCode::UnknownField, at));
                     }
-                    None => {
+                    FieldActionKind::Skip => {
                         *skip_value = true;
                         None
                     }
@@ -1241,21 +1245,22 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let memo_slot = self.row_memos.last().map(|memo| memo.cursor);
         let (index, declared) = match self.stack.last_mut() {
             Some(Frame::Struct { plan, values, .. }) => {
-                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
-                match looked_up {
-                    Some(index) if EXTENDED && index == usize::MAX => {
+                let action = Self::lookup_field_action(plan, self.row_memos.last_mut(), key);
+                match action.kind() {
+                    FieldActionKind::Tag => {
                         return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
                     }
-                    Some(index) => {
+                    FieldActionKind::Field => {
+                        let index = action.field_index();
                         if values[index].is_some() && strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
                         }
                         (index, plan.fields[index].value)
                     }
-                    None if plan.forbid_unknown => {
+                    FieldActionKind::Reject => {
                         return Err(Fault::validation_at(FaultCode::UnknownField, at));
                     }
-                    None => {
+                    FieldActionKind::Skip => {
                         return Ok(ObjectSelectionResult::validate_only(
                             TypedObjectSelection::Skip,
                         ));
@@ -1448,25 +1453,22 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 awaiting,
                 skip_value,
             }) => {
-                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
-                match looked_up {
-                    Some(index) if EXTENDED && index == usize::MAX => {
+                let action = Self::lookup_field_action(plan, self.row_memos.last_mut(), key);
+                match action.kind() {
+                    FieldActionKind::Tag | FieldActionKind::Skip => {
                         *skip_value = true;
                         Ok(())
                     }
-                    Some(index) => {
+                    FieldActionKind::Field => {
+                        let index = action.field_index();
                         if values[index].is_some() && self.strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
                         }
                         *awaiting = Some(index);
                         Ok(())
                     }
-                    None if plan.forbid_unknown => {
+                    FieldActionKind::Reject => {
                         Err(Fault::validation_at(FaultCode::UnknownField, at))
-                    }
-                    None => {
-                        *skip_value = true;
-                        Ok(())
                     }
                 }
             }
@@ -1501,19 +1503,19 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let strict = self.strict;
         let target = match self.stack.last_mut() {
             Some(Frame::Struct { plan, values, .. }) => {
-                let looked_up = Self::lookup_struct_field(plan, self.row_memos.last_mut(), key);
-                match looked_up {
-                    Some(index) if EXTENDED && index == usize::MAX => None,
-                    Some(index) => {
+                let action = Self::lookup_field_action(plan, self.row_memos.last_mut(), key);
+                match action.kind() {
+                    FieldActionKind::Tag | FieldActionKind::Skip => None,
+                    FieldActionKind::Field => {
+                        let index = action.field_index();
                         if values[index].is_some() && strict {
                             return Err(Fault::validation_at(FaultCode::DuplicateKey, at));
                         }
                         Some((index, plan.fields[index].value))
                     }
-                    None if plan.forbid_unknown => {
+                    FieldActionKind::Reject => {
                         return Err(Fault::validation_at(FaultCode::UnknownField, at));
                     }
-                    None => None,
                 }
             }
             _ => {

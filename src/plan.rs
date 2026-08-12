@@ -166,7 +166,7 @@ impl Constraints {
 pub struct StructPlan {
     pub class: Py<PyAny>,
     pub fields: Vec<FieldPlan>,
-    pub by_wire: FxHashMap<Vec<u8>, usize>,
+    pub by_wire: FxHashMap<Vec<u8>, FieldAction>,
     pub forbid_unknown: bool,
     pub array_like: bool,
     pub tag_field: Option<Vec<u8>>,
@@ -175,6 +175,74 @@ pub struct StructPlan {
     /// field names in constructor order, ready to hand to a vectorcall. The
     /// ordinary case keeps `None` and the positional fast path.
     pub keyword_names: Option<Py<pyo3::types::PyTuple>>,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldActionKind {
+    Field,
+    Tag,
+    Skip,
+    Reject,
+}
+
+/// A compact closed action for one Struct wire key.
+///
+/// The field index is checked once while the plan is compiled. Keeping the
+/// kind separate makes the four states explicit without doubling every hash
+/// map and row-memo value to a two-word payload enum.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FieldAction {
+    field_index: u32,
+    kind: FieldActionKind,
+}
+
+impl FieldAction {
+    const TAG: Self = Self::new(FieldActionKind::Tag);
+    const SKIP: Self = Self::new(FieldActionKind::Skip);
+    const REJECT: Self = Self::new(FieldActionKind::Reject);
+
+    const fn new(kind: FieldActionKind) -> Self {
+        Self {
+            field_index: 0,
+            kind,
+        }
+    }
+
+    fn field(index: usize) -> PyResult<Self> {
+        let field_index = u32::try_from(index)
+            .map_err(|_| PyValueError::new_err("Struct plan has too many fields"))?;
+        Ok(Self {
+            field_index,
+            kind: FieldActionKind::Field,
+        })
+    }
+
+    #[inline]
+    pub fn kind(self) -> FieldActionKind {
+        self.kind
+    }
+
+    #[inline]
+    pub fn field_index(self) -> usize {
+        debug_assert_eq!(self.kind, FieldActionKind::Field);
+        self.field_index as usize
+    }
+}
+
+impl StructPlan {
+    #[inline]
+    pub fn field_action(&self, wire_name: &[u8]) -> FieldAction {
+        self.by_wire
+            .get(wire_name)
+            .copied()
+            .unwrap_or(if self.forbid_unknown {
+                FieldAction::REJECT
+            } else {
+                FieldAction::SKIP
+            })
+    }
 }
 
 pub enum TagValue {
@@ -319,7 +387,7 @@ impl CompiledPlan {
                     } else {
                         DefaultPlan::Value(default_value.unbind())
                     };
-                    by_wire.insert(wire_name.clone(), fields.len());
+                    by_wire.insert(wire_name.clone(), FieldAction::field(fields.len())?);
                     fields.push(FieldPlan {
                         python_name,
                         wire_name,
@@ -342,7 +410,7 @@ impl CompiledPlan {
                     Some(TagValue::Integer(tag_value_obj.extract::<i64>()?))
                 };
                 if let Some(tag_field) = &tag_field {
-                    by_wire.insert(tag_field.clone(), usize::MAX);
+                    by_wire.insert(tag_field.clone(), FieldAction::TAG);
                 }
                 let keyword_names = if spec.getattr("keyword_only")?.extract::<bool>()? {
                     let names = fields
@@ -414,6 +482,19 @@ mod tests {
         assert_eq!(PlanId::checked(2, 3).unwrap().index(), 2);
         Python::attach(|py| {
             let err = PlanId::checked(3, 3).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
+    }
+
+    #[test]
+    fn field_action_is_compact_and_checks_its_index() {
+        Python::initialize();
+        assert_eq!(std::mem::size_of::<FieldAction>(), 8);
+        let action = FieldAction::field(7).unwrap();
+        assert_eq!(action.kind(), FieldActionKind::Field);
+        assert_eq!(action.field_index(), 7);
+        Python::attach(|py| {
+            let err = FieldAction::field(u32::MAX as usize + 1).unwrap_err();
             assert!(err.is_instance_of::<PyValueError>(py));
         });
     }

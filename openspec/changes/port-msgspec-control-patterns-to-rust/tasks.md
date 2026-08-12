@@ -39,7 +39,7 @@
 
 - [x] 4.1 Record the hypothesis for distinct plan IDs and field actions.
 - [x] 4.2 Add a private `PlanId` with checked construction at the plan boundary.
-- [ ] 4.3 Replace the tag sentinel with explicit field, tag, skip, and reject actions.
+- [x] 4.3 Replace the tag sentinel with explicit field, tag, skip, and reject actions.
 - [ ] 4.4 Move plan compilation, lookup, and selection to the typed state model.
 - [ ] 4.5 Move frames and recursive edges to `PlanId` in bounded checkpoints.
 - [ ] 4.6 Replace the root-plan fallback with plan validation or a static internal fault.
