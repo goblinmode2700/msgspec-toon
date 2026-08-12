@@ -3,7 +3,7 @@
 - [x] 1.1 Record the current source revision, `v0.2.0b5` guard, toolchain, and clean-build identity.
 - [x] 1.2 Add the confirmed nested field-group tag reproductions to the issue record.
 - [x] 1.3 Add focused benchmark cases before any source change.
-- [ ] 1.4 Record frame sizes, plan-node sizes, allocations, and symbolized profiles for affected paths.
+- [x] 1.4 Record frame sizes, plan-node sizes, allocations, and symbolized profiles for affected paths.
 - [x] 1.5 Run `make check`, the corpus, G2, G3, G5, byte locks, and token locks.
 
 ## 2. Build the Interaction Matrix

@@ -341,3 +341,47 @@ objects. Against exact preceding source `f7a0d00`, ordinary and nested-tag decod
 4096 with a 1.9% MDE. This is adopted for state ownership and correctness locality; the resolved
 large-row improvement is supporting evidence, not permission to combine phase 4 representation
 changes into this checkpoint.
+
+### Task 1.4: phase-4 layout, allocation, and profile baseline
+
+The baseline source is commit `778e3c2`. The toolchain is Rust/Cargo 1.93.1, uv 0.12.2,
+CPython 3.13.1, PyO3 0.29.0 with `abi3-py313`, and exact `msgspec==0.21.1` on Apple arm64.
+Compiler layout data came from a diagnostic `-Zprint-type-sizes` test build. It did not change
+production source.
+
+| Type | Size | Alignment |
+|---|---:|---:|
+| `TypedConsumer<false>` / `TypedConsumer<true>` | 360 bytes | 8 |
+| `Frame` / `Option<Frame>` | 56 bytes | 8 |
+| `RowMemo` / `Option<RowMemo>` | 64 bytes | 8 |
+| `SequencePlan` | 16 bytes | 8 |
+| `TypedObjectSelection` | 24 bytes | 8 |
+| `ObjectSelectionResult<TypedObjectSelection>` | 48 bytes | 8 |
+| `ObjectProbe` | 32 bytes | 8 |
+| `CompiledPlan` | 32 bytes | 8 |
+| `PlanNode` | 40 bytes | 8 |
+| `PlanKind` | 32 bytes | 8 |
+| `StructPlan` | 128 bytes | 8 |
+| `FieldPlan` | 56 bytes | 8 |
+| `DefaultPlan` | 16 bytes | 8 |
+| `UnionPlan` | 32 bytes | 8 |
+
+The current `make g2` instrumented build passes all nine allocation tests. The 64-record typed
+probe constructs zero builtin dictionaries and zero builtin lists, one final list, and 129 final
+Structs. The wrapper control constructs 129 builtin dictionaries and one builtin list. Tagged,
+tagged-array, recursive, and nested-field-group cases also construct only the final values their
+declared target requires.
+
+Two retained symbolized profiles cover the affected control paths. The CP-S nested-tag profile
+shows `select_object_field` falling from 41/835 to 23/837 samples after the adopted selection memo;
+the residual includes required discriminator validation. The exact B1 validating-sink profile
+collects 834 main-thread samples during 26,082 decodes: `classify_bare` falls from 106 to 7 and
+`emit_row_fields` from 121 to 67, while mandatory `split_cells_into` becomes the largest visible
+residual at 365 samples. The B1 profile artifact SHA-256 is
+`ae9555113774b06d6a701856d73252cd3f4b296f7f41492b5e02e1e330024bcc`; the CP-S profile
+artifact SHA-256 is `98c4728e6b37f670903fb89b85ffc65f09f57046ec3a90bb9881662c830b4ba6`.
+
+These are attribution counts, not timing estimates. They establish the sizes and costs that each
+phase-4 checkpoint must compare against. In particular, `PlanId` is allowed no frame growth, and
+an explicit field action must not make the 48-byte object-selection result larger without a
+separately resolved mechanism.
