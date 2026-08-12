@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict};
 
 use crate::containers::{count_struct_instance, new_final_dict, new_final_list, new_final_tuple};
-use crate::error::{Fault, FaultCode, Position};
+use crate::error::{Fault, FaultCode, PathPart, Position};
 use crate::event::{Consumer, ObjectProbe, ObjectSelectionResult, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
 use crate::parser::classify_value;
@@ -335,6 +335,44 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
 
     pub fn take_result(&mut self) -> Option<Bound<'py, PyAny>> {
         self.result.take()
+    }
+
+    /// Add a schema-only path after typed parsing has failed. This is cold:
+    /// successful decode never walks frames or allocates path components.
+    pub fn annotate_fault(&self, mut fault: Fault) -> Fault {
+        if !fault.validation {
+            return fault;
+        }
+        let mut prefix = Vec::new();
+        for frame in &self.stack {
+            match frame {
+                Frame::Struct {
+                    plan,
+                    awaiting: Some(index),
+                    ..
+                } => prefix.push(PathPart::Field(plan.fields[*index].wire_name.clone())),
+                Frame::ArrayStruct {
+                    plan,
+                    next,
+                    tag_pending: false,
+                    ..
+                } => {
+                    if let Some(field) = plan.fields.get(*next) {
+                        prefix.push(PathPart::Field(field.wire_name.clone()));
+                    }
+                }
+                Frame::List { items, .. } => prefix.push(PathPart::Index(items.len())),
+                Frame::Dict { pending, .. } if pending.is_some() => {
+                    prefix.push(PathPart::MapValue);
+                }
+                Frame::Struct { .. }
+                | Frame::ArrayStruct { .. }
+                | Frame::ArrayStructUnion { .. }
+                | Frame::Dict { .. } => {}
+            }
+        }
+        fault.prepend_path(prefix);
+        fault
     }
 
     fn internal(&mut self, err: PyErr, at: Position) -> Fault {
@@ -874,7 +912,9 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 Some(value) => value,
                 None => match &field.default {
                     DefaultPlan::Required => {
-                        return Err(Fault::validation_at(FaultCode::MissingField, at));
+                        let mut fault = Fault::validation_at(FaultCode::MissingField, at);
+                        fault.push_field(&field.wire_name);
+                        return Err(fault);
                     }
                     DefaultPlan::Value(default) => default.bind(py).clone(),
                     DefaultPlan::Factory(factory) => {
@@ -1534,7 +1574,15 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let Some((index, value_plan)) = target else {
             return Ok(());
         };
-        let value = self.convert_scalar(value_plan, token, at)?;
+        let value = match self.convert_scalar(value_plan, token, at) {
+            Ok(value) => value,
+            Err(mut fault) => {
+                if let Some(Frame::Struct { plan, .. }) = self.stack.last() {
+                    fault.push_field(&plan.fields[index].wire_name);
+                }
+                return Err(fault);
+            }
+        };
         match self.stack.last_mut() {
             Some(Frame::Struct { values, .. }) => {
                 values[index] = Some(value);

@@ -97,13 +97,13 @@
 ## 9. Add Schema-Known Runtime Paths
 
 - [x] 9.1 Record frame-size and error-path baselines before path state changes.
-- [ ] 9.2 Define compact schema field and structural index path parts.
-- [ ] 9.3 Derive typed paths from compiled plans and structural positions only.
-- [ ] 9.4 Expose the path through public decode and validation errors.
-- [ ] 9.5 Add nested Struct, list, tuple, union, recursive, and field-group path tests.
-- [ ] 9.6 Prove that sentinel payload keys and values cannot enter any path or error attribute.
-- [ ] 9.7 Keep path work off untyped decode and successful error-free formatting paths.
-- [ ] 9.8 Run frame-size checks and focused same-session typed and untyped A/B.
+- [x] 9.2 Define compact schema field and structural index path parts.
+- [x] 9.3 Derive typed paths from compiled plans and structural positions only.
+- [x] 9.4 Expose the path through public decode and validation errors.
+- [x] 9.5 Add nested Struct, list, tuple, union, recursive, and field-group path tests.
+- [x] 9.6 Prove that sentinel payload keys and values cannot enter any path or error attribute.
+- [x] 9.7 Keep path work off untyped decode and successful error-free formatting paths.
+- [x] 9.8 Run frame-size checks and focused same-session typed and untyped A/B.
 
 ## 10. Evaluate Mutable-Buffer Borrowing
 

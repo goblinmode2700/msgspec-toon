@@ -160,6 +160,35 @@ The falsifiers are any growth in `Frame` or `TypedConsumer`, any path constructi
 decode, any change to untyped decode, any payload sentinel in an exception attribute, or a
 confirmed typed/untyped regression under the repository's same-session ten-worker estimator.
 
+### Tasks 9.2-9.8: adopted cold-path schema locations
+
+`PathPart` is a closed native enum: a plan-owned field byte string, a structural sequence index,
+or the static mapping-value marker. A typed fault walks the still-live frame stack only after the
+parser returns an error. Fused scalar fields and missing required fields add their compiled field
+name at the fault site because neither has an active child frame. The public exception exposes an
+immutable tuple such as `("workers", "[0]", "metadata", "region")`; its message renders the same
+safe location as `$.workers[0].metadata.region`. Untyped and syntax errors expose an empty tuple.
+
+The interaction tests cover ordinary nested Structs, tabular field groups, lists, fixed tuples,
+tagged unions, recursion, missing fields, unknown payload keys, and sentinel scalar values. They
+inspect both the translated public exception and the native fault attributes. The sentinel cannot
+enter the message, representation, arguments, slots, native attributes, or path. G2 still builds
+zero intermediate builtin containers in all ten allocation probes. The corpus remains 538/538 and
+all 84 strict-error fixtures raise.
+
+The post-change compiler layout is `Frame` 56 bytes and both typed consumers 360 bytes, unchanged.
+`PathPart` is 24 bytes. The first candidate placed an inline eight-part `SmallVec` in every
+`Fault`, making the error variant 224 bytes and failing Clippy's large-result gate across the
+parser API. It was rejected before commit. The adopted `Vec` keeps an empty fault allocation-free
+and 40 bytes, then allocates only after a typed failure. `Frame` remains 56 bytes and both typed
+consumers remain 360 bytes.
+
+The final same-session exact-source A/B against `c03f042` used three B-C-C-B rounds and
+ten-worker block means. Typed decode measured -0.7% (MDE 0.7%, unresolved) at 512 rows and -1.0%
+(MDE 0.6%, faster) at 4096. Untyped decode measured -0.7% (MDE 1.8%, unresolved) and -0.4%
+(MDE 1.5%, unresolved), respectively. The checkpoint claims no speedup because path construction
+has no successful-path mechanism; it claims the preregistered absence of a protected regression.
+
 ### 9. Treat mutable-buffer borrowing as a safety-gated candidate
 
 Bytes and strings already provide borrowed source slices. Bytearray and memoryview inputs copy to

@@ -75,6 +75,7 @@ fn fault_to_pyerr(py: Python<'_>, fault: &Fault) -> PyErr {
     let _ = value.setattr("line", fault.line);
     let _ = value.setattr("column", fault.column);
     let _ = value.setattr("validation", fault.validation);
+    let _ = value.setattr("path", fault.safe_path());
     err
 }
 
@@ -98,6 +99,7 @@ fn decode_typed<const EXTENDED: bool>(
         if let Some(err) = consumer.pending_err.take() {
             return Err(err);
         }
+        let fault = consumer.annotate_fault(fault);
         return Err(fault_to_pyerr(py, &fault));
     }
     consumer
