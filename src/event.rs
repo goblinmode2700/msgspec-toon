@@ -99,11 +99,22 @@ impl<'input> Iterator for ObjectScalarCells<'_, 'input> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ObjectFieldDisposition {
+    /// Emit the selected field group's ordinary recursive event sequence.
+    Emit,
+    /// Validate the selected field group's cells without constructing a value
+    /// or emitting descendant semantic actions.
+    ValidateOnly,
+}
+
 pub struct ObjectSelectionResult<T> {
     pub selection: T,
     /// An immediate scalar field already consumed as structural metadata.
     /// The parser advances over its cell but does not emit it as a value.
     pub skip_field: Option<usize>,
+    /// Container-local handling selected for this exact field group.
+    pub disposition: ObjectFieldDisposition,
 }
 
 impl<T> ObjectSelectionResult<T> {
@@ -111,6 +122,15 @@ impl<T> ObjectSelectionResult<T> {
         Self {
             selection,
             skip_field: None,
+            disposition: ObjectFieldDisposition::Emit,
+        }
+    }
+
+    pub fn validate_only(selection: T) -> Self {
+        Self {
+            selection,
+            skip_field: None,
+            disposition: ObjectFieldDisposition::ValidateOnly,
         }
     }
 }

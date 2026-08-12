@@ -14,7 +14,9 @@
 use rustc_hash::FxHashSet;
 
 use crate::error::{Fault, FaultCode, Position};
-use crate::event::{Consumer, FieldNode, ObjectProbe, ScalarToken, StringToken};
+use crate::event::{
+    Consumer, FieldNode, ObjectFieldDisposition, ObjectProbe, ScalarToken, StringToken,
+};
 use crate::header::{Header, HeaderOutcome, parse_header, parse_string_token};
 use crate::scalar::{
     LineMarks, classify_bare, find_unquoted, resolved_colon, scan_line_marks, scan_quoted,
@@ -600,6 +602,11 @@ fn emit_row_fields<C: Consumer>(
             let end = *cursor + leaf_count;
             let probe = ObjectProbe::new(&node.children, &cells[*cursor..end]);
             let selected = consumer.select_object_field(node.name, probe, at)?;
+            if selected.disposition == ObjectFieldDisposition::ValidateOnly {
+                validate_ignored_cells(&cells[*cursor..end], at)?;
+                *cursor = end;
+                continue;
+            }
             consumer.start_selected_object_field(node.name, selected.selection, at)?;
             emit_row_fields(
                 &node.children,
@@ -610,6 +617,20 @@ fn emit_row_fields<C: Consumer>(
                 consumer,
             )?;
             consumer.end_object_field(at)?;
+        }
+    }
+    Ok(())
+}
+
+/// Validate ignored, already-split cells without classifying bare values or
+/// emitting semantic actions. `classify_value` remains the single quoted
+/// grammar: it checks closure, escapes, Unicode surrogate rules, and trailing
+/// content. Every non-quoted byte sequence is already a valid bare string;
+/// classifying it as a number/bool/null is unnecessary when no value is built.
+fn validate_ignored_cells(cells: &[&[u8]], at: Position) -> Result<(), Fault> {
+    for cell in cells {
+        if cell.first() == Some(&b'"') {
+            let _ = classify_value(cell, at)?;
         }
     }
     Ok(())
@@ -826,6 +847,52 @@ mod tests {
             };
             self.events.push(Ev::Scalar(text));
             Ok(())
+        }
+    }
+
+    #[derive(Default)]
+    struct ValidateOnlyRecorder {
+        inner: Recorder,
+    }
+
+    impl Consumer for ValidateOnlyRecorder {
+        type ObjectSelection = ();
+
+        fn start_object(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.start_object(at)
+        }
+
+        fn select_object_field(
+            &mut self,
+            key: StringToken<'_>,
+            _probe: ObjectProbe<'_, '_>,
+            _at: Position,
+        ) -> Result<crate::event::ObjectSelectionResult<Self::ObjectSelection>, Fault> {
+            if token_owned_bytes(&key) == b"extra" {
+                Ok(crate::event::ObjectSelectionResult::validate_only(()))
+            } else {
+                Ok(crate::event::ObjectSelectionResult::new(()))
+            }
+        }
+
+        fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
+            self.inner.key(key, at)
+        }
+
+        fn end_object(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.end_object(at)
+        }
+
+        fn start_array(&mut self, declared_len: usize, at: Position) -> Result<(), Fault> {
+            self.inner.start_array(declared_len, at)
+        }
+
+        fn end_array(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.end_array(at)
+        }
+
+        fn scalar(&mut self, token: ScalarToken<'_>, at: Position) -> Result<(), Fault> {
+            self.inner.scalar(token, at)
         }
     }
 
@@ -1049,6 +1116,35 @@ mod tests {
         let fault = run_err(b"rows[1]{pid}:\n  \"oops");
         assert_eq!(fault.code, FaultCode::UnclosedQuote);
         assert_eq!(fault.line, 2);
+    }
+
+    #[test]
+    fn validate_only_field_group_erases_descendant_events_but_keeps_quoted_grammar() {
+        let mut recorder = ValidateOnlyRecorder::default();
+        parse(
+            b"[1]{id,extra{a,inner{b,c}}}:\n  1,bare,2,\"ok\"",
+            true,
+            2,
+            &mut recorder,
+        )
+        .unwrap();
+        assert_eq!(
+            recorder.inner.events,
+            vec![
+                Ev::Sa(1),
+                Ev::So,
+                Ev::Key(b"id".to_vec()),
+                Ev::Scalar("i:1".into()),
+                Ev::Eo,
+                Ev::Ea,
+            ]
+        );
+
+        let mut recorder = ValidateOnlyRecorder::default();
+        let fault = parse(b"[1]{id,extra{a}}:\n  1,\"\\q\"", true, 2, &mut recorder).unwrap_err();
+        assert_eq!(fault.code, FaultCode::InvalidEscape);
+        assert_eq!(fault.line, 2);
+        assert_eq!(fault.column, Some(4));
     }
 
     #[test]

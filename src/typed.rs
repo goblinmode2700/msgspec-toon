@@ -1233,6 +1233,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     selected_plan,
                 },
                 skip_field: memoized.skip_field,
+                disposition: crate::event::ObjectFieldDisposition::Emit,
             });
         }
 
@@ -1254,7 +1255,11 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     None if plan.forbid_unknown => {
                         return Err(Fault::validation_at(FaultCode::UnknownField, at));
                     }
-                    None => return Ok(ObjectSelectionResult::new(TypedObjectSelection::Skip)),
+                    None => {
+                        return Ok(ObjectSelectionResult::validate_only(
+                            TypedObjectSelection::Skip,
+                        ));
+                    }
                 }
             }
             _ => {
@@ -1361,6 +1366,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 selected_plan,
             },
             skip_field,
+            disposition: crate::event::ObjectFieldDisposition::Emit,
         })
     }
 
