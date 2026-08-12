@@ -385,3 +385,21 @@ These are attribution counts, not timing estimates. They establish the sizes and
 phase-4 checkpoint must compare against. In particular, `PlanId` is allowed no frame growth, and
 an explicit field action must not make the 48-byte object-selection result larger without a
 separately resolved mechanism.
+
+### Task 4.1: typed-state hypothesis and falsifiers
+
+Raw `usize` currently means both a plan-arena identity and a Struct field position. The tag field
+uses `usize::MAX` as a third meaning. The hypothesis is that a private, transparent `PlanId` and a
+closed field action remove invalid combinations at compile time without adding runtime work. Plan
+validation remains at compilation; successful decode continues to use the validated arena.
+
+The migration is deliberately split. Task 4.2 types only the checked root boundary. Task 4.3
+replaces the tag sentinel with explicit field, discriminator, skip, and reject actions. Tasks 4.4
+and 4.5 then move selection, frames, and recursive edges in bounded checkpoints. No checkpoint may
+combine those changes merely to produce a cleaner final diff.
+
+The representation gate is prospective: `PlanId` must remain one machine word, and the first
+checkpoint must keep `CompiledPlan` at 32 bytes, `PlanNode` at 40 bytes, `Frame` at 56 bytes, and
+`ObjectSelectionResult<TypedObjectSelection>` at 48 bytes. Each checkpoint must pass malformed-plan,
+union, recursive, fixed-tuple, row-memo, and interaction tests. A layout change that enlarges a hot
+type or a confirmed focused decode regression is revised or reverted before the next task.
