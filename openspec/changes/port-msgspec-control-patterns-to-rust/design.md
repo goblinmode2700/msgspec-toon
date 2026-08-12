@@ -141,6 +141,25 @@ faults will store compact path state only when typed decode needs it.
 The public error veneer will expose the path without payload keys or values. The design will keep
 path work off untyped decode. A frame-size check and focused typed A/B will protect the common path.
 
+### Task 9.1: runtime-path baseline and candidate boundary
+
+The exact pre-change source is `c03f042`. Its diagnostic layout remains `Frame` 56 bytes and
+`TypedConsumer<false>` / `TypedConsumer<true>` 360 bytes, both aligned to 8 bytes. A runtime
+`Fault` carries only code, line, optional column, and the validation bit. Public decode and
+validation exceptions expose no `path`; a nested type mismatch therefore has coordinates but no
+schema location.
+
+The candidate will not add path state to `Frame` or `TypedConsumer`. On a typed validation failure
+only, the still-live consumer stack will derive a prefix from compiled Struct field names and
+structural sequence positions. A field-specific failure whose fused event has no live `awaiting`
+slot will append its compiled field name at the fault site. Native `PathPart` values will own only
+plan-derived field bytes or numeric indexes. The Python veneer will expose their safe string form
+as an immutable tuple. Unknown mapping keys and scalar values are never eligible inputs.
+
+The falsifiers are any growth in `Frame` or `TypedConsumer`, any path construction on successful
+decode, any change to untyped decode, any payload sentinel in an exception attribute, or a
+confirmed typed/untyped regression under the repository's same-session ten-worker estimator.
+
 ### 9. Treat mutable-buffer borrowing as a safety-gated candidate
 
 Bytes and strings already provide borrowed source slices. Bytearray and memoryview inputs copy to

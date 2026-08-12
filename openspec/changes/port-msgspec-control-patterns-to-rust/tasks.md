@@ -96,7 +96,7 @@
 
 ## 9. Add Schema-Known Runtime Paths
 
-- [ ] 9.1 Record frame-size and error-path baselines before path state changes.
+- [x] 9.1 Record frame-size and error-path baselines before path state changes.
 - [ ] 9.2 Define compact schema field and structural index path parts.
 - [ ] 9.3 Derive typed paths from compiled plans and structural positions only.
 - [ ] 9.4 Expose the path through public decode and validation errors.
