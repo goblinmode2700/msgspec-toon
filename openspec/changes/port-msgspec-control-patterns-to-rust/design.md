@@ -201,6 +201,35 @@ free-threaded target.
 If the proof or focused large-buffer measurement fails, the copy remains and the report records the
 candidate as rejected.
 
+### Tasks 10.1-10.8: exporter borrowing rejected; snapshot copying retained
+
+The current boundary has two distinct costs. `bytearray` calls PyO3 0.29.0 `to_vec`: one owned
+allocation and one full copy under the object's critical section. A general buffer such as
+`memoryview` first calls Python `tobytes`, which creates an immutable snapshot, and then copies that
+snapshot into the Rust-owned `Vec`; this is two allocations and two full copies. `bytes` and `str`
+remain borrowed for the decode call.
+
+`benches/bench_buffers.py` uses the repository timing authority: ten worker processes, three
+samples per worker, arithmetic means, and no minimum. For a 53-byte, four-record document, absolute
+decode times were 0.60 microseconds for bytes, 0.60 for str, 0.63 for bytearray, and 0.69 for a
+mutable memoryview. For a 63,332-byte, 4,096-record document they were 423.08, 423.51, 429.79, and
+425.01 microseconds, respectively. Between-worker standard deviations are retained in
+`benches/buffers-latest.json`; the bytearray cell was the noisiest at 4.35%.
+
+The exporter-lifetime proof fails at mutation exclusion. PyO3's `PyUntypedBuffer` retains and
+releases a `Py_buffer`, so pointer lifetime and resize exclusion can be represented under the
+stable ABI. They are insufficient: PyO3 explicitly warns that buffer memory can be mutated by
+other code. A read-only memoryview can still alias a mutable exporter. Holding a CPython critical
+section around the complete decode is also insufficient because typed decode constructs Python
+objects, invokes Struct constructors, and can call user hooks or default factories. Such calls can
+temporarily release and reacquire the critical section. The parser would then observe a data race
+or a document whose bytes change between structural classification and conversion.
+
+The program therefore stops at task 10.4. No exporter-backed slice enters the parser, no unsafe
+buffer code is added, and the current snapshots remain. Tasks 10.5-10.7 are not applicable because
+their stated precondition is false. Task 10.8 records the candidate as rejected by the safety gate;
+the absolute measurements also show that this is not a release-blocking performance opportunity.
+
 ### 10. Use one interaction design and one timing authority
 
 The semantic matrix will cross these dimensions where they apply:

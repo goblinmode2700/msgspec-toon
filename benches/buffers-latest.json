@@ -1,0 +1,243 @@
+{
+  "python": "3.13.1",
+  "msgspec": "0.21.1",
+  "method": "estimator: mean-across-workers \u2014 the loop count is calibrated once, then 10 independent worker processes each discard their first sample as a warmup and report the mean of 3 samples; the published figure is the mean across workers, with the standard deviation across workers alongside it. The minimum is deliberately not used: it reports the best case the machine ever reached, not what a caller sees",
+  "results": [
+    {
+      "records": 4,
+      "bytes": 53,
+      "decode_us": {
+        "bytes": 0.6,
+        "str": 0.6,
+        "bytearray": 0.63,
+        "memoryview": 0.69
+      },
+      "worker_observations": [
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.65,
+            "str": 0.6,
+            "bytearray": 0.63,
+            "memoryview": 0.68
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.6,
+            "str": 0.6,
+            "bytearray": 0.63,
+            "memoryview": 0.69
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.6,
+            "str": 0.61,
+            "bytearray": 0.63,
+            "memoryview": 0.69
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.61,
+            "bytearray": 0.62,
+            "memoryview": 0.7
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.59,
+            "bytearray": 0.62,
+            "memoryview": 0.68
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.6,
+            "bytearray": 0.63,
+            "memoryview": 0.7
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.64,
+            "bytearray": 0.66,
+            "memoryview": 0.68
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.6,
+            "str": 0.6,
+            "bytearray": 0.62,
+            "memoryview": 0.68
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.6,
+            "bytearray": 0.63,
+            "memoryview": 0.69
+          }
+        },
+        {
+          "records": 4,
+          "bytes": 53,
+          "decode_us": {
+            "bytes": 0.59,
+            "str": 0.6,
+            "bytearray": 0.62,
+            "memoryview": 0.69
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.bytes": 3.09,
+        "decode_us.str": 2.24,
+        "decode_us.bytearray": 1.9,
+        "decode_us.memoryview": 1.15
+      }
+    },
+    {
+      "records": 4096,
+      "bytes": 63332,
+      "decode_us": {
+        "bytes": 423.08,
+        "str": 423.51,
+        "bytearray": 429.79,
+        "memoryview": 425.01
+      },
+      "worker_observations": [
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 421.42,
+            "str": 427.18,
+            "bytearray": 426.8,
+            "memoryview": 423.55
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 419.55,
+            "str": 413.9,
+            "bytearray": 421.77,
+            "memoryview": 419.61
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 422.28,
+            "str": 424.98,
+            "bytearray": 420.51,
+            "memoryview": 434.19
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 421.85,
+            "str": 423.1,
+            "bytearray": 425.55,
+            "memoryview": 429.51
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 422.19,
+            "str": 429.21,
+            "bytearray": 422.5,
+            "memoryview": 423.32
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 426.42,
+            "str": 422.16,
+            "bytearray": 419.84,
+            "memoryview": 421.91
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 421.57,
+            "str": 419.09,
+            "bytearray": 422.73,
+            "memoryview": 421.58
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 424.3,
+            "str": 424.87,
+            "bytearray": 482.26,
+            "memoryview": 419.22
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 420.82,
+            "str": 427.05,
+            "bytearray": 428.21,
+            "memoryview": 430.48
+          }
+        },
+        {
+          "records": 4096,
+          "bytes": 63332,
+          "decode_us": {
+            "bytes": 430.43,
+            "str": 423.53,
+            "bytearray": 427.69,
+            "memoryview": 426.77
+          }
+        }
+      ],
+      "worker_spread_pct": {
+        "decode_us.bytes": 0.76,
+        "decode_us.str": 1.05,
+        "decode_us.bytearray": 4.35,
+        "decode_us.memoryview": 1.18
+      }
+    }
+  ]
+}

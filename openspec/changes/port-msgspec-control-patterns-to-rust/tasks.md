@@ -107,14 +107,17 @@
 
 ## 10. Evaluate Mutable-Buffer Borrowing
 
-- [ ] 10.1 Document the current copy cost for bytearray and memoryview input.
-- [ ] 10.2 Profile small and large buffers against bytes and string controls.
-- [ ] 10.3 Write the stable-ABI exporter lifetime and mutation-safety proof before source changes.
-- [ ] 10.4 Stop and retain copying if the proof is incomplete.
-- [ ] 10.5 If the proof is complete, implement one bounded borrowed-buffer candidate.
-- [ ] 10.6 Add exporter-lifetime, mutation, exception, and subprocess containment tests.
-- [ ] 10.7 Run CPython 3.13 ABI3 and free-threaded target tests.
-- [ ] 10.8 Adopt or reject the candidate with focused same-session evidence.
+- [x] 10.1 Document the current copy cost for bytearray and memoryview input.
+- [x] 10.2 Profile small and large buffers against bytes and string controls.
+- [x] 10.3 Write the stable-ABI exporter lifetime and mutation-safety proof before source changes.
+- [x] 10.4 Stop and retain copying if the proof is incomplete.
+- [x] 10.5 If the proof is complete, implement one bounded borrowed-buffer candidate. Not applicable:
+  the proof failed at mutation exclusion.
+- [x] 10.6 Add exporter-lifetime, mutation, exception, and subprocess containment tests. Not
+  applicable: no candidate exists.
+- [x] 10.7 Run CPython 3.13 ABI3 and free-threaded target tests. Not applicable: no candidate exists.
+- [x] 10.8 Adopt or reject the candidate with focused same-session evidence. Rejected at the safety
+  gate; copying remains.
 
 ## 11. Qualify 0.3.0b1
 
