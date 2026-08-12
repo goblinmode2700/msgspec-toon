@@ -14,8 +14,8 @@ use crate::event::{Consumer, ObjectProbe, ObjectSelectionResult, ScalarToken, St
 use crate::limits::reserve_elements;
 use crate::parser::classify_value;
 use crate::plan::{
-    CompiledPlan, Constraints, DefaultPlan, FieldAction, FieldActionKind, PlanKind, StructPlan,
-    TagValue,
+    CompiledPlan, Constraints, DefaultPlan, FieldAction, FieldActionKind, PlanId, PlanKind,
+    StructPlan, TagValue,
 };
 use crate::pyval::{float_from_digits, int_from_digits, scalar_to_py, string_token_to_py};
 use crate::scalar::unescape;
@@ -80,12 +80,12 @@ enum Frame<'py, 'plan> {
 pub enum TypedObjectSelection {
     #[default]
     Passthrough,
-    SelectedPlan(usize),
+    SelectedPlan(PlanId),
     InvalidTag,
     Skip,
     StructField {
         index: usize,
-        selected_plan: usize,
+        selected_plan: PlanId,
     },
 }
 
@@ -250,7 +250,7 @@ struct RowMemo {
 #[derive(Clone, Copy)]
 struct TaggedSelectionMemo {
     index: usize,
-    declared: usize,
+    declared: PlanId,
     tag_cell: Option<usize>,
     skip_field: Option<usize>,
 }
@@ -348,7 +348,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 plan,
                 awaiting: Some(index),
                 ..
-            }) => Some(plan.fields[*index].value),
+            }) => Some(plan.fields[*index].value.index()),
             Some(Frame::Struct { .. }) => None,
             Some(Frame::ArrayStruct {
                 plan,
@@ -359,7 +359,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 if *tag_pending {
                     None
                 } else {
-                    plan.fields.get(*next).map(|field| field.value)
+                    plan.fields.get(*next).map(|field| field.value.index())
                 }
             }
             Some(Frame::ArrayStructUnion { .. }) => None,
@@ -427,7 +427,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         at: Position,
     ) -> Result<Bound<'py, PyAny>, Fault> {
         let py = self.py;
-        match &self.root.node(plan).kind {
+        match &self.root.node_index(plan).kind {
             PlanKind::Any => {
                 let converted = scalar_to_py(py, token, self.float_hook.as_ref());
                 converted.map_err(|err| self.internal(err, at))
@@ -532,7 +532,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 // tokens. The second pass preserves that widening only when
                 // no exact member exists, as in `float | str`.
                 for &member in &union.members {
-                    if !scalar_plan_exactly_matches(&self.root.node(member).kind, token) {
+                    if !scalar_plan_exactly_matches(&self.root.node_index(member).kind, token) {
                         continue;
                     }
                     match self.convert_scalar(member, token, at) {
@@ -547,7 +547,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                 // int, while `bool | float` decodes it as float.
                 for rank in 0..=4 {
                     for &member in &union.members {
-                        let kind = &self.root.node(member).kind;
+                        let kind = &self.root.node_index(member).kind;
                         if scalar_plan_exactly_matches(kind, token)
                             || scalar_plan_fallback_rank(kind) != rank
                         {
@@ -634,7 +634,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         value: Bound<'py, PyAny>,
         at: Position,
     ) -> Result<Bound<'py, PyAny>, Fault> {
-        let Some(constraints) = &self.root.node(plan).constraints else {
+        let Some(constraints) = &self.root.node_index(plan).constraints else {
             return Ok(value);
         };
         match constraints.scalar_valid(&value) {
@@ -674,7 +674,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             }
             Some(Frame::ArrayStructUnion { members }) => {
                 for &member in *members {
-                    let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                    let PlanKind::Struct(plan) = &self.root.node_index(member).kind else {
                         return Err(Fault::validation_at(FaultCode::TypeMismatch, at));
                     };
                     if !plan.array_like || plan.tag_value.is_none() {
@@ -777,10 +777,10 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
 
     fn select_nested_tagged_plan(
         &self,
-        declared: usize,
+        declared: PlanId,
         raw_tag: Option<&[u8]>,
         at: Position,
-    ) -> Result<usize, Fault> {
+    ) -> Result<PlanId, Fault> {
         match &self.root.node(declared).kind {
             PlanKind::Struct(plan) if EXTENDED && plan.tag_field.is_some() => {
                 if let Some(raw) = raw_tag {
@@ -805,21 +805,24 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
                     .iter()
                     .copied()
                     .find(|&member| {
-                        let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                        let PlanKind::Struct(plan) = &self.root.node_index(member).kind else {
                             return false;
                         };
                         plan.tag_value
                             .as_ref()
                             .is_some_and(|tag| tag_matches(tag, token))
                     })
+                    .map(|member| self.root.plan_id(member))
                     .ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))
             }
-            _ => Ok(self.root.resolve_container(declared)),
+            _ => Ok(self
+                .root
+                .plan_id(self.root.resolve_container(declared.index()))),
         }
     }
 
     fn start_selected_object_plan(&mut self, expected: usize, at: Position) -> Result<(), Fault> {
-        let expected_node = self.root.node(expected);
+        let expected_node = self.root.node_index(expected);
         match &expected_node.kind {
             PlanKind::Struct(plan) if !plan.array_like => {
                 // A struct opening directly under an array frame starts a
@@ -1026,7 +1029,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let Some(index) = self.expected_plan() else {
             return false;
         };
-        match &self.root.node(index).kind {
+        match &self.root.node_index(index).kind {
             PlanKind::Struct(plan) => plan.tag_field.is_some(),
             PlanKind::Union(union) => union.members.len() > 1,
             _ => false,
@@ -1047,7 +1050,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
             StringToken::Quoted { inner, escaped } => unescape(inner, escaped),
         };
-        let members: smallvec::SmallVec<[usize; 4]> = match &self.root.node(declared).kind {
+        let members: smallvec::SmallVec<[usize; 4]> = match &self.root.node_index(declared).kind {
             PlanKind::Struct(plan) if plan.tag_field.as_deref() == Some(key.as_ref()) => {
                 smallvec::smallvec![declared]
             }
@@ -1057,7 +1060,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 .copied()
                 .filter(|&member| {
                     matches!(
-                        &self.root.node(member).kind,
+                        &self.root.node_index(member).kind,
                         PlanKind::Struct(plan)
                             if plan.tag_field.as_deref() == Some(key.as_ref())
                     )
@@ -1069,7 +1072,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             return Ok(());
         }
         for member in members {
-            let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+            let PlanKind::Struct(plan) = &self.root.node_index(member).kind else {
                 continue;
             };
             if plan.tag_field.as_deref() != Some(key.as_ref()) {
@@ -1079,7 +1082,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 continue;
             };
             if tag_matches(tag, value) {
-                *selection = TypedObjectSelection::SelectedPlan(member);
+                *selection = TypedObjectSelection::SelectedPlan(self.root.plan_id(member));
                 return Ok(());
             }
         }
@@ -1130,7 +1133,9 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         at: Position,
     ) -> Result<(), Fault> {
         match selection {
-            TypedObjectSelection::SelectedPlan(plan) => self.start_selected_object_plan(plan, at),
+            TypedObjectSelection::SelectedPlan(plan) => {
+                self.start_selected_object_plan(plan.index(), at)
+            }
             TypedObjectSelection::InvalidTag => {
                 Err(Fault::validation_at(FaultCode::TypeMismatch, at))
             }
@@ -1187,7 +1192,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let Some(declared) = declared else {
             return self.start_object(at);
         };
-        self.start_object_for_plan(declared, at)
+        self.start_object_for_plan(declared.index(), at)
     }
 
     #[inline(never)]
@@ -1307,14 +1312,12 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
             }
             PlanKind::Union(union) if EXTENDED && union.members.len() > 1 => {
                 tagged_selection = true;
-                let tag_field =
-                    union
-                        .members
-                        .iter()
-                        .find_map(|&member| match &self.root.node(member).kind {
-                            PlanKind::Struct(plan) => plan.tag_field.as_deref(),
-                            _ => None,
-                        });
+                let tag_field = union.members.iter().find_map(|&member| {
+                    match &self.root.node_index(member).kind {
+                        PlanKind::Struct(plan) => plan.tag_field.as_deref(),
+                        _ => None,
+                    }
+                });
                 let tag_field =
                     tag_field.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
                 let mut tag_token = None;
@@ -1333,7 +1336,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 let token = tag_token.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?;
                 let mut selected = None;
                 for &member in &union.members {
-                    let PlanKind::Struct(plan) = &self.root.node(member).kind else {
+                    let PlanKind::Struct(plan) = &self.root.node_index(member).kind else {
                         continue;
                     };
                     let Some(tag) = &plan.tag_value else {
@@ -1344,9 +1347,12 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                         break;
                     }
                 }
-                selected.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?
+                self.root
+                    .plan_id(selected.ok_or(Fault::validation_at(FaultCode::TypeMismatch, at))?)
             }
-            _ => self.root.resolve_container(declared),
+            _ => self
+                .root
+                .plan_id(self.root.resolve_container(declared.index())),
         };
 
         if tagged_selection
@@ -1401,7 +1407,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     return Err(Fault::syntax_at(FaultCode::Internal, at));
                 };
                 *awaiting = Some(index);
-                self.start_selected_object_plan(selected_plan, at)
+                self.start_selected_object_plan(selected_plan.index(), at)
             }
         }
     }
@@ -1527,7 +1533,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let Some((index, value_plan)) = target else {
             return Ok(());
         };
-        let value = self.convert_scalar(value_plan, token, at)?;
+        let value = self.convert_scalar(value_plan.index(), token, at)?;
         match self.stack.last_mut() {
             Some(Frame::Struct { values, .. }) => {
                 values[index] = Some(value);
@@ -1591,7 +1597,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
         let expected = self
             .root
             .resolve_container(self.expected_plan_or_fault(at)?);
-        let expected_node = self.root.node(expected);
+        let expected_node = self.root.node_index(expected);
         match &expected_node.kind {
             PlanKind::List(item) => {
                 let item_index = *item;
@@ -1599,7 +1605,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 let mut memo = RowMemo::for_sequence(&item);
                 if EXTENDED
                     && matches!(
-                        &self.root.node(item_index).kind,
+                        &self.root.node_index(item_index).kind,
                         PlanKind::Union(union) if union.members.len() > 1
                     )
                 {
@@ -1620,7 +1626,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                 let mut memo = RowMemo::for_sequence(&item);
                 if EXTENDED
                     && matches!(
-                        &self.root.node(item_index).kind,
+                        &self.root.node_index(item_index).kind,
                         PlanKind::Union(union) if union.members.len() > 1
                     )
                 {
@@ -1665,7 +1671,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
                     && union.members.len() > 1
                     && union.members.iter().all(|&member| {
                         matches!(
-                            &self.root.node(member).kind,
+                            &self.root.node_index(member).kind,
                             PlanKind::Struct(plan)
                                 if plan.array_like && plan.tag_value.is_some()
                         )

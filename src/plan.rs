@@ -34,7 +34,7 @@ pub enum PlanKind {
 /// the machine-word representation used by the hot path.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct PlanId(usize);
+pub struct PlanId(usize);
 
 impl PlanId {
     fn checked(index: usize, node_count: usize) -> PyResult<Self> {
@@ -253,7 +253,7 @@ pub enum TagValue {
 pub struct FieldPlan {
     pub python_name: Py<PyString>,
     pub wire_name: Vec<u8>,
-    pub value: usize,
+    pub(crate) value: PlanId,
     pub default: DefaultPlan,
 }
 
@@ -371,10 +371,7 @@ impl CompiledPlan {
                         .getattr("wire_name")?
                         .extract::<String>()?
                         .into_bytes();
-                    let value = field.getattr("plan")?.extract::<usize>()?;
-                    if value >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
+                    let value = PlanId::checked(field.getattr("plan")?.extract()?, node_count)?;
                     let required = field.getattr("required")?.extract::<bool>()?;
                     let default_factory = field.getattr("default_factory")?;
                     let default_value = field.getattr("default")?;
@@ -456,7 +453,21 @@ impl CompiledPlan {
     }
 
     #[inline(always)]
-    pub fn node(&self, index: usize) -> &PlanNode {
+    pub(crate) fn node(&self, id: PlanId) -> &PlanNode {
+        // `PlanId` is constructed only after the arena bound is known.
+        unsafe { self.nodes.get_unchecked(id.index()) }
+    }
+
+    /// Transitional conversion for graph edges not moved until task 4.5.
+    #[inline(always)]
+    pub(crate) fn plan_id(&self, index: usize) -> PlanId {
+        debug_assert!(index < self.nodes.len());
+        PlanId(index)
+    }
+
+    /// Transitional raw-index lookup for container edges not moved until 4.5.
+    #[inline(always)]
+    pub fn node_index(&self, index: usize) -> &PlanNode {
         // Every edge is range-checked once while the immutable arena is
         // compiled. Runtime node IDs originate only from those checked edges.
         unsafe { self.nodes.get_unchecked(index) }

@@ -439,3 +439,18 @@ Against exact preceding source, ordinary typed first-pass signals at 512 and 409
 survive the required double-power confirmations. The nested-tag run had 16.2% observed canary
 spread and resolved neither +2.3% at 512 nor -0.7% at 4096. The checkpoint therefore claims state
 clarity and sentinel removal only; it claims no speed change.
+
+### Task 4.4: typed Struct-plan selection
+
+The native plan module is now private to the extension crate. `FieldPlan.value` stores a checked
+`PlanId`, and local object selection plus its row memo carry `PlanId` through discriminator
+validation. A temporary `node_index` lookup remains only for container graph edges and runtime
+frames assigned to task 4.5.
+
+All protected layouts remain fixed: `PlanId` 8 bytes, `FieldPlan` 56, `TypedObjectSelection` 24,
+`ObjectSelectionResult<TypedObjectSelection>` 48, `Frame` 56, `PlanNode` 40, and `CompiledPlan`
+32. Forty Rust tests and the 108-test focused interaction set pass.
+
+Against exact preceding source, typed decode measured -1.0% at 512 rows with a 1.9% MDE and +0.0%
+at 4096 with a 0.6% MDE. Nested-tag decode measured +0.6% at both sizes with MDEs of 4.2% and
+3.1%. No difference resolves, so this checkpoint claims typed state only and no speed change.

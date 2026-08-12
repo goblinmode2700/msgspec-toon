@@ -37,7 +37,7 @@ mod msgspec_capi {
     }
 }
 pub mod parser;
-pub mod plan;
+mod plan;
 pub mod pyval;
 pub mod scalar;
 pub mod scan;
