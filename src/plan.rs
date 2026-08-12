@@ -285,7 +285,28 @@ impl CompiledPlan {
         for node in specs.try_iter()? {
             nodes.push(Self::lower_node(py, &node?, &specs, &unset, node_count)?);
         }
+        Self::validate_container_chains(&nodes)?;
         Ok(Self { nodes, root })
+    }
+
+    fn validate_container_chains(nodes: &[PlanNode]) -> PyResult<()> {
+        for start in 0..nodes.len() {
+            let mut id = PlanId(start);
+            for step in 0..=nodes.len() {
+                match &nodes[id.index()].kind {
+                    PlanKind::Union(union) if union.members.len() == 1 => {
+                        if step == nodes.len() {
+                            return Err(PyValueError::new_err(
+                                "plan graph has a cyclic container edge",
+                            ));
+                        }
+                        id = union.members[0];
+                    }
+                    _ => break,
+                }
+            }
+        }
+        Ok(())
     }
 
     fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<PlanId> {
@@ -439,7 +460,7 @@ impl CompiledPlan {
             }
             return id;
         }
-        self.root
+        invalid_container_cycle()
     }
 
     #[inline(always)]
@@ -484,4 +505,26 @@ mod tests {
             assert!(err.is_instance_of::<PyValueError>(py));
         });
     }
+
+    #[test]
+    fn cyclic_container_plan_is_rejected_before_decode() {
+        Python::initialize();
+        let nodes = vec![PlanNode {
+            kind: PlanKind::Union(Box::new(UnionPlan {
+                nullable: false,
+                members: vec![PlanId(0)],
+            })),
+            constraints: None,
+        }];
+        Python::attach(|py| {
+            let err = CompiledPlan::validate_container_chains(&nodes).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
+    }
+}
+
+#[cold]
+#[inline(never)]
+fn invalid_container_cycle() -> ! {
+    unreachable!("container-plan cycles are rejected during plan compilation")
 }

@@ -474,3 +474,26 @@ MDE. No speed change is claimed.
 `PlanKind` remains 32 bytes, `UnionPlan` 32, `SequencePlan` 16, `Frame` 56, `RowMemo` 64,
 `TypedObjectSelection` 24, and the object-selection result 48. Forty Rust tests and the 108-test
 focused interaction set pass.
+
+### Task 4.6: compiled container-chain validation
+
+The old `resolve_container` exhaustion case silently returned the root plan. That converted an
+invalid or cyclic plan graph into an unrelated schema selection. Plan compilation now rejects
+single-member union cycles before a decoder becomes usable. The runtime exhaustion case is a
+cold, static internal fault and cannot disclose payload text.
+
+The first candidate returned `Option<PlanId>` from every successful container resolution. It
+passed semantic tests and left layouts unchanged, but nested-tag decode at 4096 rows reproduced a
+0.78% slowdown with a 0.52% MDE. That per-call branch was rejected. The adopted design validates
+the graph once during decoder construction and keeps successful hot-path resolution infallible.
+
+Against exact preceding source, ordinary typed decode measured +0.5% at 512 rows with a 0.8% MDE
+and +0.2% at 4096 with a 0.6% MDE; neither resolves. Nested-tag decode produced an initial +1.7%
+signal, but the required independent double-power confirmation did not reproduce it. All protected
+layouts remain unchanged. The plan tests, 89 focused Python union/recursive/support tests, and the
+release build pass.
+
+Phase 4 is complete. Every arena identity and recursive edge uses `PlanId`, field dispatch uses a
+closed 8-byte action, invalid root and edge identities fail at compilation, and a malformed
+container cycle cannot fall back to the root schema. Confirmed regressions in the first field-action,
+frame-migration, and runtime-`Option` candidates were each revised before adoption.

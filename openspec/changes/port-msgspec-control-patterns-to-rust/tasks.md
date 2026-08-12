@@ -42,10 +42,10 @@
 - [x] 4.3 Replace the tag sentinel with explicit field, tag, skip, and reject actions.
 - [x] 4.4 Move plan compilation, lookup, and selection to the typed state model.
 - [x] 4.5 Move frames and recursive edges to `PlanId` in bounded checkpoints.
-- [ ] 4.6 Replace the root-plan fallback with plan validation or a static internal fault.
-- [ ] 4.7 Run union, recursive, fixed-tuple, row-memo, and malformed-plan tests after each checkpoint.
-- [ ] 4.8 Measure type sizes and focused typed decode after each layout change.
-- [ ] 4.9 Revert or revise a checkpoint that causes a confirmed protected regression.
+- [x] 4.6 Replace the root-plan fallback with plan validation or a static internal fault.
+- [x] 4.7 Run union, recursive, fixed-tuple, row-memo, and malformed-plan tests after each checkpoint.
+- [x] 4.8 Measure type sizes and focused typed decode after each layout change.
+- [x] 4.9 Revert or revise a checkpoint that causes a confirmed protected regression.
 
 ## 5. Add Shared-Grammar Structural Skip
 
