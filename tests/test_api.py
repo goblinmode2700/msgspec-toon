@@ -233,7 +233,12 @@ def test_unimplemented_encoder_options_fail_loudly() -> None:
 
 def test_encoder_discovers_optional_msgspec_c_api() -> None:
     encoder = toon.Encoder()
-    expected = "capsule" if hasattr(msgspec._core, "_C_API") else "attribute"
+    expected = (
+        "capsule"
+        if encoder._native._experimental_struct_offset_capi_enabled
+        and hasattr(msgspec._core, "_C_API")
+        else "attribute"
+    )
     assert encoder._native._struct_access == expected
 
 
@@ -259,8 +264,9 @@ def test_unset_struct_field_still_raises_attribute_error() -> None:
     reason="requires a free-threaded CPython build",
 )
 def test_capsule_struct_access_is_safe_during_concurrent_mutation() -> None:
-    if not hasattr(msgspec._core, "_C_API"):
-        pytest.skip("requires the optional msgspec C API")
+    probe = toon.Encoder()
+    if probe._native._struct_access != "capsule":
+        pytest.skip("requires the experimental Struct-offset C API build")
 
     class Cell(msgspec.Struct):
         value: int

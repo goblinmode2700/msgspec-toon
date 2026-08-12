@@ -144,7 +144,9 @@ fastpath-source:
 fastpath-build: fastpath-source
 	SETUPTOOLS_SCM_PRETEND_VERSION=0.21.1 uv build --wheel --clear \
 		--out-dir "$(FASTPATH_MSGSPEC_WHEELS)" "$(FASTPATH_MSGSPEC_SRC)"
+	find "$(FASTPATH_TOON_WHEELS)" -maxdepth 1 -type f -name '*.whl' -delete
 	uv run --no-sync maturin build --release --locked \
+		--features experimental-struct-offset-capi \
 		-o "$(FASTPATH_TOON_WHEELS)"
 	UV_PROJECT_ENVIRONMENT="$(FASTPATH_VENV)" uv sync --python 3.13 --all-groups --locked
 	uv pip install --python "$(FASTPATH_PYTHON)" --reinstall --no-deps \

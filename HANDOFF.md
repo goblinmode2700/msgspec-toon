@@ -1,5 +1,27 @@
 # HANDOFF — state of the world for the next agent
 
+## Upstream Struct-builder C API proposal
+
+A GC-safe, versioned, opaque Struct-builder API is now published as draft
+[`msgspec/msgspec#1153`](https://github.com/msgspec/msgspec/pull/1153). It is based on current
+msgspec main `f51f378`, exposes no private layouts or offsets, and keeps allocation, defaults,
+factories, GC tracking, abstract checks, and `__post_init__` inside msgspec. The returned builder
+token uses cyclic-GC traverse/clear/dealloc support; the focused suite proves that a
+class-to-token-to-class cycle is collectable. Upstream CPython 3.13 and 3.14t unit suites pass.
+The proposal is linked from issue 958 and the broader prior-art PR 961 with thanks to its agents.
+
+Matched current-main downstream A/B resolves about a 5% S12 typed-decode improvement. S1 resolves
+only after doubled sampling, while S6 becomes unresolved on confirmation. Treat this as a narrow
+mechanism result, not a universal speed claim. The production package remains on stock
+`msgspec==0.21.1`; activation requires upstream acceptance and a newly pinned release.
+
+The separate old encoder Struct-offset experiment is now compile-time constrained. Ordinary and
+published builds do not compile capsule discovery, even if an installed msgspec exposes the old
+`_C_API`. Only `make fastpath-*` enables the non-default
+`experimental-struct-offset-capi` feature. `make fastpath-check` proves activation, the 375-test
+suite, and the 538/538 corpus. Its build now clears stale generated TOON wheels before installing,
+which prevents conflicting-version URLs.
+
 ## Active 0.3.0b1 control-pattern program
 
 The owner opened `port-msgspec-control-patterns-to-rust` for the complete parser, typed-state,

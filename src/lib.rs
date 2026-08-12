@@ -13,7 +13,29 @@ pub mod error;
 pub mod event;
 pub mod header;
 pub mod limits;
+#[cfg(feature = "experimental-struct-offset-capi")]
 mod msgspec_capi;
+#[cfg(not(feature = "experimental-struct-offset-capi"))]
+mod msgspec_capi {
+    use pyo3::prelude::*;
+
+    #[derive(Clone, Copy)]
+    pub struct MsgspecCapi;
+
+    impl MsgspecCapi {
+        pub fn import(_py: Python<'_>) -> PyResult<Option<Self>> {
+            Ok(None)
+        }
+
+        pub fn struct_offsets(
+            &self,
+            _py: Python<'_>,
+            _class: &Bound<'_, PyAny>,
+        ) -> PyResult<Vec<usize>> {
+            unreachable!("experimental Struct-offset C API is not compiled")
+        }
+    }
+}
 pub mod parser;
 pub mod plan;
 pub mod pyval;
@@ -279,6 +301,11 @@ impl Encoder {
         } else {
             "attribute"
         }
+    }
+
+    #[getter]
+    fn _experimental_struct_offset_capi_enabled(&self) -> bool {
+        cfg!(feature = "experimental-struct-offset-capi")
     }
 
     fn encode<'py>(

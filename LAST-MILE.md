@@ -1733,3 +1733,28 @@ passed 538/538 with 84/84 strict errors. All nine G2 probes passed, the efficien
 and strict OpenSpec validation passed. No canonical byte, token, Python API, dependency, or unsafe
 boundary changed. Next: task 4.1, define the bounded `PlanId` and field-action hypothesis before
 changing representation.
+
+#### Checkpoint 49 — narrow upstream builder proposed; old offset path constrained
+
+The direct-Struct research uncovered and repaired a lifecycle defect before publication: an
+opaque builder that owns its Struct class must participate in cyclic GC, or a class attribute can
+form an uncollectable class-to-builder-to-class cycle. The corrected current-main msgspec patch
+uses `HAVE_GC`, traverse, clear, and untrack-before-clear deallocation. It keeps private layouts
+inside msgspec and exposes one versioned capability: prepare an opaque token, then consume
+declared-order owned field references to build the final Struct.
+
+Draft PR `msgspec/msgspec#1153` is public and linked from issue 958 and PR 961. The focused API
+suite passes seven tests. Upstream main passes 6,387 tests with 143 skips on CPython 3.13 and 6,369
+tests with 155 skips on CPython 3.14t. The installed header is present in both wheel and sdist.
+The downstream TOON corpus passes 538/538 with 84/84 strict errors. A matched current-main A/B
+resolves S12 near 5%; S1 needs doubled sampling; S6 is unresolved on confirmation. Production
+does not use this proposal and remains pinned to stock msgspec 0.21.1.
+
+The earlier encoder-offset capsule is a separate rejected-layout experiment. It now compiles only
+with the non-default `experimental-struct-offset-capi` Cargo feature. Default wheels always use
+public attribute access. `make fastpath-build` alone enables the feature and clears its generated
+TOON wheel directory before rebuilding, so a stale release cannot create conflicting package
+URLs. Default `make check` passes 38 Rust tests and 375 Python tests with 10 skips. Feature tests
+pass 40 Rust tests. `make fastpath-check` activates the capsule, passes the same Python suite, and
+passes the 538/538 corpus with 84/84 strict errors. No canonical bytes, tokens, dependency pin, or
+public Python API changed.
