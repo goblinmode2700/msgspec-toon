@@ -71,8 +71,8 @@
 
 ## 7. Consolidate Encoder Decisions
 
-- [ ] 7.1 Profile duplicate container classification across root, entry, list-item, keyed, and tabular paths.
-- [ ] 7.2 Record one falsifiable render-decision hypothesis for the largest resolved path.
+- [x] 7.1 Profile duplicate container classification across root, entry, list-item, keyed, and tabular paths.
+- [x] 7.2 Record one falsifiable render-decision hypothesis for the largest resolved path.
 - [ ] 7.3 Define one render decision that carries the selected view and shape witness.
 - [ ] 7.4 Make classification and validation use the same witness that rendering consumes.
 - [ ] 7.5 Keep the encode plan authoritative for tags, renames, defaults, `array_like`, and access mode.

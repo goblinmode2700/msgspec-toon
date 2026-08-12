@@ -550,3 +550,21 @@ The fixed adoption gate required both width-128 bare and quoted primaries to res
 fired: `D1 REJECT - BELOW FLOOR`. The complete safe candidate is retained under private research,
 but no `Cow` ownership code remains in production. The checkpoint is complete by rejection; its
 threshold was not weakened after observation.
+
+### Tasks 7.1-7.2: encoder decision profile and first hypothesis
+
+Five separate optimized, symbolized samples covered root, entry, list-item, keyed, and tabular
+rendering. The keyed and tabular success paths already pass one `Shape` witness from validation to
+`write_row_obj`; no duplicate successful shape classification was found there. On irregular root
+and entry paths, however, `keyed_shape` remained visible beside `object_pairs`: a dictionary can
+build or probe a keyed candidate, reject it, then walk the same object again to build fallback
+entries. List-item rendering also builds an entry view but correctly does not reinterpret the item
+itself as a keyed block.
+
+The first prospective hypothesis is limited to the dictionary object decision. One decision will
+own the selected entry view and, only while viable, the rows needed for a keyed `Shape`. A keyed
+success must retain the existing entries and shape witness. A keyed miss must convert the already
+collected entries into fallback rendering without a second dictionary walk or a second entry-vector
+allocation. Root moves first; entry and list-item call sites move in later checkpoints. Adopt only
+if canonical bytes are exact, a late keyed-miss workload improves beyond its session floor, and
+keyed-success plus ordinary controls have no confirmed regression.
