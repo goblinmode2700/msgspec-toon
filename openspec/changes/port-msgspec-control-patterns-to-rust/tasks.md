@@ -61,13 +61,13 @@
 
 ## 6. Measure and Reduce Duplicate-Key Ownership
 
-- [ ] 6.1 Profile strict wide objects and repeated object rows for key ownership cost.
-- [ ] 6.2 Record the allocation count for bare, quoted, escaped, and duplicate keys.
-- [ ] 6.3 Stop this checkpoint if the cost does not resolve above the session floor.
-- [ ] 6.4 If the cost resolves, implement borrowed keys or exact collision-checked fingerprints.
-- [ ] 6.5 Differential-test decoded-key equality across bare, quoted, and escaped spellings.
-- [ ] 6.6 Run strict and non-strict duplicate tests, containment tests, and focused A/B.
-- [ ] 6.7 Adopt or reject the candidate with its measured falsifier.
+- [x] 6.1 Profile strict wide objects and repeated object rows for key ownership cost.
+- [x] 6.2 Record the allocation count for bare, quoted, escaped, and duplicate keys.
+- [x] 6.3 Stop this checkpoint if the cost does not resolve above the session floor.
+- [x] 6.4 If the cost resolves, implement borrowed keys or exact collision-checked fingerprints.
+- [x] 6.5 Differential-test decoded-key equality across bare, quoted, and escaped spellings.
+- [x] 6.6 Run strict and non-strict duplicate tests, containment tests, and focused A/B.
+- [x] 6.7 Adopt or reject the candidate with its measured falsifier.
 
 ## 7. Consolidate Encoder Decisions
 

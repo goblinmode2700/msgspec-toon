@@ -13,6 +13,11 @@
 
 use rustc_hash::FxHashSet;
 
+#[cfg(test)]
+thread_local! {
+    static KEY_OWNERSHIP_ALLOCS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 use crate::error::{Fault, FaultCode, Position};
 use crate::event::{
     Consumer, FieldNode, ObjectFieldDisposition, ObjectProbe, ScalarToken, StringToken,
@@ -347,6 +352,8 @@ fn note_key(
     if !strict {
         return Ok(());
     }
+    #[cfg(test)]
+    KEY_OWNERSHIP_ALLOCS.set(KEY_OWNERSHIP_ALLOCS.get() + 1);
     if !seen.insert(token_owned_bytes(key)) {
         return Err(Fault::syntax_at(FaultCode::DuplicateKey, at));
     }
@@ -698,6 +705,8 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
             consumer.start_selected_object(selection, item_at)?;
             let key = header.key.as_ref().expect("checked above");
             let mut seen = FxHashSet::default();
+            #[cfg(test)]
+            KEY_OWNERSHIP_ALLOCS.set(KEY_OWNERSHIP_ALLOCS.get() + 1);
             seen.insert(token_owned_bytes(key));
             consumer.key(*key, item_at)?;
             parse_array_or_keyed_body::<C, PREFLIGHT>(
@@ -900,6 +909,24 @@ mod tests {
         let mut recorder = Recorder::default();
         parse(input, true, 2, &mut recorder).unwrap();
         recorder.events
+    }
+
+    fn strict_key_ownership_allocations(input: &[u8]) -> usize {
+        KEY_OWNERSHIP_ALLOCS.set(0);
+        let mut recorder = Recorder::default();
+        let _ = parse(input, true, 2, &mut recorder);
+        KEY_OWNERSHIP_ALLOCS.get()
+    }
+
+    #[test]
+    fn strict_key_ownership_allocates_once_per_bare_quoted_escaped_or_duplicate_key() {
+        assert_eq!(strict_key_ownership_allocations(b"a: 1\nb: 2"), 2);
+        assert_eq!(strict_key_ownership_allocations(b"\"a\": 1\n\"b\": 2"), 2);
+        assert_eq!(
+            strict_key_ownership_allocations(b"\"a\\n\": 1\n\"b\\t\": 2"),
+            2
+        );
+        assert_eq!(strict_key_ownership_allocations(b"a: 1\na: 2"), 2);
     }
 
     fn run_nonstrict(input: &[u8]) -> Vec<Ev> {

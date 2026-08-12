@@ -525,3 +525,28 @@ ns/row/leaf, a 41.27% reduction. Ordinary typed, known nested, tagged, union, an
 had no confirmed regression. Symbolized samples moved out of `classify_bare` and
 `emit_row_fields`; mandatory `split_cells_into` became the largest residual. The resolved
 validating sink is adopted. No second grammar and no general parser bypass were added.
+
+### Tasks 6.1-6.7: duplicate-key ownership candidate rejected
+
+The strict parser owns one canonical key buffer for every bare, unescaped quoted, escaped, and
+duplicate key it encounters. A test-only counter at the exact ownership boundary records two
+ownership allocations for two keys in each spelling family, including the second key that proves
+a duplicate. The counter compiles out of release builds.
+
+The bounded D1 candidate replaced `FxHashSet<Vec<u8>>` with
+`FxHashSet<Cow<'input, [u8]>>`. Bare and unescaped quoted keys borrowed immutable input; escaped
+keys retained the existing owned unescape result. `Cow<[u8]>` preserved canonical byte hashing,
+exact equality after collisions, and the object-local lifetime. Thirty-one semantic differentials
+covered canonical-equivalent spellings, Unicode, empty and 4096-byte keys, nested and list objects,
+keyed rows, non-strict last-write-wins, malformed keys, and payload-safe coordinates.
+
+The ownership mechanism resolved for width 8 and 32 bare and quoted objects (7-10% faster), width
+128 quoted objects (11.12%, MDE 3.19%), and keyed tabular input (9.09%, MDE 1.05%). Escaped keys
+were neutral as predicted. The prospectively required width-128 bare cell measured -5.42% with a
+9.50% MDE because one retained worker block expanded the variance. Its improvement did not resolve
+above the session floor. No protected slowdown survived confirmation.
+
+The fixed adoption gate required both width-128 bare and quoted primaries to resolve. It therefore
+fired: `D1 REJECT - BELOW FLOOR`. The complete safe candidate is retained under private research,
+but no `Cow` ownership code remains in production. The checkpoint is complete by rejection; its
+threshold was not weakened after observation.
