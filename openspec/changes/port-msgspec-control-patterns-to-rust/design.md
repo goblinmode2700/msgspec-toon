@@ -584,3 +584,24 @@ Keyed success measured +1.92% with a 3.40% MDE and did not resolve; the irregula
 measured -0.02% with a 1.11% MDE. The official corpus remains 538/538 with all 84 strict errors,
 and the byte/token efficiency lock is exact. The root checkpoint is adopted; entry and list-item
 paths remain unchanged for their separate rulings.
+
+### Tasks 7.7-7.11: remaining encoder-path rulings
+
+The entry path received its own checkpoint against the adopted root source. Generalizing the root
+decision to entries slowed the 512-entry late-miss primary by 1.36% with a 0.79% MDE. It also
+slowed the already adopted root late-miss control by 6.60% with a 1.28% MDE. The entry keyed-success
+cell was unresolved. The candidate was fully reverted. The list-item profile showed entry-view
+construction but no duplicate keyed classification, so no unmeasured cleanup candidate was opened.
+Keyed and tabular success already consume the `Shape` they validate.
+
+The adopted root candidate was then measured against exact pre-Phase-7 source across all required
+512-value shapes. Uniform (-0.07%, MDE 4.91%), nested (+1.35%, 1.61%), keyed (-1.06%, 1.65%),
+irregular (+0.42%, 1.48%), tagged (+1.36%, 1.53%), and array-like (+1.72%, 4.65%) were all
+unresolved. The official corpus and byte/token locks remain exact. Phase 7 therefore adopts only
+the resolved root decision and rejects the harmful entry generalization.
+
+Issue 09 was rerun after consolidation. Direct `set`, `frozenset`, and `bytes` values still raise
+`EncodeError`; `msgspec==0.21.1` emits arrays for the set-like values and base64 text for bytes, and
+`msgspec.to_builtins` still projects each into an already encodable form. Render consolidation did
+not close that policy gap. The separate `decide-set-frozenset-and-bytes-encoding` OpenSpec change
+remains open and no support claim enters this release implicitly.

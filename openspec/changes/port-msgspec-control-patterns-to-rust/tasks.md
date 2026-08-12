@@ -77,11 +77,11 @@
 - [x] 7.4 Make classification and validation use the same witness that rendering consumes.
 - [x] 7.5 Keep the encode plan authoritative for tags, renames, defaults, `array_like`, and access mode.
 - [x] 7.6 Move only the profiled render path in the first checkpoint.
-- [ ] 7.7 Move each remaining resolved path in a separate checkpoint.
-- [ ] 7.8 Run canonical corpus bytes, byte locks, and token locks after each checkpoint.
-- [ ] 7.9 Run focused A/B for uniform, nested, keyed, irregular, tagged, and array-like shapes.
-- [ ] 7.10 Reject any consolidation that changes bytes or causes a confirmed protected regression.
-- [ ] 7.11 Rerun issue 09 after render consolidation and record whether its follow-up remains open.
+- [x] 7.7 Move each remaining resolved path in a separate checkpoint.
+- [x] 7.8 Run canonical corpus bytes, byte locks, and token locks after each checkpoint.
+- [x] 7.9 Run focused A/B for uniform, nested, keyed, irregular, tagged, and array-like shapes.
+- [x] 7.10 Reject any consolidation that changes bytes or causes a confirmed protected regression.
+- [x] 7.11 Rerun issue 09 after render consolidation and record whether its follow-up remains open.
 
 ## 8. Complete the Unsafe Membrane
 
