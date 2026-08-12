@@ -403,3 +403,18 @@ checkpoint must keep `CompiledPlan` at 32 bytes, `PlanNode` at 40 bytes, `Frame`
 `ObjectSelectionResult<TypedObjectSelection>` at 48 bytes. Each checkpoint must pass malformed-plan,
 union, recursive, fixed-tuple, row-memo, and interaction tests. A layout change that enlarges a hot
 type or a confirmed focused decode regression is revised or reverted before the next task.
+
+### Task 4.2: checked root `PlanId`
+
+The first migration types only `CompiledPlan.root`. `PlanId::checked` rejects an out-of-range root
+during native plan compilation, and runtime code unwraps the already-validated word. Recursive
+edges and Struct field positions remain unchanged for their later checkpoints.
+
+The representation gate passes: `PlanId` is 8 bytes; `CompiledPlan` remains 32 bytes, `PlanNode`
+40 bytes, `Frame` 56 bytes, and `ObjectSelectionResult<TypedObjectSelection>` 48 bytes. Thirty-nine
+Rust tests and 108 focused Python union, recursive, fixed-tuple, row-memo, control-pattern, and
+plan-error tests pass.
+
+The same-session exact-source A/B used ten worker blocks per side with the repository estimator.
+Typed decode measured +1.6% at 512 rows with a 2.1% MDE and +0.1% at 4096 rows with a 0.9% MDE;
+neither difference resolves. The checkpoint is adopted as a zero-layout typed-state boundary.

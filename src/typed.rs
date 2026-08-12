@@ -362,7 +362,7 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             Some(Frame::ArrayStructUnion { .. }) => None,
             Some(Frame::List { items, item, .. }) => item.at(items.len()),
             Some(Frame::Dict { value, .. }) => Some(*value),
-            None => Some(self.root.root),
+            None => Some(self.root.root.index()),
         }
     }
 

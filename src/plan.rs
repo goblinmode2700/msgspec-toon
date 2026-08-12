@@ -27,9 +27,32 @@ pub enum PlanKind {
     Custom(Py<PyAny>),
 }
 
+/// A validated index into one immutable `CompiledPlan` arena.
+///
+/// Construction is confined to plan lowering. Runtime decode can therefore
+/// distinguish arena identity from Struct field positions without changing
+/// the machine-word representation used by the hot path.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct PlanId(usize);
+
+impl PlanId {
+    fn checked(index: usize, node_count: usize) -> PyResult<Self> {
+        if index >= node_count {
+            return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+        }
+        Ok(Self(index))
+    }
+
+    #[inline(always)]
+    pub(crate) fn index(self) -> usize {
+        self.0
+    }
+}
+
 pub struct CompiledPlan {
     pub nodes: Vec<PlanNode>,
-    pub root: usize,
+    pub(crate) root: PlanId,
 }
 
 pub struct PlanNode {
@@ -183,12 +206,13 @@ impl CompiledPlan {
             .import("msgspec_toon._types")?
             .getattr("_UNSET")?
             .unbind();
-        let root = spec.getattr("root")?.extract::<usize>()?;
+        let root_index = spec.getattr("root")?.extract::<usize>()?;
         let specs = spec.getattr("nodes")?;
         let node_count = specs.len()?;
-        if root >= node_count || node_count > 4096 {
+        if node_count > 4096 {
             return Err(PyValueError::new_err("invalid plan graph bounds"));
         }
+        let root = PlanId::checked(root_index, node_count)?;
         let mut nodes = Vec::with_capacity(node_count);
         for node in specs.try_iter()? {
             nodes.push(Self::lower_node(py, &node?, &specs, &unset, node_count)?);
@@ -360,7 +384,7 @@ impl CompiledPlan {
             }
             return index;
         }
-        self.root
+        self.root.index()
     }
 
     #[inline(always)]
@@ -376,5 +400,21 @@ impl CompiledPlan {
             PlanKind::Union(union) => union.members.len() > 1,
             _ => false,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plan_id_is_one_checked_machine_word() {
+        Python::initialize();
+        assert_eq!(std::mem::size_of::<PlanId>(), std::mem::size_of::<usize>());
+        assert_eq!(PlanId::checked(2, 3).unwrap().index(), 2);
+        Python::attach(|py| {
+            let err = PlanId::checked(3, 3).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
     }
 }
