@@ -497,3 +497,31 @@ Phase 4 is complete. Every arena identity and recursive edge uses `PlanId`, fiel
 closed 8-byte action, invalid root and edge identities fail at compilation, and a malformed
 container cycle cannot fall back to the root schema. Confirmed regressions in the first field-action,
 frame-migration, and runtime-`Option` candidates were each revised before adoption.
+
+### Tasks 5.1-5.9: shared-grammar validating sink
+
+The profile-based hypothesis was narrow: an allowed unknown nested field group still recursively
+classified every cell and dispatched every descendant typed event even though the target schema
+had already selected discard. The parser now accepts a container-local `ValidateOnly` disposition.
+It retains header parsing, quote-aware cell splitting, row width and count checks, duplicate-field
+checks, indentation, and depth limits, but emits no descendant semantic actions. Quoted ignored
+cells reuse the authoritative scalar grammar; bare cells need no classification because bare
+classification is total and no value is constructed.
+
+The event recorder proves that a three-level ignored field group produces only the enclosing list,
+row, and retained-field events. The hostile differential contains 28 cases, including closure,
+escape, Unicode surrogate, width, duplicate-header, depth, forbidden-unknown, tagged, `Any`, and
+untyped controls. Public tests additionally cross unknown ordinary objects, arrays, tabular rows,
+keyed rows, and nested field groups; malformed duplicates, row counts, widths, and quotes still
+raise payload-safe public faults.
+
+The instrumented G2 build passes ten allocation tests. Every allowed unknown container form creates
+zero builtin dictionaries and zero builtin lists; only the declared final Struct and, for a root
+list target, its declared final list are constructed.
+
+Against exact preceding source, the primary 16-leaf ignored-field workload improved 28.14% at 512
+rows (MDE 1.14%) and 27.52% at 4096 (MDE 1.33%). The per-leaf slope fell from 7.141 to 4.194
+ns/row/leaf, a 41.27% reduction. Ordinary typed, known nested, tagged, union, and untyped controls
+had no confirmed regression. Symbolized samples moved out of `classify_bare` and
+`emit_row_fields`; mandatory `split_cells_into` became the largest residual. The resolved
+validating sink is adopted. No second grammar and no general parser bypass were added.

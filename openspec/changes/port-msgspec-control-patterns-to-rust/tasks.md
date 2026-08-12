@@ -49,15 +49,15 @@
 
 ## 5. Add Shared-Grammar Structural Skip
 
-- [ ] 5.1 Record a profile-based hypothesis for unknown-subtree event dispatch.
-- [ ] 5.2 Add allocation and event-count probes for unknown nested values.
-- [ ] 5.3 Implement parser-owned skip or a zero-work target with shared grammar primitives.
-- [ ] 5.4 Preserve quote, indentation, duplicate, row-count, width, and depth validation during skip.
-- [ ] 5.5 Cover unknown ordinary objects, arrays, tabular rows, keyed rows, and nested field groups.
-- [ ] 5.6 Prove that malformed unknown values still fail with payload-safe faults.
-- [ ] 5.7 Prove that valid unknown values create no Python container tree.
-- [ ] 5.8 Run focused same-session A/B for unknown-heavy, ordinary typed, and untyped controls.
-- [ ] 5.9 Adopt only a resolved design that preserves every semantic control.
+- [x] 5.1 Record a profile-based hypothesis for unknown-subtree event dispatch.
+- [x] 5.2 Add allocation and event-count probes for unknown nested values.
+- [x] 5.3 Implement parser-owned skip or a zero-work target with shared grammar primitives.
+- [x] 5.4 Preserve quote, indentation, duplicate, row-count, width, and depth validation during skip.
+- [x] 5.5 Cover unknown ordinary objects, arrays, tabular rows, keyed rows, and nested field groups.
+- [x] 5.6 Prove that malformed unknown values still fail with payload-safe faults.
+- [x] 5.7 Prove that valid unknown values create no Python container tree.
+- [x] 5.8 Run focused same-session A/B for unknown-heavy, ordinary typed, and untyped controls.
+- [x] 5.9 Adopt only a resolved design that preserves every semantic control.
 
 ## 6. Measure and Reduce Duplicate-Key Ownership
 

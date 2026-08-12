@@ -151,6 +151,50 @@ def test_unknown_fields_are_skipped() -> None:
     assert value == Item(name="a")
 
 
+@pytest.mark.parametrize(
+    "document",
+    [
+        b"id: 1\nextra:\n  deep: 2\n  deeper:\n    value: 3",
+        b"id: 1\nextra[2]:\n  - 2\n  - 3",
+        b"id: 1\nextra[2]{left,right}:\n  2,3\n  4,5",
+        b"id: 1\nextra[2:]{value}:\n  first: 2\n  second: 3",
+        b"[1]{id,extra{left,inner{right}}}:\n  1,2,3",
+    ],
+    ids=["object", "array", "tabular", "keyed", "field-group"],
+)
+def test_unknown_container_forms_are_skipped_without_changing_the_result(
+    document: bytes,
+) -> None:
+    class Item(msgspec.Struct):
+        id: int
+
+    target = list[Item] if document.startswith(b"[") else Item
+    expected = [Item(1)] if document.startswith(b"[") else Item(1)
+    assert toon.decode(document, type=target) == expected
+
+
+@pytest.mark.parametrize(
+    ("document", "code"),
+    [
+        (b"id: 1\nextra:\n  value: 2\n  value: 3", "duplicate_key"),
+        (b"id: 1\nextra[2]:\n  - 2", "wrong_array_length"),
+        (b"id: 1\nextra[1]{left,right}:\n  2", "wrong_row_width"),
+        (b'id: 1\nextra[1:]{value}:\n  first: "\\q"', "invalid_escape"),
+        (b'[1]{id,extra{value}}:\n  1,"unterminated', "unclosed_quote"),
+    ],
+    ids=["duplicate", "row-count", "row-width", "keyed-quote", "field-group-quote"],
+)
+def test_malformed_unknown_container_forms_still_fail(document: bytes, code: str) -> None:
+    class Item(msgspec.Struct):
+        id: int
+
+    with pytest.raises(toon.DecodeError) as caught:
+        target = list[Item] if document.startswith(b"[") else Item
+        toon.decode(document, type=target)
+    assert caught.value.code == code
+    assert "unterminated" not in str(caught.value)
+
+
 def test_str_input_decodes() -> None:
     value = toon.decode(TEXT.decode(), type=Document)
     assert value.workers[1].pid == 80916

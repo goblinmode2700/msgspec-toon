@@ -94,6 +94,10 @@ class NativeScalarRow(msgspec.Struct):
     day: datetime.date
 
 
+class KnownOnlyRow(msgspec.Struct):
+    id: int
+
+
 RECORDS = 64
 TEXT = (
     f"workers[{RECORDS}]{{pid,provider,metadata{{alias,region}}}}:\n"
@@ -259,3 +263,22 @@ def test_native_scalar_fields_build_only_the_final_struct() -> None:
     assert stats["builtin_dicts"] == 0
     assert stats["builtin_lists"] == 0
     assert stats["final_structs"] == 1
+
+
+def test_unknown_container_forms_build_no_python_tree() -> None:
+    documents = (
+        b"id: 1\nextra:\n  deep: 2\n  nested:\n    value: 3",
+        b"id: 1\nextra[2]:\n  - 2\n  - 3",
+        b"id: 1\nextra[2]{left,right}:\n  2,3\n  4,5",
+        b"id: 1\nextra[2:]{value}:\n  first: 2\n  second: 3",
+        b"[1]{id,extra{left,inner{right}}}:\n  1,2,3",
+    )
+
+    for document in documents:
+        target = list[KnownOnlyRow] if document.startswith(b"[") else KnownOnlyRow
+        stats = _stats_for(lambda: toon.decode(document, type=target))
+        assert stats["builtin_dicts"] == 0
+        assert stats["builtin_lists"] == 0
+        assert stats["final_dicts"] == 0
+        assert stats["final_lists"] == int(document.startswith(b"["))
+        assert stats["final_structs"] == 1
