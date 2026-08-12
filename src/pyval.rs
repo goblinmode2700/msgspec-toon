@@ -11,13 +11,17 @@ use crate::event::ScalarToken;
 use crate::scalar::unescape;
 
 pub fn int_from_digits<'py>(py: Python<'py>, digits: &[u8]) -> PyResult<Bound<'py, PyAny>> {
-    // The token is validated ASCII digits (with optional sign).
+    // SAFETY: `ScalarToken::Integer` is created only by the integer grammar,
+    // which admits ASCII digits and an optional ASCII minus sign.
     let text = unsafe { std::str::from_utf8_unchecked(digits) };
     if let Ok(small) = text.parse::<i64>() {
         return Ok(small.into_pyobject(py)?.into_any());
     }
     // Arbitrary precision: hand the decimal digits to CPython directly.
     let c_text = std::ffi::CString::new(digits).expect("digit token has no NUL");
+    // SAFETY: `c_text` is NUL-terminated and lives through the call. CPython
+    // returns a new reference or null with an exception; PyO3 takes ownership
+    // only of the successful new reference.
     unsafe {
         let raw = pyo3::ffi::PyLong_FromString(c_text.as_ptr(), std::ptr::null_mut(), 10);
         Bound::from_owned_ptr_or_err(py, raw)
@@ -29,6 +33,8 @@ pub fn float_from_digits<'py>(
     digits: &[u8],
     float_hook: Option<&Py<PyAny>>,
 ) -> PyResult<Bound<'py, PyAny>> {
+    // SAFETY: `ScalarToken::Float` contains only ASCII accepted by the number
+    // grammar, so it is valid UTF-8 for the duration of this borrow.
     let text = unsafe { std::str::from_utf8_unchecked(digits) };
     if let Some(hook) = float_hook {
         return hook.bind(py).call1((text,));
@@ -41,7 +47,8 @@ pub fn float_from_digits<'py>(
 
 pub fn string_token_to_py<'py>(py: Python<'py>, inner: &[u8], escaped: bool) -> Bound<'py, PyAny> {
     let bytes = unescape(inner, escaped);
-    // The document was validated as UTF-8 and escapes decode to valid UTF-8.
+    // SAFETY: the parser rejects invalid document UTF-8 before tokenization,
+    // and `unescape` accepts only escape sequences that decode to valid UTF-8.
     let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
     PyString::new(py, text).into_any()
 }

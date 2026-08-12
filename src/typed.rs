@@ -107,8 +107,8 @@ fn tag_matches(tag: &TagValue, token: ScalarToken<'_>) -> bool {
             expected.as_slice() == unescape(inner, escaped).as_ref()
         }
         (TagValue::Integer(expected), ScalarToken::Integer(digits)) => {
-            // The document has already passed UTF-8 validation, and the
-            // integer classifier admits only the JSON integer grammar.
+            // SAFETY: the document has passed UTF-8 validation, and the
+            // integer classifier admits only the ASCII JSON integer grammar.
             let text = unsafe { std::str::from_utf8_unchecked(digits) };
             text.parse::<i64>().ok().as_ref() == Some(expected)
         }
@@ -901,6 +901,10 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
             Some(names) => (0, names.as_ptr()),
             None => (pointers.len(), std::ptr::null_mut()),
         };
+        // SAFETY: every pointer is borrowed from `arguments`, which remains
+        // live until the call returns. `keyword_names` is a plan-owned tuple
+        // pinned by the compiled plan. Vectorcall borrows argument pointers
+        // and returns one new reference or null with a Python exception.
         let raw = unsafe {
             pyo3::ffi::PyObject_Vectorcall(
                 plan.class.as_ptr(),
@@ -912,6 +916,9 @@ impl<'py, 'plan, const EXTENDED: bool> TypedConsumer<'py, 'plan, EXTENDED> {
         arguments.clear();
         self.arguments_scratch = arguments;
         count_struct_instance();
+        // SAFETY: `PyObject_Vectorcall` returns a new reference on success;
+        // this is the single owner transfer into PyO3. Null is converted to
+        // the active Python exception without stealing any argument.
         unsafe { Bound::from_owned_ptr_or_err(py, raw) }.map_err(|err| self.internal(err, at))
     }
 

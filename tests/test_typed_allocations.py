@@ -276,7 +276,9 @@ def test_unknown_container_forms_build_no_python_tree() -> None:
 
     for document in documents:
         target = list[KnownOnlyRow] if document.startswith(b"[") else KnownOnlyRow
-        stats = _stats_for(lambda: toon.decode(document, type=target))
+        stats = _stats_for(
+            lambda document=document, target=target: toon.decode(document, type=target)
+        )
         assert stats["builtin_dicts"] == 0
         assert stats["builtin_lists"] == 0
         assert stats["final_dicts"] == 0

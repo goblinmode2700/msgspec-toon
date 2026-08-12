@@ -144,6 +144,7 @@ fastpath-source:
 fastpath-build: fastpath-source
 	SETUPTOOLS_SCM_PRETEND_VERSION=0.21.1 uv build --wheel --clear \
 		--out-dir "$(FASTPATH_MSGSPEC_WHEELS)" "$(FASTPATH_MSGSPEC_SRC)"
+	mkdir -p "$(FASTPATH_TOON_WHEELS)"
 	find "$(FASTPATH_TOON_WHEELS)" -maxdepth 1 -type f -name '*.whl' -delete
 	uv run --no-sync maturin build --release --locked \
 		--features experimental-struct-offset-capi \

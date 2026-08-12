@@ -898,6 +898,11 @@ fn offset_field<'py>(
     attr: &Py<PyString>,
     offset: usize,
 ) -> PyResult<Bound<'py, PyAny>> {
+    // SAFETY: the optional C API supplies offsets for this exact pinned Struct
+    // class. Callers compare the runtime type before taking the offset path.
+    // The object critical section protects slot access on free-threaded
+    // CPython. `from_borrowed_ptr` acquires a strong reference before the
+    // critical section ends; it does not steal the Struct-owned slot.
     with_critical_section(instance, || unsafe {
         let slot = (instance.as_ptr() as *const u8)
             .add(offset)
@@ -1149,6 +1154,8 @@ fn write_row_obj<'py>(
     // level; every offset in one level belongs to the same pinned class.
     let offsets_match = shape.first().is_none_or(|node| match &node.access {
         Access::Offset { class, .. } => std::ptr::eq(
+            // SAFETY: `row` is a live `Bound` Python object. Reading its type
+            // pointer does not dereference user-controlled payload memory.
             unsafe { pyo3::ffi::Py_TYPE(row.as_ptr()) },
             class.as_ptr().cast(),
         ),
@@ -1191,6 +1198,8 @@ fn write_row_obj<'py>(
 /// types cover ordinary data; subclasses take the original slow chain.
 #[inline]
 fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
+    // SAFETY: `obj` is a live `Bound` reference, so its CPython header and
+    // exact type pointer remain valid for this call.
     unsafe { pyo3::ffi::Py_TYPE(obj.as_ptr()) }
 }
 
@@ -1228,6 +1237,9 @@ fn write_scalar_obj<'py>(
     obj: &Bound<'py, PyAny>,
 ) -> PyResult<()> {
     let type_ptr = exact_type(obj);
+    // SAFETY: each unchecked cast is guarded by exact pointer equality with
+    // the corresponding immortal CPython type object. No subclass enters an
+    // exact-type branch; subclasses use the checked slow path below.
     unsafe {
         use std::ptr::addr_of_mut;
         if type_ptr == addr_of_mut!(pyo3::ffi::PyUnicode_Type) {

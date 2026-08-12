@@ -85,7 +85,8 @@ impl<'py> UntypedConsumer<'py> {
         if let Some(cached) = self.key_cache.get(bytes.as_ref()) {
             return cached.bind(self.py).to_owned().into_any();
         }
-        // The document was validated as UTF-8 and escapes decode to valid UTF-8.
+        // SAFETY: parsing begins with whole-document UTF-8 validation, and
+        // `unescape` rejects escapes that cannot produce valid UTF-8.
         let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
         let created = PyString::new(self.py, text);
         self.key_cache

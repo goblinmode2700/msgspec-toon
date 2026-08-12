@@ -605,3 +605,30 @@ Issue 09 was rerun after consolidation. Direct `set`, `frozenset`, and `bytes` v
 `msgspec.to_builtins` still projects each into an already encodable form. Render consolidation did
 not close that policy gap. The separate `decide-set-frozenset-and-bytes-encoding` OpenSpec change
 remains open and no support claim enters this release implicitly.
+
+### Tasks 8.1-8.8: unsafe membrane qualification
+
+Every unsafe site now has a local `SAFETY` contract. The contracts cover four classes: parser-
+validated ASCII/UTF-8 conversions; checked immutable plan-arena access; CPython vectorcall and
+new/borrowed-reference ownership transfer; and exact-type/optional Struct-offset reads. Vectorcall
+documents argument and keyword-tuple liveness plus the single new-reference transfer. Exact-type
+casts are guarded by immortal CPython type-pointer equality. Offset reads require the exact pinned
+class, hold the object's PyO3 critical section on free-threaded CPython, acquire a strong field
+reference before leaving it, and never steal the Struct-owned slot.
+
+The optional capsule consumer now bounds Struct field counts at 4096 before constructing a slice.
+Negative tests reject wrong ABI versions, short tables, missing functions, null non-empty views,
+negative and oversized field counts, and negative offsets. The named-capsule contract remains the
+authority for a non-null table pointer and producer-owned view lifetime; production copies offsets
+into its plan before returning.
+
+The isolated patched-msgspec path was rebuilt from clean pinned source. On CPython 3.13 ABI3 it
+activated capsule access, passed lint/typecheck, 42 default Rust tests, 385 Python tests with 11
+expected skips, all 538 corpus cases, and all 84 strict-error fixtures. A repository Makefile defect
+was fixed so a fresh fast-path build creates its wheel directory before clearing old wheels.
+
+The same feature and patched msgspec were built specifically for CPython 3.14t. The runtime
+reported `sys._is_gil_enabled() == False` and capsule access active. Capsule discovery, deleted-field
+handling, and the five-thread same-object mutation/encode stress test all passed. No safe
+replacement changed a release hot path: this phase adds contracts, cold validation, tests, and
+build reliability only, so task 8.8 required no timing claim.

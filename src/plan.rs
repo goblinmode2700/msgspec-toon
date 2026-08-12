@@ -465,7 +465,9 @@ impl CompiledPlan {
 
     #[inline(always)]
     pub(crate) fn node(&self, id: PlanId) -> &PlanNode {
-        // `PlanId` is constructed only after the arena bound is known.
+        // SAFETY: every `PlanId` enters through checked plan compilation.
+        // Recursive edges are range-checked there, and container-chain cycles
+        // are rejected before the immutable arena becomes visible at runtime.
         unsafe { self.nodes.get_unchecked(id.index()) }
     }
 
@@ -476,6 +478,12 @@ impl CompiledPlan {
             _ => false,
         })
     }
+}
+
+#[cold]
+#[inline(never)]
+fn invalid_container_cycle() -> ! {
+    unreachable!("container-plan cycles are rejected during plan compilation")
 }
 
 #[cfg(test)]
@@ -521,10 +529,4 @@ mod tests {
             assert!(err.is_instance_of::<PyValueError>(py));
         });
     }
-}
-
-#[cold]
-#[inline(never)]
-fn invalid_container_cycle() -> ! {
-    unreachable!("container-plan cycles are rejected during plan compilation")
 }

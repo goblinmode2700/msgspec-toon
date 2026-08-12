@@ -85,14 +85,14 @@
 
 ## 8. Complete the Unsafe Membrane
 
-- [ ] 8.1 Inventory each unsafe block and its caller-controlled assumptions.
-- [ ] 8.2 Document ownership, liveness, stealing, and failure rules at each FFI block.
-- [ ] 8.3 Document the free-threaded critical-section rule for Struct offset reads.
-- [ ] 8.4 Document or remove each unchecked UTF-8 conversion.
-- [ ] 8.5 Document or replace each unchecked plan-arena access.
-- [ ] 8.6 Add negative tests for invalid capsule headers, pointers, field counts, and offsets.
-- [ ] 8.7 Run the optional capsule path on CPython 3.13 ABI3 and the free-threaded target.
-- [ ] 8.8 Measure any safe replacement that changes a hot path.
+- [x] 8.1 Inventory each unsafe block and its caller-controlled assumptions.
+- [x] 8.2 Document ownership, liveness, stealing, and failure rules at each FFI block.
+- [x] 8.3 Document the free-threaded critical-section rule for Struct offset reads.
+- [x] 8.4 Document or remove each unchecked UTF-8 conversion.
+- [x] 8.5 Document or replace each unchecked plan-arena access.
+- [x] 8.6 Add negative tests for invalid capsule headers, pointers, field counts, and offsets.
+- [x] 8.7 Run the optional capsule path on CPython 3.13 ABI3 and the free-threaded target.
+- [x] 8.8 Measure any safe replacement that changes a hot path.
 
 ## 9. Add Schema-Known Runtime Paths
 
