@@ -1066,6 +1066,11 @@ enum AnyEvent<'a> {
 impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
     type ObjectSelection = TypedObjectSelection;
 
+    #[inline(always)]
+    fn needs_object_field_selection(&self) -> bool {
+        true
+    }
+
     fn needs_object_preflight(&self) -> bool {
         if !EXTENDED || !self.has_tagged_plans {
             return false;

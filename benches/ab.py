@@ -143,34 +143,12 @@ METRICS = (
         "control.decode.nested_concrete",
         "control nested-tag decode",
     ),
-    (
-        "bench_control_patterns",
-        "decode_us",
-        "nested_union",
-        "control.decode.nested_union",
-        "control nested-union decode",
-    ),
-    (
-        "bench_control_patterns",
-        "decode_us",
-        "nested_tag_last",
-        "control.decode.nested_tag_last",
-        "control nested-tag-last decode",
-    ),
-    (
-        "bench_control_patterns",
-        "decode_us",
-        "nested_quoted_tag",
-        "control.decode.nested_quoted_tag",
-        "control nested-quoted-tag decode",
-    ),
-    (
-        "bench_control_patterns",
-        "decode_us",
-        "nested_int_tag",
-        "control.decode.nested_int_tag",
-        "control nested-int-tag decode",
-    ),
+    # Nested union, tag-last, quoted-tag, and integer-tag rows remain in the
+    # standalone control-pattern benchmark and semantic matrix. They cannot
+    # enter the release-guard A/B: v0.2.0b5 rejects those repaired forms, so
+    # there is no baseline timing population to compare. Their candidate-side
+    # costs were measured against exact preceding checkpoints during phases
+    # 3-4; the public guard covers only surfaces both releases can execute.
     (
         "bench_control_patterns",
         "decode_us",
@@ -179,6 +157,19 @@ METRICS = (
         "control untyped decode",
     ),
 )
+
+# v0.2.0b5 accepted valid nested concrete tags without checking the
+# discriminator. The current release performs the required validation, so
+# this point compares different work. Keep the measured tax and confirmation
+# in every release report, but do not call it a regression against a release
+# whose faster behavior was incorrect. Phase E3 attributed and accepted the
+# residual; all other common metrics remain gating.
+NON_GATING_SEMANTIC_COSTS = {
+    "control nested-tag decode": (
+        "v0.2.0b5 skipped the required nested discriminator validation; "
+        "E3 attributed and accepted the residual correctness cost"
+    )
+}
 
 #: One block: one bench module's worker-side sampler at one size, reporting the
 #: single metric the block exists to measure. `MSGSPEC_TOON_ONLY_METRIC` stops
@@ -504,6 +495,8 @@ def main() -> None:
         samples = samples_by_point[name]
         test = compare(samples[BASELINE], samples[CURRENT])
         slower = test["significant"] and test["change_pct"] > 0
+        label = name.rsplit("@", 1)[0]
+        non_gating_reason = NON_GATING_SEMANTIC_COSTS.get(label)
 
         confirmation = None
         if slower:
@@ -533,6 +526,8 @@ def main() -> None:
         )
         if confirmation is not None and not slower:
             verdict = "slowdown did not reproduce"
+        if slower and non_gating_reason is not None:
+            verdict = "expected correctness cost (non-gating)"
         results.append(
             {
                 "metric": name,
@@ -540,10 +535,12 @@ def main() -> None:
                 "current_us": samples[CURRENT],
                 "verdict": verdict,
                 "confirmation": confirmation,
+                "gating": non_gating_reason is None,
+                "non_gating_reason": non_gating_reason,
                 **test,
             }
         )
-        if slower:
+        if slower and non_gating_reason is None:
             regressions.append(name)
         print(
             f"{name:<28} {test['change_pct']:>+8.1f}%  "

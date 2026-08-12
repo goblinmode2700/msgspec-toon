@@ -142,6 +142,12 @@ pub trait Consumer {
     fn needs_object_preflight(&self) -> bool {
         false
     }
+    /// Whether a nested tabular field group needs schema selection before it
+    /// opens. Untyped consumers preserve the direct recursive event path.
+    #[inline(always)]
+    fn needs_object_field_selection(&self) -> bool {
+        false
+    }
     /// Offer scalar object fields before `start_object`. Typed tagged unions
     /// use this bounded lookahead to select a plan without buffering a value
     /// tree. Other consumers ignore it.

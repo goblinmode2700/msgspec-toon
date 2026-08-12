@@ -230,6 +230,32 @@ buffer code is added, and the current snapshots remain. Tasks 10.5-10.7 are not 
 their stated precondition is false. Task 10.8 records the candidate as rejected by the safety gate;
 the absolute measurements also show that this is not a release-blocking performance opportunity.
 
+### Task 11.4: localize the release-guard nested-group regression
+
+The first complete `v0.2.0b5` guard run failed closed before timing because the guard cannot decode
+the nested-union, tag-last, quoted-tag, or integer-tag forms added by this program. Those cases stay
+in the standalone semantic and timing matrix, but cannot have a guard-side timing population. The
+A/B metric set now contains only surfaces both releases execute. The nested concrete case remains
+visible as a non-gating semantic cost: `v0.2.0b5` skipped its required discriminator validation,
+and E3 already attributed and accepted the residual. The JSON records `gating: false` and the exact
+reason instead of hiding the time.
+
+The next full common-surface run reproduced five additional regressions, all in nested field
+groups: ordinary typed decode at 8 and 4,096 rows, plus untyped decode at 16, 64, and 512. The main
+typed and untyped codec ladders were neutral. The cumulative diff identified one localized
+mechanism: every nested group computed its recursive leaf span, built an `ObjectProbe`, and called
+schema selection even for `UntypedConsumer`, whose default discarded all three operations.
+
+The repair adds a statically dispatched consumer capability. Untyped decode takes the original
+direct recursive event path. Typed decode retains local selection, but passes a lazy borrowed probe
+over the remaining row and computes an exact leaf span only when a skipped group must advance over
+its cells; tagged selection calculates only the offsets it inspects. Against the exact preceding
+candidate, ordinary, untyped, and nested-tag controls had no confirmed slowdown across 8, 64, 512,
+and 4,096 rows; nested-tag 512 improved 1.2% with a 1.1% MDE. Against `v0.2.0b5`, the focused
+ordinary run had two initial flags that did not reproduce, while every untyped size was neutral
+(-1.0% to +1.1%, MDE 1.0% to 1.9%). The complete guard ladder must still rerun before task 11.4
+closes.
+
 ### 10. Use one interaction design and one timing authority
 
 The semantic matrix will cross these dimensions where they apply:

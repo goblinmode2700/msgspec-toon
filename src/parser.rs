@@ -605,11 +605,21 @@ fn emit_row_fields<C: Consumer>(
             }
             *cursor += 1;
         } else {
-            let leaf_count = node.leaf_count();
-            let end = *cursor + leaf_count;
-            let probe = ObjectProbe::new(&node.children, &cells[*cursor..end]);
+            if !consumer.needs_object_field_selection() {
+                consumer.start_object_field(node.name, at)?;
+                emit_row_fields(&node.children, cells, cursor, None, at, consumer)?;
+                consumer.end_object_field(at)?;
+                continue;
+            }
+
+            // Most selected fields never inspect row cells. Give the probe
+            // the remaining borrowed row and calculate the exact leaf span
+            // only when a tagged plan reads it or a skipped group advances
+            // over it without recursive semantic events.
+            let probe = ObjectProbe::new(&node.children, &cells[*cursor..]);
             let selected = consumer.select_object_field(node.name, probe, at)?;
             if selected.disposition == ObjectFieldDisposition::ValidateOnly {
+                let end = *cursor + node.leaf_count();
                 validate_ignored_cells(&cells[*cursor..end], at)?;
                 *cursor = end;
                 continue;
@@ -866,6 +876,10 @@ mod tests {
 
     impl Consumer for ValidateOnlyRecorder {
         type ObjectSelection = ();
+
+        fn needs_object_field_selection(&self) -> bool {
+            true
+        }
 
         fn start_object(&mut self, at: Position) -> Result<(), Fault> {
             self.inner.start_object(at)
