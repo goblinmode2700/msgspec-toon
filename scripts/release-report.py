@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 import _timing
 import bench_codecs
 import bench_integration
+import bench_key_cardinality
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
@@ -38,6 +39,8 @@ REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE
 CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
 CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
 REQUIRED_UNTYPED_GUARD_METRICS = {
+    "untyped distinct-32-key decode@4096",
+    "untyped distinct-512-key decode@4096",
     "untyped nested-record decode@46",
     "untyped irregular decode@4096",
 }
@@ -330,6 +333,7 @@ def main() -> None:
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "benchmarks_integration_same_run": integration_benchmarks,
+        "untyped_distinct_key_scaling": bench_key_cardinality.run(),
         "token_efficiency": bench_tokens.run(),
         "efficiency_lock": efficiency,
         "compatibility_since_previous_release": compatibility_delta(support, efficiency),

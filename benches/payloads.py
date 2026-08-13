@@ -158,6 +158,27 @@ def irregular_records_tree(records: int) -> list[dict[str, Any]]:
     return rows
 
 
+def distinct_key_records_tree(records: int, distinct_keys: int) -> list[dict[str, Any]]:
+    """Non-tabular two-field records with an exact global key cardinality.
+
+    The record count, values, and key width stay fixed while key spellings
+    cycle through ``distinct_keys`` names. This isolates content-key cache
+    scaling: every encoded document has the same byte length and every record
+    performs two key lookups. An even count is required so the two key families
+    contribute exactly half of the requested cardinality each.
+    """
+    if distinct_keys < 2 or distinct_keys % 2:
+        raise ValueError("distinct_keys must be an even integer of at least 2")
+    families = distinct_keys // 2
+    return [
+        {
+            f"k{index % families:04d}": index,
+            f"v{index % families:04d}": "x",
+        }
+        for index in range(records)
+    ]
+
+
 def keyed_document(records: int) -> dict:
     """A uniform object-of-objects, which the encoder emits as a *keyed*
     tabular block: one header, then `key: cells` per row.
