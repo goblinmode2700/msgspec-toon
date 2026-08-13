@@ -114,6 +114,50 @@ def irregular_tree(records: int) -> dict:
     return tree
 
 
+def nested_mixed_tree(records: int) -> dict:
+    """Ordinary record objects with repeated keys and non-uniform nested values.
+
+    The alternating nested value shapes deliberately prevent tabular encoding.
+    This is the untyped decode surface that a uniform-table-only release guard
+    missed in 0.3.0b1: keys repeat across ordinary objects, not header rows.
+    """
+    rows = []
+    for index in range(records):
+        row: dict[str, Any] = {
+            "id": index,
+            "name": f"project-{index}",
+            "active": index % 3 != 0,
+        }
+        if index % 2:
+            row["metadata"] = {
+                "owner": f"team-{index % 5}",
+                "region": REGIONS[index % 4],
+            }
+        else:
+            row["labels"] = [f"label-{index % 4}", f"stage-{index % 3}"]
+        rows.append(row)
+    return {"records": rows}
+
+
+def irregular_records_tree(records: int) -> list[dict[str, Any]]:
+    """Repeated ordinary objects whose key sets and value kinds alternate."""
+    rows = []
+    for index in range(records):
+        if index % 3 == 0:
+            rows.append({"id": index, "name": f"item-{index}", "score": index * 2})
+        elif index % 3 == 1:
+            rows.append(
+                {
+                    "id": index,
+                    "name": f"item-{index}",
+                    "owner": {"team": f"team-{index % 7}", "active": True},
+                }
+            )
+        else:
+            rows.append({"id": index, "enabled": False, "tags": ["odd", f"bucket-{index % 5}"]})
+    return rows
+
+
 def keyed_document(records: int) -> dict:
     """A uniform object-of-objects, which the encoder emits as a *keyed*
     tabular block: one header, then `key: cells` per row.

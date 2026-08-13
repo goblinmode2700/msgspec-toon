@@ -170,6 +170,15 @@ pub trait Consumer {
         Ok(())
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
+    /// Open an ordinary object that is one item in a list. Untyped consumers
+    /// may reuse its repeated key spellings; the default is an ordinary object.
+    fn start_repeated_object(
+        &mut self,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        self.start_selected_object(selection, at)
+    }
     /// Open an object using the preflight result produced for this exact
     /// container. The default ignores selection and preserves the ordinary
     /// event sequence.

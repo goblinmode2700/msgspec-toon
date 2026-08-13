@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+## 0.3.0b2
+
+Untyped nested-record performance hotfix.
+
+- Add nested mixed records and irregular records to the permanent release guard.
+- Reuse Python key strings across nested ordinary objects without caching unique root-entry keys.
+- Remove the nested-record regression: 46 records are neutral at -1.1% with a 2.1% MDE in the complete guard.
+- Improve untyped decode by 9.0% on 4,096 irregular records against `0.3.0b1` in the complete guard.
+- Correct the `0.3.0b1` untyped speed claim: its 2-8% gain described only uniform tabular records.
+- Preserve canonical bytes, token counts, conformance, G2, G3, and G5.
+
 ## 0.3.0b1
 
 Typed correctness, explicit state, and localized hot paths.

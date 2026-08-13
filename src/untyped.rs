@@ -24,6 +24,13 @@ enum KeyCacheKey {
     Owned(Vec<u8>),
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum KeyCacheMode {
+    None,
+    Tabular,
+    RepeatedRecord,
+}
+
 enum Builder<'py> {
     Dict {
         map: Bound<'py, PyDict>,
@@ -44,7 +51,8 @@ pub struct UntypedConsumer<'py> {
     /// times; cache one PyString per distinct key instead of allocating one
     /// per cell row.
     key_cache: FxHashMap<KeyCacheKey, Py<PyString>>,
-    cache_keys: bool,
+    key_cache_mode: KeyCacheMode,
+    repeated_objects_seen: u8,
 }
 
 impl<'py> UntypedConsumer<'py> {
@@ -56,7 +64,8 @@ impl<'py> UntypedConsumer<'py> {
             result: None,
             pending_err: None,
             key_cache: FxHashMap::default(),
-            cache_keys: false,
+            key_cache_mode: KeyCacheMode::None,
+            repeated_objects_seen: 0,
         }
     }
 
@@ -94,12 +103,10 @@ impl<'py> UntypedConsumer<'py> {
             StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
             StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
         };
-        // Ordinary entry keys appear once, so caching them only adds a Rust
-        // allocation/hash-table entry beside the required Python string.
-        // `begin_tabular` is the exact signal that source key slices repeat.
-        if !self.cache_keys {
-            // SAFETY: parsing begins with whole-document UTF-8 validation, and
-            // `unescape` rejects escapes that cannot produce valid UTF-8.
+        if self.key_cache_mode == KeyCacheMode::None {
+            // Root entry objects usually have unique keys. Keep their adopted
+            // allocation-free path instead of populating a cache that cannot
+            // produce a hit.
             let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
             return PyString::new(self.py, text).into_any();
         }
@@ -120,13 +127,39 @@ impl<'py> UntypedConsumer<'py> {
         self.key_cache.insert(cache_key, created.clone().unbind());
         created.into_any()
     }
+
+    /// Nested ordinary objects repeat key spellings at different source
+    /// addresses. They use the existing owned-key cache representation; the
+    /// root-entry and tabular paths never call this helper.
+    #[inline(never)]
+    fn cached_ordinary_key(&mut self, key: StringToken<'_>) -> Bound<'py, PyAny> {
+        let bytes = match key {
+            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+            StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
+        };
+        // SAFETY: parsing begins with whole-document UTF-8 validation, and
+        // `unescape` rejects escapes that cannot produce invalid UTF-8.
+        let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
+        if let Some(cached) = self.key_cache.iter().find_map(|(cached_key, value)| {
+            matches!(cached_key, KeyCacheKey::Owned(owned) if owned.as_slice() == bytes.as_ref())
+                .then_some(value)
+        }) {
+            return cached.bind(self.py).to_owned().into_any();
+        }
+        let created = PyString::new(self.py, text);
+        self.key_cache.insert(
+            KeyCacheKey::Owned(bytes.into_owned()),
+            created.clone().unbind(),
+        );
+        created.into_any()
+    }
 }
 
 impl Consumer for UntypedConsumer<'_> {
     type ObjectSelection = ();
 
     fn begin_tabular(&mut self, _leaf_count: usize, _at: Position) -> Result<(), Fault> {
-        self.cache_keys = true;
+        self.key_cache_mode = KeyCacheMode::Tabular;
         Ok(())
     }
 
@@ -138,8 +171,29 @@ impl Consumer for UntypedConsumer<'_> {
         Ok(())
     }
 
+    fn start_repeated_object(
+        &mut self,
+        _selection: Self::ObjectSelection,
+        _at: Position,
+    ) -> Result<(), Fault> {
+        self.repeated_objects_seen = self.repeated_objects_seen.saturating_add(1);
+        if self.repeated_objects_seen > 8 {
+            self.key_cache_mode = KeyCacheMode::RepeatedRecord;
+        }
+        self.start_object(_at)
+    }
+
+    #[inline(always)]
     fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
-        let key = self.key_to_py(key);
+        let key = if self.key_cache_mode == KeyCacheMode::None {
+            self.uncached_key(key)
+        } else if self.key_cache_mode == KeyCacheMode::RepeatedRecord {
+            self.cached_ordinary_key(key)
+        } else if self.stack.len() == 1 {
+            self.uncached_key(key)
+        } else {
+            self.key_to_py(key)
+        };
         match self.stack.last_mut() {
             Some(Builder::Dict { pending_key, .. }) => {
                 *pending_key = Some(key);
@@ -181,5 +235,19 @@ impl Consumer for UntypedConsumer<'_> {
             Err(err) => return Err(self.internal(err, at)),
         };
         self.place(value, at)
+    }
+}
+
+impl<'py> UntypedConsumer<'py> {
+    #[inline(never)]
+    fn uncached_key(&self, key: StringToken<'_>) -> Bound<'py, PyAny> {
+        let bytes = match key {
+            StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
+            StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
+        };
+        // SAFETY: parsing begins with whole-document UTF-8 validation, and
+        // `unescape` rejects escapes that cannot produce valid UTF-8.
+        let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
+        PyString::new(self.py, text).into_any()
     }
 }

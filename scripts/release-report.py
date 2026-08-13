@@ -37,6 +37,10 @@ BASELINE_VERSION = os.environ.get("MSGSPEC_TOON_RELEASE_BASELINE", "0.1.0b3")
 REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE") == "1"
 CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
 CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
+REQUIRED_UNTYPED_GUARD_METRICS = {
+    "untyped nested-record decode@46",
+    "untyped irregular decode@4096",
+}
 
 
 def allocation_proof() -> dict:
@@ -57,6 +61,25 @@ def allocation_proof() -> dict:
             "its timings are not release-representative"
         )
     return proof
+
+
+def release_guard(path: Path | None = None) -> dict:
+    """Load the same-session release A/B and verify its shape coverage."""
+    evidence_path = path or ROOT / "benches" / "ab-guard.json"
+    if not evidence_path.is_file():
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(f"missing release guard evidence: {evidence_path}")
+        return {"status": "NOT RUN — execute `make guard && make ab`"}
+    evidence = json.loads(evidence_path.read_text())
+    measured = {row["metric"] for row in evidence.get("results", [])}
+    missing = sorted(REQUIRED_UNTYPED_GUARD_METRICS - measured)
+    if missing:
+        message = f"release guard lacks required untyped shapes: {', '.join(missing)}"
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(message)
+        evidence["coverage_warning"] = message
+    evidence["required_untyped_shape_metrics"] = sorted(REQUIRED_UNTYPED_GUARD_METRICS)
+    return evidence
 
 
 def _efficiency_lock() -> dict:
@@ -302,6 +325,7 @@ def main() -> None:
         "allocation_proof": allocation_proof(),
         "canonical_qualification": qualification,
         "verified_release_artifacts": verified_artifacts,
+        "release_guard": release_guard(),
         "support_matrix": support,
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,

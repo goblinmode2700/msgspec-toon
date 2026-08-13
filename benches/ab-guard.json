@@ -1,0 +1,2205 @@
+{
+  "records": [
+    4,
+    8,
+    16,
+    64,
+    512,
+    4096
+  ],
+  "baseline_venv": ".venv-guard",
+  "current_venv": ".venv",
+  "gated": true,
+  "block_sequence": [
+    "baseline",
+    "current",
+    "current",
+    "baseline",
+    "baseline",
+    "current",
+    "current",
+    "baseline"
+  ],
+  "baseline_instrumented": false,
+  "canary": {
+    "metric": "decoder construction@4",
+    "reads_us": [
+      0.59,
+      0.62,
+      0.59
+    ],
+    "spread_pct": 5.084745762711869,
+    "note": "one fixed metric read on the baseline side before, between, and after the interleaved rounds; reported context only, never a gate"
+  },
+  "method": "one metric at one size per block, B C C B interleaved across all metric points \u2014 every block-position runs across the whole ladder before the next, so each metric's samples span the full run and slow drift inflates variance (reported as MDE) instead of biasing means; loop counts calibrated once per point up front and shared by both sides; two-sample two-tailed t-test at alpha 0.95; a change smaller than the reported minimum detectable effect is published as no significant difference; a slowdown must reproduce in an independent solo confirmation run at double the block count to fail the gate",
+  "results": [
+    {
+      "metric": "decoder construction@4",
+      "baseline_us": [
+        0.6,
+        0.6,
+        0.59,
+        0.6
+      ],
+      "current_us": [
+        0.59,
+        0.59,
+        0.59,
+        0.59
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.2552301255230045,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.0238493723849382
+    },
+    {
+      "metric": "decoder construction@8",
+      "baseline_us": [
+        0.59,
+        0.6,
+        0.59,
+        0.59
+      ],
+      "current_us": [
+        0.59,
+        0.59,
+        0.59,
+        0.58
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.843881856540104,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.4601605852856399
+    },
+    {
+      "metric": "decoder construction@16",
+      "baseline_us": [
+        0.58,
+        0.59,
+        0.59,
+        0.58
+      ],
+      "current_us": [
+        0.59,
+        0.58,
+        0.59,
+        0.57
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.4273504273504183,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.33831553031709
+    },
+    {
+      "metric": "decoder construction@64",
+      "baseline_us": [
+        0.58,
+        0.59,
+        0.58,
+        0.6
+      ],
+      "current_us": [
+        0.59,
+        0.59,
+        0.59,
+        0.59
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.4255319148936269,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.993892878876393
+    },
+    {
+      "metric": "decoder construction@512",
+      "baseline_us": [
+        0.58,
+        0.58,
+        0.6,
+        0.59
+      ],
+      "current_us": [
+        0.59,
+        0.59,
+        0.58,
+        0.58
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.42553191489360803,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.3283652514646773
+    },
+    {
+      "metric": "decoder construction@4096",
+      "baseline_us": [
+        0.58,
+        0.58,
+        0.59,
+        0.58
+      ],
+      "current_us": [
+        0.59,
+        0.59,
+        0.59,
+        0.59
+      ],
+      "verdict": "slowdown did not reproduce",
+      "confirmation": {
+        "change_pct": 1.2847965738757947,
+        "significant": false,
+        "minimum_detectable_effect_pct": 1.4524808524756274
+      },
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.2875536480686611,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.050214592274679
+    },
+    {
+      "metric": "typed decode@4",
+      "baseline_us": [
+        1.72,
+        1.73,
+        1.74,
+        1.75
+      ],
+      "current_us": [
+        1.76,
+        1.75,
+        1.74,
+        1.76
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.0086455331412145,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.1334300390081546
+    },
+    {
+      "metric": "typed decode@8",
+      "baseline_us": [
+        2.55,
+        2.51,
+        2.55,
+        2.58
+      ],
+      "current_us": [
+        2.54,
+        2.54,
+        2.53,
+        2.54
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.39254170755641954,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.400229566897597
+    },
+    {
+      "metric": "typed decode@16",
+      "baseline_us": [
+        4.24,
+        4.25,
+        4.29,
+        4.26
+      ],
+      "current_us": [
+        4.27,
+        4.27,
+        4.26,
+        4.25
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.058685446009377994,
+      "significant": false,
+      "minimum_detectable_effect_pct": 0.6786426547793469
+    },
+    {
+      "metric": "typed decode@64",
+      "baseline_us": [
+        14.1,
+        14.14,
+        14.13,
+        14.24
+      ],
+      "current_us": [
+        14.12,
+        14.66,
+        14.14,
+        14.19
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.8832361773538244,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.280465071743497
+    },
+    {
+      "metric": "typed decode@512",
+      "baseline_us": [
+        109.78,
+        110.51,
+        109.34,
+        108.57
+      ],
+      "current_us": [
+        109.56,
+        106.44,
+        109.46,
+        108.34
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.004107713372884,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.8558175664218395
+    },
+    {
+      "metric": "typed decode@4096",
+      "baseline_us": [
+        976.88,
+        969.95,
+        978.78,
+        976.13
+      ],
+      "current_us": [
+        996.52,
+        977.34,
+        986.98,
+        997.64
+      ],
+      "verdict": "slowdown did not reproduce",
+      "confirmation": {
+        "change_pct": -0.3691345548839777,
+        "significant": false,
+        "minimum_detectable_effect_pct": 1.0531062265580695
+      },
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.4542229876926767,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.282313017813712
+    },
+    {
+      "metric": "functional decode@4",
+      "baseline_us": [
+        2.42,
+        2.44,
+        2.48,
+        2.46
+      ],
+      "current_us": [
+        2.46,
+        2.49,
+        2.47,
+        2.5
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.2244897959183594,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.5792027417208225
+    },
+    {
+      "metric": "functional decode@8",
+      "baseline_us": [
+        3.32,
+        3.37,
+        3.27,
+        3.28
+      ],
+      "current_us": [
+        3.3,
+        3.24,
+        3.29,
+        3.27
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.057401812688826,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.9442602568847729
+    },
+    {
+      "metric": "functional decode@16",
+      "baseline_us": [
+        5.0,
+        5.0,
+        4.98,
+        5.0
+      ],
+      "current_us": [
+        5.03,
+        5.09,
+        4.98,
+        5.04
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.8008008008008015,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.1313522392048094
+    },
+    {
+      "metric": "functional decode@64",
+      "baseline_us": [
+        14.78,
+        14.94,
+        15.03,
+        15.06
+      ],
+      "current_us": [
+        15.22,
+        15.08,
+        15.1,
+        15.17
+      ],
+      "verdict": "slowdown did not reproduce",
+      "confirmation": {
+        "change_pct": -0.24124448881124036,
+        "significant": false,
+        "minimum_detectable_effect_pct": 0.8581723463273165
+      },
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.270690519979933,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.1567090379622649
+    },
+    {
+      "metric": "functional decode@512",
+      "baseline_us": [
+        111.31,
+        112.03,
+        110.46,
+        109.91
+      ],
+      "current_us": [
+        109.53,
+        109.4,
+        111.16,
+        109.09
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.0209370985553567,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.4524346458449238
+    },
+    {
+      "metric": "functional decode@4096",
+      "baseline_us": [
+        984.89,
+        984.38,
+        1012.47,
+        976.22
+      ],
+      "current_us": [
+        995.4,
+        983.32,
+        971.36,
+        980.83
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6834328795642245,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.3079880948700846
+    },
+    {
+      "metric": "typed encode@4",
+      "baseline_us": [
+        0.67,
+        0.66,
+        0.69,
+        0.71
+      ],
+      "current_us": [
+        0.68,
+        0.71,
+        0.69,
+        0.67
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.7326007326007333,
+      "significant": false,
+      "minimum_detectable_effect_pct": 5.017352589903298
+    },
+    {
+      "metric": "typed encode@8",
+      "baseline_us": [
+        1.12,
+        1.12,
+        1.15,
+        1.1
+      ],
+      "current_us": [
+        1.11,
+        1.08,
+        1.09,
+        1.13
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.7817371937639215,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.3000714550006847
+    },
+    {
+      "metric": "typed encode@16",
+      "baseline_us": [
+        1.93,
+        2.04,
+        1.98,
+        1.93
+      ],
+      "current_us": [
+        1.92,
+        1.96,
+        1.93,
+        1.93
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.7766497461928894,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.4205647536063712
+    },
+    {
+      "metric": "typed encode@64",
+      "baseline_us": [
+        6.47,
+        6.41,
+        6.39,
+        6.52
+      ],
+      "current_us": [
+        6.38,
+        6.39,
+        6.52,
+        6.4
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.3877471888328865,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.6741541277222767
+    },
+    {
+      "metric": "typed encode@512",
+      "baseline_us": [
+        50.42,
+        49.44,
+        50.13,
+        51.52
+      ],
+      "current_us": [
+        50.53,
+        50.08,
+        49.75,
+        49.7
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.7195672671331391,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.2981262638892517
+    },
+    {
+      "metric": "typed encode@4096",
+      "baseline_us": [
+        397.84,
+        407.9,
+        397.2,
+        397.07
+      ],
+      "current_us": [
+        397.28,
+        404.21,
+        394.02,
+        398.51
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.3743726601708745,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.072000457635768
+    },
+    {
+      "metric": "functional encode@4",
+      "baseline_us": [
+        0.76,
+        0.75,
+        0.73,
+        0.73
+      ],
+      "current_us": [
+        0.74,
+        0.74,
+        0.76,
+        0.74
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.3367003367003445,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.9706343336903673
+    },
+    {
+      "metric": "functional encode@8",
+      "baseline_us": [
+        1.14,
+        1.2,
+        1.21,
+        1.2
+      ],
+      "current_us": [
+        1.16,
+        1.19,
+        1.19,
+        1.19
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.42105263157895706,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.6427164075020704
+    },
+    {
+      "metric": "functional encode@16",
+      "baseline_us": [
+        2.01,
+        2.03,
+        1.97,
+        2.01
+      ],
+      "current_us": [
+        2.01,
+        2.01,
+        1.99,
+        2.05
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.49875311720697196,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.1718046951554904
+    },
+    {
+      "metric": "functional encode@64",
+      "baseline_us": [
+        6.74,
+        6.47,
+        6.58,
+        6.45
+      ],
+      "current_us": [
+        6.4,
+        6.48,
+        6.44,
+        6.4
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.981707317073169,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.579855926081811
+    },
+    {
+      "metric": "functional encode@512",
+      "baseline_us": [
+        50.64,
+        50.74,
+        50.29,
+        50.36
+      ],
+      "current_us": [
+        50.16,
+        50.31,
+        50.12,
+        50.38
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.5246745532841668,
+      "significant": false,
+      "minimum_detectable_effect_pct": 0.6030947739613614
+    },
+    {
+      "metric": "functional encode@4096",
+      "baseline_us": [
+        400.78,
+        394.84,
+        396.46,
+        398.36
+      ],
+      "current_us": [
+        399.68,
+        396.91,
+        396.83,
+        403.06
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.37976912049495504,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.1993226761835902
+    },
+    {
+      "metric": "keyed decode@4",
+      "baseline_us": [
+        1.14,
+        1.15,
+        1.15,
+        1.15
+      ],
+      "current_us": [
+        1.1,
+        1.08,
+        1.1,
+        1.08
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -5.010893246187354,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.3416445071247307
+    },
+    {
+      "metric": "keyed decode@8",
+      "baseline_us": [
+        2.11,
+        2.09,
+        2.12,
+        2.08
+      ],
+      "current_us": [
+        1.95,
+        1.93,
+        1.93,
+        1.93
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -7.8571428571428585,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.2128182620699122
+    },
+    {
+      "metric": "keyed decode@16",
+      "baseline_us": [
+        3.81,
+        3.83,
+        3.89,
+        3.94
+      ],
+      "current_us": [
+        3.57,
+        3.48,
+        3.53,
+        3.54
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -8.726567550096972,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.212595775789711
+    },
+    {
+      "metric": "keyed decode@64",
+      "baseline_us": [
+        14.15,
+        14.08,
+        14.66,
+        14.14
+      ],
+      "current_us": [
+        13.14,
+        12.93,
+        13.21,
+        13.08
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -8.188672628441173,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.5334658344661656
+    },
+    {
+      "metric": "keyed decode@512",
+      "baseline_us": [
+        119.18,
+        118.61,
+        119.56,
+        117.48
+      ],
+      "current_us": [
+        113.27,
+        112.66,
+        112.07,
+        112.89
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -5.041804435271581,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.0684294864192423
+    },
+    {
+      "metric": "keyed decode@4096",
+      "baseline_us": [
+        994.24,
+        984.36,
+        1013.74,
+        986.31
+      ],
+      "current_us": [
+        988.55,
+        950.01,
+        968.87,
+        965.04
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -2.6687444233596898,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.5560917918195964
+    },
+    {
+      "metric": "entry decode@4",
+      "baseline_us": [
+        0.64,
+        0.64,
+        0.65,
+        0.64
+      ],
+      "current_us": [
+        0.63,
+        0.63,
+        0.63,
+        0.64
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.5564202334630362,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.3465294113334498
+    },
+    {
+      "metric": "entry decode@8",
+      "baseline_us": [
+        1.28,
+        1.26,
+        1.27,
+        1.34
+      ],
+      "current_us": [
+        1.26,
+        1.25,
+        1.24,
+        1.24
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -3.106796116504857,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.5344362841436383
+    },
+    {
+      "metric": "entry decode@16",
+      "baseline_us": [
+        2.69,
+        2.73,
+        2.68,
+        2.65
+      ],
+      "current_us": [
+        2.62,
+        2.59,
+        2.62,
+        2.59
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -3.069767441860466,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.6983340360267232
+    },
+    {
+      "metric": "entry decode@64",
+      "baseline_us": [
+        10.52,
+        10.56,
+        10.44,
+        10.4
+      ],
+      "current_us": [
+        10.36,
+        10.57,
+        10.43,
+        10.33
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.5486641221374141,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.5113258244174483
+    },
+    {
+      "metric": "entry decode@512",
+      "baseline_us": [
+        89.13,
+        88.13,
+        88.28,
+        89.15
+      ],
+      "current_us": [
+        87.4,
+        87.21,
+        86.93,
+        88.31
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.3645718796695636,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.1138954616250232
+    },
+    {
+      "metric": "entry decode@4096",
+      "baseline_us": [
+        746.65,
+        743.31,
+        745.28,
+        751.58
+      ],
+      "current_us": [
+        735.17,
+        726.3,
+        729.32,
+        735.79
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -2.0168607415244235,
+      "significant": true,
+      "minimum_detectable_effect_pct": 0.9502854362223793
+    },
+    {
+      "metric": "entry encode@4",
+      "baseline_us": [
+        0.81,
+        0.82,
+        0.82,
+        0.81
+      ],
+      "current_us": [
+        0.81,
+        0.81,
+        0.81,
+        0.81
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6134969325153244,
+      "significant": false,
+      "minimum_detectable_effect_pct": 0.8667338090226993
+    },
+    {
+      "metric": "entry encode@8",
+      "baseline_us": [
+        1.34,
+        1.36,
+        1.36,
+        1.37
+      ],
+      "current_us": [
+        1.35,
+        1.34,
+        1.33,
+        1.35
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.1049723756906167,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.4250632475933758
+    },
+    {
+      "metric": "entry encode@16",
+      "baseline_us": [
+        2.59,
+        2.61,
+        2.58,
+        2.56
+      ],
+      "current_us": [
+        2.55,
+        2.58,
+        2.54,
+        2.61
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.5802707930367553,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.7919134393518048
+    },
+    {
+      "metric": "entry encode@64",
+      "baseline_us": [
+        8.96,
+        9.03,
+        9.14,
+        9.23
+      ],
+      "current_us": [
+        9.22,
+        9.01,
+        9.2,
+        9.04
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.30253025302530095,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.1630186078069955
+    },
+    {
+      "metric": "entry encode@512",
+      "baseline_us": [
+        69.99,
+        70.77,
+        71.66,
+        71.18
+      ],
+      "current_us": [
+        71.97,
+        70.36,
+        70.04,
+        71.16
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.024682651622020456,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.9276783940877114
+    },
+    {
+      "metric": "entry encode@4096",
+      "baseline_us": [
+        579.69,
+        566.89,
+        581.0,
+        596.97
+      ],
+      "current_us": [
+        595.31,
+        570.46,
+        574.85,
+        583.13
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.03441526316922337,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.467948449599487
+    },
+    {
+      "metric": "wide dict encode@4",
+      "baseline_us": [
+        9.31,
+        9.39,
+        8.79,
+        9.89
+      ],
+      "current_us": [
+        9.74,
+        9.52,
+        9.52,
+        9.45
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 2.2739432851792247,
+      "significant": false,
+      "minimum_detectable_effect_pct": 6.122202420320012
+    },
+    {
+      "metric": "wide dict encode@8",
+      "baseline_us": [
+        16.96,
+        15.59,
+        16.25,
+        15.43
+      ],
+      "current_us": [
+        16.03,
+        16.05,
+        15.88,
+        16.33
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.0934142923867387,
+      "significant": false,
+      "minimum_detectable_effect_pct": 5.511286565891202
+    },
+    {
+      "metric": "wide dict encode@16",
+      "baseline_us": [
+        29.59,
+        29.12,
+        29.48,
+        30.58
+      ],
+      "current_us": [
+        29.01,
+        28.35,
+        29.55,
+        32.04
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.1515534225814657,
+      "significant": false,
+      "minimum_detectable_effect_pct": 7.122011742851813
+    },
+    {
+      "metric": "wide dict encode@64",
+      "baseline_us": [
+        107.47,
+        112.29,
+        110.45,
+        101.83
+      ],
+      "current_us": [
+        111.01,
+        107.9,
+        110.79,
+        115.23
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 2.9835200444403265,
+      "significant": false,
+      "minimum_detectable_effect_pct": 6.207405851484356
+    },
+    {
+      "metric": "wide dict encode@512",
+      "baseline_us": [
+        896.46,
+        983.85,
+        977.31,
+        929.21
+      ],
+      "current_us": [
+        927.94,
+        911.4,
+        1000.83,
+        977.06
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.8027822743561261,
+      "significant": false,
+      "minimum_detectable_effect_pct": 7.596611772125736
+    },
+    {
+      "metric": "wide dict encode@4096",
+      "baseline_us": [
+        7779.45,
+        8141.65,
+        8061.48,
+        8280.02
+      ],
+      "current_us": [
+        7780.28,
+        8195.25,
+        8318.03,
+        8076.02
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.3315913782522277,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.739293927294231
+    },
+    {
+      "metric": "untyped decode@4",
+      "baseline_us": [
+        1.6,
+        1.62,
+        1.62,
+        1.6
+      ],
+      "current_us": [
+        1.59,
+        1.6,
+        1.6,
+        1.61
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6211180124223608,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.0747144680518528
+    },
+    {
+      "metric": "untyped decode@8",
+      "baseline_us": [
+        2.4,
+        2.41,
+        2.36,
+        2.37
+      ],
+      "current_us": [
+        2.39,
+        2.4,
+        2.36,
+        2.37
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.20964360587001651,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.5389937106918268
+    },
+    {
+      "metric": "untyped decode@16",
+      "baseline_us": [
+        3.97,
+        4.21,
+        3.96,
+        3.96
+      ],
+      "current_us": [
+        3.86,
+        3.92,
+        4.0,
+        4.02
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.863354037267096,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.3734408959799564
+    },
+    {
+      "metric": "untyped decode@64",
+      "baseline_us": [
+        13.93,
+        14.04,
+        14.2,
+        13.98
+      ],
+      "current_us": [
+        13.92,
+        14.15,
+        13.77,
+        14.01
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.5342831700801375,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.7253010784618241
+    },
+    {
+      "metric": "untyped decode@512",
+      "baseline_us": [
+        116.47,
+        121.0,
+        120.35,
+        114.84
+      ],
+      "current_us": [
+        118.03,
+        116.53,
+        118.69,
+        118.35
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.2242626835357224,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.2446999620081054
+    },
+    {
+      "metric": "untyped decode@4096",
+      "baseline_us": [
+        1068.7,
+        1081.92,
+        1047.47,
+        1054.2
+      ],
+      "current_us": [
+        1057.64,
+        1052.56,
+        1054.56,
+        1060.28
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6408311756724024,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.8120895971184066
+    },
+    {
+      "metric": "untyped encode@4",
+      "baseline_us": [
+        1.24,
+        1.23,
+        1.24,
+        1.22
+      ],
+      "current_us": [
+        1.21,
+        1.21,
+        1.2,
+        1.22
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.825557809330626,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.2491172997368183
+    },
+    {
+      "metric": "untyped encode@8",
+      "baseline_us": [
+        1.8,
+        1.75,
+        1.91,
+        1.87
+      ],
+      "current_us": [
+        1.84,
+        1.83,
+        1.78,
+        1.76
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.6371077762619386,
+      "significant": false,
+      "minimum_detectable_effect_pct": 5.417300328336406
+    },
+    {
+      "metric": "untyped encode@16",
+      "baseline_us": [
+        2.91,
+        2.93,
+        3.1,
+        3.03
+      ],
+      "current_us": [
+        3.06,
+        3.13,
+        3.22,
+        3.06
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 4.177109440267335,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.776789904303385
+    },
+    {
+      "metric": "untyped encode@64",
+      "baseline_us": [
+        9.62,
+        9.26,
+        9.45,
+        9.2
+      ],
+      "current_us": [
+        9.66,
+        9.16,
+        9.35,
+        9.64
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.7460698108180153,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.009032703976518
+    },
+    {
+      "metric": "untyped encode@512",
+      "baseline_us": [
+        72.62,
+        71.42,
+        72.86,
+        70.6
+      ],
+      "current_us": [
+        68.74,
+        72.69,
+        71.33,
+        71.46
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.1408695652174017,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.3516244196635783
+    },
+    {
+      "metric": "untyped encode@4096",
+      "baseline_us": [
+        543.08,
+        567.12,
+        580.36,
+        577.84
+      ],
+      "current_us": [
+        577.15,
+        574.03,
+        549.74,
+        549.2
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.80585434667608,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.912530061816069
+    },
+    {
+      "metric": "control ordinary decode@4",
+      "baseline_us": [
+        0.94,
+        0.92,
+        0.92,
+        0.92
+      ],
+      "current_us": [
+        0.97,
+        0.97,
+        0.9,
+        0.92
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.621621621621611,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.889827537150237
+    },
+    {
+      "metric": "control ordinary decode@8",
+      "baseline_us": [
+        1.39,
+        1.48,
+        1.55,
+        1.4
+      ],
+      "current_us": [
+        1.48,
+        1.48,
+        1.4,
+        1.4
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.030927835051555,
+      "significant": false,
+      "minimum_detectable_effect_pct": 7.4106843185535896
+    },
+    {
+      "metric": "control ordinary decode@16",
+      "baseline_us": [
+        2.31,
+        2.31,
+        2.33,
+        2.44
+      ],
+      "current_us": [
+        2.48,
+        2.38,
+        2.34,
+        2.4
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 2.236421725239607,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.470829434408826
+    },
+    {
+      "metric": "control ordinary decode@64",
+      "baseline_us": [
+        9.19,
+        9.02,
+        8.53,
+        8.05
+      ],
+      "current_us": [
+        8.25,
+        8.67,
+        7.95,
+        8.3
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -4.656510491520545,
+      "significant": false,
+      "minimum_detectable_effect_pct": 8.34426933916697
+    },
+    {
+      "metric": "control ordinary decode@512",
+      "baseline_us": [
+        64.62,
+        65.49,
+        62.0,
+        62.79
+      ],
+      "current_us": [
+        60.75,
+        59.54,
+        61.77,
+        65.76
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -2.777559827383292,
+      "significant": false,
+      "minimum_detectable_effect_pct": 6.027050297011606
+    },
+    {
+      "metric": "control ordinary decode@4096",
+      "baseline_us": [
+        578.6,
+        623.43,
+        604.29,
+        587.95
+      ],
+      "current_us": [
+        576.01,
+        570.64,
+        602.43,
+        580.76
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -2.6910081152083865,
+      "significant": false,
+      "minimum_detectable_effect_pct": 4.930249248199252
+    },
+    {
+      "metric": "control tagged-first decode@4",
+      "baseline_us": [
+        0.7,
+        0.7,
+        0.7,
+        0.71
+      ],
+      "current_us": [
+        0.71,
+        0.7,
+        0.71,
+        0.7
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.35587188612100473,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.3301972390933514
+    },
+    {
+      "metric": "control tagged-first decode@8",
+      "baseline_us": [
+        1.14,
+        1.14,
+        1.12,
+        1.11
+      ],
+      "current_us": [
+        1.15,
+        1.13,
+        1.13,
+        1.13
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.6651884700665047,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.956271390479011
+    },
+    {
+      "metric": "control tagged-first decode@16",
+      "baseline_us": [
+        1.98,
+        1.93,
+        1.95,
+        1.94
+      ],
+      "current_us": [
+        1.91,
+        1.93,
+        1.93,
+        1.91
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.5384615384615399,
+      "significant": true,
+      "minimum_detectable_effect_pct": 1.5368977950231903
+    },
+    {
+      "metric": "control tagged-first decode@64",
+      "baseline_us": [
+        6.72,
+        6.81,
+        6.78,
+        6.72
+      ],
+      "current_us": [
+        6.71,
+        6.74,
+        6.63,
+        6.74
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.7769145394006691,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.2445685599952232
+    },
+    {
+      "metric": "control tagged-first decode@512",
+      "baseline_us": [
+        51.69,
+        50.66,
+        51.22,
+        51.79
+      ],
+      "current_us": [
+        50.23,
+        51.09,
+        51.04,
+        51.66
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6525126606934182,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.866313474853418
+    },
+    {
+      "metric": "control tagged-first decode@4096",
+      "baseline_us": [
+        419.44,
+        419.21,
+        418.5,
+        424.47
+      ],
+      "current_us": [
+        424.16,
+        420.47,
+        419.47,
+        422.97
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.32409224438340845,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.0171390271935254
+    },
+    {
+      "metric": "control tagged-last decode@4",
+      "baseline_us": [
+        0.74,
+        0.72,
+        0.74,
+        0.74
+      ],
+      "current_us": [
+        0.74,
+        0.75,
+        0.75,
+        0.73
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.0204081632652995,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.3045701352109464
+    },
+    {
+      "metric": "control tagged-last decode@8",
+      "baseline_us": [
+        1.2,
+        1.19,
+        1.19,
+        1.19
+      ],
+      "current_us": [
+        1.19,
+        1.2,
+        1.24,
+        1.24
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 2.096436058700221,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.7466554825366516
+    },
+    {
+      "metric": "control tagged-last decode@16",
+      "baseline_us": [
+        2.11,
+        2.1,
+        2.12,
+        2.06
+      ],
+      "current_us": [
+        2.12,
+        2.09,
+        2.15,
+        2.1
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.8343265792610284,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.176053741035427
+    },
+    {
+      "metric": "control tagged-last decode@64",
+      "baseline_us": [
+        7.37,
+        7.38,
+        7.36,
+        7.22
+      ],
+      "current_us": [
+        7.42,
+        7.44,
+        7.43,
+        7.34
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 1.022843504943746,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.472091201976056
+    },
+    {
+      "metric": "control tagged-last decode@512",
+      "baseline_us": [
+        56.78,
+        58.46,
+        57.06,
+        56.78
+      ],
+      "current_us": [
+        55.15,
+        55.19,
+        56.45,
+        54.14
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -3.5577090972586016,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.6525657813008805
+    },
+    {
+      "metric": "control tagged-last decode@4096",
+      "baseline_us": [
+        453.41,
+        472.93,
+        458.82,
+        478.12
+      ],
+      "current_us": [
+        463.29,
+        463.84,
+        459.48,
+        463.8
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.6907174445064559,
+      "significant": false,
+      "minimum_detectable_effect_pct": 3.1005107308328514
+    },
+    {
+      "metric": "control nested-tag decode@4",
+      "baseline_us": [
+        1.01,
+        1.05,
+        1.04,
+        1.04
+      ],
+      "current_us": [
+        1.02,
+        1.05,
+        1.04,
+        1.03
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": 0.0,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.553683170532053
+    },
+    {
+      "metric": "control nested-tag decode@8",
+      "baseline_us": [
+        1.56,
+        1.57,
+        1.57,
+        1.59
+      ],
+      "current_us": [
+        1.56,
+        1.59,
+        1.61,
+        1.58
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": 0.7949125596184391,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.89256964831965
+    },
+    {
+      "metric": "control nested-tag decode@16",
+      "baseline_us": [
+        2.65,
+        2.62,
+        2.61,
+        2.63
+      ],
+      "current_us": [
+        2.61,
+        2.6,
+        2.61,
+        2.66
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": -0.28544243577544587,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.490813036060724
+    },
+    {
+      "metric": "control nested-tag decode@64",
+      "baseline_us": [
+        9.03,
+        9.03,
+        9.07,
+        9.11
+      ],
+      "current_us": [
+        9.16,
+        9.06,
+        8.78,
+        9.1
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": -0.3863134657836465,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.3325269286573533
+    },
+    {
+      "metric": "control nested-tag decode@512",
+      "baseline_us": [
+        70.13,
+        67.87,
+        70.8,
+        67.96
+      ],
+      "current_us": [
+        66.13,
+        66.89,
+        67.17,
+        67.96
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": -3.110998699233998,
+      "significant": true,
+      "minimum_detectable_effect_pct": 2.9668570978313924
+    },
+    {
+      "metric": "control nested-tag decode@4096",
+      "baseline_us": [
+        641.04,
+        647.95,
+        667.39,
+        655.94
+      ],
+      "current_us": [
+        646.62,
+        638.53,
+        635.64,
+        636.92
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": false,
+      "non_gating_reason": "v0.2.0b5 skipped the required nested discriminator validation; E3 attributed and accepted the residual correctness cost",
+      "change_pct": -2.0904789612298695,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.3132744805596053
+    },
+    {
+      "metric": "control untyped decode@4",
+      "baseline_us": [
+        0.98,
+        0.96,
+        0.96,
+        0.96
+      ],
+      "current_us": [
+        0.98,
+        0.97,
+        0.96,
+        0.97
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.5181347150259072,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.636820422827212
+    },
+    {
+      "metric": "control untyped decode@8",
+      "baseline_us": [
+        1.49,
+        1.5,
+        1.48,
+        1.48
+      ],
+      "current_us": [
+        1.5,
+        1.49,
+        1.5,
+        1.49
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": 0.5042016806722731,
+      "significant": false,
+      "minimum_detectable_effect_pct": 0.9196064438557968
+    },
+    {
+      "metric": "control untyped decode@16",
+      "baseline_us": [
+        2.52,
+        2.58,
+        2.61,
+        2.52
+      ],
+      "current_us": [
+        2.53,
+        2.52,
+        2.54,
+        2.49
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.4662756598240503,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.387994391377684
+    },
+    {
+      "metric": "control untyped decode@64",
+      "baseline_us": [
+        9.23,
+        9.28,
+        9.11,
+        9.16
+      ],
+      "current_us": [
+        8.99,
+        9.16,
+        9.09,
+        9.09
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.223491027732471,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.3650963089094006
+    },
+    {
+      "metric": "control untyped decode@512",
+      "baseline_us": [
+        75.67,
+        75.6,
+        75.21,
+        77.32
+      ],
+      "current_us": [
+        75.85,
+        75.57,
+        76.6,
+        74.86
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -0.3028308097432387,
+      "significant": false,
+      "minimum_detectable_effect_pct": 1.9012593425983053
+    },
+    {
+      "metric": "control untyped decode@4096",
+      "baseline_us": [
+        690.17,
+        683.25,
+        692.02,
+        706.96
+      ],
+      "current_us": [
+        679.36,
+        678.3,
+        693.95,
+        691.02
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.073798874621266,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.256462904159733
+    },
+    {
+      "metric": "untyped nested-record decode@46",
+      "baseline_us": [
+        23.42,
+        23.4,
+        23.42,
+        23.45
+      ],
+      "current_us": [
+        22.93,
+        23.08,
+        23.76,
+        22.92
+      ],
+      "verdict": "no significant difference",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -1.0673497705197994,
+      "significant": false,
+      "minimum_detectable_effect_pct": 2.0841046539587174
+    },
+    {
+      "metric": "untyped irregular decode@4096",
+      "baseline_us": [
+        1688.33,
+        1706.45,
+        1678.02,
+        1683.11
+      ],
+      "current_us": [
+        1541.16,
+        1531.71,
+        1535.67,
+        1540.45
+      ],
+      "verdict": "faster",
+      "confirmation": null,
+      "gating": true,
+      "non_gating_reason": null,
+      "change_pct": -8.983541817460566,
+      "significant": true,
+      "minimum_detectable_effect_pct": 0.9527277808399619
+    }
+  ]
+}

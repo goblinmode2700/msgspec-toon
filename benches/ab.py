@@ -158,6 +158,28 @@ METRICS = (
     ),
 )
 
+# Shape-specific points use their natural sizes instead of multiplying across
+# the generic record ladder. They close the 0.3.0b1 coverage hole where the
+# only untyped guard row was a uniform tabular payload.
+FIXED_METRICS = (
+    (
+        "bench_untyped_shapes",
+        "decode_us",
+        "nested_records",
+        "decode.nested_records",
+        "untyped nested-record decode",
+        46,
+    ),
+    (
+        "bench_untyped_shapes",
+        "decode_us",
+        "irregular",
+        "decode.irregular",
+        "untyped irregular decode",
+        4096,
+    ),
+)
+
 # v0.2.0b5 accepted valid nested concrete tags without checking the
 # discriminator. The current release performs the required validation, so
 # this point compares different work. Keep the measured tax and confirmation
@@ -378,7 +400,7 @@ def main() -> None:
     parser.add_argument(
         "--only",
         default=None,
-        choices=[label for *_, label in METRICS],
+        choices=[label for *_, label in METRICS] + [label for *_, label, _ in FIXED_METRICS],
         help="measure one metric, for putting power on a single question",
     )
     parser.add_argument(
@@ -427,6 +449,11 @@ def main() -> None:
         if not arguments.only or arguments.only == label
         for records in arguments.records
     ]
+    points.extend(
+        (module, section, metric, sampler_metric, f"{label}@{records}", records)
+        for module, section, metric, sampler_metric, label, records in FIXED_METRICS
+        if not arguments.only or arguments.only == label
+    )
 
     # Calibration pass first (one discarded block per side per point): the
     # loop counts both sides share, and the coldness of a freshly built guard,

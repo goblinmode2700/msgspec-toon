@@ -663,7 +663,7 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
     consumer: &mut C,
 ) -> Result<(), Fault> {
     if content == b"-" {
-        consumer.start_object(at)?;
+        consumer.start_repeated_object(C::ObjectSelection::default(), at)?;
         consumer.end_object(at)?;
         return Ok(());
     }
@@ -713,7 +713,7 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
                     &mut selection,
                 )?;
             }
-            consumer.start_selected_object(selection, item_at)?;
+            consumer.start_repeated_object(selection, item_at)?;
             let key = header.key.as_ref().expect("checked above");
             let mut seen = FxHashSet::default();
             #[cfg(test)]
@@ -752,7 +752,7 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
                 &mut selection,
             )?;
         }
-        consumer.start_selected_object(selection, item_at)?;
+        consumer.start_repeated_object(selection, item_at)?;
         let mut seen = FxHashSet::default();
         parse_entry::<C, PREFLIGHT>(
             item,
