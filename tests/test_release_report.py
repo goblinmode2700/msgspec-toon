@@ -168,6 +168,32 @@ def test_release_mode_rejects_missing_component_evidence(
         )
 
 
+def test_release_guard_requires_nested_and_irregular_untyped_shapes(
+    report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "ab-guard.json"
+    path.write_text(json.dumps({"results": [{"metric": "untyped decode@4096"}]}))
+    monkeypatch.setattr(report_module, "REQUIRE_RELEASE_EVIDENCE", True)
+    with pytest.raises(SystemExit, match="lacks required untyped shapes"):
+        report_module.release_guard(path)
+
+
+def test_release_guard_preserves_each_required_untyped_shape(
+    report_module: ModuleType, tmp_path: Path
+) -> None:
+    rows = [
+        {"metric": metric, "change_pct": -1.0}
+        for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+    ]
+    path = tmp_path / "ab-guard.json"
+    path.write_text(json.dumps({"results": rows}))
+    evidence = report_module.release_guard(path)
+    assert evidence["results"] == rows
+    assert evidence["required_untyped_shape_metrics"] == sorted(
+        report_module.REQUIRED_UNTYPED_GUARD_METRICS
+    )
+
+
 def test_verified_manifest_rejects_another_version(
     report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

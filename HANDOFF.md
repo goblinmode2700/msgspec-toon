@@ -1,5 +1,18 @@
 # HANDOFF — state of the world for the next agent
 
+## 0.3.0b2 issue-10 hotfix candidate
+
+Issue 10 exposed a release-guard coverage hole: `0.3.0b1` measured untyped decode only on
+uniform tabular records. Ten-worker A/B against `v0.2.0b5` confirmed +7.3% on 46 nested mixed
+records and +14.9% on 4,096 irregular records. The permanent guard now includes both exact
+shapes, and the generated report refuses release evidence that omits either.
+
+The repair caches repeated ordinary keys only for non-tabular list-record objects, after an
+eight-object amortization window. Against public `v0.3.0b1`, the complete 98-point guard reports
+no reproduced slowdown: nested records are neutral at -1.1% with a 2.1% MDE, and irregular
+records are 9.0% faster with a 1.0% MDE. `make check` passes 42 Rust and 395 Python tests with
+11 expected skips; corpus, G2, G3, G5, canonical bytes, and tokens remain release gates.
+
 ## 0.3.0b1 qualified candidate
 
 The complete `port-msgspec-control-patterns-to-rust` implementation is frozen. The final

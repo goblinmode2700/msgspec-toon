@@ -45,6 +45,22 @@ Do not modify canonical output to improve a selected payload.
 
 ## Ordered work queue
 
+### 0.3.0b2 untyped nested-record hotfix — ACTIVE
+
+- [x] Reproduce issue 10 with the ten-worker mean on nested and irregular records.
+- [x] Add both missing shapes to the permanent release guard and generated report contract.
+- [x] Localize repeated-key caching to nested ordinary objects while preserving root-entry and tabular paths.
+- [x] Pass `make check`, 538/538 corpus, G2, G3, and all sixteen G5 cells.
+- [x] Rebuild the guard from public `v0.3.0b1` and run the complete A/B ladder.
+- [ ] Generate release-bound evidence, publish `0.3.0b2`, and archive the change.
+
+Hypothesis: `0.3.0b1` regressed ordinary nested records because key caching starts only at a
+tabular header. Confirmed: nested mixed records were +7.3% and irregular records +14.9% against
+`v0.2.0b5`, both independently confirmed. The adopted amortized cache is scoped to non-tabular
+list-record objects. In the canonical complete guard against shipped `v0.3.0b1`, nested records
+are neutral at -1.1% (MDE 2.1%) and irregular records are 9.0% faster. The complete 98-point guard
+reports no reproduced slowdown.
+
 ### 0.3.0b1 control-pattern program — ACTIVE
 
 - [x] Record outside-agent issues 08 and 09 as separate strict OpenSpec changes.

@@ -230,10 +230,13 @@ uses more tokens than compact JSON for the measured irregular shapes.
 
 All timing rows come from one session and one release build. The estimator is
 the mean across ten independent worker processes. It never reports the minimum.
-Against `v0.2.0b5`, the complete release guard found entry decode 9-24% faster,
-keyed decode 9-11% faster, entry encode 11-15% faster, and untyped decode 2-8%
-faster. It found no reproduced protected regression. These ranges are direct
-same-session time comparisons, not ratios to an arbitrary reference row.
+Against `v0.2.0b5`, the `0.3.0b1` release guard found entry decode 9-24% faster,
+keyed decode 9-11% faster, and entry encode 11-15% faster. Its 2-8% untyped
+decode gain covered only uniform tabular records; it missed slower nested and
+irregular records. `0.3.0b2` adds both shapes to the permanent gate. Against
+`0.3.0b1`, nested records are neutral at -1.1% with a 2.1% minimum detectable
+effect, and irregular records are 9.0% faster. These are direct time comparisons,
+not ratios to an arbitrary reference row.
 The raw evidence is in the
 [`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
 file.
