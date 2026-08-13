@@ -28,7 +28,7 @@
     "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
     "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
     "minimum_detectable_effect": "performance changes use the separate same-session A/B gate; a change smaller than its measured resolution is not claimed as a win",
-    "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
+    "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs 100 metric-size points",
     "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py"
   },
   "conformance": {
