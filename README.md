@@ -184,7 +184,7 @@ float string conversions as msgspec 0.21.1. Strict mode stays the default.
 Other multi-member unions remain explicit plan errors. Use a tagged Struct union for object
 variants. Use `object` or `Any` when the value shape is intentionally open.
 
-Non-string mapping keys are intentionally rejected in 0.3.0b1. See the
+Non-string mapping keys are intentionally rejected. See the
 [mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).
 
 ## Why not wrap another TOON codec?

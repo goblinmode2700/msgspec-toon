@@ -17,8 +17,8 @@ than several deltas this project has published.
 
 The harness **fails** (non-zero exit) when a metric is significantly *slower*
 than the baseline **twice**. One test at alpha 0.95 is wrong about one time in
-twenty; across sixteen metrics that is a coin-flip chance of a spurious failure
-per run, and a gate that cries wolf gets ignored. So a slowdown triggers an
+twenty; across many metric points a spurious failure becomes likely, and a gate
+that cries wolf gets ignored. So a slowdown triggers an
 independent confirmation run of that metric alone, and only a slowdown that
 reproduces fails the build. Measured: comparing this build against itself, one
 of eight metrics reported a slowdown on the first pass and none survived
