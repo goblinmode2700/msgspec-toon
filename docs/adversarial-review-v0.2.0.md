@@ -532,6 +532,11 @@ a second key corpus for the life of the decode.
 Required correction: add a bounded policy or cache only keys from tabular headers. Measure
 both repeated-row payloads and unique-key payloads before a change.
 
+Current status for `0.3.0b3`: the ordinary lookup scan is removed. The call-local content
+cache still has no entry limit. The active
+[`repair-untyped-distinct-key-scaling`](../openspec/changes/repair-untyped-distinct-key-scaling/design.md)
+design owns the current mechanism and the deferred bounded design.
+
 ### F-19: strict duplicate checks use quadratic scans
 
 `parser.rs::note_key` stores keys in a `Vec<Vec<u8>>` and calls `contains` for each key.

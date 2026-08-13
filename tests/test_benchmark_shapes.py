@@ -32,11 +32,7 @@ def test_distinct_key_payloads_control_cardinality_and_round_trip() -> None:
 
 
 def test_distinct_key_guard_covers_tens_and_hundreds() -> None:
-    points = [
-        point
-        for point in benchmark_points([4])
-        if point[0] == "bench_key_cardinality"
-    ]
+    points = [point for point in benchmark_points([4]) if point[0] == "bench_key_cardinality"]
     assert points == [
         (
             "bench_key_cardinality",

@@ -342,7 +342,8 @@ No dependency or canonical byte changed. Next: H3's third-path build-identity ex
 
 - [ ] F-16 add the D1 transition matrix and debug stack assertions.
 - [ ] F-17 add `SAFETY:` proofs and boundary tests for every unsafe block.
-- [ ] F-18 bound or specialize the untyped key cache after measurement.
+- [ ] F-18 bound the untyped content-key cache after measurement. The `0.3.0b3` hash
+      lookup removes scan cost but leaves entries unbounded for one decode call.
 - [ ] F-19 measure wide-object duplicate detection before changing its data structure.
 - [ ] F-20 measure wide-dictionary shape checks before changing membership lookup.
 

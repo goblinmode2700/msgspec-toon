@@ -1,6 +1,6 @@
 # HANDOFF — state of the world for the next agent
 
-## 0.3.0b3 distinct-key scaling hotfix — qualified candidate
+## 0.3.0b3 distinct-key scaling hotfix — qualification pending
 
 Issue 11 found that `0.3.0b2` scans an `FxHashMap` for each repeated ordinary key.
 The cost approached records times distinct keys and reached 26.4x in the outside report.
@@ -22,11 +22,14 @@ that did not reproduce, and zero reproduced regressions.
 Nested records are neutral at -0.8% with a 2.4% MDE.
 Irregular records are neutral at +1.3% with a 4.1% MDE.
 
-Local qualification passes 42 Rust tests and 397 Python tests with 11 expected skips.
-The official corpus passes 538/538 cases and 84/84 required errors.
-All ten G2 probes, every G3 row, and all sixteen G5 cells pass.
-G4 keeps its documented result: it passes at 4,096 records and fails at smaller sizes.
+Qualification at source revision `7aa299f` passed 42 Rust tests and 397 Python tests with
+11 expected skips.
+The official corpus passed 538/538 cases and 84/84 required errors.
+All ten G2 probes, every G3 row, and all sixteen G5 cells passed.
+G4 kept its documented result: it passed at 4,096 records and failed at smaller sizes.
 Package metadata is `0.3.0b3`.
+A later guard-wiring review changed benchmark code after that evidence run.
+Regenerate revision-bound evidence from the final candidate before release.
 
 ## 0.3.0b2 issue-10 hotfix — published
 

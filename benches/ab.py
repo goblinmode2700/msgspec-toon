@@ -208,6 +208,7 @@ def benchmark_points(
     )
     return points
 
+
 # v0.2.0b5 accepted valid nested concrete tags without checking the
 # discriminator. The current release performs the required validation, so
 # this point compares different work. Keep the measured tax and confirmation

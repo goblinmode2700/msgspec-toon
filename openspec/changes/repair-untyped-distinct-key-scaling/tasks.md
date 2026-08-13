@@ -16,6 +16,6 @@
 
 - [x] 3.1 Run `make check`, corpus, G2, G3, and G5.
 - [x] 3.2 Run the complete guard against public `v0.3.0b2`.
-- [x] 3.3 Generate revision-bound release evidence with the distinct-key curve.
+- [ ] 3.3 Regenerate revision-bound release evidence after the final guard-wiring review.
 - [x] 3.4 Set the package version and release notes to `0.3.0b3`.
 - [ ] 3.5 Prepare release artifacts only after all gates pass.
