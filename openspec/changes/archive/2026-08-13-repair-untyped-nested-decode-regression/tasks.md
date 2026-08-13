@@ -13,4 +13,4 @@
 
 - [x] 3.1 Run `make check`, corpus, G2, G3, and G5.
 - [x] 3.2 Run the complete release guard and regenerate evidence.
-- [ ] 3.3 Correct the release wording and publish a new beta hotfix only after all gates pass.
+- [x] 3.3 Correct the release wording and publish a new beta hotfix only after all gates pass.

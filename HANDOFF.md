@@ -1,6 +1,12 @@
 # HANDOFF — state of the world for the next agent
 
-## 0.3.0b2 issue-10 hotfix candidate
+## 0.3.0b2 issue-10 hotfix — published
+
+Public revision `e1efd6f3d2573c380d2fcae5a1edb8bb872cb2d4` is tagged `v0.3.0b2`.
+Publication-disabled run `31681532242` and trusted-publishing run `31683465647` passed.
+The trusted workflow verified twelve wheels and one source distribution across Linux, macOS,
+and Windows, published through PyPI OIDC, and attached the release evidence to GitHub. GitHub
+issue 8 is closed.
 
 Issue 10 exposed a release-guard coverage hole: `0.3.0b1` measured untyped decode only on
 uniform tabular records. Ten-worker A/B against `v0.2.0b5` confirmed +7.3% on 46 nested mixed
