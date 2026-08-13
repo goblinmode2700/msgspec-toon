@@ -23,6 +23,12 @@ struct BorrowedKeyCacheKey {
     len: usize,
 }
 
+#[derive(Default)]
+struct KeyCaches {
+    borrowed: FxHashMap<BorrowedKeyCacheKey, Py<PyString>>,
+    content: FxHashMap<Vec<u8>, Py<PyString>>,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum KeyCacheMode {
     None,
@@ -48,13 +54,17 @@ pub struct UntypedConsumer<'py> {
     pub pending_err: Option<PyErr>,
     /// Optimization D3: tabular rows repeat the same borrowed header slices
     /// thousands of times. Address identity avoids hashing their contents.
-    borrowed_key_cache: FxHashMap<BorrowedKeyCacheKey, Py<PyString>>,
     /// Ordinary records repeat spellings at different input addresses, and
-    /// escaped tabular keys own their unescaped bytes. A separate content map
-    /// permits borrowed `[u8]` hash lookup instead of scanning the address-keyed
-    /// cache. It is decoder-local and therefore bounded by one decode call,
-    /// though the number of entries within that call is intentionally unbounded.
-    content_key_cache: FxHashMap<Vec<u8>, Py<PyString>>,
+    /// escaped tabular keys own their unescaped bytes. Their separate content
+    /// map permits borrowed `[u8]` hash lookup instead of a cache scan.
+    ///
+    /// Keep both maps behind one lazy pointer. Besides avoiding cache storage
+    /// for cacheless entry documents, this prevents key-cache growth from
+    /// enlarging `TypedConsumer`, which embeds an optional untyped consumer
+    /// for explicitly requested `Any` subtrees. The maps are decoder-local and
+    /// therefore bounded by one decode call, though the number of entries
+    /// within that call is intentionally unbounded.
+    key_caches: Option<Box<KeyCaches>>,
     key_cache_mode: KeyCacheMode,
     repeated_objects_seen: u8,
 }
@@ -67,8 +77,7 @@ impl<'py> UntypedConsumer<'py> {
             stack: Vec::new(),
             result: None,
             pending_err: None,
-            borrowed_key_cache: FxHashMap::default(),
-            content_key_cache: FxHashMap::default(),
+            key_caches: None,
             key_cache_mode: KeyCacheMode::None,
             repeated_objects_seen: 0,
         }
@@ -85,6 +94,12 @@ impl<'py> UntypedConsumer<'py> {
     fn internal(&mut self, err: PyErr, at: Position) -> Fault {
         self.pending_err = Some(err);
         Fault::syntax_at(FaultCode::Internal, at)
+    }
+
+    #[inline(always)]
+    fn key_caches_mut(&mut self) -> &mut KeyCaches {
+        self.key_caches
+            .get_or_insert_with(|| Box::new(KeyCaches::default()))
     }
 
     fn place(&mut self, value: Bound<'py, PyAny>, at: Position) -> Result<(), Fault> {
@@ -121,24 +136,34 @@ impl<'py> UntypedConsumer<'py> {
                     address: bytes.as_ptr() as usize,
                     len: bytes.len(),
                 };
-                if let Some(cached) = self.borrowed_key_cache.get(&cache_key) {
+                if let Some(cached) = self
+                    .key_caches
+                    .as_ref()
+                    .and_then(|caches| caches.borrowed.get(&cache_key))
+                {
                     return cached.bind(self.py).to_owned().into_any();
                 }
                 // SAFETY: parsing begins with whole-document UTF-8 validation.
                 let text = unsafe { std::str::from_utf8_unchecked(bytes) };
                 let created = PyString::new(self.py, text);
-                self.borrowed_key_cache
+                self.key_caches_mut()
+                    .borrowed
                     .insert(cache_key, created.clone().unbind());
                 created.into_any()
             }
             std::borrow::Cow::Owned(bytes) => {
-                if let Some(cached) = self.content_key_cache.get(bytes.as_slice()) {
+                if let Some(cached) = self
+                    .key_caches
+                    .as_ref()
+                    .and_then(|caches| caches.content.get(bytes.as_slice()))
+                {
                     return cached.bind(self.py).to_owned().into_any();
                 }
                 // SAFETY: `unescape` rejects escapes that cannot produce valid UTF-8.
                 let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
                 let created = PyString::new(self.py, text);
-                self.content_key_cache
+                self.key_caches_mut()
+                    .content
                     .insert(bytes, created.clone().unbind());
                 created.into_any()
             }
@@ -154,14 +179,19 @@ impl<'py> UntypedConsumer<'py> {
             StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
             StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
         };
-        if let Some(cached) = self.content_key_cache.get(bytes.as_ref()) {
+        if let Some(cached) = self
+            .key_caches
+            .as_ref()
+            .and_then(|caches| caches.content.get(bytes.as_ref()))
+        {
             return cached.bind(self.py).to_owned().into_any();
         }
         // SAFETY: parsing begins with whole-document UTF-8 validation, and
         // `unescape` rejects escapes that cannot produce invalid UTF-8.
         let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
         let created = PyString::new(self.py, text);
-        self.content_key_cache
+        self.key_caches_mut()
+            .content
             .insert(bytes.into_owned(), created.clone().unbind());
         created.into_any()
     }
