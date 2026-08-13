@@ -1,6 +1,6 @@
 # Benchmarks
 
-Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-13T20:00:02.426716+00:00.
+Generated from [`conformance/report.json`](conformance/report.json) on 2026-08-13T21:00:09.826416+00:00.
 
 The report keeps time and token results separate. It does not create a combined score.
 
@@ -20,10 +20,10 @@ The chart shows encode, decode, and total elapsed time. Every value is a direct 
 
 | Codec | Encode (µs) | Decode (µs) | Total (µs) |
 |---|---:|---:|---:|
-| msgspec-toon | 614.34 | 1,128.02 |  1,742.36 |
-| msgspec JSON | 228.88 | 898.96 |  1,127.84 |
-| toons (Rust) | 7,180.87 | 3,488.09 |  10,668.96 |
-| python-toon | 25,470.75 | 33,497.34 |  58,968.09 |
+| msgspec-toon | 555.11 | 1,033.01 |  1,588.12 |
+| msgspec JSON | 213.32 | 827.35 |  1,040.67 |
+| toons (Rust) | 6,642.79 | 3,100.84 |  9,743.63 |
+| python-toon | 23,729.70 | 30,228.37 |  53,958.07 |
 
 ## End-to-end time
 
