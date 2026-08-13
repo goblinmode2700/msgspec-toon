@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0b1
 
 Typed correctness, explicit state, and localized hot paths.
 
