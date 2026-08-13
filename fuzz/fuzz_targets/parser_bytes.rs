@@ -8,6 +8,8 @@ use msgspec_toon_fuzz::event::{Consumer, ScalarToken, StringToken};
 struct Sink;
 
 impl Consumer for Sink {
+    type ObjectSelection = ();
+
     fn start_object(&mut self, _: Position) -> Result<(), Fault> {
         Ok(())
     }

@@ -6,10 +6,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "benches"))
 
-import msgspec_toon  # noqa: E402
-from ab import benchmark_points  # noqa: E402
-from bench_key_cardinality import KEY_COUNTS  # noqa: E402
-from payloads import (  # noqa: E402
+import msgspec_toon
+from ab import benchmark_points
+from bench_key_cardinality import KEY_COUNTS
+from payloads import (
     distinct_key_records_tree,
     irregular_records_tree,
     nested_mixed_tree,
