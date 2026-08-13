@@ -22,6 +22,12 @@ evidence, published through PyPI OIDC, and attached `report.json` plus
 `verified-release.json` to a non-draft GitHub prerelease. PyPI exposes exactly those 13 files.
 The public tree contains no agent instructions, handoffs, objectives, OpenSpec work ledgers,
 prior-art notes, Lavish artifacts, or historical benchmark experiments.
+Public evidence commit `dafbe765441199eda04d02287d0d5d0567bffa84` carries the trusted-run
+report and regenerated figures; default-branch validation run `31672213512` passed. The PyPI
+file list and every SHA-256 exactly match the 13-entry verified manifest. Clean PyPI installs
+round-trip a typed Struct document on CPython 3.13.1 ABI3 and CPython 3.14.7 free-threaded with
+the GIL disabled. The completed OpenSpec change is archived as
+`2026-08-12-port-msgspec-control-patterns-to-rust`.
 
 ## Upstream Struct-builder C API proposal
 
