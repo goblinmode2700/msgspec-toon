@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 import _timing
 import bench_codecs
 import bench_integration
+import bench_key_cardinality
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
@@ -38,6 +39,8 @@ REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE
 CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
 CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
 REQUIRED_UNTYPED_GUARD_METRICS = {
+    "untyped distinct-32-key decode@4096",
+    "untyped distinct-512-key decode@4096",
     "untyped nested-record decode@46",
     "untyped irregular decode@4096",
 }
@@ -318,7 +321,7 @@ def main() -> None:
             "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
             "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
             "minimum_detectable_effect": "performance changes use the separate same-session A/B gate; a change smaller than its measured resolution is not claimed as a win",
-            "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs sixteen",
+            "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs 100 metric-size points",
             "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py",
         },
         "conformance": conformance_summary(lock),
@@ -330,6 +333,7 @@ def main() -> None:
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "benchmarks_integration_same_run": integration_benchmarks,
+        "untyped_distinct_key_scaling": bench_key_cardinality.run(),
         "token_efficiency": bench_tokens.run(),
         "efficiency_lock": efficiency,
         "compatibility_since_previous_release": compatibility_delta(support, efficiency),

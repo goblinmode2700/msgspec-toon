@@ -8,6 +8,8 @@ use msgspec_toon_fuzz::event::{Consumer, ScalarToken, StringToken};
 struct Integers(Vec<i64>);
 
 impl Consumer for Integers {
+    type ObjectSelection = ();
+
     fn start_object(&mut self, at: Position) -> Result<(), Fault> {
         Err(Fault::validation_at(FaultCode::TypeMismatch, at))
     }

@@ -17,8 +17,8 @@ than several deltas this project has published.
 
 The harness **fails** (non-zero exit) when a metric is significantly *slower*
 than the baseline **twice**. One test at alpha 0.95 is wrong about one time in
-twenty; across sixteen metrics that is a coin-flip chance of a spurious failure
-per run, and a gate that cries wolf gets ignored. So a slowdown triggers an
+twenty; across many metric points a spurious failure becomes likely, and a gate
+that cries wolf gets ignored. So a slowdown triggers an
 independent confirmation run of that metric alone, and only a slowdown that
 reproduces fails the build. Measured: comparing this build against itself, one
 of eight metrics reported a slowdown on the first pass and none survived
@@ -45,6 +45,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from _timing import LOOPS_ENV
+from bench_key_cardinality import GUARD_KEY_COUNTS, metric_name, result_key
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 GUARD_TAG_FILE = REPO / "benches" / "GUARD_TAG"
@@ -178,7 +179,35 @@ FIXED_METRICS = (
         "untyped irregular decode",
         4096,
     ),
+) + tuple(
+    (
+        "bench_key_cardinality",
+        "decode_us",
+        result_key(distinct_keys),
+        metric_name(distinct_keys),
+        f"untyped distinct-{distinct_keys}-key decode",
+        4096,
+    )
+    for distinct_keys in GUARD_KEY_COUNTS
 )
+
+
+def benchmark_points(
+    records: list[int], only: str | None = None
+) -> list[tuple[str, str, str, str, str, int]]:
+    points = [
+        (module, section, metric, sampler_metric, f"{label}@{record_count}", record_count)
+        for module, section, metric, sampler_metric, label in METRICS
+        if not only or only == label
+        for record_count in records
+    ]
+    points.extend(
+        (module, section, metric, sampler_metric, f"{label}@{record_count}", record_count)
+        for module, section, metric, sampler_metric, label, record_count in FIXED_METRICS
+        if not only or only == label
+    )
+    return points
+
 
 # v0.2.0b5 accepted valid nested concrete tags without checking the
 # discriminator. The current release performs the required validation, so
@@ -443,17 +472,7 @@ def main() -> None:
     # inflates variance, which the t-test models and the MDE reports, instead
     # of biasing means, which nothing reported. The order is deterministic:
     # no randomisation enters the evidence.
-    points = [
-        (module, section, metric, sampler_metric, f"{label}@{records}", records)
-        for module, section, metric, sampler_metric, label in METRICS
-        if not arguments.only or arguments.only == label
-        for records in arguments.records
-    ]
-    points.extend(
-        (module, section, metric, sampler_metric, f"{label}@{records}", records)
-        for module, section, metric, sampler_metric, label, records in FIXED_METRICS
-        if not arguments.only or arguments.only == label
-    )
+    points = benchmark_points(arguments.records, arguments.only)
 
     # Calibration pass first (one discarded block per side per point): the
     # loop counts both sides share, and the coldness of a freshly built guard,

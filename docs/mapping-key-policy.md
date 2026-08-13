@@ -1,4 +1,4 @@
-# Mapping key policy for 0.2.0b1
+# Mapping key policy
 
 `msgspec-toon` supports `dict[str, T]`. It rejects `dict[int, T]` and all other non-string
 mapping-key annotations when it constructs the decoder.
@@ -9,9 +9,9 @@ and another numeric spelling refer to the same Python key. The current direct ma
 proven collision policy that matches `msgspec.json` in strict and permissive modes.
 
 The repository and pinned TOON corpus contain no required non-string mapping-key payload. The
-executable support matrix has one explicit probe for this boundary. Therefore, 0.2.0b1 keeps the
-plan-construction rejection. It returns `TypePlanError` with code `unsupported_mapping_key` and a
-schema-only path. It does not decode to the wrong key type.
+executable support matrix has one explicit probe for this boundary. Therefore, the current release
+keeps the plan-construction rejection. It returns `TypePlanError` with code
+`unsupported_mapping_key` and a schema-only path. It does not decode to the wrong key type.
 
 This decision can change only after differential tests define conversion, collision, large-integer,
 and payload-safety behavior.

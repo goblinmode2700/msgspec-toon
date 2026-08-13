@@ -50,10 +50,9 @@ spec requires. There is no code change that recovers tokens on these shapes.
 
 ## What a caller can do
 
-Token shape and decode speed are separate axes. Since `0.3.0b2`, the release
-guard measures untyped decode for uniform tabular records, nested mixed
-records, and irregular records. A speed claim for one shape is not generalized
-to the others.
+Token shape and decode speed are separate axes. The release guard measures
+uniform tabular records, nested mixed records, irregular records, and distinct-key
+cardinality. A speed claim for one shape is not generalized to the others.
 
 - **Shape the payload tabular** where possible: uniform records are the
   0.58–0.64× shapes. This is the entire advantage.
