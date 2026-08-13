@@ -13,8 +13,15 @@ The exact candidate passes 42 Rust tests, 392 Python tests, strict OpenSpec vali
 538/538 corpus, all 84 strict-error cases, ten G2 probes, every G3 row, and both G5 directions
 across all sixteen shape-size cells. G4 passes at 4096 rows and remains the documented
 stock-msgspec miss at smaller sizes. Canonical bytes and tokens are locked. Package metadata is
-now `0.3.0b1`; generate release-bound evidence and target-check the artifact matrix before
-publication.
+now `0.3.0b1`.
+
+Public revision `789439d4bac7d6248fa9255d6ab3dcef90a434ce` is tagged `v0.3.0b1`.
+Publication-disabled run `31669126896` and trusted-publishing run `31670603190` passed. The
+trusted run rebuilt and target-verified twelve wheels plus one sdist, generated release-bound
+evidence, published through PyPI OIDC, and attached `report.json` plus
+`verified-release.json` to a non-draft GitHub prerelease. PyPI exposes exactly those 13 files.
+The public tree contains no agent instructions, handoffs, objectives, OpenSpec work ledgers,
+prior-art notes, Lavish artifacts, or historical benchmark experiments.
 
 ## Upstream Struct-builder C API proposal
 

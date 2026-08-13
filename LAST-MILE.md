@@ -57,7 +57,7 @@ Do not modify canonical output to improve a selected payload.
 - [x] Complete phases 4-10 in `port-msgspec-control-patterns-to-rust/tasks.md`.
 - [x] Accept and publish the measured 5.96 ns/row nested-tag correctness residual.
 - [x] Pass the complete release guard with no reproduced protected regression.
-- [ ] Generate release-bound evidence, target-check the artifact matrix, publish, and archive the change.
+- [x] Generate release-bound evidence, target-check the artifact matrix, publish, and archive the change.
 
 Measured checkpoint finding: ordinary typed, root tagged, and untyped nested controls did not show
 a reproduced slowdown. Nested concrete tagged rows cost 7-9% against `v0.2.0b5`, which skipped tag

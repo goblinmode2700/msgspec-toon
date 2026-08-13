@@ -128,6 +128,6 @@
 - [x] 11.5 Generate the report with each checkpoint marked adopted, rejected, or deferred.
 - [x] 11.6 Update the support matrix, README, benchmark documents, changelog, handoff, and ledger.
 - [x] 11.7 Set the package version to `0.3.0b1` only after all qualification gates pass.
-- [ ] 11.8 Build and target-check all wheels plus the source distribution without publication.
-- [ ] 11.9 Publish only after the qualified artifact set passes and current owner authority permits publication.
-- [ ] 11.10 Archive the OpenSpec change only after release evidence is complete.
+- [x] 11.8 Build and target-check all wheels plus the source distribution without publication.
+- [x] 11.9 Publish only after the qualified artifact set passes and current owner authority permits publication.
+- [x] 11.10 Archive the OpenSpec change only after release evidence is complete.
