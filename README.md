@@ -184,7 +184,7 @@ float string conversions as msgspec 0.21.1. Strict mode stays the default.
 Other multi-member unions remain explicit plan errors. Use a tagged Struct union for object
 variants. Use `object` or `Any` when the value shape is intentionally open.
 
-Non-string mapping keys are intentionally rejected in 0.2.0b1. See the
+Non-string mapping keys are intentionally rejected in 0.3.0b1. See the
 [mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).
 
 ## Why not wrap another TOON codec?
@@ -230,6 +230,10 @@ uses more tokens than compact JSON for the measured irregular shapes.
 
 All timing rows come from one session and one release build. The estimator is
 the mean across ten independent worker processes. It never reports the minimum.
+Against `v0.2.0b5`, the complete release guard found entry decode 9-24% faster,
+keyed decode 9-11% faster, entry encode 11-15% faster, and untyped decode 2-8%
+faster. It found no reproduced protected regression. These ranges are direct
+same-session time comparisons, not ratios to an arbitrary reference row.
 The raw evidence is in the
 [`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
 file.
