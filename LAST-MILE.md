@@ -45,6 +45,25 @@ Do not modify canonical output to improve a selected payload.
 
 ## Ordered work queue
 
+### 0.3.0b3 untyped distinct-key scaling hotfix — QUALIFYING
+
+- [x] Reproduce issue 11 with the ten-worker mean and fixed-size payloads.
+- [x] Split address-identity and byte-content key caches.
+- [x] Remove cache iteration from ordinary key lookup.
+- [x] Add 32-key and 512-key cells to the permanent release guard.
+- [x] Add the complete 4-to-1,024-key curve to generated report inputs.
+- [x] Pass `make check`, 538/538 corpus, G2, G3, and all sixteen G5 cells.
+- [x] Rebuild the guard from public `v0.3.0b2` and run the complete A/B ladder.
+- [ ] Generate revision-bound evidence and publish `0.3.0b3`.
+
+Hypothesis: `0.3.0b2` scales with distinct-key count because ordinary key lookup scans
+the complete mixed-identity cache. Confirmed. A split content map removes that scan and
+uses borrowed `[u8]` hash lookup. The complete 100-point guard reports zero reproduced
+regressions. The 32-key and 512-key cells improve 36.8% and 87.9% against public `0.3.0b2`.
+The cache is decoder-local and unbounded only for one decode call. A bounded direct-mapped
+cache remains a separate design because it changes collision, replacement, and free-threading
+semantics.
+
 ### 0.3.0b2 untyped nested-record hotfix — COMPLETE
 
 - [x] Reproduce issue 10 with the ten-worker mean on nested and irregular records.

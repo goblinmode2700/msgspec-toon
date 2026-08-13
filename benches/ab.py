@@ -178,6 +178,22 @@ FIXED_METRICS = (
         "untyped irregular decode",
         4096,
     ),
+    (
+        "bench_key_cardinality",
+        "decode_us",
+        "distinct_keys_32",
+        "decode.distinct_keys_32",
+        "untyped distinct-32-key decode",
+        4096,
+    ),
+    (
+        "bench_key_cardinality",
+        "decode_us",
+        "distinct_keys_512",
+        "decode.distinct_keys_512",
+        "untyped distinct-512-key decode",
+        4096,
+    ),
 )
 
 # v0.2.0b5 accepted valid nested concrete tags without checking the

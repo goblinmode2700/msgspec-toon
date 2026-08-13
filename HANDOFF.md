@@ -1,5 +1,33 @@
 # HANDOFF — state of the world for the next agent
 
+## 0.3.0b3 distinct-key scaling hotfix — qualified candidate
+
+Issue 11 found that `0.3.0b2` scans an `FxHashMap` for each repeated ordinary key.
+The cost approached records times distinct keys and reached 26.4x in the outside report.
+The repository ten-worker reproduction confirmed the same unbounded curve.
+
+The repair splits the cache by identity.
+Tabular borrowed slices use address-and-length keys.
+Ordinary records use `FxHashMap<Vec<u8>, Py<PyString>>` with borrowed byte lookup.
+No key lookup iterates a cache.
+The content cache has no entry limit inside one decode call.
+The consumer releases the complete cache when the call ends.
+
+The fixed-width benchmark keeps 4,096 records and 117,681 encoded bytes in every cell.
+Candidate decode stays within 9.0% from 4 through 1,024 distinct keys.
+The permanent guard now contains 32-key and 512-key cells.
+Against public `0.3.0b2`, these cells improve 36.8% and 87.9%.
+The complete 100-point guard reports six wins, 88 neutral cells, six initial slowdowns
+that did not reproduce, and zero reproduced regressions.
+Nested records are neutral at -0.8% with a 2.4% MDE.
+Irregular records are neutral at +1.3% with a 4.1% MDE.
+
+Local qualification passes 42 Rust tests and 397 Python tests with 11 expected skips.
+The official corpus passes 538/538 cases and 84/84 required errors.
+All ten G2 probes, every G3 row, and all sixteen G5 cells pass.
+G4 keeps its documented result: it passes at 4,096 records and fails at smaller sizes.
+Package metadata is `0.3.0b3`.
+
 ## 0.3.0b2 issue-10 hotfix — published
 
 Public revision `e1efd6f3d2573c380d2fcae5a1edb8bb872cb2d4` is tagged `v0.3.0b2`.
