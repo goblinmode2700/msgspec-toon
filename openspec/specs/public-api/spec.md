@@ -35,26 +35,39 @@ from one declared option model and SHALL provide equivalent behavior for equival
 
 ### Requirement: Errors carry position and never echo the payload
 
-A decode or validation error SHALL carry the 1-based line and, where available, column at
-which decoding failed, plus a stable machine-readable code. It SHALL NOT include the offending
-source line, any substring of the payload, or any scalar, key, or cell value derived from payload
-content. It MAY render a structural leading-space count derived only from the first-content
-column of a failing line. Internal native faults SHALL store coordinates and schema-known path
-parts only; user-facing text SHALL otherwise be formatted from static templates. Struct path
-components SHALL come from the compiled plan, never from payload keys.
+A decode or validation error SHALL carry a stable machine-readable code and a 1-based line. It
+SHALL carry a column when the decoder knows the column.
+
+A typed runtime error SHALL expose a schema-known path when the compiled plan knows that path.
+Struct path parts SHALL come from the compiled plan. Array positions SHALL come from structural
+indexes. No path part SHALL come from a payload key or value.
+
+The error SHALL NOT include the source line or any payload substring. It SHALL NOT include a
+scalar, key, or cell value from the payload. It can show a structural leading-space count that
+comes only from the first-content column.
+
+Native faults SHALL store coordinates and schema-known path parts only. User-facing text SHALL
+use static templates for all other content.
 
 #### Scenario: A sentinel value never reaches the error text
 
 - **WHEN** a document containing a unique sentinel string fails to decode
-- **THEN** the sentinel appears nowhere in `str(exc)`, `repr(exc)`, `exc.args`, or any
-  exception attribute
+- **THEN** the sentinel appears nowhere in `str(exc)`, `repr(exc)`, `exc.args`, or any exception
+  attribute
 - **AND** the message still names the line where decoding failed
+
+#### Scenario: Typed nested error exposes a schema path
+
+- **WHEN** typed decode rejects a nested tagged field group
+- **THEN** the error exposes the schema path to the nested field
+- **AND** the path contains no payload-derived key or value
 
 #### Scenario: Error classes remain msgspec-compatible
 
 - **WHEN** a caller catches `msgspec.DecodeError`
-- **THEN** this package's `DecodeError` is caught, provided the pinned msgspec version
-  supports subclassing; otherwise the package documents its `ValueError`-based fallback
+- **THEN** the `DecodeError` from this package is caught, provided the pinned msgspec version supports
+  subclassing
+- **AND** the package documents its `ValueError` fallback when subclassing is unavailable
 
 ### Requirement: Hooks match msgspec semantics
 
