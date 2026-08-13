@@ -10,7 +10,7 @@ Untyped distinct-key scaling hotfix.
 - Keep separate decoder-local caches for borrowed address identity and owned key content.
 - Add fixed-size key-cardinality evidence from 4 through 1,024 distinct keys.
 - Add permanent 32-key and 512-key release-guard cells.
-- Improve 4,096-record decode by 36.8% at 32 keys and 87.9% at 512 keys against `0.3.0b2`.
+- Improve 4,096-record decode by 35.8% at 32 keys and 87.4% at 512 keys against `0.3.0b2`.
 - Keep nested and irregular untyped decode neutral against `0.3.0b2`.
 - State that the content cache is unbounded only for one decode call.
 - Preserve canonical bytes, token counts, conformance, G2, G3, and G5.

@@ -239,7 +239,7 @@ effect, and irregular records are 9.0% faster.
 
 `0.3.0b3` also varies distinct ordinary-record key count while record count and
 encoded size stay fixed. It replaces the `0.3.0b2` cache scan with hash lookup.
-Against `0.3.0b2`, decode is 36.8% faster at 32 keys and 87.9% faster at 512 keys.
+Against `0.3.0b2`, decode is 35.8% faster at 32 keys and 87.4% faster at 512 keys.
 The complete 100-point guard reports no reproduced slowdown. These are direct
 time comparisons, not ratios to an arbitrary reference row.
 The raw evidence is in the
