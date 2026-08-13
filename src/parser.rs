@@ -518,6 +518,7 @@ fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
 ) -> Result<(), Fault> {
     let leaf_count = header.leaf_count();
     consumer.start_object(at)?;
+    consumer.begin_tabular(leaf_count, at)?;
     let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
     let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
     body_rows(lines, depth, strict, header.declared_len, |_, row| {

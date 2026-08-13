@@ -499,11 +499,37 @@ fn write_entry<'py>(
             }
             write_key(writer, key);
             writer.bytes(b": ");
-            write_scalar(ctx, py, writer, &value)?;
+            write_entry_scalar(ctx, py, writer, &value)?;
             writer.newline();
             Ok(())
         }
     }
+}
+
+#[inline(never)]
+fn write_entry_scalar<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    writer: &mut Writer,
+    value: &Val<'py>,
+) -> PyResult<()> {
+    if let Val::Str(text) = value {
+        let text = text.to_str()?;
+        let bytes = text.as_bytes();
+        if bytes.len() >= 96 && !matches!(bytes[0], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
+        {
+            let quote = memchr::memchr3(ctx.delimiter, b':', b'"', bytes).is_some()
+                || memchr::memchr(b'\\', bytes).is_some()
+                || bytes.iter().any(|&byte| byte < 0x20);
+            if quote {
+                write_quoted(writer, text);
+            } else {
+                writer.text(text);
+            }
+            return Ok(());
+        }
+    }
+    write_scalar(ctx, py, writer, value)
 }
 
 #[allow(clippy::too_many_arguments)]

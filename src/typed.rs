@@ -1068,7 +1068,7 @@ impl<const EXTENDED: bool> Consumer for TypedConsumer<'_, '_, EXTENDED> {
 
     #[inline(always)]
     fn needs_object_field_selection(&self) -> bool {
-        true
+        EXTENDED && self.has_tagged_plans
     }
 
     fn needs_object_preflight(&self) -> bool {

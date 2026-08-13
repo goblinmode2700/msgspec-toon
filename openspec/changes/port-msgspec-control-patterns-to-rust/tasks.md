@@ -124,7 +124,7 @@
 - [x] 11.1 Run `make check`, strict OpenSpec validation, the corpus, G2, G3, and G5.
 - [x] 11.2 Run the complete interaction matrix and require zero silent failures.
 - [x] 11.3 Run canonical byte and token locks and require no change.
-- [ ] 11.4 Run the complete release-guard A/B and resolve every significant regression.
+- [x] 11.4 Run the complete release-guard A/B and resolve every significant regression.
 - [ ] 11.5 Generate the report with each checkpoint marked adopted, rejected, or deferred.
 - [ ] 11.6 Update the support matrix, README, benchmark documents, changelog, handoff, and ledger.
 - [ ] 11.7 Set the package version to `0.3.0b1` only after all qualification gates pass.

@@ -735,3 +735,25 @@ reported `sys._is_gil_enabled() == False` and capsule access active. Capsule dis
 handling, and the five-thread same-object mutation/encode stress test all passed. No safe
 replacement changed a release hot path: this phase adds contracts, cold validation, tests, and
 build reliability only, so task 8.8 required no timing claim.
+
+### Task 11.4: final release-guard ruling
+
+The final candidate localizes three costs that the full guard resolved. Typed object-field
+selection runs only for extended consumers whose compiled plans contain tags. Untyped key caching
+starts only after the parser announces a tabular body; borrowed source keys use stable
+pointer-and-length identities, while escaped keys remain owned. Long nonnumeric strings in entry
+form use an out-of-line vectorized quote scan, so ordinary encode call sites retain their prior
+layout.
+
+The complete deterministic B-C-C-B guard against `v0.2.0b5` used ten worker processes. It found
+44 significant wins, 45 neutral cells, two initial slowdowns that failed independent double-power
+confirmation, and no reproduced protected regression. Entry decode improved 9.2-24.2%, keyed
+decode 8.8-11.3%, entry encode 10.9-15.4%, and untyped decode 2.2-7.9%. Typed and functional encode,
+ordinary decode, and untyped encode remained neutral. The canary spread was 3.5%; the artifact
+retains every sample and per-cell MDE.
+
+The exact candidate passes 42 Rust tests, 392 Python tests, strict OpenSpec validation, all 538
+official corpus cases, all 84 strict-error cases, and all ten allocation probes. G3 passes at all
+six sizes. G5 passes both directions in all sixteen shape-size cells. Canonical bytes and token
+counts remain locked. G4 passes at 4096 rows and remains the documented stock-msgspec miss below
+that size. The release guard therefore accepts the candidate.

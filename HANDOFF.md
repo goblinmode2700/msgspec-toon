@@ -1,5 +1,21 @@
 # HANDOFF — state of the world for the next agent
 
+## 0.3.0b1 qualified candidate
+
+The complete `port-msgspec-control-patterns-to-rust` implementation is frozen. The final
+release guard against `v0.2.0b5` reports 44 significant wins, 45 neutral cells, two initial
+slowdowns that did not reproduce, and zero reproduced protected regressions. Entry decode is
+9-24% faster, keyed decode 9-11% faster, entry encode 11-15% faster, and untyped decode 2-8%
+faster. The known nested-tag correctness cost remains explicitly non-gating because the old
+release skipped required validation.
+
+The exact candidate passes 42 Rust tests, 392 Python tests, strict OpenSpec validation, the
+538/538 corpus, all 84 strict-error cases, ten G2 probes, every G3 row, and both G5 directions
+across all sixteen shape-size cells. G4 passes at 4096 rows and remains the documented
+stock-msgspec miss at smaller sizes. Canonical bytes and tokens are locked. Package metadata is
+now `0.3.0b1`; generate release-bound evidence and target-check the artifact matrix before
+publication.
+
 ## Upstream Struct-builder C API proposal
 
 A GC-safe, versioned, opaque Struct-builder API is now published as draft
@@ -76,7 +92,7 @@ composition, non-strict priority, payload safety, support matrix, README, and al
 executable. Absolute ten-worker timings are in `benches/type-parity-latest.json`; `object` tracks
 the `Any` control. Mixed object/scalar and untagged container unions remain explicit plan errors.
 
-Task 3.7 now removes `pending_object_plan` and `pending_invalid_tag`. Parser preflight owns one
+Task 3.7 removed `pending_object_plan` and `pending_invalid_tag`. Parser preflight owns one
 selection value and passes it directly into the exact root, ordinary, tabular-row, keyed-row, or
 list-item object. A seven-way matrix covers root, child, deeper child, siblings, optional,
 recursive, and adjacent objects. Against exact preceding source `f7a0d00`, ordinary and nested-tag
