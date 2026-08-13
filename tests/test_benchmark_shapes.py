@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "benches"))
 
 import msgspec_toon
-from bench_key_cardinality import GUARD_KEY_COUNTS, KEY_COUNTS
+from ab import benchmark_points
+from bench_key_cardinality import KEY_COUNTS
 from payloads import distinct_key_records_tree, irregular_records_tree, nested_mixed_tree
 
 
@@ -31,5 +32,26 @@ def test_distinct_key_payloads_control_cardinality_and_round_trip() -> None:
 
 
 def test_distinct_key_guard_covers_tens_and_hundreds() -> None:
-    assert any(10 <= count < 100 for count in GUARD_KEY_COUNTS)
-    assert any(100 <= count < 1000 for count in GUARD_KEY_COUNTS)
+    points = [
+        point
+        for point in benchmark_points([4])
+        if point[0] == "bench_key_cardinality"
+    ]
+    assert points == [
+        (
+            "bench_key_cardinality",
+            "decode_us",
+            "distinct_keys_32",
+            "decode.distinct_keys_32",
+            "untyped distinct-32-key decode@4096",
+            4096,
+        ),
+        (
+            "bench_key_cardinality",
+            "decode_us",
+            "distinct_keys_512",
+            "decode.distinct_keys_512",
+            "untyped distinct-512-key decode@4096",
+            4096,
+        ),
+    ]
