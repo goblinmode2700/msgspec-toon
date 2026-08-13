@@ -448,7 +448,7 @@
     "untyped_distinct_key_scaling_R12": {
       "question": "does 0.3.0b2 ordinary-record decode scale with distinct-key count because cached_ordinary_key scans the complete mixed-identity map?",
       "method": "hold 4096 records, two fields, value data, key width, and 117681 encoded bytes fixed while varying exact key count from 4 through 1024; split borrowed address identity from owned byte content; compare the 32-key and 512-key cells with public 0.3.0b2 in the complete ten-worker release guard",
-      "result": "the candidate stays within 9.0% from 4 through 1024 keys. Against 0.3.0b2, 32 keys improve 36.8% with a 4.3% MDE and 512 keys improve 87.9% with a 3.3% MDE. Nested and irregular controls remain neutral. The complete 100-point guard reports zero reproduced regressions.",
+      "result": "the release report keeps every payload at 117681 bytes and the candidate stays within 9.1% from 4 through 1024 keys. Against 0.3.0b2, 32 keys improve 36.8% with a 4.3% MDE and 512 keys improve 87.9% with a 3.3% MDE. Nested and irregular controls remain neutral. The complete 100-point guard reports zero reproduced regressions.",
       "ruling": "ADOPTED for 0.3.0b3. Ordinary lookup uses average O(1) borrowed-byte hash lookup and no cache scan. The content cache is decoder-local and unbounded only for one decode call. A bounded direct-mapped cache is deferred because it changes collision, replacement, and free-threading behavior. Artifact: benches/ab-guard.json."
     }
   },

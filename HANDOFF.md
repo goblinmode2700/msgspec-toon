@@ -14,7 +14,7 @@ The content cache has no entry limit inside one decode call.
 The consumer releases the complete cache when the call ends.
 
 The fixed-width benchmark keeps 4,096 records and 117,681 encoded bytes in every cell.
-Candidate decode stays within 9.0% from 4 through 1,024 distinct keys.
+Candidate decode stays within 9.1% from 4 through 1,024 distinct keys.
 The permanent guard now contains 32-key and 512-key cells.
 Against public `0.3.0b2`, these cells improve 36.8% and 87.9%.
 The complete 100-point guard reports six wins, 88 neutral cells, six initial slowdowns
