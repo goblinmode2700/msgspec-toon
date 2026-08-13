@@ -1,11 +1,11 @@
 # Changelog
 
-## 0.2.0b5
+## Unreleased
 
-Recoverable indentation-option mismatch diagnostics.
+Typed correctness, explicit state, and localized hot paths.
 
 <!-- release-compatibility:start -->
-- Compatibility since `0.1.0b3`: 25 newly supported, 1 removed, 28 total support-status changes, and 0 shared canonical-wire changes.
+- Compatibility since `0.1.0b3`: 27 newly supported, 1 removed, 30 total support-status changes, and 0 shared canonical-wire changes.
 <!-- release-compatibility:end -->
 
 - Report the observed leading-space count when decode receives the wrong `indent_size`.
@@ -13,14 +13,20 @@ Recoverable indentation-option mismatch diagnostics.
 - Round-trip nested mappings, tables, and typed Structs at widths 1, 2, and 4 when configured.
 - Document UTF-8 BOM and CRLF input acceptance.
 - Preserve canonical bytes, token counts, G2, and official explicit-width fixture behavior.
+- Validate concrete tags and select tagged-union members inside nested field groups.
+- Decode `object` through the requested open-value path.
+- Decode unions of bool, int, float, and str with msgspec-compatible category priority.
+- Pin the performance guard to the preceding public release instead of internal milestone tags.
+- Replace implicit typed-plan sentinels with checked `PlanId` and explicit field actions.
+- Validate unknown subtrees with the shared grammar without building Python containers.
+- Add schema-known paths to typed validation errors without exposing payload values.
+- Document and test every native unsafe boundary, including the optional free-threaded capsule path.
+- Improve entry decode by 9-24%, keyed decode by 9-11%, entry encode by 11-15%, and untyped decode by 2-8% against `v0.2.0b5` in the complete release guard.
+- Keep canonical TOON bytes, token counts, G2, G3, and G5 unchanged or passing.
 
 ## 0.2.0b4
 
 Tagged positional decode parity and feature-interaction evidence.
-
-<!-- release-compatibility:start -->
-- Compatibility since `0.1.0b3`: 25 newly supported, 1 removed, 28 total support-status changes, and 0 shared canonical-wire changes.
-<!-- release-compatibility:end -->
 
 - Decode tagged array-like Structs by concrete type and tagged union.
 - Validate or select the positional discriminator before declared field construction.

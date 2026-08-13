@@ -13,9 +13,16 @@
 
 use rustc_hash::FxHashSet;
 
+#[cfg(test)]
+thread_local! {
+    static KEY_OWNERSHIP_ALLOCS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 use crate::error::{Fault, FaultCode, Position};
-use crate::event::{Consumer, ScalarToken, StringToken};
-use crate::header::{FieldNode, Header, HeaderOutcome, parse_header, parse_string_token};
+use crate::event::{
+    Consumer, FieldNode, ObjectFieldDisposition, ObjectProbe, ScalarToken, StringToken,
+};
+use crate::header::{Header, HeaderOutcome, parse_header, parse_string_token};
 use crate::scalar::{
     LineMarks, classify_bare, find_unquoted, resolved_colon, scan_line_marks, scan_quoted,
     split_cells, split_cells_into, trim_spaces, unescape,
@@ -102,10 +109,18 @@ fn parse_root_object<C: Consumer, const PREFLIGHT: bool>(
     consumer: &mut C,
     at: Position,
 ) -> Result<(), Fault> {
+    let mut selection = C::ObjectSelection::default();
     if PREFLIGHT && consumer.needs_object_preflight() {
-        preflight_object_body(&mut lines.clone(), 0, None, strict, consumer)?;
+        preflight_object_body(
+            &mut lines.clone(),
+            0,
+            None,
+            strict,
+            consumer,
+            &mut selection,
+        )?;
     }
-    consumer.start_object(at)?;
+    consumer.start_selected_object(selection, at)?;
     parse_object_body::<C, PREFLIGHT>(lines, 0, None, strict, consumer)?;
     consumer.end_object(at)?;
     Ok(())
@@ -116,6 +131,7 @@ fn hint_entry<C: Consumer>(
     at: Position,
     strict: bool,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     let marks = scan_line_marks(content);
     if matches!(
@@ -136,7 +152,12 @@ fn hint_entry<C: Consumer>(
         line: at.line,
         column: at.column + colon as u32 + 2,
     };
-    consumer.object_scalar_hint(key, classify_value(&rest[1..], value_at)?, value_at)
+    consumer.object_scalar_hint(
+        selection,
+        key,
+        classify_value(&rest[1..], value_at)?,
+        value_at,
+    )
 }
 
 fn preflight_object_body<C: Consumer>(
@@ -145,16 +166,17 @@ fn preflight_object_body<C: Consumer>(
     first: Option<(&[u8], Position)>,
     strict: bool,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     if let Some((content, at)) = first {
-        hint_entry(content, at, strict, consumer)?;
+        hint_entry(content, at, strict, consumer, selection)?;
     }
     while let Some(line) = lines.peek()? {
         if line.depth != depth {
             break;
         }
         lines.advance()?;
-        hint_entry(line.content, line.position, strict, consumer)?;
+        hint_entry(line.content, line.position, strict, consumer, selection)?;
     }
     Ok(())
 }
@@ -175,7 +197,7 @@ fn entry_colon(content: &[u8], colon: Option<usize>) -> Option<usize> {
     (index + 1 == content.len() || content[index + 1] == b' ').then_some(index)
 }
 
-fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, Fault> {
+pub(crate) fn classify_value<'a>(value: &'a [u8], at: Position) -> Result<ScalarToken<'a>, Fault> {
     if value.first() == Some(&b'"') {
         let (end, escaped) = scan_quoted(value, 0, at)?;
         if end != value.len() {
@@ -287,10 +309,18 @@ fn parse_entry<C: Consumer, const PREFLIGHT: bool>(
             }
             _ => false,
         };
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && nested && consumer.needs_object_preflight() {
-            preflight_object_body(&mut lines.clone(), depth + 1, None, strict, consumer)?;
+            preflight_object_body(
+                &mut lines.clone(),
+                depth + 1,
+                None,
+                strict,
+                consumer,
+                &mut selection,
+            )?;
         }
-        consumer.start_object(at)?;
+        consumer.start_selected_object(selection, at)?;
         if nested {
             parse_object_body::<C, PREFLIGHT>(lines, depth + 1, None, strict, consumer)?;
         }
@@ -322,6 +352,8 @@ fn note_key(
     if !strict {
         return Ok(());
     }
+    #[cfg(test)]
+    KEY_OWNERSHIP_ALLOCS.set(KEY_OWNERSHIP_ALLOCS.get() + 1);
     if !seen.insert(token_owned_bytes(key)) {
         return Err(Fault::syntax_at(FaultCode::DuplicateKey, at));
     }
@@ -427,12 +459,26 @@ fn parse_array_body<C: Consumer, const PREFLIGHT: bool>(
             if cells.len() != leaf_count {
                 return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
             }
+            let mut selection = C::ObjectSelection::default();
             if PREFLIGHT && consumer.needs_object_preflight() {
-                hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+                hint_row_fields(
+                    &header.fields,
+                    &cells,
+                    row.position,
+                    consumer,
+                    &mut selection,
+                )?;
             }
-            consumer.start_object(row.position)?;
+            consumer.start_selected_object(selection, row.position)?;
             let mut cursor = 0usize;
-            emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
+            emit_row_fields(
+                &header.fields,
+                &cells,
+                &mut cursor,
+                None,
+                row.position,
+                consumer,
+            )?;
             consumer.end_object(row.position)
         })?;
     } else if let Some(inline) = header.inline_values {
@@ -472,6 +518,7 @@ fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
 ) -> Result<(), Fault> {
     let leaf_count = header.leaf_count();
     consumer.start_object(at)?;
+    consumer.begin_tabular(leaf_count, at)?;
     let mut seen: FxHashSet<Vec<u8>> = FxHashSet::default();
     let mut cells: Vec<&[u8]> = Vec::with_capacity(leaf_count);
     body_rows(lines, depth, strict, header.declared_len, |_, row| {
@@ -494,12 +541,26 @@ fn parse_keyed_body<C: Consumer, const PREFLIGHT: bool>(
             return Err(Fault::syntax_at(FaultCode::WrongRowWidth, row.position));
         }
         consumer.key(row_key, row.position)?;
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && consumer.needs_object_preflight() {
-            hint_row_fields(&header.fields, &cells, row.position, consumer)?;
+            hint_row_fields(
+                &header.fields,
+                &cells,
+                row.position,
+                consumer,
+                &mut selection,
+            )?;
         }
-        consumer.start_object(row.position)?;
+        consumer.start_selected_object(selection, row.position)?;
         let mut cursor = 0usize;
-        emit_row_fields(&header.fields, &cells, &mut cursor, row.position, consumer)?;
+        emit_row_fields(
+            &header.fields,
+            &cells,
+            &mut cursor,
+            None,
+            row.position,
+            consumer,
+        )?;
         consumer.end_object(row.position)
     })?;
     consumer.end_object(at)?;
@@ -511,11 +572,17 @@ fn hint_row_fields<C: Consumer>(
     cells: &[&[u8]],
     at: Position,
     consumer: &mut C,
+    selection: &mut C::ObjectSelection,
 ) -> Result<(), Fault> {
     let mut cursor = 0usize;
     for node in fields {
         if node.children.is_empty() {
-            consumer.object_scalar_hint(node.name, classify_value(cells[cursor], at)?, at)?;
+            consumer.object_scalar_hint(
+                selection,
+                node.name,
+                classify_value(cells[cursor], at)?,
+                at,
+            )?;
             cursor += 1;
         } else {
             cursor += node.leaf_count();
@@ -528,17 +595,60 @@ fn emit_row_fields<C: Consumer>(
     fields: &[FieldNode<'_>],
     cells: &[&[u8]],
     cursor: &mut usize,
+    skip_field: Option<usize>,
     at: Position,
     consumer: &mut C,
 ) -> Result<(), Fault> {
-    for node in fields {
+    for (field_index, node) in fields.iter().enumerate() {
         if node.children.is_empty() {
-            consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
+            if skip_field != Some(field_index) {
+                consumer.scalar_field(node.name, classify_value(cells[*cursor], at)?, at)?;
+            }
             *cursor += 1;
         } else {
-            consumer.start_object_field(node.name, at)?;
-            emit_row_fields(&node.children, cells, cursor, at, consumer)?;
+            if !consumer.needs_object_field_selection() {
+                consumer.start_object_field(node.name, at)?;
+                emit_row_fields(&node.children, cells, cursor, None, at, consumer)?;
+                consumer.end_object_field(at)?;
+                continue;
+            }
+
+            // Most selected fields never inspect row cells. Give the probe
+            // the remaining borrowed row and calculate the exact leaf span
+            // only when a tagged plan reads it or a skipped group advances
+            // over it without recursive semantic events.
+            let probe = ObjectProbe::new(&node.children, &cells[*cursor..]);
+            let selected = consumer.select_object_field(node.name, probe, at)?;
+            if selected.disposition == ObjectFieldDisposition::ValidateOnly {
+                let end = *cursor + node.leaf_count();
+                validate_ignored_cells(&cells[*cursor..end], at)?;
+                *cursor = end;
+                continue;
+            }
+            consumer.start_selected_object_field(node.name, selected.selection, at)?;
+            emit_row_fields(
+                &node.children,
+                cells,
+                cursor,
+                selected.skip_field,
+                at,
+                consumer,
+            )?;
             consumer.end_object_field(at)?;
+        }
+    }
+    Ok(())
+}
+
+/// Validate ignored, already-split cells without classifying bare values or
+/// emitting semantic actions. `classify_value` remains the single quoted
+/// grammar: it checks closure, escapes, Unicode surrogate rules, and trailing
+/// content. Every non-quoted byte sequence is already a valid bare string;
+/// classifying it as a number/bool/null is unnecessary when no value is built.
+fn validate_ignored_cells(cells: &[&[u8]], at: Position) -> Result<(), Fault> {
+    for cell in cells {
+        if cell.first() == Some(&b'"') {
+            let _ = classify_value(cell, at)?;
         }
     }
     Ok(())
@@ -592,12 +702,22 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
             // An object item whose first entry is an array; the item's fields
             // sit two levels below the list base, so the array body's rows
             // sit at depth + 3.
+            let mut selection = C::ObjectSelection::default();
             if PREFLIGHT && consumer.needs_object_preflight() {
-                preflight_object_body(&mut lines.clone(), depth + 2, None, strict, consumer)?;
+                preflight_object_body(
+                    &mut lines.clone(),
+                    depth + 2,
+                    None,
+                    strict,
+                    consumer,
+                    &mut selection,
+                )?;
             }
-            consumer.start_object(item_at)?;
+            consumer.start_selected_object(selection, item_at)?;
             let key = header.key.as_ref().expect("checked above");
             let mut seen = FxHashSet::default();
+            #[cfg(test)]
+            KEY_OWNERSHIP_ALLOCS.set(KEY_OWNERSHIP_ALLOCS.get() + 1);
             seen.insert(token_owned_bytes(key));
             consumer.key(*key, item_at)?;
             parse_array_or_keyed_body::<C, PREFLIGHT>(
@@ -621,6 +741,7 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
     if entry_colon(item, resolved_colon(item, &marks)).is_some() {
         // An object item: first key/value on the dash line, the rest two
         // levels deeper (the `- ` prefix occupies one indent unit).
+        let mut selection = C::ObjectSelection::default();
         if PREFLIGHT && consumer.needs_object_preflight() {
             preflight_object_body(
                 &mut lines.clone(),
@@ -628,9 +749,10 @@ fn parse_list_item<C: Consumer, const PREFLIGHT: bool>(
                 Some((item, item_at)),
                 strict,
                 consumer,
+                &mut selection,
             )?;
         }
-        consumer.start_object(item_at)?;
+        consumer.start_selected_object(selection, item_at)?;
         let mut seen = FxHashSet::default();
         parse_entry::<C, PREFLIGHT>(
             item,
@@ -703,6 +825,8 @@ mod tests {
     }
 
     impl Consumer for Recorder {
+        type ObjectSelection = ();
+
         fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
             self.events.push(Ev::So);
             Ok(())
@@ -746,10 +870,78 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
+    struct ValidateOnlyRecorder {
+        inner: Recorder,
+    }
+
+    impl Consumer for ValidateOnlyRecorder {
+        type ObjectSelection = ();
+
+        fn needs_object_field_selection(&self) -> bool {
+            true
+        }
+
+        fn start_object(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.start_object(at)
+        }
+
+        fn select_object_field(
+            &mut self,
+            key: StringToken<'_>,
+            _probe: ObjectProbe<'_, '_>,
+            _at: Position,
+        ) -> Result<crate::event::ObjectSelectionResult<Self::ObjectSelection>, Fault> {
+            if token_owned_bytes(&key) == b"extra" {
+                Ok(crate::event::ObjectSelectionResult::validate_only(()))
+            } else {
+                Ok(crate::event::ObjectSelectionResult::new(()))
+            }
+        }
+
+        fn key(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
+            self.inner.key(key, at)
+        }
+
+        fn end_object(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.end_object(at)
+        }
+
+        fn start_array(&mut self, declared_len: usize, at: Position) -> Result<(), Fault> {
+            self.inner.start_array(declared_len, at)
+        }
+
+        fn end_array(&mut self, at: Position) -> Result<(), Fault> {
+            self.inner.end_array(at)
+        }
+
+        fn scalar(&mut self, token: ScalarToken<'_>, at: Position) -> Result<(), Fault> {
+            self.inner.scalar(token, at)
+        }
+    }
+
     fn run(input: &[u8]) -> Vec<Ev> {
         let mut recorder = Recorder::default();
         parse(input, true, 2, &mut recorder).unwrap();
         recorder.events
+    }
+
+    fn strict_key_ownership_allocations(input: &[u8]) -> usize {
+        KEY_OWNERSHIP_ALLOCS.set(0);
+        let mut recorder = Recorder::default();
+        let _ = parse(input, true, 2, &mut recorder);
+        KEY_OWNERSHIP_ALLOCS.get()
+    }
+
+    #[test]
+    fn strict_key_ownership_allocates_once_per_bare_quoted_escaped_or_duplicate_key() {
+        assert_eq!(strict_key_ownership_allocations(b"a: 1\nb: 2"), 2);
+        assert_eq!(strict_key_ownership_allocations(b"\"a\": 1\n\"b\": 2"), 2);
+        assert_eq!(
+            strict_key_ownership_allocations(b"\"a\\n\": 1\n\"b\\t\": 2"),
+            2
+        );
+        assert_eq!(strict_key_ownership_allocations(b"a: 1\na: 2"), 2);
     }
 
     fn run_nonstrict(input: &[u8]) -> Vec<Ev> {
@@ -966,6 +1158,35 @@ mod tests {
         let fault = run_err(b"rows[1]{pid}:\n  \"oops");
         assert_eq!(fault.code, FaultCode::UnclosedQuote);
         assert_eq!(fault.line, 2);
+    }
+
+    #[test]
+    fn validate_only_field_group_erases_descendant_events_but_keeps_quoted_grammar() {
+        let mut recorder = ValidateOnlyRecorder::default();
+        parse(
+            b"[1]{id,extra{a,inner{b,c}}}:\n  1,bare,2,\"ok\"",
+            true,
+            2,
+            &mut recorder,
+        )
+        .unwrap();
+        assert_eq!(
+            recorder.inner.events,
+            vec![
+                Ev::Sa(1),
+                Ev::So,
+                Ev::Key(b"id".to_vec()),
+                Ev::Scalar("i:1".into()),
+                Ev::Eo,
+                Ev::Ea,
+            ]
+        );
+
+        let mut recorder = ValidateOnlyRecorder::default();
+        let fault = parse(b"[1]{id,extra{a}}:\n  1,\"\\q\"", true, 2, &mut recorder).unwrap_err();
+        assert_eq!(fault.code, FaultCode::InvalidEscape);
+        assert_eq!(fault.line, 2);
+        assert_eq!(fault.column, Some(4));
     }
 
     #[test]

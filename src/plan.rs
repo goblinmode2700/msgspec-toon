@@ -14,12 +14,12 @@ pub enum PlanKind {
     Int,
     Float,
     Str,
-    List(usize),
-    TupleVar(usize),
+    List(PlanId),
+    TupleVar(PlanId),
     /// `tuple[A, B, C]`: one plan per position, and the length is part of the
     /// type rather than a property of the document.
-    TupleFixed(Vec<usize>),
-    Dict(usize, usize),
+    TupleFixed(Vec<PlanId>),
+    Dict(PlanId, PlanId),
     Struct(Box<StructPlan>),
     Union(Box<UnionPlan>),
     Literal(Vec<Py<PyAny>>),
@@ -27,9 +27,32 @@ pub enum PlanKind {
     Custom(Py<PyAny>),
 }
 
+/// A validated index into one immutable `CompiledPlan` arena.
+///
+/// Construction is confined to plan lowering. Runtime decode can therefore
+/// distinguish arena identity from Struct field positions without changing
+/// the machine-word representation used by the hot path.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PlanId(usize);
+
+impl PlanId {
+    fn checked(index: usize, node_count: usize) -> PyResult<Self> {
+        if index >= node_count {
+            return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+        }
+        Ok(Self(index))
+    }
+
+    #[inline(always)]
+    pub(crate) fn index(self) -> usize {
+        self.0
+    }
+}
+
 pub struct CompiledPlan {
     pub nodes: Vec<PlanNode>,
-    pub root: usize,
+    pub(crate) root: PlanId,
 }
 
 pub struct PlanNode {
@@ -143,21 +166,94 @@ impl Constraints {
 pub struct StructPlan {
     pub class: Py<PyAny>,
     pub fields: Vec<FieldPlan>,
-    pub by_wire: FxHashMap<Vec<u8>, usize>,
+    pub by_wire: FxHashMap<Vec<u8>, FieldAction>,
     pub forbid_unknown: bool,
     pub array_like: bool,
     pub tag_field: Option<Vec<u8>>,
-    pub tag_value: Option<Py<PyAny>>,
+    pub tag_value: Option<TagValue>,
     /// Present when the class must be constructed with keyword arguments: the
     /// field names in constructor order, ready to hand to a vectorcall. The
     /// ordinary case keeps `None` and the positional fast path.
     pub keyword_names: Option<Py<pyo3::types::PyTuple>>,
 }
 
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldActionKind {
+    Field,
+    Tag,
+    Skip,
+    Reject,
+}
+
+/// A compact closed action for one Struct wire key.
+///
+/// The field index is checked once while the plan is compiled. Keeping the
+/// kind separate makes the four states explicit without doubling every hash
+/// map and row-memo value to a two-word payload enum.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FieldAction {
+    field_index: u32,
+    kind: FieldActionKind,
+}
+
+impl FieldAction {
+    const TAG: Self = Self::new(FieldActionKind::Tag);
+    const SKIP: Self = Self::new(FieldActionKind::Skip);
+    const REJECT: Self = Self::new(FieldActionKind::Reject);
+
+    const fn new(kind: FieldActionKind) -> Self {
+        Self {
+            field_index: 0,
+            kind,
+        }
+    }
+
+    fn field(index: usize) -> PyResult<Self> {
+        let field_index = u32::try_from(index)
+            .map_err(|_| PyValueError::new_err("Struct plan has too many fields"))?;
+        Ok(Self {
+            field_index,
+            kind: FieldActionKind::Field,
+        })
+    }
+
+    #[inline]
+    pub fn kind(self) -> FieldActionKind {
+        self.kind
+    }
+
+    #[inline]
+    pub fn field_index(self) -> usize {
+        debug_assert_eq!(self.kind, FieldActionKind::Field);
+        self.field_index as usize
+    }
+}
+
+impl StructPlan {
+    #[inline]
+    pub fn field_action(&self, wire_name: &[u8]) -> FieldAction {
+        self.by_wire
+            .get(wire_name)
+            .copied()
+            .unwrap_or(if self.forbid_unknown {
+                FieldAction::REJECT
+            } else {
+                FieldAction::SKIP
+            })
+    }
+}
+
+pub enum TagValue {
+    String(Vec<u8>),
+    Integer(i64),
+}
+
 pub struct FieldPlan {
     pub python_name: Py<PyString>,
     pub wire_name: Vec<u8>,
-    pub value: usize,
+    pub(crate) value: PlanId,
     pub default: DefaultPlan,
 }
 
@@ -169,7 +265,7 @@ pub enum DefaultPlan {
 
 pub struct UnionPlan {
     pub nullable: bool,
-    pub members: Vec<usize>,
+    pub members: Vec<PlanId>,
 }
 
 impl CompiledPlan {
@@ -178,25 +274,43 @@ impl CompiledPlan {
             .import("msgspec_toon._types")?
             .getattr("_UNSET")?
             .unbind();
-        let root = spec.getattr("root")?.extract::<usize>()?;
+        let root_index = spec.getattr("root")?.extract::<usize>()?;
         let specs = spec.getattr("nodes")?;
         let node_count = specs.len()?;
-        if root >= node_count || node_count > 4096 {
+        if node_count > 4096 {
             return Err(PyValueError::new_err("invalid plan graph bounds"));
         }
+        let root = PlanId::checked(root_index, node_count)?;
         let mut nodes = Vec::with_capacity(node_count);
         for node in specs.try_iter()? {
             nodes.push(Self::lower_node(py, &node?, &specs, &unset, node_count)?);
         }
+        Self::validate_container_chains(&nodes)?;
         Ok(Self { nodes, root })
     }
 
-    fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<usize> {
-        let edge = spec.getattr(name)?.extract::<usize>()?;
-        if edge >= node_count {
-            return Err(PyValueError::new_err("plan graph edge is out of bounds"));
+    fn validate_container_chains(nodes: &[PlanNode]) -> PyResult<()> {
+        for start in 0..nodes.len() {
+            let mut id = PlanId(start);
+            for step in 0..=nodes.len() {
+                match &nodes[id.index()].kind {
+                    PlanKind::Union(union) if union.members.len() == 1 => {
+                        if step == nodes.len() {
+                            return Err(PyValueError::new_err(
+                                "plan graph has a cyclic container edge",
+                            ));
+                        }
+                        id = union.members[0];
+                    }
+                    _ => break,
+                }
+            }
         }
-        Ok(edge)
+        Ok(())
+    }
+
+    fn edge(spec: &Bound<'_, PyAny>, name: &str, node_count: usize) -> PyResult<PlanId> {
+        PlanId::checked(spec.getattr(name)?.extract()?, node_count)
     }
 
     fn lower_node(
@@ -220,11 +334,7 @@ impl CompiledPlan {
             "tuple_fixed" => {
                 let mut plans = Vec::new();
                 for item in spec.getattr("items")?.try_iter()? {
-                    let edge = item?.extract::<usize>()?;
-                    if edge >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
-                    plans.push(edge);
+                    plans.push(PlanId::checked(item?.extract()?, node_count)?);
                 }
                 PlanKind::TupleFixed(plans)
             }
@@ -236,11 +346,8 @@ impl CompiledPlan {
                 let mut nullable = false;
                 let mut members = Vec::new();
                 for member in spec.getattr("items")?.try_iter()? {
-                    let edge = member?.extract::<usize>()?;
-                    if edge >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
-                    let member = graph_nodes.get_item(edge)?;
+                    let edge = PlanId::checked(member?.extract()?, node_count)?;
+                    let member = graph_nodes.get_item(edge.index())?;
                     if member.getattr("kind")?.extract::<&str>()? == "none" {
                         nullable = true;
                     } else {
@@ -274,10 +381,7 @@ impl CompiledPlan {
                         .getattr("wire_name")?
                         .extract::<String>()?
                         .into_bytes();
-                    let value = field.getattr("plan")?.extract::<usize>()?;
-                    if value >= node_count {
-                        return Err(PyValueError::new_err("plan graph edge is out of bounds"));
-                    }
+                    let value = PlanId::checked(field.getattr("plan")?.extract()?, node_count)?;
                     let required = field.getattr("required")?.extract::<bool>()?;
                     let default_factory = field.getattr("default_factory")?;
                     let default_value = field.getattr("default")?;
@@ -290,7 +394,7 @@ impl CompiledPlan {
                     } else {
                         DefaultPlan::Value(default_value.unbind())
                     };
-                    by_wire.insert(wire_name.clone(), fields.len());
+                    by_wire.insert(wire_name.clone(), FieldAction::field(fields.len())?);
                     fields.push(FieldPlan {
                         python_name,
                         wire_name,
@@ -305,9 +409,15 @@ impl CompiledPlan {
                     .extract::<Option<String>>()?
                     .map(String::into_bytes);
                 let tag_value_obj = spec.getattr("tag_value")?;
-                let tag_value = (!tag_value_obj.is_none()).then(|| tag_value_obj.unbind());
+                let tag_value = if tag_value_obj.is_none() {
+                    None
+                } else if let Ok(text) = tag_value_obj.cast::<PyString>() {
+                    Some(TagValue::String(text.to_str()?.as_bytes().to_vec()))
+                } else {
+                    Some(TagValue::Integer(tag_value_obj.extract::<i64>()?))
+                };
                 if let Some(tag_field) = &tag_field {
-                    by_wire.insert(tag_field.clone(), usize::MAX);
+                    by_wire.insert(tag_field.clone(), FieldAction::TAG);
                 }
                 let keyword_names = if spec.getattr("keyword_only")?.extract::<bool>()? {
                     let names = fields
@@ -339,24 +449,26 @@ impl CompiledPlan {
     }
 
     /// Unwrap `Optional[T]`-shaped unions to their single non-none member.
-    pub fn resolve_container(&self, mut index: usize) -> usize {
+    #[inline(always)]
+    pub fn resolve_container(&self, mut id: PlanId) -> PlanId {
         for _ in 0..=self.nodes.len() {
-            if let PlanKind::Union(union) = &self.nodes[index].kind
+            if let PlanKind::Union(union) = &self.node(id).kind
                 && union.members.len() == 1
             {
-                index = union.members[0];
+                id = union.members[0];
                 continue;
             }
-            return index;
+            return id;
         }
-        self.root
+        invalid_container_cycle()
     }
 
     #[inline(always)]
-    pub fn node(&self, index: usize) -> &PlanNode {
-        // Every edge is range-checked once while the immutable arena is
-        // compiled. Runtime node IDs originate only from those checked edges.
-        unsafe { self.nodes.get_unchecked(index) }
+    pub(crate) fn node(&self, id: PlanId) -> &PlanNode {
+        // SAFETY: every `PlanId` enters through checked plan compilation.
+        // Recursive edges are range-checked there, and container-chain cycles
+        // are rejected before the immutable arena becomes visible at runtime.
+        unsafe { self.nodes.get_unchecked(id.index()) }
     }
 
     pub fn requires_extended_consumer(&self) -> bool {
@@ -365,5 +477,56 @@ impl CompiledPlan {
             PlanKind::Union(union) => union.members.len() > 1,
             _ => false,
         })
+    }
+}
+
+#[cold]
+#[inline(never)]
+fn invalid_container_cycle() -> ! {
+    unreachable!("container-plan cycles are rejected during plan compilation")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plan_id_is_one_checked_machine_word() {
+        Python::initialize();
+        assert_eq!(std::mem::size_of::<PlanId>(), std::mem::size_of::<usize>());
+        assert_eq!(PlanId::checked(2, 3).unwrap().index(), 2);
+        Python::attach(|py| {
+            let err = PlanId::checked(3, 3).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
+    }
+
+    #[test]
+    fn field_action_is_compact_and_checks_its_index() {
+        Python::initialize();
+        assert_eq!(std::mem::size_of::<FieldAction>(), 8);
+        let action = FieldAction::field(7).unwrap();
+        assert_eq!(action.kind(), FieldActionKind::Field);
+        assert_eq!(action.field_index(), 7);
+        Python::attach(|py| {
+            let err = FieldAction::field(u32::MAX as usize + 1).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
+    }
+
+    #[test]
+    fn cyclic_container_plan_is_rejected_before_decode() {
+        Python::initialize();
+        let nodes = vec![PlanNode {
+            kind: PlanKind::Union(Box::new(UnionPlan {
+                nullable: false,
+                members: vec![PlanId(0)],
+            })),
+            constraints: None,
+        }];
+        Python::attach(|py| {
+            let err = CompiledPlan::validate_container_chains(&nodes).unwrap_err();
+            assert!(err.is_instance_of::<PyValueError>(py));
+        });
     }
 }

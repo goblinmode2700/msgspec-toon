@@ -1,8 +1,9 @@
 //! Payload-safe fault model (canvas AD-007).
 //!
-//! A `Fault` carries machine coordinates only. No variant stores a source
-//! line, token spelling, key, cell, or value; user-facing text is formatted
-//! from static templates plus coordinates.
+//! A `Fault` carries machine coordinates and, for typed validation failures,
+//! schema-owned path parts. No variant stores a source line, token spelling,
+//! payload key, cell, or value; user-facing text is formatted from static
+//! templates plus coordinates and compiled-plan metadata.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FaultCode {
@@ -113,12 +114,38 @@ pub struct Position {
     pub column: u32,
 }
 
+/// A payload-safe location inside a compiled target schema.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PathPart {
+    /// A TOON field name copied from `FieldPlan::wire_name`.
+    Field(Vec<u8>),
+    /// A position derived from the number of completed sequence items.
+    Index(usize),
+    /// A mapping value. The payload key is deliberately not retained.
+    MapValue,
+}
+
+impl PathPart {
+    pub fn safe_string(&self) -> String {
+        match self {
+            Self::Field(name) => {
+                // Plan field names originate as Python `str` and are encoded
+                // once during plan compilation, so this is plan-owned UTF-8.
+                String::from_utf8_lossy(name).into_owned()
+            }
+            Self::Index(index) => format!("[{index}]"),
+            Self::MapValue => "[value]".to_owned(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Fault {
     pub code: FaultCode,
     pub line: u32,
     pub column: Option<u32>,
     pub validation: bool,
+    pub path: Vec<PathPart>,
 }
 
 impl Fault {
@@ -128,6 +155,7 @@ impl Fault {
             line,
             column,
             validation: false,
+            path: Vec::new(),
         }
     }
 
@@ -137,6 +165,7 @@ impl Fault {
             line: at.line,
             column: Some(at.column),
             validation: false,
+            path: Vec::new(),
         }
     }
 
@@ -146,11 +175,31 @@ impl Fault {
             line: at.line,
             column: Some(at.column),
             validation: true,
+            path: Vec::new(),
         }
     }
 
+    pub fn push_field(&mut self, field: &[u8]) {
+        if self.validation {
+            self.path.push(PathPart::Field(field.to_vec()));
+        }
+    }
+
+    pub fn prepend_path(&mut self, prefix: Vec<PathPart>) {
+        if !self.validation || prefix.is_empty() {
+            return;
+        }
+        let suffix = std::mem::take(&mut self.path);
+        self.path = prefix;
+        self.path.extend(suffix);
+    }
+
+    pub fn safe_path(&self) -> Vec<String> {
+        self.path.iter().map(PathPart::safe_string).collect()
+    }
+
     pub fn safe_message(&self) -> String {
-        match self.column {
+        let location = match self.column {
             Some(column) => {
                 format!(
                     "{} at line {}, column {}",
@@ -160,6 +209,19 @@ impl Fault {
                 )
             }
             None => format!("{} at line {}", self.code.summary(), self.line),
+        };
+        if self.path.is_empty() {
+            return location;
         }
+        let path = self
+            .path
+            .iter()
+            .map(|part| match part {
+                PathPart::Field(name) => format!(".{}", String::from_utf8_lossy(name)),
+                PathPart::Index(index) => format!("[{index}]"),
+                PathPart::MapValue => "[value]".to_owned(),
+            })
+            .collect::<String>();
+        format!("{location} at ${path}")
     }
 }

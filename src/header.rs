@@ -6,27 +6,11 @@
 //! extension: they are what keeps a record with a nested object on one row.
 
 use crate::error::{Fault, FaultCode, Position};
-use crate::event::StringToken;
+use crate::event::{FieldNode, StringToken};
 use crate::limits::MAX_NESTING_DEPTH;
 use crate::scalar::{LineMarks, find_unquoted, scan_quoted, trim_spaces};
 
 pub const DEFAULT_DELIMITER: u8 = b',';
-
-#[derive(Debug, Clone)]
-pub struct FieldNode<'a> {
-    pub name: StringToken<'a>,
-    pub children: Vec<FieldNode<'a>>,
-}
-
-impl FieldNode<'_> {
-    pub fn leaf_count(&self) -> usize {
-        if self.children.is_empty() {
-            1
-        } else {
-            self.children.iter().map(FieldNode::leaf_count).sum()
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Header<'a> {

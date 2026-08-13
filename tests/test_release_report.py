@@ -101,6 +101,11 @@ def test_current_compatibility_delta_records_native_scalar_support(
             "after": "supported",
         },
         {
+            "feature": "object and containers of object",
+            "before": None,
+            "after": "supported",
+        },
+        {
             "feature": "recursive Struct types",
             "before": "unsupported",
             "after": "supported",
@@ -123,6 +128,11 @@ def test_current_compatibility_delta_records_native_scalar_support(
         },
         {"feature": "time", "before": None, "after": "supported"},
         {"feature": "timedelta", "before": None, "after": "supported"},
+        {
+            "feature": "unions of bool, int, float, and str",
+            "before": None,
+            "after": "supported",
+        },
         {
             "feature": "whole floats and negative zero",
             "before": None,

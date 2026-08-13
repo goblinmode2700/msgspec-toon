@@ -1,4 +1,5 @@
 /target/
+/fuzz/target/
 /.venv/
 __pycache__/
 *.pyc
@@ -8,5 +9,9 @@ __pycache__/
 dist/
 .DS_Store
 python/msgspec_toon/*.so
+.venv-baseline/
 .venv-g2/
+.venv-guard/
 .venv-fastpath/
+.baseline-src/
+benches/ab-latest.json

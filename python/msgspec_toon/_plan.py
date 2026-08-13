@@ -25,6 +25,20 @@ from ._types import _UNSET, FieldSpec, PlanGraph, PlanSpec
 _NODEFAULT = msgspec.NODEFAULT
 
 
+def _is_supported_scalar_union_member(info: mi.Type) -> bool:
+    """Whether one union member has direct scalar dispatch in Rust."""
+    return isinstance(
+        info,
+        (
+            mi.NoneType,
+            mi.BoolType,
+            mi.IntType,
+            mi.FloatType,
+            mi.StrType,
+        ),
+    )
+
+
 @lru_cache(maxsize=512)
 def compile_plan(annotation: Any, allow_custom: bool = False) -> PlanGraph:
     """Lower one annotation, containing all inspection failures at this membrane."""
@@ -219,7 +233,8 @@ class _GraphCompiler:
                 )
             case mi.UnionType(types=items):
                 non_none = [item for item in items if not isinstance(item, mi.NoneType)]
-                if len(non_none) > 1:
+                scalar_union = all(_is_supported_scalar_union_member(item) for item in items)
+                if len(non_none) > 1 and not scalar_union:
                     tagged = [item for item in non_none if isinstance(item, mi.StructType)]
                     tag_fields = {item.tag_field for item in tagged}
                     tag_values = [item.tag for item in tagged]
@@ -241,6 +256,11 @@ class _GraphCompiler:
                 )
             case mi.LiteralType(values=values):
                 return PlanSpec("literal", items=tuple(values))
+            case mi.CustomType(cls=cls) if cls is object:
+                # msgspec treats `object` as the spelling of an unconstrained
+                # value, equal to `Any`. Containers inside it are requested
+                # output, not an intermediate typed-decode tree.
+                return PlanSpec("any")
             case mi.StructType(
                 cls=cls,
                 fields=fields,

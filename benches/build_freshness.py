@@ -51,7 +51,10 @@ def require_current_release_build() -> None:
 
     Staleness is only checkable — and only meaningful — for the editable
     artifact under `<repo>/python/`, which is supposed to track the working
-    tree. The instrumented `.venv-g2` build is managed separately by `make g2`.
+    tree. A wheel installed into `.venv-baseline` or `.venv-g2` is pinned to a
+    different revision on purpose; `make baseline` and `make g2` own its
+    freshness, and comparing its mtime to today's sources would reject exactly
+    the comparison those environments exist to provide.
     """
     extension = pathlib.Path(_native.__file__)
     tracks_working_tree = extension.is_relative_to(REPO / "python")

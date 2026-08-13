@@ -15,6 +15,15 @@ use crate::event::{Consumer, ScalarToken, StringToken};
 use crate::limits::reserve_elements;
 use crate::pyval::scalar_to_py;
 
+#[derive(Hash, PartialEq, Eq)]
+enum KeyCacheKey {
+    /// Borrowed input and header slices remain stable for the complete decode.
+    /// Their address is only an identity token; it is never dereferenced here.
+    Borrowed { address: usize, len: usize },
+    /// Escaped keys are newly unescaped buffers and therefore need ownership.
+    Owned(Vec<u8>),
+}
+
 enum Builder<'py> {
     Dict {
         map: Bound<'py, PyDict>,
@@ -34,7 +43,8 @@ pub struct UntypedConsumer<'py> {
     /// Optimization D3: tabular rows repeat the same few keys thousands of
     /// times; cache one PyString per distinct key instead of allocating one
     /// per cell row.
-    key_cache: FxHashMap<Vec<u8>, Py<PyString>>,
+    key_cache: FxHashMap<KeyCacheKey, Py<PyString>>,
+    cache_keys: bool,
 }
 
 impl<'py> UntypedConsumer<'py> {
@@ -46,6 +56,7 @@ impl<'py> UntypedConsumer<'py> {
             result: None,
             pending_err: None,
             key_cache: FxHashMap::default(),
+            cache_keys: false,
         }
     }
 
@@ -77,24 +88,48 @@ impl<'py> UntypedConsumer<'py> {
         Ok(())
     }
 
+    #[inline(never)]
     fn key_to_py(&mut self, key: StringToken<'_>) -> Bound<'py, PyAny> {
         let bytes = match key {
             StringToken::Bare(bytes) => std::borrow::Cow::Borrowed(bytes),
             StringToken::Quoted { inner, escaped } => crate::scalar::unescape(inner, escaped),
         };
-        if let Some(cached) = self.key_cache.get(bytes.as_ref()) {
+        // Ordinary entry keys appear once, so caching them only adds a Rust
+        // allocation/hash-table entry beside the required Python string.
+        // `begin_tabular` is the exact signal that source key slices repeat.
+        if !self.cache_keys {
+            // SAFETY: parsing begins with whole-document UTF-8 validation, and
+            // `unescape` rejects escapes that cannot produce valid UTF-8.
+            let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
+            return PyString::new(self.py, text).into_any();
+        }
+        let cache_key = match &bytes {
+            std::borrow::Cow::Borrowed(bytes) => KeyCacheKey::Borrowed {
+                address: bytes.as_ptr() as usize,
+                len: bytes.len(),
+            },
+            std::borrow::Cow::Owned(bytes) => KeyCacheKey::Owned(bytes.clone()),
+        };
+        if let Some(cached) = self.key_cache.get(&cache_key) {
             return cached.bind(self.py).to_owned().into_any();
         }
-        // The document was validated as UTF-8 and escapes decode to valid UTF-8.
+        // SAFETY: parsing begins with whole-document UTF-8 validation, and
+        // `unescape` rejects escapes that cannot produce valid UTF-8.
         let text = unsafe { std::str::from_utf8_unchecked(&bytes) };
         let created = PyString::new(self.py, text);
-        self.key_cache
-            .insert(bytes.into_owned(), created.clone().unbind());
+        self.key_cache.insert(cache_key, created.clone().unbind());
         created.into_any()
     }
 }
 
 impl Consumer for UntypedConsumer<'_> {
+    type ObjectSelection = ();
+
+    fn begin_tabular(&mut self, _leaf_count: usize, _at: Position) -> Result<(), Fault> {
+        self.cache_keys = true;
+        Ok(())
+    }
+
     fn start_object(&mut self, _at: Position) -> Result<(), Fault> {
         self.stack.push(Builder::Dict {
             map: new_builtin_dict(self.py),

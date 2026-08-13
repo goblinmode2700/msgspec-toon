@@ -52,6 +52,12 @@ class LooseDocument(msgspec.Struct, frozen=True):
     workers: list[Any]
 
 
+class ObjectDocument(msgspec.Struct, frozen=True):
+    """The `object` spelling requests the same open subtree as `Any`."""
+
+    workers: list[object]
+
+
 class RecursiveNode(msgspec.Struct):
     value: int
     child: RecursiveNode | None = None
@@ -78,9 +84,18 @@ class TaggedArrayB(msgspec.Struct, tag="b", array_like=True):
     value: int
 
 
+class TaggedNestedRow(msgspec.Struct):
+    row_id: int
+    pet: TaggedA | TaggedB
+
+
 class NativeScalarRow(msgspec.Struct):
     at: datetime.datetime
     day: datetime.date
+
+
+class KnownOnlyRow(msgspec.Struct):
+    id: int
 
 
 RECORDS = 64
@@ -141,6 +156,22 @@ def test_any_subtree_builds_the_builtin_tree_it_was_asked_for() -> None:
     assert stats["final_lists"] == 1
 
 
+def test_object_subtree_has_the_same_requested_allocations_as_any() -> None:
+    value: ObjectDocument | None = None
+
+    def decode() -> None:
+        nonlocal value
+        value = toon.decode(TEXT, type=ObjectDocument)
+
+    stats = _stats_for(decode)
+    assert isinstance(value, ObjectDocument)
+    assert value.workers[0]["metadata"]["region"] == "west"
+    assert stats["builtin_dicts"] == RECORDS * 2
+    assert stats["builtin_lists"] == 0
+    assert stats["final_structs"] == 1
+    assert stats["final_lists"] == 1
+
+
 def test_wrapper_path_builds_the_tree_the_typed_path_avoids() -> None:
     tree: object = None
 
@@ -196,6 +227,24 @@ def test_array_like_and_tagged_frames_build_only_final_structs() -> None:
         assert stats["final_structs"] == 1
 
 
+def test_nested_field_group_tag_selection_builds_only_final_values() -> None:
+    value: list[TaggedNestedRow] | None = None
+
+    def decode() -> None:
+        nonlocal value
+        value = toon.decode(
+            b"[1]{row_id,pet{type,value}}:\n  1,b,2",
+            type=list[TaggedNestedRow],
+        )
+
+    stats = _stats_for(decode)
+    assert value == [TaggedNestedRow(1, TaggedB(2))]
+    assert stats["builtin_dicts"] == 0
+    assert stats["builtin_lists"] == 0
+    assert stats["final_structs"] == 2
+    assert stats["final_lists"] == 1
+
+
 def test_native_scalar_fields_build_only_the_final_struct() -> None:
     value: NativeScalarRow | None = None
 
@@ -214,3 +263,24 @@ def test_native_scalar_fields_build_only_the_final_struct() -> None:
     assert stats["builtin_dicts"] == 0
     assert stats["builtin_lists"] == 0
     assert stats["final_structs"] == 1
+
+
+def test_unknown_container_forms_build_no_python_tree() -> None:
+    documents = (
+        b"id: 1\nextra:\n  deep: 2\n  nested:\n    value: 3",
+        b"id: 1\nextra[2]:\n  - 2\n  - 3",
+        b"id: 1\nextra[2]{left,right}:\n  2,3\n  4,5",
+        b"id: 1\nextra[2:]{value}:\n  first: 2\n  second: 3",
+        b"[1]{id,extra{left,inner{right}}}:\n  1,2,3",
+    )
+
+    for document in documents:
+        target = list[KnownOnlyRow] if document.startswith(b"[") else KnownOnlyRow
+        stats = _stats_for(
+            lambda document=document, target=target: toon.decode(document, type=target)
+        )
+        assert stats["builtin_dicts"] == 0
+        assert stats["builtin_lists"] == 0
+        assert stats["final_dicts"] == 0
+        assert stats["final_lists"] == int(document.startswith(b"["))
+        assert stats["final_structs"] == 1

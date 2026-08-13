@@ -133,7 +133,7 @@ _plan_source.__toon_default_encode_hook__ = _EncodeHook(None, "string", "canonic
 class DecodeError(msgspec.DecodeError):
     """A TOON syntax error carrying coordinates but never source text."""
 
-    __slots__ = ("code", "column", "line")
+    __slots__ = ("code", "column", "line", "path")
 
     def __init__(
         self,
@@ -142,17 +142,19 @@ class DecodeError(msgspec.DecodeError):
         line: int,
         column: int | None,
         code: str,
+        path: tuple[str, ...] = (),
     ) -> None:
         super().__init__(message)
         self.line = line
         self.column = column
         self.code = code
+        self.path = path
 
 
 class ValidationError(msgspec.ValidationError):
     """A typed decoding error with TOON coordinates."""
 
-    __slots__ = ("code", "column", "line")
+    __slots__ = ("code", "column", "line", "path")
 
     def __init__(
         self,
@@ -161,11 +163,13 @@ class ValidationError(msgspec.ValidationError):
         line: int,
         column: int | None,
         code: str,
+        path: tuple[str, ...] = (),
     ) -> None:
         super().__init__(message)
         self.line = line
         self.column = column
         self.code = code
+        self.path = path
 
 
 def _observed_indent(buf: bytes | bytearray | memoryview | str, line: int) -> int | None:
@@ -222,6 +226,7 @@ def _translate_fault(
         line=exc.line,
         column=column,
         code=exc.code,
+        path=tuple(exc.path),
     )
 
 

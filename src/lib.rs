@@ -13,9 +13,31 @@ pub mod error;
 pub mod event;
 pub mod header;
 pub mod limits;
+#[cfg(feature = "experimental-struct-offset-capi")]
 mod msgspec_capi;
+#[cfg(not(feature = "experimental-struct-offset-capi"))]
+mod msgspec_capi {
+    use pyo3::prelude::*;
+
+    #[derive(Clone, Copy)]
+    pub struct MsgspecCapi;
+
+    impl MsgspecCapi {
+        pub fn import(_py: Python<'_>) -> PyResult<Option<Self>> {
+            Ok(None)
+        }
+
+        pub fn struct_offsets(
+            &self,
+            _py: Python<'_>,
+            _class: &Bound<'_, PyAny>,
+        ) -> PyResult<Vec<usize>> {
+            unreachable!("experimental Struct-offset C API is not compiled")
+        }
+    }
+}
 pub mod parser;
-pub mod plan;
+mod plan;
 pub mod pyval;
 pub mod scalar;
 pub mod scan;
@@ -53,6 +75,7 @@ fn fault_to_pyerr(py: Python<'_>, fault: &Fault) -> PyErr {
     let _ = value.setattr("line", fault.line);
     let _ = value.setattr("column", fault.column);
     let _ = value.setattr("validation", fault.validation);
+    let _ = value.setattr("path", fault.safe_path());
     err
 }
 
@@ -76,6 +99,7 @@ fn decode_typed<const EXTENDED: bool>(
         if let Some(err) = consumer.pending_err.take() {
             return Err(err);
         }
+        let fault = consumer.annotate_fault(fault);
         return Err(fault_to_pyerr(py, &fault));
     }
     consumer
@@ -279,6 +303,11 @@ impl Encoder {
         } else {
             "attribute"
         }
+    }
+
+    #[getter]
+    fn _experimental_struct_offset_capi_enabled(&self) -> bool {
+        cfg!(feature = "experimental-struct-offset-capi")
     }
 
     fn encode<'py>(

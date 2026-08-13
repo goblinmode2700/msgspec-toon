@@ -1,7 +1,9 @@
 # Single entry point for developer checks.
 #
-# Override when PyO3 must link against a specific Python interpreter.
-PYO3_PYTHON ?= $(shell command -v python3.13 || command -v python3)
+# The uv-managed CPython's dylib install-name breaks `cargo test` linking,
+# so Rust tests link against the Homebrew Python instead.
+HOMEBREW_PYTHON := /opt/homebrew/opt/python@3.13/bin/python3.13
+PYO3_PYTHON ?= $(if $(wildcard $(HOMEBREW_PYTHON)),$(HOMEBREW_PYTHON),python3.13)
 export PYO3_PYTHON
 
 COOLDOWN_DAYS := 14
@@ -39,7 +41,21 @@ FASTPATH_TOON_WHEELS := $(FASTPATH_ROOT)/toon-wheels
 FASTPATH_VENV := .venv-fastpath
 FASTPATH_PYTHON := $(FASTPATH_VENV)/bin/python
 
-.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock g2 efficiency \
+# Two baselines, two jobs. STORY is what the optimization round bought — it is
+# reported and never gated, so the ledger keeps its reference point. GUARD is
+# the latest release; it is the only thing the gate compares against, because a
+# distant baseline cannot detect a regression: measured, a 24% slowdown against
+# STORY read as "+2.2%, no significant difference", since the current build led
+# that baseline by 15-20%. Re-cut GUARD at every release or it decays into the
+# same blind spot.
+BASELINE_TAG := v0.1.0-conformant
+# The public-release guard is explicit because this development repository also
+# carries internal milestone tags that are not PyPI releases. The release
+# process advances this one-line pointer; `benches/ab.py` reads the same file
+# and refuses a guard built from any other tag.
+GUARD_TAG := $(shell tr -d '[:space:]' < benches/GUARD_TAG)
+
+.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock baseline guard ab ab-story g2 efficiency \
 	fastpath-source fastpath-build fastpath-check fastpath-bench fastpath-gates fastpath-clean
 
 lint:
@@ -100,7 +116,7 @@ report: benchmark-env build
 	uv run --no-sync python scripts/release-report.py
 
 # R and its plotting packages are host tools, not project dependencies. This
-# target consumes the generated JSON evidence and writes public PNG/Markdown.
+# target consumes the generated JSON evidence and writes public SVG/PNG/Markdown.
 public-report: report
 	Rscript .github/reporting/render_benchmarks.R conformance/report.json
 
@@ -128,7 +144,10 @@ fastpath-source:
 fastpath-build: fastpath-source
 	SETUPTOOLS_SCM_PRETEND_VERSION=0.21.1 uv build --wheel --clear \
 		--out-dir "$(FASTPATH_MSGSPEC_WHEELS)" "$(FASTPATH_MSGSPEC_SRC)"
+	mkdir -p "$(FASTPATH_TOON_WHEELS)"
+	find "$(FASTPATH_TOON_WHEELS)" -maxdepth 1 -type f -name '*.whl' -delete
 	uv run --no-sync maturin build --release --locked \
+		--features experimental-struct-offset-capi \
 		-o "$(FASTPATH_TOON_WHEELS)"
 	UV_PROJECT_ENVIRONMENT="$(FASTPATH_VENV)" uv sync --python 3.13 --all-groups --locked
 	uv pip install --python "$(FASTPATH_PYTHON)" --reinstall --no-deps \
@@ -150,13 +169,53 @@ fastpath-gates: fastpath-build
 fastpath-clean:
 	rm -rf "$(FASTPATH_VENV)" "$(FASTPATH_ROOT)"
 
+# Build the frozen-baseline wheel ($(BASELINE_TAG)) into .venv-baseline so
+# benches/ab.py can run same-session before/after comparisons.
+baseline:
+	git worktree remove --force .baseline-src 2>/dev/null || true
+	rm -rf .baseline-src .venv-baseline target/baseline-wheels
+	git worktree add --detach .baseline-src $(BASELINE_TAG)
+	uv venv .venv-baseline --python 3.13
+	uv run --no-sync maturin build --release \
+		-m .baseline-src/Cargo.toml -o target/baseline-wheels
+	uv pip install --python .venv-baseline/bin/python target/baseline-wheels/*.whl \
+		python-toon==0.1.3 toons pytest
+	git worktree remove --force .baseline-src
+
+# Build the guard wheel ($(GUARD_TAG)) into .venv-guard. This is what the gate
+# measures against, so it must track the latest release.
+guard:
+	git worktree remove --force .guard-src 2>/dev/null || true
+	rm -rf .guard-src .venv-guard target/guard-wheels
+	git worktree add --detach .guard-src $(GUARD_TAG)
+	uv venv .venv-guard --python 3.13
+	uv run --no-sync maturin build --release \
+		-m .guard-src/Cargo.toml -o target/guard-wheels
+	uv pip install --python .venv-guard/bin/python target/guard-wheels/*.whl \
+		python-toon==0.1.3 toons pytest
+	git worktree remove --force .guard-src
+	echo "$(GUARD_TAG)" > .venv-guard/GUARD_TAG
+	@echo "guard built from $(GUARD_TAG)"
+
+# The gate: exits non-zero when a metric is significantly slower than the
+# latest release and the slowdown reproduces. Needs .venv-guard and takes
+# minutes, which is why it is not part of `check`.
+ab:
+	uv run --no-sync python benches/ab.py
+
+# The story: what the optimization round bought, measured against the frozen
+# tag. Reported, never gated — a distant baseline cannot police a regression.
+ab-story:
+	uv run --no-sync python benches/ab.py --baseline-venv .venv-baseline --no-gate
+
 # The efficiency lock: what canonical output costs. Deterministic and offline,
 # so it also runs inside `make check` as an ordinary test.
 efficiency:
 	uv run --no-sync python scripts/efficiency-lock.py
 
 # The G2 proof runs against an instrumented wheel in its own environment, so
-# the release wheel every benchmark measures stays free of counters.
+# the release wheel every benchmark measures stays free of counters. Same
+# separation as `make baseline`: a second venv, never the working one.
 g2:
 	rm -rf .venv-g2 target/g2-wheels
 	UV_PROJECT_ENVIRONMENT=.venv-g2 uv sync --python 3.13 --locked --no-install-project
@@ -173,7 +232,7 @@ relock:
 	cargo update
 	$(MAKE) audit
 
-# Fail if any resolved version in Cargo.lock or uv.lock is younger than
+# Fail if any resolved version in Cargo.lock, fuzz/Cargo.lock, or uv.lock is younger than
 # $(COOLDOWN_DAYS) days (queries crates.io / PyPI; network required).
 # This is the enforcement layer Cargo lacks natively, and a belt-and-
 # suspenders double check on the uv side.

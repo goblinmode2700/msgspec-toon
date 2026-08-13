@@ -1,6 +1,6 @@
 [package]
 name = "msgspec-toon-native"
-version = "0.2.0-beta.5"
+version = "0.3.0-beta.1"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -42,6 +42,9 @@ extension-module = ["pyo3/extension-module"]
 # Test-only allocation counters for the G2 proof (`make g2`). Never enabled in
 # a released or benchmarked wheel: instrumentation must not appear in a timing.
 alloc-stats = []
+# Research-only consumer for the rejected msgspec Struct-offset capsule proof.
+# Published wheels and ordinary local builds must not compile this path.
+experimental-struct-offset-capi = []
 
 [profile.release]
 lto = "thin"

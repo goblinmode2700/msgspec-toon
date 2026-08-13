@@ -24,9 +24,128 @@ pub enum ScalarToken<'a> {
     Quoted { inner: &'a [u8], escaped: bool },
 }
 
+/// One field in a tabular header. A node with children is a nested field
+/// group; a node without children consumes one row cell.
+#[derive(Debug, Clone)]
+pub struct FieldNode<'a> {
+    pub name: StringToken<'a>,
+    pub children: Vec<FieldNode<'a>>,
+}
+
+impl FieldNode<'_> {
+    pub fn leaf_count(&self) -> usize {
+        if self.children.is_empty() {
+            1
+        } else {
+            self.children.iter().map(FieldNode::leaf_count).sum()
+        }
+    }
+}
+
+/// Borrowed lookahead for one nested field group in one tabular row.
+///
+/// The probe owns no source bytes and builds no value tree. Consumers can
+/// inspect the immediate scalar fields to select a schema plan before the
+/// matching object frame opens. The parser still consumes the same cells
+/// through the normal event path after selection.
+#[derive(Debug, Clone, Copy)]
+pub struct ObjectProbe<'fields, 'input> {
+    fields: &'fields [FieldNode<'input>],
+    cells: &'fields [&'input [u8]],
+}
+
+impl<'fields, 'input> ObjectProbe<'fields, 'input> {
+    pub fn new(fields: &'fields [FieldNode<'input>], cells: &'fields [&'input [u8]]) -> Self {
+        Self { fields, cells }
+    }
+
+    pub fn scalar_cells(self) -> ObjectScalarCells<'fields, 'input> {
+        ObjectScalarCells {
+            fields: self.fields.iter(),
+            cells: self.cells,
+            cursor: 0,
+            field_index: 0,
+        }
+    }
+
+    pub fn raw_cell(self, cell_index: usize) -> Option<&'input [u8]> {
+        self.cells.get(cell_index).copied()
+    }
+}
+
+pub struct ObjectScalarCells<'fields, 'input> {
+    fields: std::slice::Iter<'fields, FieldNode<'input>>,
+    cells: &'fields [&'input [u8]],
+    cursor: usize,
+    field_index: usize,
+}
+
+impl<'input> Iterator for ObjectScalarCells<'_, 'input> {
+    type Item = (usize, usize, StringToken<'input>, &'input [u8]);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let field = self.fields.next()?;
+            let field_index = self.field_index;
+            self.field_index += 1;
+            if field.children.is_empty() {
+                let cell_index = self.cursor;
+                let value = *self.cells.get(self.cursor)?;
+                self.cursor += 1;
+                return Some((field_index, cell_index, field.name, value));
+            }
+            self.cursor += field.leaf_count();
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ObjectFieldDisposition {
+    /// Emit the selected field group's ordinary recursive event sequence.
+    Emit,
+    /// Validate the selected field group's cells without constructing a value
+    /// or emitting descendant semantic actions.
+    ValidateOnly,
+}
+
+pub struct ObjectSelectionResult<T> {
+    pub selection: T,
+    /// An immediate scalar field already consumed as structural metadata.
+    /// The parser advances over its cell but does not emit it as a value.
+    pub skip_field: Option<usize>,
+    /// Container-local handling selected for this exact field group.
+    pub disposition: ObjectFieldDisposition,
+}
+
+impl<T> ObjectSelectionResult<T> {
+    pub fn new(selection: T) -> Self {
+        Self {
+            selection,
+            skip_field: None,
+            disposition: ObjectFieldDisposition::Emit,
+        }
+    }
+
+    pub fn validate_only(selection: T) -> Self {
+        Self {
+            selection,
+            skip_field: None,
+            disposition: ObjectFieldDisposition::ValidateOnly,
+        }
+    }
+}
+
 pub trait Consumer {
+    type ObjectSelection: Default;
+
     /// Whether the next object plan needs scalar-field lookahead.
     fn needs_object_preflight(&self) -> bool {
+        false
+    }
+    /// Whether a nested tabular field group needs schema selection before it
+    /// opens. Untyped consumers preserve the direct recursive event path.
+    #[inline(always)]
+    fn needs_object_field_selection(&self) -> bool {
         false
     }
     /// Offer scalar object fields before `start_object`. Typed tagged unions
@@ -34,11 +153,12 @@ pub trait Consumer {
     /// tree. Other consumers ignore it.
     fn object_scalar_hint(
         &mut self,
+        selection: &mut Self::ObjectSelection,
         key: StringToken<'_>,
         value: ScalarToken<'_>,
         at: Position,
     ) -> Result<(), Fault> {
-        let _ = (key, value, at);
+        let _ = (selection, key, value, at);
         Ok(())
     }
     /// Announce that every row of the array just started is emitted from one
@@ -50,12 +170,45 @@ pub trait Consumer {
         Ok(())
     }
     fn start_object(&mut self, at: Position) -> Result<(), Fault>;
+    /// Open an object using the preflight result produced for this exact
+    /// container. The default ignores selection and preserves the ordinary
+    /// event sequence.
+    fn start_selected_object(
+        &mut self,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let _ = selection;
+        self.start_object(at)
+    }
     /// Offer an adjacent object key and nested object opening as one
     /// operation. The default preserves the ordinary event sequence; typed
     /// consumers may carry the resolved child plan directly into frame setup.
     fn start_object_field(&mut self, key: StringToken<'_>, at: Position) -> Result<(), Fault> {
         self.key(key, at)?;
         self.start_object(at)
+    }
+    /// Select the schema action for a nested field group before its object
+    /// frame opens. The default keeps the ordinary key-then-object sequence.
+    fn select_object_field(
+        &mut self,
+        key: StringToken<'_>,
+        probe: ObjectProbe<'_, '_>,
+        at: Position,
+    ) -> Result<ObjectSelectionResult<Self::ObjectSelection>, Fault> {
+        let _ = (key, probe, at);
+        Ok(ObjectSelectionResult::new(Self::ObjectSelection::default()))
+    }
+    /// Open a nested field group using the result returned by
+    /// `select_object_field` for this exact container.
+    fn start_selected_object_field(
+        &mut self,
+        key: StringToken<'_>,
+        selection: Self::ObjectSelection,
+        at: Position,
+    ) -> Result<(), Fault> {
+        let _ = selection;
+        self.start_object_field(key, at)
     }
     /// Close an object opened by `start_object_field`. The default preserves
     /// the ordinary event sequence; typed consumers may return a completed

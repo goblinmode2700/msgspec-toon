@@ -428,14 +428,14 @@ pub fn encode_root(
             let items = struct_sequence(py, instance, plan)?;
             write_array(ctx, py, &mut writer, None, &items, 0, 0, false)?;
         }
-        Val::Dict(_) | Val::Struct(_, _) => {
-            if let Some(keyed) = keyed_shape(ctx, py, &value, 0)? {
+        Val::Dict(_) | Val::Struct(_, _) => match root_object_decision(ctx, py, &value, 0)? {
+            ObjectRenderDecision::Keyed(keyed) => {
                 write_keyed(ctx, py, &mut writer, None, &keyed, 0, false)?;
-            } else {
-                let pairs = object_pairs(ctx, py, &value)?;
+            }
+            ObjectRenderDecision::Entries(pairs) => {
                 write_entries(ctx, py, &mut writer, &pairs, 0)?;
             }
-        }
+        },
         Val::Seq(items) => write_array(ctx, py, &mut writer, None, items, 0, 0, false)?,
         _ => {
             write_scalar(ctx, py, &mut writer, &value)?;
@@ -499,11 +499,37 @@ fn write_entry<'py>(
             }
             write_key(writer, key);
             writer.bytes(b": ");
-            write_scalar(ctx, py, writer, &value)?;
+            write_entry_scalar(ctx, py, writer, &value)?;
             writer.newline();
             Ok(())
         }
     }
+}
+
+#[inline(never)]
+fn write_entry_scalar<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    writer: &mut Writer,
+    value: &Val<'py>,
+) -> PyResult<()> {
+    if let Val::Str(text) = value {
+        let text = text.to_str()?;
+        let bytes = text.as_bytes();
+        if bytes.len() >= 96 && !matches!(bytes[0], b'0'..=b'9' | b'.' | b'e' | b'E' | b'+' | b'-')
+        {
+            let quote = memchr::memchr3(ctx.delimiter, b':', b'"', bytes).is_some()
+                || memchr::memchr(b'\\', bytes).is_some()
+                || bytes.iter().any(|&byte| byte < 0x20);
+            if quote {
+                write_quoted(writer, text);
+            } else {
+                writer.text(text);
+            }
+            return Ok(());
+        }
+    }
+    write_scalar(ctx, py, writer, value)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -701,6 +727,54 @@ struct KeyedShape<'py> {
     shape: Shape,
 }
 
+/// One root-object decision. The fallback entry view survives a failed keyed
+/// classification, so validation and rendering consume the same dictionary
+/// walk instead of rebuilding it through `object_pairs`.
+enum ObjectRenderDecision<'value, 'py> {
+    Entries(Vec<(EntryText<'value, 'py>, Bound<'py, PyAny>)>),
+    Keyed(KeyedShape<'py>),
+}
+
+fn root_object_decision<'value, 'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    value: &'value Val<'py>,
+    depth: usize,
+) -> PyResult<ObjectRenderDecision<'value, 'py>> {
+    let Val::Dict(map) = value else {
+        return Ok(ObjectRenderDecision::Entries(object_pairs(ctx, py, value)?));
+    };
+
+    let mut entries = Vec::with_capacity(map.len());
+    let mut rows = (map.len() >= 2).then(|| Vec::with_capacity(map.len()));
+    for (key, item) in map.iter() {
+        let Ok(key_text) = key.cast_into::<PyString>() else {
+            return Err(encode_err(ctx, py, "object keys must be strings"));
+        };
+        if let Some(candidate_rows) = rows.as_mut() {
+            if item.is_instance_of::<PyDict>() || item.is_instance(ctx.struct_base.bind(py))? {
+                candidate_rows.push(item.clone());
+            } else {
+                rows = None;
+            }
+        }
+        entries.push((key_text, item));
+    }
+
+    if let Some(rows) = rows
+        && let Some(shape) = build_shape(ctx, py, &rows, depth)?
+    {
+        return Ok(ObjectRenderDecision::Keyed(KeyedShape { entries, shape }));
+    }
+
+    Ok(ObjectRenderDecision::Entries(
+        entries
+            .into_iter()
+            .map(|(key, item)| (EntryText::Object(key), item))
+            .collect(),
+    ))
+}
+
 fn keyed_shape<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
@@ -850,6 +924,11 @@ fn offset_field<'py>(
     attr: &Py<PyString>,
     offset: usize,
 ) -> PyResult<Bound<'py, PyAny>> {
+    // SAFETY: the optional C API supplies offsets for this exact pinned Struct
+    // class. Callers compare the runtime type before taking the offset path.
+    // The object critical section protects slot access on free-threaded
+    // CPython. `from_borrowed_ptr` acquires a strong reference before the
+    // critical section ends; it does not steal the Struct-owned slot.
     with_critical_section(instance, || unsafe {
         let slot = (instance.as_ptr() as *const u8)
             .add(offset)
@@ -1101,6 +1180,8 @@ fn write_row_obj<'py>(
     // level; every offset in one level belongs to the same pinned class.
     let offsets_match = shape.first().is_none_or(|node| match &node.access {
         Access::Offset { class, .. } => std::ptr::eq(
+            // SAFETY: `row` is a live `Bound` Python object. Reading its type
+            // pointer does not dereference user-controlled payload memory.
             unsafe { pyo3::ffi::Py_TYPE(row.as_ptr()) },
             class.as_ptr().cast(),
         ),
@@ -1143,6 +1224,8 @@ fn write_row_obj<'py>(
 /// types cover ordinary data; subclasses take the original slow chain.
 #[inline]
 fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
+    // SAFETY: `obj` is a live `Bound` reference, so its CPython header and
+    // exact type pointer remain valid for this call.
     unsafe { pyo3::ffi::Py_TYPE(obj.as_ptr()) }
 }
 
@@ -1180,6 +1263,9 @@ fn write_scalar_obj<'py>(
     obj: &Bound<'py, PyAny>,
 ) -> PyResult<()> {
     let type_ptr = exact_type(obj);
+    // SAFETY: each unchecked cast is guarded by exact pointer equality with
+    // the corresponding immortal CPython type object. No subclass enters an
+    // exact-type branch; subclasses use the checked slow path below.
     unsafe {
         use std::ptr::addr_of_mut;
         if type_ptr == addr_of_mut!(pyo3::ffi::PyUnicode_Type) {
