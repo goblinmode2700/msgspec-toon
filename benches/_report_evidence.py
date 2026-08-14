@@ -34,7 +34,7 @@ def load_report_performance(raw_path: Path, result_path: Path) -> dict[str, Any]
         analyzer_sha256=file_sha256(ANALYZER),
     )
     if raw.get("qualification_override"):
-        raise ValueError("qualification-design evidence cannot feed the public report")
+        raise ValueError("qualification evidence cannot feed the public report")
     if result.get("run_id") != raw.get("run_id"):
         raise ValueError("R absolute analysis does not match the collection run")
 

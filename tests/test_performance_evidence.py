@@ -19,6 +19,7 @@ import _panel
 import _timing
 import _workers
 import ab
+import collect_report
 from _manifest import (
     MANIFEST_PATH,
     expand_endpoints,
@@ -831,3 +832,44 @@ def test_absolute_raw_contract_rejects_python_aggregate_or_incomplete_panel() ->
     incomplete["workers"][0]["cell_order"].pop()
     with pytest.raises(ValueError, match="complete panel"):
         validate_absolute_raw(incomplete)
+
+
+@pytest.mark.parametrize("qualification", [False, True])
+def test_absolute_collector_enforces_failed_r_gates_unless_qualifying(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    qualification: bool,
+) -> None:
+    raw_path = tmp_path / "raw.json"
+    result_path = tmp_path / "result.json"
+    collected: dict[str, Any] = {}
+
+    def fake_collect(**kwargs: Any) -> dict[str, Any]:
+        collected.update(kwargs)
+        return {"qualification_override": kwargs["qualification_override"]}
+
+    monkeypatch.setattr(collect_report, "collect", fake_collect)
+    monkeypatch.setattr(
+        collect_report,
+        "analyze",
+        lambda raw, output: {
+            "gates": [
+                {"family": "G3_typed_decode_beats_wrapper", "decision": "FAIL"},
+                {"family": "G5_codec_floor", "decision": "PASS"},
+            ]
+        },
+    )
+    argv = ["--raw-output", str(raw_path), "--output", str(result_path)]
+    if qualification:
+        argv.append("--qualification")
+
+    if qualification:
+        collect_report.main(argv)
+    else:
+        with pytest.raises(SystemExit, match="G3_typed_decode_beats_wrapper"):
+            collect_report.main(argv)
+
+    assert collected["qualification_override"] is qualification
+    assert json.loads(raw_path.read_text(encoding="utf-8"))["qualification_override"] is (
+        qualification
+    )

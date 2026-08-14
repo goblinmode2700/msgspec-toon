@@ -208,7 +208,7 @@ def analyze(raw_path: Path, output_path: Path) -> dict[str, Any]:
     return result
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     manifest = load_manifest()
     declared_design = dict(manifest["absolute_report"])
     declared_design.pop("panels")
@@ -224,9 +224,11 @@ def main() -> None:
     parser.add_argument(
         "--qualification",
         action="store_true",
-        help="allow predeclared design overrides for harness qualification only",
+        help=(
+            "allow design overrides and retain failing gates for harness qualification only"
+        ),
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     design = dict(declared_design)
     overrides = {
         "workers": args.workers,
@@ -252,7 +254,7 @@ def main() -> None:
         endpoints=expand_report_endpoints(manifest),
         comparisons=expand_report_comparisons(manifest),
         seed=seed,
-        qualification_override=bool(changed),
+        qualification_override=args.qualification,
     )
     raw_path = args.raw_output.resolve()
     output_path = args.output.resolve()
@@ -263,6 +265,9 @@ def main() -> None:
     print(f"R gate decisions: {json.dumps(decisions, sort_keys=True)}")
     print(f"raw observations: {raw_path}")
     print(f"R analysis:       {output_path}")
+    failed = sorted(family for family, decision in decisions.items() if decision == "FAIL")
+    if failed and not args.qualification:
+        raise SystemExit(f"R absolute performance gates failed: {', '.join(failed)}")
 
 
 if __name__ == "__main__":
