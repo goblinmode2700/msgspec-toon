@@ -39,9 +39,9 @@ which creates PyPI publish attestations by default. The workflow does not read a
 5. Create the matching version tag only after the candidate is approved for publication.
 
 The publish job consumes `verified-release` without running a build tool. A failed validation,
-build, verification, R-owned guard, absolute report, evidence, or collection job prevents
-publication. The guard and absolute report run serially on one runner; do not parallelize them and
-create measurement contention.
+build, verification, R-owned guard, absolute-report release gate, evidence, or collection job
+prevents publication. Run the guard and absolute report serially on one runner. Parallel execution
+creates measurement contention.
 
 For a version tag, the GitHub release contains both raw files and both R result files. It also
 contains the benchmark-wheel verification record and the combined release manifest.

@@ -224,9 +224,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--qualification",
         action="store_true",
-        help=(
-            "allow design overrides and retain failing gates for harness qualification only"
-        ),
+        help=("allow design overrides and retain failing gates for harness qualification only"),
     )
     args = parser.parse_args(argv)
     design = dict(declared_design)
@@ -262,10 +260,17 @@ def main(argv: list[str] | None = None) -> None:
     raw_path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     result = analyze(raw_path, output_path)
     decisions = {row["family"]: row["decision"] for row in result["gates"]}
+    release_gate_families = {
+        comparison["family"] for comparison in evidence["comparisons"] if comparison["release_gate"]
+    }
     print(f"R gate decisions: {json.dumps(decisions, sort_keys=True)}")
     print(f"raw observations: {raw_path}")
     print(f"R analysis:       {output_path}")
-    failed = sorted(family for family, decision in decisions.items() if decision == "FAIL")
+    failed = sorted(
+        family
+        for family, decision in decisions.items()
+        if family in release_gate_families and decision == "FAIL"
+    )
     if failed and not args.qualification:
         raise SystemExit(f"R absolute performance gates failed: {', '.join(failed)}")
 

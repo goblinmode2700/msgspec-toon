@@ -186,6 +186,11 @@ def expand_report_comparisons(
 
     comparisons: list[dict[str, Any]] = []
     for template in manifest["absolute_report"]["comparison_templates"]:
+        release_gate = template.get("release_gate")
+        if not isinstance(release_gate, bool):
+            raise ValueError(  # noqa: TRY004 - manifest validation uses one exception type
+                f"absolute comparison family {template['family']} must declare release_gate"
+            )
         for row in rows_by_panel[template["panel"]]:
             candidate = endpoints_by_row_slug[row["row_id"], template["candidate_slug"]]
             reference = endpoints_by_row_slug[row["row_id"], template["reference_slug"]]
@@ -197,6 +202,7 @@ def expand_report_comparisons(
                     "candidate_id": candidate,
                     "reference_id": reference,
                     "margin_pct": template["margin_pct"],
+                    "release_gate": release_gate,
                 }
             )
     return comparisons

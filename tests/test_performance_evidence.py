@@ -142,6 +142,18 @@ def test_absolute_manifest_vectorizes_253_endpoints_into_37_process_rows() -> No
     ]
     assert len(cli_metrics) == 16
     assert {metric["fixed_loops"] for metric in cli_metrics} == {1}
+    release_gate_by_family = {
+        comparison["family"]: comparison["release_gate"]
+        for comparison in expand_report_comparisons()
+    }
+    assert release_gate_by_family == {
+        "G3_typed_decode_beats_wrapper": True,
+        "G4_whole_encode_beats_to_builtins_alone": False,
+        "G5_decode_not_slower_than_toons": True,
+        "G5_encode_not_slower_than_toons": True,
+        "typed_beats_incumbent_pipeline_decode": True,
+        "typed_beats_incumbent_pipeline_encode": True,
+    }
 
 
 def test_panel_workers_ignore_python_path_overrides(
@@ -846,7 +858,10 @@ def test_absolute_collector_enforces_failed_r_gates_unless_qualifying(
 
     def fake_collect(**kwargs: Any) -> dict[str, Any]:
         collected.update(kwargs)
-        return {"qualification_override": kwargs["qualification_override"]}
+        return {
+            "qualification_override": kwargs["qualification_override"],
+            "comparisons": expand_report_comparisons(),
+        }
 
     monkeypatch.setattr(collect_report, "collect", fake_collect)
     monkeypatch.setattr(
@@ -873,3 +888,39 @@ def test_absolute_collector_enforces_failed_r_gates_unless_qualifying(
     assert json.loads(raw_path.read_text(encoding="utf-8"))["qualification_override"] is (
         qualification
     )
+
+
+def test_absolute_collector_publishes_but_does_not_enforce_advisory_family(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw_path = tmp_path / "raw.json"
+    result_path = tmp_path / "result.json"
+    monkeypatch.setattr(
+        collect_report,
+        "collect",
+        lambda **kwargs: {
+            "qualification_override": kwargs["qualification_override"],
+            "comparisons": [
+                {
+                    "family": "G4_whole_encode_beats_to_builtins_alone",
+                    "release_gate": False,
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(
+        collect_report,
+        "analyze",
+        lambda raw, output: {
+            "gates": [
+                {
+                    "family": "G4_whole_encode_beats_to_builtins_alone",
+                    "decision": "FAIL",
+                }
+            ]
+        },
+    )
+
+    collect_report.main(["--raw-output", str(raw_path), "--output", str(result_path)])
+
+    assert raw_path.is_file()

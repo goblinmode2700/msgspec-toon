@@ -240,11 +240,12 @@ effect, and irregular records are 9.0% faster.
 `0.3.0b3` also varies distinct ordinary-record key count while record count and
 encoded size stay fixed. It replaces the `0.3.0b2` cache scan with hash lookup.
 Against `0.3.0b2`, decode is 35.8% faster at 32 keys and 87.4% faster at 512 keys.
-The complete 100-point guard reports no reproduced slowdown. These are direct
-time comparisons, not ratios to an arbitrary reference row.
-The R summaries are in
+The historical 100-point comparison reported no reproduced slowdown. The current
+manifest classifies that grid as exploratory, not as a release gate. These are direct
+time comparisons, not ratios to an arbitrary reference row. Historical summaries are in
 [`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json).
-Versioned raw timing evidence is attached to each GitHub release as described in the
+Releases from the manifest-driven harness attach raw timings and R-owned results as
+described in the
 [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md).
 
 ## Conformance and safety

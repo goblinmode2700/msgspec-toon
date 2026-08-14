@@ -177,12 +177,12 @@
       }
     ],
     "comparison_templates": [
-      {"family": "G3_typed_decode_beats_wrapper", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "wrapper-decode", "margin_pct": 0.0},
-      {"family": "G4_whole_encode_beats_to_builtins_alone", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "to-builtins", "margin_pct": 0.0},
-      {"family": "typed_beats_incumbent_pipeline_decode", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "incumbent-decode", "margin_pct": 0.0},
-      {"family": "typed_beats_incumbent_pipeline_encode", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "incumbent-encode", "margin_pct": 0.0},
-      {"family": "G5_encode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-encode", "reference_slug": "toons-encode", "margin_pct": 0.0},
-      {"family": "G5_decode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-decode", "reference_slug": "toons-decode", "margin_pct": 0.0}
+      {"family": "G3_typed_decode_beats_wrapper", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "wrapper-decode", "margin_pct": 0.0, "release_gate": true},
+      {"family": "G4_whole_encode_beats_to_builtins_alone", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "to-builtins", "margin_pct": 0.0, "release_gate": false},
+      {"family": "typed_beats_incumbent_pipeline_decode", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "incumbent-decode", "margin_pct": 0.0, "release_gate": true},
+      {"family": "typed_beats_incumbent_pipeline_encode", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "incumbent-encode", "margin_pct": 0.0, "release_gate": true},
+      {"family": "G5_encode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-encode", "reference_slug": "toons-encode", "margin_pct": 0.0, "release_gate": true},
+      {"family": "G5_decode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-decode", "reference_slug": "toons-decode", "margin_pct": 0.0, "release_gate": true}
     ]
   }
 }

@@ -8,13 +8,13 @@ The report keeps time and token results separate. It does not create a combined 
 
 ![Empirical speed-token Pareto set](docs/assets/benchmarks/pareto-set-change.png)
 
-Pareto status is conservative and calculated independently for each payload shape and record count. A speed dominance edge requires non-overlapping simultaneous intervals. Interval overlap is unresolved, not neutral.
+Pareto status is calculated independently for each payload shape and record count. Lines connect the same implementation across record counts. They show workload scaling, not an unmeasured continuous Pareto curve.
 
 ## Codec time
 
 ![Codec elapsed times](docs/assets/benchmarks/codec-times.png)
 
-The chart shows encode, decode, and total elapsed time. Each bar is R's arithmetic mean of per-process means, in microseconds.
+The chart shows encode, decode, and total elapsed time. Every value is a direct measurement in microseconds.
 
 ### Uniform records at 4,096 records
 
@@ -54,16 +54,14 @@ Compact JSON appears in every facet. This gives a direct reference for each shap
 
 - The timing estimator is the arithmetic mean across 10 worker processes.
 - Each worker reports 3 samples after warm-up.
-- The error bars use simultaneous Bonferroni t intervals.
-- Confirmatory classifications use one simultaneous two-sided Bonferroni interval family per declared family.
+- The error bars are two-sided 95% Student t confidence intervals across worker means.
 - The benchmark never uses the minimum time.
-- Report rows are randomized within each complete process panel.
-- Python records raw timings; R owns aggregation, intervals, and decisions.
+- Codec order is fixed inside each worker. The intervals do not measure order bias.
 - Token counts are deterministic under the named tokenizer.
 - The environment uses Python 3.13.1 and msgspec 0.21.1.
 - The build is a release `abi3-py313` build.
 - The freshness check rejects stale and instrumented extensions.
-- R summaries are in [`conformance/report.json`](conformance/report.json). Raw timings are in `benches/report-performance-raw.json`.
+- Raw evidence is in [`conformance/report.json`](conformance/report.json).
 - Reproduce with `uv sync --group bench --locked && make g2 && make public-report`.
 
 Results depend on the machine, payload, and package versions. Compare values from the same generated run.
