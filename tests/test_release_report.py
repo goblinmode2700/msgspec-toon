@@ -41,9 +41,15 @@ def test_current_compatibility_delta_records_support_changes(
             "after": "supported",
         },
         {"feature": "bytes encode projection", "before": None, "after": "supported"},
+        {"feature": "bytes subclasses", "before": None, "after": "parity_rejects"},
         {"feature": "date", "before": None, "after": "supported"},
         {"feature": "datetime", "before": "unsupported", "after": "supported"},
         {"feature": "enum members", "before": "unsupported", "after": None},
+        {
+            "feature": "exact bytearray encode projection",
+            "before": None,
+            "after": "supported",
+        },
         {"feature": "fractional and exponent floats", "before": None, "after": "supported"},
         {"feature": "frozenset encode projection", "before": None, "after": "supported"},
         {"feature": "integer Enum", "before": None, "after": "supported"},
@@ -99,6 +105,11 @@ def test_current_compatibility_delta_records_support_changes(
         },
         {
             "feature": "interaction: tagged + recursive",
+            "before": None,
+            "after": "supported",
+        },
+        {
+            "feature": "memoryview encode projection",
             "before": None,
             "after": "supported",
         },

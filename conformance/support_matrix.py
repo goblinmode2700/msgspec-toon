@@ -117,6 +117,10 @@ class Priority(enum.IntEnum):
     HIGH = 2
 
 
+class BytesSubclass(bytes):
+    pass
+
+
 @dataclass
 class PlainDataclass:
     x: int
@@ -624,6 +628,35 @@ MATRIX: tuple[SupportEntry, ...] = (
         "native encode uses msgspec-compatible padded base64; the wire retains a string, "
         "so untyped decode returns str",
         round_trip=lambda: _projection_round_trip(b"ab"),
+    ),
+    SupportEntry(
+        "exact bytearray encode projection",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode(bytearray(b"ab"))),
+        lambda: msgspec.json.decode(msgspec.json.encode(bytearray(b"ab"))),
+        "native encode copies the mutable buffer before applying msgspec-compatible padded base64; "
+        "untyped decode returns str",
+        round_trip=lambda: _projection_round_trip(bytearray(b"ab")),
+    ),
+    SupportEntry(
+        "memoryview encode projection",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode(memoryview(b"ab"))),
+        lambda: msgspec.json.decode(msgspec.json.encode(memoryview(b"ab"))),
+        "native encode copies a C-contiguous view before applying msgspec-compatible padded base64; "
+        "untyped decode returns str",
+        round_trip=lambda: _projection_round_trip(memoryview(b"ab")),
+    ),
+    SupportEntry(
+        "bytes subclasses",
+        2,
+        PARITY_REJECTS,
+        lambda: toon.encode(BytesSubclass(b"ab")),
+        lambda: msgspec.json.encode(BytesSubclass(b"ab")),
+        "both encoders refuse subclasses because the subtype can carry semantics not present in "
+        "exact bytes",
     ),
     SupportEntry(
         "dataclasses",
