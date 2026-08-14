@@ -4,6 +4,11 @@ The release workflow builds each distribution once, verifies the installed artif
 target runners, and publishes only the complete digest-matched set. Do not upload a locally rebuilt
 file under the same version.
 
+The performance manifest fixes each pair count and sampling design. Python records raw timings only.
+R owns the estimates, simultaneous Bonferroni intervals, classifications, and gate decisions.
+R also plans power for the complete family of confirmatory endpoints. A gating family must meet its
+declared familywise power target.
+
 ## Required repository configuration
 
 Configure a protected GitHub environment named `pypi`. Limit deployment to release maintainers and
@@ -30,9 +35,9 @@ which creates PyPI publish attestations by default. The workflow does not read a
    branch.
 3. Run the wheel workflow with publication disabled. All twelve wheels and the source distribution
    must build, verify, and enter the combined manifest. The release evidence job then installs the
-   verified Linux x86-64 CPython 3.13 ABI3 wheel. It verifies the installed extension, builds the
-   `GUARD_TAG` baseline, and runs `make release-performance`. Python writes raw observations. R
-   makes the guard and report decisions.
+   verified Linux x86-64 CPython 3.13 ABI3 wheel. The job verifies the installed extension and
+   builds the `GUARD_TAG` baseline. Then it runs `make release-performance` under the inference
+   contract above.
 4. Inspect the release evidence. Its package version, source revision, current-extension digest,
    raw timings, and R analyzer digest must match the candidate. The workflow artifact contains the
    paired guard raw/result files and the absolute-report raw/result files.

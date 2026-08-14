@@ -155,19 +155,23 @@ The three projected types use the same value model as msgspec:
 | exact `bytes` | padded base64 string | Untyped decode returns `str`. |
 
 Set order is the current Python iteration order. This behavior matches the default msgspec encoder.
-The order can change between processes because sets are unordered. When output order must be stable, use a list.
+The order can change between processes because sets are unordered.
+When output order must be stable, use a list.
 
 Typed decode does not reconstruct `set`, `frozenset`, or `bytes`. Decode the projected value first.
 Then use `msgspec.convert` when the application needs the original type.
 
-The encoder refuses `bytearray`, `memoryview`, and subclasses of `bytes`. An `enc_hook` can convert each value to exact `bytes`:
+The encoder refuses `bytearray`, `memoryview`, and subclasses of `bytes`.
+An `enc_hook` can convert each value to exact `bytes`:
 
 ```python
 toon.encode(memoryview(b"ab"), enc_hook=lambda value: bytes(value))
 # b'YWI='
 ```
 
-The generated support matrix lists all other supported and refused types.
+The executable
+[support matrix](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/support_matrix.py)
+defines all other supported and refused types.
 
 ## Native scalar types
 
@@ -293,9 +297,10 @@ described in the
 - Malformed input must return an error. It must not panic or terminate Python.
 - Canonical output is byte-locked by tests.
 
-The generated support matrix in the
-[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
-file lists supported, rejected, and not-yet-supported msgspec features.
+The executable
+[support matrix](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/support_matrix.py)
+lists supported, rejected, and not-yet-supported msgspec features.
+Each release report contains a generated snapshot of this matrix.
 Unsupported behavior fails clearly. It does not silently return a different
 value.
 
@@ -339,10 +344,8 @@ make public-report                      # evidence, R charts, and BENCHMARKS.md
 
 The benchmark commands use the host `Rscript` and `jsonlite`. `make public-report` also uses
 `ggplot2` and `scales`. The commands do not install R or add R packages to the Python environment.
-Python records raw timings only. R owns all estimates, simultaneous Bonferroni intervals, and
-gate decisions. Confirmatory process counts target power for the complete endpoint family.
 The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
-documents installed-artifact verification and Trusted Publishing.
+owns the inference, artifact-verification, and Trusted Publishing contracts.
 
 ## License
 
