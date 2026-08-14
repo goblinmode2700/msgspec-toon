@@ -61,6 +61,11 @@ def _round_trip(value: Any, type_: Any) -> bool:
     return toon.decode(toon.encode(value), type=type_) == value
 
 
+def _projection_round_trip(value: Any) -> bool:
+    """Whether an encode-only type survives as msgspec's documented builtin form."""
+    return toon.decode(toon.encode(value)) == msgspec.to_builtins(value)
+
+
 # --- probes -----------------------------------------------------------------
 
 
@@ -271,6 +276,26 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b"[1,2]", type=tuple[int, ...]),
         "",
         round_trip=lambda: _round_trip((1, 2), tuple[int, ...]),
+    ),
+    SupportEntry(
+        "set encode projection",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode({1, 2})),
+        lambda: msgspec.json.decode(msgspec.json.encode({1, 2})),
+        "native encode emits an array in interpreter iteration order; the wire does not "
+        "retain set identity, so untyped decode returns list",
+        round_trip=lambda: _projection_round_trip({1, 2}),
+    ),
+    SupportEntry(
+        "frozenset encode projection",
+        1,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode(frozenset({1, 2}))),
+        lambda: msgspec.json.decode(msgspec.json.encode(frozenset({1, 2}))),
+        "native encode emits an array in interpreter iteration order; the wire does not "
+        "retain frozenset identity, so untyped decode returns list",
+        round_trip=lambda: _projection_round_trip(frozenset({1, 2})),
     ),
     SupportEntry(
         "Literal[str]",
@@ -589,6 +614,16 @@ MATRIX: tuple[SupportEntry, ...] = (
         lambda: msgspec.json.decode(b'"1.5"', type=decimal.Decimal),
         "the default string form preserves exact digits and trailing zeroes",
         round_trip=lambda: _round_trip(decimal.Decimal("1.2300"), decimal.Decimal),
+    ),
+    SupportEntry(
+        "bytes encode projection",
+        2,
+        SUPPORTED,
+        lambda: toon.decode(toon.encode(b"ab")),
+        lambda: msgspec.json.decode(msgspec.json.encode(b"ab")),
+        "native encode uses msgspec-compatible padded base64; the wire retains a string, "
+        "so untyped decode returns str",
+        round_trip=lambda: _projection_round_trip(b"ab"),
     ),
     SupportEntry(
         "dataclasses",

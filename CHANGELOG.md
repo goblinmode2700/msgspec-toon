@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.3.0b4
+
+Native encode parity for collection and binary projections.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 30 newly supported, 1 removed, 33 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Encode `set` and `frozenset` directly as TOON arrays in Python iteration order.
+- Encode exact `bytes` directly as standard padded base64 strings.
+- Apply these conversions before `enc_hook`, as the pinned msgspec encoder does.
+- Add executable support-matrix entries for all three types.
+- Document the unordered set boundary and the projected decode types.
+- Advance the performance guard to `v0.3.0b3`.
+- Correct release-guard planning from per-endpoint power to a familywise power target.
+- Reject timing evidence that changes the declared pair count or sampling design.
+- Preserve all canonical bytes and token counts for existing locked payloads.
+
 ## 0.3.0b3
 
 Untyped distinct-key scaling hotfix.
