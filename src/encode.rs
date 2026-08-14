@@ -26,8 +26,6 @@ use crate::writer::Writer;
 const CELL_WIDTH_ESTIMATE: usize = 10;
 
 const MAX_HOOK_DEPTH: usize = 8;
-const NON_STRING_KEY_ERROR: &str =
-    "object keys must be strings; convert with msgspec.to_builtins(..., str_keys=True)";
 
 pub struct EncodeContext {
     pub enc_hook: Option<Py<PyAny>>,
@@ -406,7 +404,7 @@ fn object_pairs<'value, 'py>(
             let mut pairs = Vec::with_capacity(map.len());
             for (key, item) in map.iter() {
                 let Ok(key_text) = key.cast_into::<PyString>() else {
-                    return Err(encode_err(ctx, py, NON_STRING_KEY_ERROR));
+                    return Err(encode_err(ctx, py, "object keys must be strings"));
                 };
                 pairs.push((EntryText::Object(key_text), item));
             }
@@ -781,7 +779,7 @@ fn root_object_decision<'value, 'py>(
     let mut rows = (map.len() >= 2).then(|| Vec::with_capacity(map.len()));
     for (key, item) in map.iter() {
         let Ok(key_text) = key.cast_into::<PyString>() else {
-            return Err(encode_err(ctx, py, NON_STRING_KEY_ERROR));
+            return Err(encode_err(ctx, py, "object keys must be strings"));
         };
         if let Some(candidate_rows) = rows.as_mut() {
             if item.is_instance_of::<PyDict>() || item.is_instance(ctx.struct_base.bind(py))? {
