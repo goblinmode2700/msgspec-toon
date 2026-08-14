@@ -287,6 +287,8 @@ def analyze(raw_path: Path, output_path: Path, *, family: str) -> dict[str, Any]
         raw_sha256=raw_sha256,
         family=family,
         endpoint_ids={endpoint["id"] for endpoint in raw["endpoints"]},
+        endpoint_roles={endpoint["id"]: endpoint["role"] for endpoint in raw["endpoints"]},
+        gating=raw["family"]["gating"],
         analyzer_sha256=analyzer_sha256,
     )
     return result

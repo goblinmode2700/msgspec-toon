@@ -243,6 +243,8 @@ def validate_r_result(
     raw_sha256: str,
     family: str,
     endpoint_ids: set[str] | None = None,
+    endpoint_roles: dict[str, str] | None = None,
+    gating: bool | None = None,
     analyzer_sha256: str | None = None,
 ) -> None:
     if result.get("analysis_schema_version") != 1:
@@ -264,10 +266,84 @@ def validate_r_result(
         "EXPLORATORY",
     }:
         raise ValueError("R analysis emitted an invalid gate decision")
+
+    endpoints = result.get("endpoints")
+    if not isinstance(endpoints, list) or not endpoints:
+        raise ValueError("R analysis did not emit endpoint decisions")
+    allowed_statuses = {
+        "improvement": {"improved", "inconclusive", "regressed"},
+        "non_inferiority": {"non_inferior", "inconclusive", "regressed"},
+        "exploratory": {"exploratory"},
+    }
+    analyzed_ids: list[str] = []
+    analyzed_roles: dict[str, str] = {}
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            raise ValueError("R analysis emitted an invalid endpoint decision")
+        endpoint_id = endpoint.get("id")
+        role = endpoint.get("role")
+        status = endpoint.get("status")
+        if not isinstance(endpoint_id, str) or not endpoint_id:
+            raise ValueError("R analysis emitted an invalid endpoint ID")
+        if (
+            not isinstance(role, str)
+            or not isinstance(status, str)
+            or role not in allowed_statuses
+            or status not in allowed_statuses[role]
+        ):
+            raise ValueError(f"R analysis emitted an invalid decision for endpoint {endpoint_id}")
+        analyzed_ids.append(endpoint_id)
+        analyzed_roles[endpoint_id] = role
+    if len(analyzed_ids) != len(set(analyzed_ids)):
+        raise ValueError("R analysis emitted duplicate endpoint decisions")
     if endpoint_ids is not None:
-        analyzed_ids = {endpoint["id"] for endpoint in result.get("endpoints", [])}
-        if analyzed_ids != endpoint_ids:
+        if set(analyzed_ids) != endpoint_ids:
             raise ValueError("R analysis did not decide the complete endpoint family")
+    if endpoint_roles is not None and analyzed_roles != endpoint_roles:
+        raise ValueError("R analysis changed the declared endpoint roles")
+
+    if gating is None:
+        gating = result["gate_decision"] != "EXPLORATORY"
+    if not isinstance(gating, bool):
+        raise ValueError("R analysis has an invalid gating mode")
+    if gating and any(role == "exploratory" for role in analyzed_roles.values()):
+        raise ValueError("gating R analysis contains an exploratory endpoint")
+
+    expected_failures: list[str] = []
+    expected_inconclusive: list[str] = []
+    if gating:
+        expected_failures = [
+            endpoint["id"]
+            for endpoint in endpoints
+            if endpoint["role"] == "improvement" and endpoint["status"] != "improved"
+        ]
+        expected_failures.extend(
+            endpoint["id"]
+            for endpoint in endpoints
+            if endpoint["status"] == "regressed"
+            and endpoint["id"] not in expected_failures
+        )
+        for endpoint in endpoints:
+            if (
+                endpoint["role"] == "non_inferiority"
+                and endpoint["status"] == "inconclusive"
+            ):
+                expected_inconclusive.append(endpoint["id"])
+    if result.get("failure_endpoints") != expected_failures:
+        raise ValueError("R analysis failure endpoints disagree with endpoint decisions")
+    if result.get("inconclusive_endpoints") != expected_inconclusive:
+        raise ValueError("R analysis inconclusive endpoints disagree with endpoint decisions")
+
+    expected_gate_decision = "EXPLORATORY"
+    if gating:
+        if expected_failures:
+            expected_gate_decision = "FAIL"
+        elif expected_inconclusive:
+            expected_gate_decision = "INCONCLUSIVE"
+        else:
+            expected_gate_decision = "PASS"
+    if result["gate_decision"] != expected_gate_decision:
+        raise ValueError("R gate decision disagrees with endpoint decisions")
 
 
 def validate_absolute_raw(evidence: dict[str, Any]) -> None:

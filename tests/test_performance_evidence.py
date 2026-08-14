@@ -835,19 +835,38 @@ def test_r_result_digest_and_engine_fail_closed() -> None:
         "family": "focused",
         "adjustment": "simultaneous Bonferroni intervals across the declared family",
         "gate_decision": "PASS",
+        "failure_endpoints": [],
+        "inconclusive_endpoints": [],
+        "endpoints": [
+            {"id": "faster", "role": "improvement", "status": "improved"},
+            {
+                "id": "stable",
+                "role": "non_inferiority",
+                "status": "non_inferior",
+            },
+        ],
     }
+    endpoint_roles = {"faster": "improvement", "stable": "non_inferiority"}
     validate_r_result(
         result,
         raw_sha256="abc",
         family="focused",
+        endpoint_ids=set(endpoint_roles),
+        endpoint_roles=endpoint_roles,
+        gating=True,
         analyzer_sha256="analyzer-abc",
     )
     inconclusive = copy.deepcopy(result)
     inconclusive["gate_decision"] = "INCONCLUSIVE"
+    inconclusive["inconclusive_endpoints"] = ["stable"]
+    inconclusive["endpoints"][1]["status"] = "inconclusive"
     validate_r_result(
         inconclusive,
         raw_sha256="abc",
         family="focused",
+        endpoint_ids=set(endpoint_roles),
+        endpoint_roles=endpoint_roles,
+        gating=True,
         analyzer_sha256="analyzer-abc",
     )
     for key, value, message in (
@@ -863,8 +882,68 @@ def test_r_result_digest_and_engine_fail_closed() -> None:
                 changed,
                 raw_sha256="abc",
                 family="focused",
+                endpoint_ids=set(endpoint_roles),
+                endpoint_roles=endpoint_roles,
+                gating=True,
                 analyzer_sha256="analyzer-abc",
             )
+
+
+def test_r_result_rejects_disagreement_between_endpoint_and_gate_decisions() -> None:
+    result = {
+        "analysis_schema_version": 1,
+        "engine": "R stats",
+        "raw_sha256": "abc",
+        "analyzer_sha256": "analyzer-abc",
+        "family": "focused",
+        "adjustment": "simultaneous Bonferroni intervals across the declared family",
+        "gate_decision": "INCONCLUSIVE",
+        "failure_endpoints": ["stable"],
+        "inconclusive_endpoints": [],
+        "endpoints": [
+            {
+                "id": "stable",
+                "role": "non_inferiority",
+                "status": "regressed",
+            }
+        ],
+    }
+    with pytest.raises(ValueError, match="gate decision disagrees"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
+
+    result["gate_decision"] = "FAIL"
+    result["failure_endpoints"] = []
+    with pytest.raises(ValueError, match="failure endpoints disagree"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
+
+    result["failure_endpoints"] = ["stable"]
+    result["inconclusive_endpoints"] = ["stable"]
+    with pytest.raises(ValueError, match="inconclusive endpoints disagree"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
 
 
 def test_missing_r_fails_closed_without_python_inference(
