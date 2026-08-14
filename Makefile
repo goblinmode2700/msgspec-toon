@@ -27,6 +27,13 @@ QUALIFY_G2 ?= $(MAKE) g2
 QUALIFY_REPORT ?= uv run --no-sync python scripts/release-report.py --check-changelog
 QUALIFY_COPY_EVIDENCE ?= cp conformance/conformance-results.json "$(QUALIFICATION_DIR)/conformance-results.json" && cp conformance/allocation-proof.json "$(QUALIFICATION_DIR)/allocation-proof.json"
 QUALIFY_SUMMARY ?= uv run --no-sync python scripts/qualification-summary.py --junit "$(QUALIFICATION_DIR)/pytest.xml" --output "$(QUALIFICATION_DIR)/summary.json"
+RELEASE_BENCH_VENV ?= .venv-release
+RELEASE_BENCH_PYTHON := $(RELEASE_BENCH_VENV)/bin/python
+RELEASE_PERF_VERIFY ?= $(RELEASE_BENCH_PYTHON) -I scripts/release_artifacts.py verify-release-wheel --directory release/dist --manifest release/verified-release.json --python-abi cp313-abi3 --output release/benchmark-wheel.verified.json
+RELEASE_PERF_GUARD ?= UV_PROJECT_ENVIRONMENT=$(RELEASE_BENCH_VENV) $(MAKE) guard
+RELEASE_PERF_AB ?= $(RELEASE_BENCH_PYTHON) -I benches/ab.py --current-venv $(RELEASE_BENCH_VENV)
+RELEASE_PERF_REPORT ?= $(RELEASE_BENCH_PYTHON) -I benches/collect_report.py --python $(RELEASE_BENCH_PYTHON)
+RELEASE_PERF_CHECK ?= $(RELEASE_BENCH_PYTHON) -I scripts/release-report.py --check-performance-evidence
 
 # Opt-in build against the proposed msgspec Struct C API. The normal project
 # environment and dependency pin stay untouched; this profile owns a separate
@@ -55,7 +62,7 @@ BASELINE_TAG := v0.1.0-conformant
 # and refuses a guard built from any other tag.
 GUARD_TAG := $(shell tr -d '[:space:]' < benches/GUARD_TAG)
 
-.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report audit relock baseline guard ab ab-story g2 efficiency \
+.PHONY: lint typecheck test check build conformance qualify bench benchmark-env report public-report release-performance audit relock baseline guard ab ab-focused ab-exploratory ab-story g2 efficiency \
 	fastpath-source fastpath-build fastpath-check fastpath-bench fastpath-gates fastpath-clean
 
 lint:
@@ -109,16 +116,28 @@ benchmark-env:
 	uv sync --group bench --locked
 
 bench: benchmark-env build
-	uv run --no-sync python benches/bench_codecs.py
-	uv run --no-sync python benches/bench_typed.py
+	uv run --no-sync python benches/collect_report.py
 
 report: benchmark-env build
+	uv run --no-sync python benches/collect_report.py
 	uv run --no-sync python scripts/release-report.py
 
 # R and its plotting packages are host tools, not project dependencies. This
 # target consumes the generated JSON evidence and writes public SVG/PNG/Markdown.
 public-report: report
 	Rscript .github/reporting/render_benchmarks.R conformance/report.json
+
+# Canonical release-performance path for a candidate wheel already installed in
+# RELEASE_BENCH_VENV. It builds the declared previous-release guard, runs the
+# R-owned non-inferiority panel, then collects the vectorized absolute report.
+# The GitHub release workflow invokes this exact target against its verified wheel.
+release-performance:
+	@test -x "$(RELEASE_BENCH_PYTHON)"
+	$(RELEASE_PERF_VERIFY)
+	$(RELEASE_PERF_GUARD)
+	$(RELEASE_PERF_AB)
+	$(RELEASE_PERF_REPORT)
+	$(RELEASE_PERF_CHECK)
 
 # Reproduce the upstream capsule experiment without changing `.venv` or the
 # publishable `msgspec==0.21.1` dependency. The source is hash-pinned, the patch
@@ -197,11 +216,19 @@ guard:
 	echo "$(GUARD_TAG)" > .venv-guard/GUARD_TAG
 	@echo "guard built from $(GUARD_TAG)"
 
-# The gate: exits non-zero when a metric is significantly slower than the
-# latest release and the slowdown reproduces. Needs .venv-guard and takes
-# minutes, which is why it is not part of `check`.
+# The preregistered release guard. Python writes raw timings; R makes the
+# family-adjusted non-inferiority decision. No data-dependent confirmation.
 ab:
 	uv run --no-sync python benches/ab.py
+
+# The seconds-scale inner loop for the current distinct-key hypothesis and its
+# two ordinary-object controls. The family is fixed in performance-manifest.json.
+ab-focused:
+	uv run --no-sync python benches/ab.py --family distinct-key-hotfix
+
+# The historical 100-cell grid is exploratory and cannot support a claim.
+ab-exploratory:
+	uv run --no-sync python benches/ab.py --family full-exploratory --no-gate
 
 # The story: what the optimization round bought, measured against the frozen
 # tag. Reported, never gated — a distant baseline cannot police a regression.

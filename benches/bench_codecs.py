@@ -29,8 +29,28 @@ LADDER = COMPARATIVE_LADDER
 SHAPES = COMPARATIVE_SHAPES
 
 
+def metadata_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
+    """Deterministic byte counts collected outside every timed observation."""
+
+    tree = comparative_tree(shape, records)
+    ours_bytes = msgspec_toon.encode(tree)
+    python_toon_text = python_toon.encode(tree)
+    toons_text = toons_rust.dumps(tree)
+    json_bytes = msgspec.json.encode(tree)
+    return {
+        "shape": shape,
+        "records": records,
+        "output_bytes": {
+            "msgspec_toon_tabular_4_1": len(ours_bytes),
+            "toons_rust_fallback_3_0": len(toons_text.encode()),
+            "python_toon_fallback": len(python_toon_text.encode()),
+            "json_compact": len(json_bytes),
+        },
+    }
+
+
 def sample_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
-    """One worker's measurements; the parent decides the gates from the mean."""
+    """Collect one worker's measurements for later R analysis."""
     tree = comparative_tree(shape, records)
     selected = selected_metric()
     measuring_all = selected is None
@@ -83,7 +103,7 @@ def sample_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
 
 
 def with_gates(result: dict[str, Any]) -> dict[str, Any]:
-    """Decide G5 from the aggregated figures, not from one worker."""
+    """Apply the retired Python gate helper to legacy aggregated figures."""
     encode_us, decode_us = result["encode_us"], result["decode_us"]
     result["gates"] = {
         "G5_encode_not_slower_than_toons": encode_us["msgspec_toon"] <= encode_us["toons_rust"],
@@ -98,7 +118,7 @@ def run(
     shape: str = "uniform-records",
     workers: int = DEFAULT_WORKERS,
 ) -> dict[str, Any]:
-    """The published figure: the mean across independent worker processes."""
+    """Reject the retired Python aggregation entry point."""
     merged, spread = across_workers("bench_codecs", "sample_run", [records, shape], workers=workers)
     merged["worker_spread_pct"] = spread
     return with_gates(merged)

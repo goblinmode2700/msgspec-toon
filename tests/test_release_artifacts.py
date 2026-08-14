@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import importlib.util
 import json
+import platform
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -18,6 +23,15 @@ PLATFORM_TAGS = {
     ("windows", "x86_64"): "win_amd64",
     ("windows", "aarch64"): "win_arm64",
 }
+
+
+@pytest.fixture(scope="module")
+def artifacts_module() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("release_artifacts_under_test", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -242,3 +256,90 @@ def test_verify_rejects_substituted_artifacts(tmp_path: Path, mutation: str) -> 
         check=False,
     )
     assert result.returncode != 0
+
+
+def test_release_benchmark_rejects_a_substituted_verified_wheel(tmp_path: Path) -> None:
+    operating_system = {"linux": "linux", "darwin": "macos", "win32": "windows"}[sys.platform]
+    architecture = {
+        "x86_64": "x86_64",
+        "amd64": "x86_64",
+        "aarch64": "aarch64",
+        "arm64": "aarch64",
+    }[platform.machine().lower()]
+    platform_tag = PLATFORM_TAGS[operating_system, architecture]
+    filename = f"msgspec_toon-0.1.0b3-cp313-abi3-{platform_tag}.whl"
+    artifact = tmp_path / filename
+    artifact.write_bytes(b"substituted")
+    manifest = tmp_path / "verified-release.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "source_revision": "a" * 40,
+                "artifacts": [
+                    {
+                        "filename": filename,
+                        "kind": "wheel",
+                        "sha256": hashlib.sha256(b"verified").hexdigest(),
+                        "size": len(b"verified"),
+                        "target": {
+                            "python_abi": "cp313-abi3",
+                            "operating_system": operating_system,
+                            "architecture": architecture,
+                        },
+                        "verification": {
+                            "status": "passed",
+                            "distribution_version": "0.1.0b3",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = _run(
+        "verify-release-wheel",
+        "--directory",
+        str(tmp_path),
+        "--manifest",
+        str(manifest),
+        "--python-abi",
+        "cp313-abi3",
+        "--output",
+        str(tmp_path / "benchmark-wheel.verified.json"),
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "digest mismatch" in result.stderr
+
+
+def test_installed_native_file_must_match_the_verified_wheel_record(
+    artifacts_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    relative = "msgspec_toon/_native.abi3.so"
+    content = b"verified-native-extension"
+    digest = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).rstrip(b"=").decode()
+    artifact = tmp_path / "candidate.whl"
+    with zipfile.ZipFile(artifact, "w") as wheel:
+        wheel.writestr(relative, content)
+        wheel.writestr(
+            "msgspec_toon-0.1.0.dist-info/RECORD",
+            f"{relative},sha256={digest},{len(content)}\nmsgspec_toon-0.1.0.dist-info/RECORD,,\n",
+        )
+    prefix = tmp_path / "prefix"
+    installed = prefix / relative
+    installed.parent.mkdir(parents=True)
+    installed.write_bytes(content)
+
+    class Distribution:
+        def locate_file(self, path: str) -> Path:
+            return prefix / path
+
+    monkeypatch.setattr(artifacts_module.sys, "prefix", str(prefix))
+    artifacts_module._verify_installed_files(artifact, Distribution())
+
+    installed.write_bytes(b"tampered-native-extension")
+    with pytest.raises(SystemExit, match="differs from verified wheel"):
+        artifacts_module._verify_installed_files(artifact, Distribution())

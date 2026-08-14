@@ -240,11 +240,13 @@ effect, and irregular records are 9.0% faster.
 `0.3.0b3` also varies distinct ordinary-record key count while record count and
 encoded size stay fixed. It replaces the `0.3.0b2` cache scan with hash lookup.
 Against `0.3.0b2`, decode is 35.8% faster at 32 keys and 87.4% faster at 512 keys.
-The complete 100-point guard reports no reproduced slowdown. These are direct
-time comparisons, not ratios to an arbitrary reference row.
-The raw evidence is in the
-[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
-file.
+The historical 100-point comparison reported no reproduced slowdown. The current
+manifest classifies that grid as exploratory, not as a release gate. These are direct
+time comparisons, not ratios to an arbitrary reference row. Historical summaries are in
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json).
+Releases from the manifest-driven harness attach raw timings and R-owned results as
+described in the
+[release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md).
 
 ## Conformance and safety
 
@@ -295,12 +297,12 @@ uv run python conformance/run.py        # pinned 538-fixture corpus
 make g2                                 # allocation proof in a separate build
 
 uv sync --group bench --locked           # opt in to benchmark packages
-make bench                              # same-run codec and typed ladders
-make public-report                      # raw JSON, R charts, and BENCHMARKS.md
+make bench                              # raw timings and R-owned performance report
+make public-report                      # evidence, R charts, and BENCHMARKS.md
 ```
 
-`make public-report` uses the host `Rscript`, `ggplot2`, `jsonlite`, and
-`scales`. It does not install R or add R packages to the Python environment.
+The benchmark commands use the host `Rscript` and `jsonlite`. `make public-report` also uses
+`ggplot2` and `scales`. The commands do not install R or add R packages to the Python environment.
 The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
 documents installed-artifact verification and Trusted Publishing.
 

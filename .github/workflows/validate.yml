@@ -29,6 +29,18 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Set up R inference runtime
+        uses: r-lib/actions/setup-r@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          r-version: "4.4.2"
+          use-public-rspm: true
+
+      - name: Install pinned R inference dependency
+        uses: r-lib/actions/setup-r-dependencies@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          packages: any::jsonlite@2.0.0
+          cache-version: msgspec-toon-jsonlite-2.0.0
+
       - name: Select stable Rust
         run: rustup toolchain install stable --profile minimal
 

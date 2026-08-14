@@ -8,6 +8,8 @@ file that reaches PyPI is byte-for-byte the file tested on its target runner.
 from __future__ import annotations
 
 import argparse
+import base64
+import csv
 import hashlib
 import importlib.metadata
 import json
@@ -15,6 +17,7 @@ import platform
 import shutil
 import sys
 import sysconfig
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -155,6 +158,82 @@ def _validate_runtime_target(target: dict[str, str]) -> None:
         )
 
 
+def _verify_installed_files(artifact: Path, distribution: importlib.metadata.Distribution) -> None:
+    if not artifact.name.endswith(".whl"):
+        return
+    prefix = Path(sys.prefix).resolve()
+    verified_files = 0
+    verified_native = False
+    with zipfile.ZipFile(artifact) as wheel:
+        record_names = [name for name in wheel.namelist() if name.endswith(".dist-info/RECORD")]
+        if len(record_names) != 1:
+            raise SystemExit(f"wheel must contain one RECORD file: {artifact.name}")
+        rows = csv.reader(wheel.read(record_names[0]).decode("utf-8").splitlines())
+        for relative, encoded_digest, encoded_size in rows:
+            if not encoded_digest:
+                continue
+            algorithm, separator, expected_digest = encoded_digest.partition("=")
+            if algorithm != "sha256" or not separator:
+                raise SystemExit(f"unsupported RECORD digest for {relative}: {encoded_digest}")
+            installed = Path(distribution.locate_file(relative)).resolve()
+            if not installed.is_relative_to(prefix) or not installed.is_file():
+                raise SystemExit(
+                    f"wheel file is not installed under the benchmark prefix: {relative}"
+                )
+            content = installed.read_bytes()
+            actual_digest = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).rstrip(b"=")
+            if actual_digest.decode("ascii") != expected_digest:
+                raise SystemExit(f"installed file differs from verified wheel: {relative}")
+            if encoded_size and len(content) != int(encoded_size):
+                raise SystemExit(f"installed file size differs from verified wheel: {relative}")
+            verified_files += 1
+            verified_native |= relative.startswith("msgspec_toon/_native")
+    if verified_files == 0 or not verified_native:
+        raise SystemExit("verified wheel RECORD does not cover the native extension")
+
+
+def _verify_installed_artifact(
+    artifact: Path, *, expected_version: str
+) -> tuple[Path, Path, dict[str, Any]]:
+    distribution = importlib.metadata.distribution("msgspec-toon")
+    installed_version = distribution.version
+    if installed_version != expected_version:
+        raise SystemExit(
+            f"installed distribution version {installed_version} does not match {expected_version}"
+        )
+    _verify_installed_files(artifact, distribution)
+
+    import msgspec_toon
+    from msgspec_toon import _native
+
+    package_path = Path(msgspec_toon.__file__).resolve()
+    native_path = Path(_native.__file__).resolve()
+    prefix = Path(sys.prefix).resolve()
+    if not package_path.is_relative_to(prefix) or not native_path.is_relative_to(prefix):
+        raise SystemExit(
+            "installed-artifact verification imported outside the clean environment: "
+            f"package={package_path}, native={native_path}, prefix={prefix}"
+        )
+    wire = msgspec_toon.encode({"x": 1, "items": [1, 2]})
+    if msgspec_toon.decode(wire) != {"x": 1, "items": [1, 2]}:
+        raise SystemExit("representative installed-artifact round trip failed")
+    return (
+        package_path,
+        native_path,
+        {
+            "status": "passed",
+            "distribution_version": installed_version,
+            "python": platform.python_version(),
+            "python_implementation": platform.python_implementation(),
+            "gil_enabled": getattr(sys, "_is_gil_enabled", lambda: True)(),
+            "platform": platform.platform(),
+            "machine": platform.machine(),
+            "package_path": str(package_path),
+            "native_path": str(native_path),
+        },
+    )
+
+
 def manifest(args: argparse.Namespace) -> None:
     artifact = args.artifact.resolve()
     if not artifact.is_file():
@@ -196,37 +275,67 @@ def verify(args: argparse.Namespace) -> None:
     if artifact.stat().st_size != expected["size"]:
         raise SystemExit(f"size mismatch for {artifact.name}")
     _validate_runtime_target(target)
-
-    import msgspec_toon
-    from msgspec_toon import _native
-
-    package_path = Path(msgspec_toon.__file__).resolve()
-    native_path = Path(_native.__file__).resolve()
-    prefix = Path(sys.prefix).resolve()
-    if not package_path.is_relative_to(prefix) or not native_path.is_relative_to(prefix):
-        raise SystemExit(
-            "installed-artifact verification imported outside the clean environment: "
-            f"package={package_path}, native={native_path}, prefix={prefix}"
-        )
-    wire = msgspec_toon.encode({"x": 1, "items": [1, 2]})
-    if msgspec_toon.decode(wire) != {"x": 1, "items": [1, 2]}:
-        raise SystemExit("representative installed-artifact round trip failed")
+    _, _, verification = _verify_installed_artifact(
+        artifact, expected_version=_artifact_version(artifact.name)
+    )
 
     _write(
         args.output,
         {
             **manifest_data,
-            "verification": {
-                "status": "passed",
-                "distribution_version": importlib.metadata.version("msgspec-toon"),
-                "python": platform.python_version(),
-                "python_implementation": platform.python_implementation(),
-                "gil_enabled": getattr(sys, "_is_gil_enabled", lambda: True)(),
-                "platform": platform.platform(),
-                "machine": platform.machine(),
-                "package_path": str(package_path),
-                "native_path": str(native_path),
-            },
+            "verification": verification,
+        },
+    )
+
+
+def verify_release_wheel(args: argparse.Namespace) -> None:
+    manifest_data = _read(args.manifest)
+    runtime_os, runtime_arch = _runtime_target()
+    matches = [
+        item
+        for item in manifest_data.get("artifacts", [])
+        if item.get("kind") == "wheel"
+        and item.get("target")
+        == {
+            "python_abi": args.python_abi,
+            "operating_system": runtime_os,
+            "architecture": runtime_arch,
+        }
+    ]
+    if len(matches) != 1:
+        raise SystemExit(
+            "verified release must contain exactly one benchmark wheel for "
+            f"{args.python_abi}/{runtime_os}/{runtime_arch}; found {len(matches)}"
+        )
+    expected = matches[0]
+    target = expected["target"]
+    _validate_declared_target(expected, target)
+    source_verification = expected.get("verification", {})
+    expected_version = _artifact_version(expected["filename"])
+    if source_verification.get("status") != "passed":
+        raise SystemExit(f"benchmark wheel is not verified: {expected['filename']}")
+    if source_verification.get("distribution_version") != expected_version:
+        raise SystemExit(
+            f"benchmark wheel verification has a different version: {expected['filename']}"
+        )
+    artifact = args.directory.resolve() / expected["filename"]
+    if not artifact.is_file():
+        raise SystemExit(f"verified benchmark wheel does not exist: {artifact}")
+    if _sha256(artifact) != expected["sha256"]:
+        raise SystemExit(f"verified benchmark wheel digest mismatch: {artifact.name}")
+    if artifact.stat().st_size != expected["size"]:
+        raise SystemExit(f"verified benchmark wheel size mismatch: {artifact.name}")
+    _validate_runtime_target(target)
+    _, _, verification = _verify_installed_artifact(artifact, expected_version=expected_version)
+    _write(
+        args.output,
+        {
+            "schema_version": SCHEMA_VERSION,
+            "source_revision": manifest_data["source_revision"],
+            "artifact": {key: expected[key] for key in ("filename", "kind", "sha256", "size")},
+            "target": target,
+            "source_verification": source_verification,
+            "benchmark_verification": verification,
         },
     )
 
@@ -327,6 +436,13 @@ def parser() -> argparse.ArgumentParser:
     check.add_argument("--manifest", type=Path, required=True)
     check.add_argument("--output", type=Path, required=True)
     check.set_defaults(func=verify)
+
+    release_check = commands.add_parser("verify-release-wheel")
+    release_check.add_argument("--directory", type=Path, required=True)
+    release_check.add_argument("--manifest", type=Path, required=True)
+    release_check.add_argument("--python-abi", choices=("cp313-abi3", "cp314t"), required=True)
+    release_check.add_argument("--output", type=Path, required=True)
+    release_check.set_defaults(func=verify_release_wheel)
 
     merge = commands.add_parser("collect")
     merge.add_argument("--directory", type=Path, required=True)

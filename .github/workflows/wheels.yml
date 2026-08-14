@@ -193,6 +193,20 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
 
+      - name: Set up R inference runtime
+        if: matrix.platform.full_test && matrix.python.label == 'abi3'
+        uses: r-lib/actions/setup-r@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          r-version: "4.4.2"
+          use-public-rspm: true
+
+      - name: Install pinned R inference dependency
+        if: matrix.platform.full_test && matrix.python.label == 'abi3'
+        uses: r-lib/actions/setup-r-dependencies@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          packages: any::jsonlite@2.0.0
+          cache-version: msgspec-toon-jsonlite-2.0.0
+
       - name: Download built wheel
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
@@ -322,7 +336,7 @@ jobs:
           if-no-files-found: error
 
   evidence:
-    name: Generate release evidence
+    name: Benchmark and generate release evidence
     needs: [collect, validate]
     runs-on: ubuntu-22.04
     steps:
@@ -330,6 +344,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -338,6 +353,18 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Set up R inference runtime
+        uses: r-lib/actions/setup-r@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          r-version: "4.4.2"
+          use-public-rspm: true
+
+      - name: Install pinned R inference dependency
+        uses: r-lib/actions/setup-r-dependencies@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          packages: any::jsonlite@2.0.0
+          cache-version: msgspec-toon-jsonlite-2.0.0
 
       - name: Download verified release set
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
@@ -355,9 +382,15 @@ jobs:
         run: |
           uv export --locked --group bench --no-emit-project \
             --output-file "$RUNNER_TEMP/bench-requirements.txt"
-          uv pip install --system --requirements "$RUNNER_TEMP/bench-requirements.txt"
+          uv venv .venv-release --python 3.13
+          uv pip install --python .venv-release/bin/python \
+            --requirements "$RUNNER_TEMP/bench-requirements.txt"
           wheel="$(find release/dist -name '*cp313-abi3-manylinux*x86_64.whl' -print -quit)"
-          uv pip install --system --no-deps "$wheel"
+          test -n "$wheel"
+          uv pip install --python .venv-release/bin/python --no-deps "$wheel"
+
+      - name: Run R-owned release performance evidence
+        run: make release-performance
 
       - name: Restore canonical evidence inputs
         run: |
@@ -369,7 +402,7 @@ jobs:
           MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE: "1"
           MSGSPEC_TOON_VERIFIED_MANIFEST: ${{ github.workspace }}/release/verified-release.json
           MSGSPEC_TOON_QUALIFICATION_SUMMARY: ${{ github.workspace }}/qualification/summary.json
-        run: python -I scripts/release-report.py
+        run: .venv-release/bin/python -I scripts/release-report.py
 
       - name: Upload release evidence
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -377,6 +410,11 @@ jobs:
           name: release-evidence
           path: |
             conformance/report.json
+            benches/ab-guard-raw.json
+            benches/ab-guard-r.json
+            benches/report-performance-raw.json
+            benches/report-performance.json
+            release/benchmark-wheel.verified.json
             release/verified-release.json
             qualification/summary.json
           if-no-files-found: error
@@ -426,4 +464,9 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --prerelease
           gh release upload "$GITHUB_REF_NAME" \
             evidence/conformance/report.json \
+            evidence/benches/ab-guard-raw.json \
+            evidence/benches/ab-guard-r.json \
+            evidence/benches/report-performance-raw.json \
+            evidence/benches/report-performance.json \
+            evidence/release/benchmark-wheel.verified.json \
             evidence/release/verified-release.json

@@ -1,8 +1,8 @@
 """Focused timing for the tagged array-like decode repair.
 
 The released guard can execute only ``plain``. The candidate additionally
-executes ``tagged_concrete`` and ``tagged_union``. All timings route through
-the repository's ten-worker mean implementation; no minimum is reported.
+executes ``tagged_concrete`` and ``tagged_union``. The standalone Python
+aggregation entry point is retired. New claims require a manifest-declared panel and R analysis.
 """
 
 from __future__ import annotations

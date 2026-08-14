@@ -7,8 +7,8 @@ its data starts and ends as compact JSON:
 * python-toon performs the same work through its Python API.
 * the ``toon`` command performs encode and decode in two child processes.
 
-Rows cross four payload shapes and four sizes. All rows use the repository
-timing implementation and its ten-worker mean.
+Rows cross four payload shapes and four sizes. All rows use the shared timing primitive.
+The R analyzer owns the estimates and decisions across worker processes.
 """
 
 from __future__ import annotations
@@ -31,6 +31,13 @@ from payloads import COMPARATIVE_LADDER, COMPARATIVE_SHAPES, comparative_tree
 LADDER = COMPARATIVE_LADDER
 SHAPES = COMPARATIVE_SHAPES
 TOON_CLI = Path(sys.prefix) / "bin" / "toon"
+
+
+def metadata_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
+    """Deterministic row metadata collected outside every timed observation."""
+
+    json_bytes = msgspec.json.encode(comparative_tree(shape, records))
+    return {"shape": shape, "records": records, "input_json_bytes": len(json_bytes)}
 
 
 def _msgspec_toon_roundtrip(json_bytes: bytes) -> bytes:
