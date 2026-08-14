@@ -201,9 +201,7 @@ def test_release_guard_requires_nested_and_irregular_untyped_shapes(
         json.dumps(
             {
                 "family": {"name": "release-guard", "gating": True},
-                "endpoints": [
-                    {"id": "untyped-decode@4096", "role": "non_inferiority"}
-                ],
+                "endpoints": [{"id": "untyped-decode@4096", "role": "non_inferiority"}],
             }
         )
     )

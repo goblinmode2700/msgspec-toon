@@ -279,7 +279,9 @@ def validate_r_result(
     analyzed_roles: dict[str, str] = {}
     for endpoint in endpoints:
         if not isinstance(endpoint, dict):
-            raise ValueError("R analysis emitted an invalid endpoint decision")
+            raise ValueError(  # noqa: TRY004
+                "R analysis emitted an invalid endpoint decision"
+            )
         endpoint_id = endpoint.get("id")
         role = endpoint.get("role")
         status = endpoint.get("status")
@@ -296,16 +298,15 @@ def validate_r_result(
         analyzed_roles[endpoint_id] = role
     if len(analyzed_ids) != len(set(analyzed_ids)):
         raise ValueError("R analysis emitted duplicate endpoint decisions")
-    if endpoint_ids is not None:
-        if set(analyzed_ids) != endpoint_ids:
-            raise ValueError("R analysis did not decide the complete endpoint family")
+    if endpoint_ids is not None and set(analyzed_ids) != endpoint_ids:
+        raise ValueError("R analysis did not decide the complete endpoint family")
     if endpoint_roles is not None and analyzed_roles != endpoint_roles:
         raise ValueError("R analysis changed the declared endpoint roles")
 
     if gating is None:
         gating = result["gate_decision"] != "EXPLORATORY"
     if not isinstance(gating, bool):
-        raise ValueError("R analysis has an invalid gating mode")
+        raise ValueError("R analysis has an invalid gating mode")  # noqa: TRY004
     if gating and any(role == "exploratory" for role in analyzed_roles.values()):
         raise ValueError("gating R analysis contains an exploratory endpoint")
 
@@ -320,14 +321,10 @@ def validate_r_result(
         expected_failures.extend(
             endpoint["id"]
             for endpoint in endpoints
-            if endpoint["status"] == "regressed"
-            and endpoint["id"] not in expected_failures
+            if endpoint["status"] == "regressed" and endpoint["id"] not in expected_failures
         )
         for endpoint in endpoints:
-            if (
-                endpoint["role"] == "non_inferiority"
-                and endpoint["status"] == "inconclusive"
-            ):
+            if endpoint["role"] == "non_inferiority" and endpoint["status"] == "inconclusive":
                 expected_inconclusive.append(endpoint["id"])
     if result.get("failure_endpoints") != expected_failures:
         raise ValueError("R analysis failure endpoints disagree with endpoint decisions")
