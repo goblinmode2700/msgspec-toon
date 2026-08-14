@@ -142,30 +142,36 @@ The encoder handles these Python values without `msgspec.to_builtins` or an `enc
 - `None`, `bool`, `int`, `float`, and `str`
 - `list`, `tuple`, `set`, and `frozenset`
 - dictionaries with string keys
-- exact `bytes` objects
+- exact `bytes` and `bytearray` objects, plus C-contiguous `memoryview` objects
 - `msgspec.Struct` instances
 - the msgspec-native scalar values in the next section
 
-The three projected types use the same value model as msgspec:
+The projected types use the same value model as msgspec:
 
 | Python value | Encoded TOON value | Decode boundary |
 |---|---|---|
 | `set` | array | Untyped decode returns `list`. |
 | `frozenset` | array | Untyped decode returns `list`. |
 | exact `bytes` | padded base64 string | Untyped decode returns `str`. |
+| exact `bytearray` | padded base64 string | Untyped decode returns `str`. |
+| C-contiguous `memoryview` | padded base64 string | Untyped decode returns `str`. |
 
 Set order is the current Python iteration order. This behavior matches the default msgspec encoder.
 The order can change between processes because sets are unordered.
 When output order must be stable, use a list.
 
-Typed decode does not reconstruct `set`, `frozenset`, or `bytes`. Decode the projected value first.
-Then use `msgspec.convert` when the application needs the original type.
+Typed decode does not reconstruct these projected container or binary types. Decode the projected
+value first. Then use `msgspec.convert` when the application needs the original type.
 
-The encoder refuses `bytearray`, `memoryview`, and subclasses of `bytes`.
-An `enc_hook` can convert each value to exact `bytes`:
+The encoder refuses non-contiguous memoryviews and subclasses of `bytes` or `bytearray`, matching
+msgspec 0.21.1. An `enc_hook` can explicitly convert a refused binary value to exact `bytes`:
 
 ```python
-toon.encode(memoryview(b"ab"), enc_hook=lambda value: bytes(value))
+class SemanticBytes(bytes):
+    pass
+
+
+toon.encode(SemanticBytes(b"ab"), enc_hook=lambda value: bytes(value))
 # b'YWI='
 ```
 
@@ -224,7 +230,8 @@ float string conversions as msgspec 0.21.1. Strict mode stays the default.
 Other multi-member unions remain explicit plan errors. Use a tagged Struct union for object
 variants. Use `object` or `Any` when the value shape is intentionally open.
 
-Non-string mapping keys are intentionally rejected. See the
+Non-string mapping keys are intentionally rejected. The encode error names
+`msgspec.to_builtins(value, str_keys=True)` as the explicit conversion route. See the
 [mapping-key policy](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/mapping-key-policy.md).
 
 ## Why not wrap another TOON codec?

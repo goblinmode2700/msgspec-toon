@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 0.3.0b5
+
+Binary buffer encode parity and actionable mapping-key errors.
+
+<!-- release-compatibility:start -->
+- Compatibility since `0.1.0b3`: 32 newly supported, 1 removed, 36 total support-status changes, and 0 shared canonical-wire changes.
+<!-- release-compatibility:end -->
+
+- Encode exact `bytearray` and C-contiguous `memoryview` values as standard padded base64.
+- Copy mutable and exported buffers before encoding; keep `bytes` and `bytearray` subclasses on
+  the explicit hook/refusal path, matching msgspec 0.21.1.
+- Preserve msgspec's `BufferError` refusal for non-contiguous memoryviews.
+- Point non-string mapping-key errors to `msgspec.to_builtins(..., str_keys=True)` without changing
+  the established mapping-key policy.
+- Record `bytearray`, `memoryview`, and `bytes` subclasses as separate executable support-matrix
+  entries.
+- Advance the performance guard to `v0.3.0b4`.
+- Preserve canonical bytes and token counts for existing locked payloads.
+
 ## 0.3.0b4
 
 Native encode parity for collection and binary projections.

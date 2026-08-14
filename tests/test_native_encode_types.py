@@ -28,6 +28,10 @@ class BytesSubclass(bytes):
     pass
 
 
+class BytearraySubclass(bytearray):
+    pass
+
+
 def projected(value: Any) -> Any:
     """The msgspec value model that TOON can represent on its wire."""
     return msgspec.to_builtins(value)
@@ -95,11 +99,60 @@ def test_bytes_are_scalars_inside_compact_arrays() -> None:
     assert toon.encode(values) == toon.encode([projected(value) for value in values])
 
 
+@pytest.mark.parametrize("factory", [bytearray, memoryview])
 @pytest.mark.parametrize(
-    "value",
-    [bytearray(b"ab"), memoryview(b"ab"), BytesSubclass(b"ab")],
+    "payload",
+    [b"", b"a", b"ab", b"abc", bytes(range(256))],
 )
-def test_refused_bytes_like_values_have_a_working_hook_route(value: Any) -> None:
+def test_buffer_values_encode_as_their_msgspec_projection(
+    factory: type[bytearray | memoryview], payload: bytes
+) -> None:
+    value = factory(payload)
+    expected = toon.encode(payload)
+    assert toon.encode(value) == expected
+    assert toon.Encoder().encode(value) == expected
+    assert toon.decode(expected) == projected(value)
+
+
+def test_non_contiguous_memoryview_matches_msgspec_refusal() -> None:
+    value = memoryview(b"abcdef")[::2]
+    with pytest.raises(BufferError, match="not C-contiguous"):
+        msgspec.to_builtins(value)
+    with pytest.raises(BufferError, match="not C-contiguous"):
+        toon.encode(value)
+
+
+@pytest.mark.parametrize("value", [bytearray(b"ab"), memoryview(b"ab")])
+def test_buffer_values_bypass_enc_hook(value: bytearray | memoryview) -> None:
+    calls: list[Any] = []
+    assert toon.encode(value, enc_hook=lambda item: calls.append(item) or "hooked") == toon.encode(
+        b"ab"
+    )
+    assert calls == []
+
+
+@pytest.mark.parametrize("value", [bytearray(b"ab"), memoryview(b"ab")])
+def test_buffer_values_work_inside_structs(value: bytearray | memoryview) -> None:
+    item = NativeTypesRow(set(), frozenset(), value)  # type: ignore[arg-type]
+    assert toon.encode(item) == toon.encode(projected(item))
+
+
+def test_buffer_values_are_scalars_inside_compact_arrays() -> None:
+    values = [bytearray(b"ab"), memoryview(b"cd")]
+    assert toon.encode(values) == toon.encode([projected(value) for value in values])
+
+
+@pytest.mark.parametrize("value", [BytesSubclass(b"ab"), BytearraySubclass(b"ab")])
+def test_binary_subclasses_remain_refused_with_a_working_hook_route(value: Any) -> None:
     with pytest.raises(msgspec.EncodeError, match=f"unsupported type: {type(value).__name__}"):
         toon.encode(value)
     assert toon.encode(value, enc_hook=lambda item: bytes(item)) == toon.encode(b"ab")
+
+
+@pytest.mark.parametrize("value", [{1: "a"}, {"outer": {1: "a"}}])
+def test_non_string_mapping_key_error_names_conversion_route(value: Any) -> None:
+    with pytest.raises(
+        msgspec.EncodeError,
+        match=r"msgspec\.to_builtins\(\.\.\., str_keys=True\)",
+    ):
+        toon.encode(value)
