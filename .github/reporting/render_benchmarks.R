@@ -629,7 +629,10 @@ md <- c(
   "",
   "![Codec elapsed times](docs/assets/benchmarks/codec-times.png)",
   "",
-  "The chart shows encode, decode, and total elapsed time. Every value is a direct measurement in microseconds.",
+  paste0(
+    "The chart shows encode, decode, and total elapsed time. Each bar is R's ",
+    "arithmetic mean of per-process means, in microseconds."
+  ),
   "",
   "### Uniform records at 4,096 records",
   "",

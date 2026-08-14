@@ -17,7 +17,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-ESTIMATOR = "mean-across-workers"
 DEFAULT_WORKERS = 10
 SAMPLES_PER_WORKER = 3
 DEFAULT_TARGET_SECONDS = 0.05
@@ -62,12 +61,13 @@ class Timing:
 
 def methodology() -> str:
     return (
-        f"estimator: {ESTIMATOR} — the loop count is calibrated once, then "
-        f"{DEFAULT_WORKERS} independent worker processes each discard their first "
-        f"sample as a warmup and report the mean of {SAMPLES_PER_WORKER} samples; the "
-        "published figure is the mean across workers, with the standard deviation "
-        "across workers alongside it. The minimum is deliberately not used: it "
-        "reports the best case the machine ever reached, not what a caller sees"
+        "collector: raw process panels — the loop count is calibrated once per endpoint; "
+        f"the default absolute panel uses {DEFAULT_WORKERS} independent worker processes "
+        f"with a separate timed warmup and {SAMPLES_PER_WORKER} unaggregated samples. "
+        "Python retains raw elapsed nanoseconds, loop counts, and warmups without inference; "
+        "R owns aggregation, "
+        "simultaneous intervals, family-wise adjustments, classifications, and gates. "
+        "The minimum is deliberately not used"
     )
 
 

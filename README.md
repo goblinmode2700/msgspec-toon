@@ -242,9 +242,10 @@ encoded size stay fixed. It replaces the `0.3.0b2` cache scan with hash lookup.
 Against `0.3.0b2`, decode is 35.8% faster at 32 keys and 87.4% faster at 512 keys.
 The complete 100-point guard reports no reproduced slowdown. These are direct
 time comparisons, not ratios to an arbitrary reference row.
-The raw evidence is in the
-[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json)
-file.
+The R summaries are in
+[`conformance/report.json`](https://github.com/goblinmode2700/msgspec-toon/blob/main/conformance/report.json).
+Versioned raw timing evidence is attached to each GitHub release as described in the
+[release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md).
 
 ## Conformance and safety
 
