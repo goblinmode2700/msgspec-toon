@@ -14,9 +14,9 @@ keeps the plan-construction rejection. It returns `TypePlanError` with code
 `unsupported_mapping_key` and a schema-only path. It does not decode to the wrong key type.
 
 Untyped encoding also rejects mappings with non-string keys instead of silently choosing a
-stringification and collision policy. Its `EncodeError` names
-`msgspec.to_builtins(value, str_keys=True)` as the supported explicit conversion route for callers
-that choose msgspec's policy.
+stringification and collision policy. Every root or nested `EncodeError` names
+`msgspec.to_builtins(..., str_keys=True)` as the supported conversion route for callers that choose
+msgspec's policy.
 
 This decision can change only after differential tests define conversion, collision, large-integer,
 and payload-safety behavior.
