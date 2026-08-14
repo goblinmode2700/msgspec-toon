@@ -61,9 +61,7 @@ def metadata_run(records: int) -> dict[str, Any]:
 
 
 def sample_run(records: int) -> dict[str, Any]:
-    """One worker's measurements. Gates are computed by the parent, once, from
-    the mean across workers — a gate decided per worker would report whichever
-    process got lucky."""
+    """Collect one worker's measurements for later R analysis."""
     text = toon_text(records)
     keyed_text = keyed_toon_text(records)
     doc = document(records)
@@ -160,7 +158,7 @@ def sample_run(records: int) -> dict[str, Any]:
 
 
 def with_gates(result: dict[str, Any]) -> dict[str, Any]:
-    """Decide the gates from the aggregated figures, not from one worker."""
+    """Apply the retired Python gate helper to legacy aggregated figures."""
     decode, encode = result["decode_us"], result["encode_us"]
     result["gates"] = {
         "G3_typed_decode_beats_wrapper": (
@@ -180,7 +178,7 @@ def with_gates(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def run(records: int, *, workers: int = DEFAULT_WORKERS) -> dict[str, Any]:
-    """The published figure: the mean across independent worker processes."""
+    """Reject the retired Python aggregation entry point."""
     merged, spread = across_workers("bench_typed", "sample_run", [records], workers=workers)
     merged["worker_spread_pct"] = spread
     return with_gates(merged)

@@ -295,12 +295,12 @@ uv run python conformance/run.py        # pinned 538-fixture corpus
 make g2                                 # allocation proof in a separate build
 
 uv sync --group bench --locked           # opt in to benchmark packages
-make bench                              # same-run codec and typed ladders
-make public-report                      # raw JSON, R charts, and BENCHMARKS.md
+make bench                              # raw timings and R-owned performance report
+make public-report                      # evidence, R charts, and BENCHMARKS.md
 ```
 
-`make public-report` uses the host `Rscript`, `ggplot2`, `jsonlite`, and
-`scales`. It does not install R or add R packages to the Python environment.
+The benchmark commands use the host `Rscript` and `jsonlite`. `make public-report` also uses
+`ggplot2` and `scales`. The commands do not install R or add R packages to the Python environment.
 The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
 documents installed-artifact verification and Trusted Publishing.
 

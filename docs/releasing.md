@@ -30,8 +30,9 @@ which creates PyPI publish attestations by default. The workflow does not read a
    branch.
 3. Run the wheel workflow with publication disabled. All twelve wheels and the source distribution
    must build, verify, and enter the combined manifest. The release evidence job then installs the
-   verified Linux ABI3 wheel, builds the `GUARD_TAG` baseline, and runs `make release-performance`.
-   Python writes raw observations. R makes the guard and report decisions.
+   verified Linux x86-64 CPython 3.13 ABI3 wheel. It verifies the installed extension, builds the
+   `GUARD_TAG` baseline, and runs `make release-performance`. Python writes raw observations. R
+   makes the guard and report decisions.
 4. Inspect the release evidence. Its package version, source revision, current-extension digest,
    raw timings, and R analyzer digest must match the candidate. The workflow artifact contains the
    paired guard raw/result files and the absolute-report raw/result files.
@@ -41,6 +42,9 @@ The publish job consumes `verified-release` without running a build tool. A fail
 build, verification, R-owned guard, absolute report, evidence, or collection job prevents
 publication. The guard and absolute report run serially on one runner; do not parallelize them and
 create measurement contention.
+
+For a version tag, the GitHub release contains both raw files and both R result files. It also
+contains the benchmark-wheel verification record and the combined release manifest.
 
 ## Failure and rollback
 

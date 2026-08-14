@@ -1,27 +1,10 @@
-"""The one timing implementation every benchmark script routes through.
+"""The timing primitive that each benchmark sampler uses.
 
-Estimator: **the mean across independent worker processes**, not the minimum
-across batches inside one. A minimum rewards whichever batch happened to dodge
-the scheduler, understates what a caller experiences, and has no central-limit
-behavior to converge on — `pyperf` argues the point at length and this project
-agrees. Measured here before the change: inside one process the encode path
-varies by 0.74-1.07%, but between processes it varies by 2.4-4.1% and drifts as
-the machine warms. Averaging over processes averages over the things that
-actually differ between runs: address layout, allocator state, CPU frequency,
-core assignment.
+The calibration process selects the loop count for each metric. Each measurement process uses
+those counts, keeps its timed warmup separate, and records unaggregated elapsed nanoseconds.
 
-Three roles, selected by environment so the same script serves all three:
-
-    calibration worker   picks the loop count per named metric and reports it
-    measurement worker   measures with the given loop counts, discarding its
-                         own first sample as a warmup
-    parent               spawns the workers and averages their samples
-
-The loop count is calibrated once and handed to every worker, so all workers
-measure the same amount of work and their means are comparable.
-
-No benchmark script hand-rolls a loop. Timing and the estimator stay in this
-module.
+Python does not calculate canonical estimates or decisions. The panel collectors persist raw
+observations, and the declared R analyzers own all inference.
 """
 
 from __future__ import annotations
@@ -109,7 +92,7 @@ def calibrating() -> bool:
 
 
 def selected_metric() -> str | None:
-    """The one metric an A/B block requested, or `None` for a full ladder.
+    """The one metric a panel cell requested, or `None` for a full ladder.
 
     Samplers use this only to skip setup that the selected callable cannot
     reach. The timed callable, loop calibration, warmup, and samples remain in
