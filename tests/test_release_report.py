@@ -264,6 +264,11 @@ def test_release_guard_preserves_each_required_untyped_shape(
         report_module.REQUIRED_UNTYPED_GUARD_METRICS
     )
 
+    result["gate_decision"] = "INCONCLUSIVE"
+    path.write_text(json.dumps(result))
+    evidence = report_module.release_guard(path, raw_path)
+    assert evidence["analysis"]["gate_decision"] == "INCONCLUSIVE"
+
 
 def test_release_guard_rejects_an_exploratory_r_decision(
     report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

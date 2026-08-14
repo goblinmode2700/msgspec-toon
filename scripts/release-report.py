@@ -135,6 +135,7 @@ def release_guard(path: Path | None = None, raw_path: Path | None = None) -> dic
         return {"status": f"SUPERSEDED OR INVALID — regenerate with make ab: {error}"}
     if raw["family"]["name"] != "release-guard" or result["gate_decision"] not in {
         "PASS",
+        "INCONCLUSIVE",
         "FAIL",
     }:
         raise SystemExit("release guard does not contain the declared R release decision")

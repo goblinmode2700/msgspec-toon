@@ -257,7 +257,12 @@ def validate_r_result(
         raise ValueError("performance inference did not come from R stats")
     if result.get("adjustment") != "simultaneous Bonferroni intervals across the declared family":
         raise ValueError("R analysis did not use the declared family-wise adjustment")
-    if result.get("gate_decision") not in {"PASS", "FAIL", "EXPLORATORY"}:
+    if result.get("gate_decision") not in {
+        "PASS",
+        "INCONCLUSIVE",
+        "FAIL",
+        "EXPLORATORY",
+    }:
         raise ValueError("R analysis emitted an invalid gate decision")
     if endpoint_ids is not None:
         analyzed_ids = {endpoint["id"] for endpoint in result.get("endpoints", [])}
