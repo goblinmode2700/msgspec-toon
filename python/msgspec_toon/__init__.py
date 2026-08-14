@@ -37,6 +37,18 @@ __all__ = [
 
 EncodeError: Final = msgspec.EncodeError
 
+_NON_STRING_KEY_ERROR: Final = (
+    "object keys must be strings; convert with msgspec.to_builtins(..., str_keys=True)"
+)
+
+
+def _new_encode_error(message: str) -> msgspec.EncodeError:
+    """Translate stable native error codes without changing native hot-path layout."""
+    if message == "object keys must be strings":
+        message = _NON_STRING_KEY_ERROR
+    return msgspec.EncodeError(message)
+
+
 # Stable type identities and the exact-pinned msgspec datetime normalizer.
 _NATIVE_SCALAR_TYPES: Final = (
     datetime.datetime,
@@ -271,7 +283,7 @@ class Encoder:
             enc_hook=native_hook,
             plan_source=encode_plan_for,
             struct_base=msgspec.Struct,
-            encode_error=msgspec.EncodeError,
+            encode_error=_new_encode_error,
             delimiter=delimiter,
             indent=indent,
         )
