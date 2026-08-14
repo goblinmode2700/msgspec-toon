@@ -200,8 +200,8 @@ def test_release_guard_requires_nested_and_irregular_untyped_shapes(
     raw_path.write_text(
         json.dumps(
             {
-                "family": {"name": "release-guard"},
-                "endpoints": [{"id": "untyped-decode@4096"}],
+                "family": {"name": "release-guard", "gating": True},
+                "endpoints": [{"id": "untyped-decode@4096", "role": "non_inferiority"}],
             }
         )
     )
@@ -216,7 +216,15 @@ def test_release_guard_requires_nested_and_irregular_untyped_shapes(
                 "family": "release-guard",
                 "adjustment": "simultaneous Bonferroni intervals across the declared family",
                 "gate_decision": "PASS",
-                "endpoints": [{"id": "untyped-decode@4096"}],
+                "failure_endpoints": [],
+                "inconclusive_endpoints": [],
+                "endpoints": [
+                    {
+                        "id": "untyped-decode@4096",
+                        "role": "non_inferiority",
+                        "status": "non_inferior",
+                    }
+                ],
             }
         )
     )
@@ -234,9 +242,9 @@ def test_release_guard_preserves_each_required_untyped_shape(
     raw_path.write_text(
         json.dumps(
             {
-                "family": {"name": "release-guard"},
+                "family": {"name": "release-guard", "gating": True},
                 "endpoints": [
-                    {"id": metric}
+                    {"id": metric, "role": "non_inferiority"}
                     for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
                 ],
             }
@@ -251,8 +259,11 @@ def test_release_guard_preserves_each_required_untyped_shape(
         "family": "release-guard",
         "adjustment": "simultaneous Bonferroni intervals across the declared family",
         "gate_decision": "PASS",
+        "failure_endpoints": [],
+        "inconclusive_endpoints": [],
         "endpoints": [
-            {"id": metric} for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+            {"id": metric, "role": "non_inferiority", "status": "non_inferior"}
+            for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
         ],
     }
     path.write_text(json.dumps(result))
@@ -264,6 +275,13 @@ def test_release_guard_preserves_each_required_untyped_shape(
         report_module.REQUIRED_UNTYPED_GUARD_METRICS
     )
 
+    result["gate_decision"] = "INCONCLUSIVE"
+    result["endpoints"][0]["status"] = "inconclusive"
+    result["inconclusive_endpoints"] = [result["endpoints"][0]["id"]]
+    path.write_text(json.dumps(result))
+    evidence = report_module.release_guard(path, raw_path)
+    assert evidence["analysis"]["gate_decision"] == "INCONCLUSIVE"
+
 
 def test_release_guard_rejects_an_exploratory_r_decision(
     report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -272,9 +290,9 @@ def test_release_guard_rejects_an_exploratory_r_decision(
     raw_path.write_text(
         json.dumps(
             {
-                "family": {"name": "release-guard"},
+                "family": {"name": "release-guard", "gating": True},
                 "endpoints": [
-                    {"id": metric}
+                    {"id": metric, "role": "non_inferiority"}
                     for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
                 ],
             }
@@ -291,8 +309,10 @@ def test_release_guard_rejects_an_exploratory_r_decision(
                 "family": "release-guard",
                 "adjustment": "simultaneous Bonferroni intervals across the declared family",
                 "gate_decision": "EXPLORATORY",
+                "failure_endpoints": [],
+                "inconclusive_endpoints": [],
                 "endpoints": [
-                    {"id": metric}
+                    {"id": metric, "role": "non_inferiority", "status": "non_inferior"}
                     for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
                 ],
             }
@@ -300,7 +320,8 @@ def test_release_guard_rejects_an_exploratory_r_decision(
     )
     monkeypatch.setattr(report_module, "validate_ab_raw", lambda raw: None)
     monkeypatch.setattr(report_module, "_validate_release_guard_identity", lambda raw: None)
-    with pytest.raises(SystemExit, match="declared R release decision"):
+    monkeypatch.setattr(report_module, "REQUIRE_RELEASE_EVIDENCE", True)
+    with pytest.raises(SystemExit, match="invalid R-owned release guard evidence"):
         report_module.release_guard(result_path, raw_path)
 
 

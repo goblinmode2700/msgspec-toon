@@ -126,6 +126,8 @@ def release_guard(path: Path | None = None, raw_path: Path | None = None) -> dic
             raw_sha256=file_sha256(paired_raw_path),
             family="release-guard",
             endpoint_ids={endpoint["id"] for endpoint in raw["endpoints"]},
+            endpoint_roles={endpoint["id"]: endpoint["role"] for endpoint in raw["endpoints"]},
+            gating=raw["family"]["gating"],
             analyzer_sha256=file_sha256(ROOT / "benches" / "analyze_ab.R"),
         )
         _validate_release_guard_identity(raw)
@@ -135,6 +137,7 @@ def release_guard(path: Path | None = None, raw_path: Path | None = None) -> dic
         return {"status": f"SUPERSEDED OR INVALID — regenerate with make ab: {error}"}
     if raw["family"]["name"] != "release-guard" or result["gate_decision"] not in {
         "PASS",
+        "INCONCLUSIVE",
         "FAIL",
     }:
         raise SystemExit("release guard does not contain the declared R release decision")

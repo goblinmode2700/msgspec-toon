@@ -468,6 +468,8 @@ def test_r_owns_directional_decisions_order_term_and_insufficient_precision(
     assert result["engine"] == "R stats"
     assert result["adjustment"] == ("simultaneous Bonferroni intervals across the declared family")
     assert result["gate_decision"] == "FAIL"
+    assert result["failure_endpoints"] == ["slow"]
+    assert result["inconclusive_endpoints"] == ["noisy"]
     assert rows["fast"]["status"] == "improved"
     assert rows["safe"]["status"] == "non_inferior"
     assert rows["slow"]["status"] == "regressed"
@@ -475,6 +477,56 @@ def test_r_owns_directional_decisions_order_term_and_insufficient_precision(
     assert rows["fast"]["estimate_pct"] == pytest.approx(100 * math.expm1(-0.10), abs=0.01)
     assert rows["fast"]["order_effect_pct"] == pytest.approx(100 * math.expm1(0.05), abs=0.01)
     assert "neutral" not in json.dumps(result)
+
+
+def test_r_does_not_treat_an_inconclusive_noninferiority_interval_as_a_regression(
+    tmp_path: Path,
+) -> None:
+    endpoints = [{"id": "uncertain", "label": "uncertain", "role": "non_inferiority"}]
+    effects = {"uncertain": (math.log1p(0.031), 0.0, 0.065)}
+    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects)
+
+    result = _run_r(raw_path, result_path, manifest_path)
+    row = result["endpoints"][0]
+
+    assert row["simultaneous_ci_lower_pct"] < 3.0
+    assert row["simultaneous_ci_upper_pct"] > 3.0
+    assert row["status"] == "inconclusive"
+    assert result["gate_decision"] == "INCONCLUSIVE"
+    assert result["failure_endpoints"] == []
+    assert result["inconclusive_endpoints"] == ["uncertain"]
+
+
+def test_ab_cli_blocks_only_an_r_fail_decision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    decisions = iter(("INCONCLUSIVE", "FAIL"))
+    monkeypatch.setattr(ab, "collect", lambda **kwargs: {})
+    monkeypatch.setattr(
+        ab,
+        "analyze",
+        lambda *args, **kwargs: {"gate_decision": next(decisions)},
+    )
+    monkeypatch.setattr(ab, "_print_result", lambda result: None)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ab.py",
+            "--baseline-venv",
+            "baseline",
+            "--current-venv",
+            "current",
+            "--raw-output",
+            str(tmp_path / "raw.json"),
+            "--output",
+            str(tmp_path / "result.json"),
+        ],
+    )
+
+    ab.main()
+    with pytest.raises(SystemExit, match="R performance qualification failed"):
+        ab.main()
 
 
 def test_simultaneous_family_interval_blocks_a_nominal_only_improvement(
@@ -560,6 +612,9 @@ def test_r_reports_familywise_power_not_single_endpoint_power(tmp_path: Path) ->
     raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects, pairs=36)
     result = _run_r(raw_path, result_path, manifest_path)
     planning = result["planning"]
+    assert result["gate_decision"] == "PASS"
+    assert result["failure_endpoints"] == []
+    assert result["inconclusive_endpoints"] == []
     assert planning["confirmatory_family_size"] == 22
     assert planning["family_target_power"] == 0.8
     assert planning["per_endpoint_power_target"] == pytest.approx(1 - 0.2 / 22)
@@ -780,11 +835,38 @@ def test_r_result_digest_and_engine_fail_closed() -> None:
         "family": "focused",
         "adjustment": "simultaneous Bonferroni intervals across the declared family",
         "gate_decision": "PASS",
+        "failure_endpoints": [],
+        "inconclusive_endpoints": [],
+        "endpoints": [
+            {"id": "faster", "role": "improvement", "status": "improved"},
+            {
+                "id": "stable",
+                "role": "non_inferiority",
+                "status": "non_inferior",
+            },
+        ],
     }
+    endpoint_roles = {"faster": "improvement", "stable": "non_inferiority"}
     validate_r_result(
         result,
         raw_sha256="abc",
         family="focused",
+        endpoint_ids=set(endpoint_roles),
+        endpoint_roles=endpoint_roles,
+        gating=True,
+        analyzer_sha256="analyzer-abc",
+    )
+    inconclusive = copy.deepcopy(result)
+    inconclusive["gate_decision"] = "INCONCLUSIVE"
+    inconclusive["inconclusive_endpoints"] = ["stable"]
+    inconclusive["endpoints"][1]["status"] = "inconclusive"
+    validate_r_result(
+        inconclusive,
+        raw_sha256="abc",
+        family="focused",
+        endpoint_ids=set(endpoint_roles),
+        endpoint_roles=endpoint_roles,
+        gating=True,
         analyzer_sha256="analyzer-abc",
     )
     for key, value, message in (
@@ -800,8 +882,68 @@ def test_r_result_digest_and_engine_fail_closed() -> None:
                 changed,
                 raw_sha256="abc",
                 family="focused",
+                endpoint_ids=set(endpoint_roles),
+                endpoint_roles=endpoint_roles,
+                gating=True,
                 analyzer_sha256="analyzer-abc",
             )
+
+
+def test_r_result_rejects_disagreement_between_endpoint_and_gate_decisions() -> None:
+    result = {
+        "analysis_schema_version": 1,
+        "engine": "R stats",
+        "raw_sha256": "abc",
+        "analyzer_sha256": "analyzer-abc",
+        "family": "focused",
+        "adjustment": "simultaneous Bonferroni intervals across the declared family",
+        "gate_decision": "INCONCLUSIVE",
+        "failure_endpoints": ["stable"],
+        "inconclusive_endpoints": [],
+        "endpoints": [
+            {
+                "id": "stable",
+                "role": "non_inferiority",
+                "status": "regressed",
+            }
+        ],
+    }
+    with pytest.raises(ValueError, match="gate decision disagrees"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
+
+    result["gate_decision"] = "FAIL"
+    result["failure_endpoints"] = []
+    with pytest.raises(ValueError, match="failure endpoints disagree"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
+
+    result["failure_endpoints"] = ["stable"]
+    result["inconclusive_endpoints"] = ["stable"]
+    with pytest.raises(ValueError, match="inconclusive endpoints disagree"):
+        validate_r_result(
+            result,
+            raw_sha256="abc",
+            family="focused",
+            endpoint_ids={"stable"},
+            endpoint_roles={"stable": "non_inferiority"},
+            gating=True,
+            analyzer_sha256="analyzer-abc",
+        )
 
 
 def test_missing_r_fails_closed_without_python_inference(

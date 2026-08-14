@@ -9,6 +9,13 @@ R owns the estimates, simultaneous Bonferroni intervals, classifications, and ga
 R also plans power for the complete family of confirmatory endpoints. A gating family must meet its
 declared familywise power target.
 
+For a non-inferiority endpoint with regression margin `M`, R classifies an established regression
+only when the simultaneous interval's lower bound is greater than `M`. It classifies established
+non-inferiority only when the upper bound is less than `M`. An interval that contains `M` is
+`INCONCLUSIVE`: it is not a regression, does not block a release, and must not be reported as proof
+of non-inferiority. A gating improvement endpoint still fails when it does not establish its
+predeclared improvement.
+
 ## Required repository configuration
 
 Configure a protected GitHub environment named `pypi`. Limit deployment to release maintainers and
@@ -44,9 +51,11 @@ which creates PyPI publish attestations by default. The workflow does not read a
 5. Create the matching version tag only after the candidate is approved for publication.
 
 The publish job consumes `verified-release` without running a build tool. A failed validation,
-build, verification, R-owned guard, absolute-report release gate, evidence, or collection job
-prevents publication. Run the guard and absolute report serially on one runner. Parallel execution
-creates measurement contention.
+build, verification, R-owned guard `FAIL` (an established regression or an unmet improvement
+endpoint), absolute-report release gate, evidence, or collection job prevents publication. An
+`INCONCLUSIVE` non-inferiority result remains visible in the evidence but is not an established
+regression. Run the guard and absolute report serially on one runner. Parallel execution creates
+measurement contention.
 
 For a version tag, the GitHub release contains both raw files and both R result files. It also
 contains the benchmark-wheel verification record and the combined release manifest.

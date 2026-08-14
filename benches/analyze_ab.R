@@ -327,16 +327,23 @@ if (length(confirmatory_rows)) {
 if (!isTRUE(family$gating)) {
   gate_decision <- "EXPLORATORY"
   failures <- character()
+  inconclusive <- character()
 } else {
   improvement_failures <- results$id[
     results$role == "improvement" & results$status != "improved"
   ]
-  noninferiority_failures <- results$id[
-    results$role == "non_inferiority" &
-      !(results$status %in% c("non_inferior", "improved"))
+  regression_failures <- results$id[results$status == "regressed"]
+  failures <- unique(c(improvement_failures, regression_failures))
+  inconclusive <- results$id[
+    results$role == "non_inferiority" & results$status == "inconclusive"
   ]
-  failures <- c(improvement_failures, noninferiority_failures)
-  gate_decision <- if (length(failures)) "FAIL" else "PASS"
+  gate_decision <- if (length(failures)) {
+    "FAIL"
+  } else if (length(inconclusive)) {
+    "INCONCLUSIVE"
+  } else {
+    "PASS"
+  }
 }
 
 output <- list(
@@ -351,7 +358,8 @@ output <- list(
   adjustment = "simultaneous Bonferroni intervals across the declared family",
   model = "paired log process means with balanced order term",
   gate_decision = gate_decision,
-  failure_endpoints = failures,
+  failure_endpoints = unname(as.list(failures)),
+  inconclusive_endpoints = unname(as.list(inconclusive)),
   planning = list(
     pairs = family$pairs,
     interval_family_size = interval_family_size,
