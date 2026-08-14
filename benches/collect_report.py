@@ -76,6 +76,7 @@ def _append_worker(evidence: dict[str, Any], response: dict[str, Any], *, worker
             "python": response["python"],
             "platform": response["platform"],
             "machine": response["machine"],
+            "package": response["package"],
             "extension": response["extension"],
             "panel_wall_ns": response["panel_wall_ns"],
             "cell_order": [cell["cell_id"] for cell in response["cells"]],

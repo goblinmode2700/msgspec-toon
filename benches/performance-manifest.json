@@ -35,7 +35,7 @@
   "families": {
     "distinct-key-hotfix": {
       "description": "Confirm the distinct-key repair while protecting the two ordinary-object controls.",
-      "pairs": 12,
+      "pairs": 16,
       "regression_margin_pct": 3.0,
       "improvement_margin_pct": 5.0,
       "gating": true,
@@ -48,7 +48,7 @@
     },
     "release-guard": {
       "description": "Risk-ranked release regression panel; the complete grid remains exploratory.",
-      "pairs": 20,
+      "pairs": 22,
       "regression_margin_pct": 3.0,
       "improvement_margin_pct": 1.0,
       "gating": true,

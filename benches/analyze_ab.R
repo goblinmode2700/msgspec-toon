@@ -94,6 +94,8 @@ for (build_name in c("baseline", "current")) {
   rows <- which(workers$build == build_name)
   identities <- paste(
     workers$python[rows],
+    workers$package$path[rows],
+    workers$package$sha256[rows],
     workers$extension$path[rows],
     workers$extension$sha256[rows],
     workers$extension$instrumented[rows],
@@ -164,6 +166,8 @@ lower_tail <- function(estimate, boundary, standard_error, degrees_freedom) {
   pt((estimate - boundary) / standard_error, df = degrees_freedom)
 }
 
+interval_family_size <- nrow(endpoints)
+
 analyze_cell <- function(cell_id) {
   rows <- worker[worker$cell_id == cell_id, ]
   baseline <- rows[rows$build == "baseline", c("pair", "period", "per_call_ns")]
@@ -195,7 +199,7 @@ analyze_cell <- function(cell_id) {
   p_regression <- 1 - p_noninferiority
   p_improvement <- lower_tail(beta, improvement_boundary, standard_error, degrees_freedom)
   simultaneous_critical <- qt(
-    1 - family$alpha / (2 * nrow(endpoints)),
+    1 - family$alpha / (2 * interval_family_size),
     df = degrees_freedom
   )
 
@@ -219,42 +223,20 @@ results <- do.call(rbind, lapply(endpoints$id, analyze_cell))
 results <- merge(endpoints[, c("id", "label", "role")], results, by = "id", sort = FALSE)
 results <- results[match(endpoints$id, results$id), ]
 noninferiority_rows <- which(results$role == "non_inferiority")
-confirmatory_rows <- which(results$role != "exploratory")
-results$p_noninferiority_adjusted <- NA_real_
-if (length(noninferiority_rows)) {
-  results$p_noninferiority_adjusted[noninferiority_rows] <- p.adjust(
-    results$p_noninferiority[noninferiority_rows], method = "holm"
-  )
-}
-results$p_regression_adjusted <- NA_real_
-if (length(confirmatory_rows)) {
-  results$p_regression_adjusted[confirmatory_rows] <- p.adjust(
-    results$p_regression[confirmatory_rows], method = "holm"
-  )
-}
-results$p_improvement_adjusted <- NA_real_
 improvement_rows <- which(results$role == "improvement")
-if (length(improvement_rows)) {
-  results$p_improvement_adjusted[improvement_rows] <- p.adjust(
-    results$p_improvement[improvement_rows], method = "holm"
-  )
-}
 
 results$status <- "inconclusive"
 results$status[
   results$role == "non_inferiority" &
-    !is.na(results$p_noninferiority_adjusted) &
-    results$p_noninferiority_adjusted < family$alpha
+    results$simultaneous_ci_upper_pct < family$regression_margin_pct
 ] <- "non_inferior"
 results$status[
   results$role != "exploratory" &
-    !is.na(results$p_regression_adjusted) &
-    results$p_regression_adjusted < family$alpha
+    results$simultaneous_ci_lower_pct > family$regression_margin_pct
 ] <- "regressed"
 results$status[
   results$role == "improvement" &
-    !is.na(results$p_improvement_adjusted) &
-    results$p_improvement_adjusted < family$alpha
+    results$simultaneous_ci_upper_pct < -family$improvement_margin_pct
 ] <- "improved"
 results$status[results$role == "exploratory"] <- "exploratory"
 
@@ -264,7 +246,7 @@ if (length(noninferiority_rows)) {
     n = family$pairs,
     delta = abs(log1p(family$regression_margin_pct / 100)),
     sd = family$planning_sd_log,
-    sig.level = family$alpha / length(noninferiority_rows),
+    sig.level = family$alpha / (2 * interval_family_size),
     type = "one.sample",
     alternative = "one.sided"
   )$power
@@ -275,7 +257,7 @@ if (length(improvement_rows)) {
     n = family$pairs,
     delta = abs(log1p(-family$improvement_margin_pct / 100)),
     sd = family$planning_sd_log,
-    sig.level = family$alpha / length(improvement_rows),
+    sig.level = family$alpha / (2 * interval_family_size),
     type = "one.sample",
     alternative = "one.sided"
   )$power
@@ -305,12 +287,13 @@ output <- list(
   run_id = raw$run_id,
   family = family$name,
   alpha = family$alpha,
-  adjustment = "holm",
+  adjustment = "simultaneous Bonferroni intervals across the declared family",
   model = "paired log process means with balanced order term",
   gate_decision = gate_decision,
   failure_endpoints = failures,
   planning = list(
     pairs = family$pairs,
+    interval_family_size = interval_family_size,
     target_power = family$target_power,
     planning_sd_log = family$planning_sd_log,
     bonferroni_noninferiority_power = noninferiority_power,

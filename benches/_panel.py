@@ -63,11 +63,13 @@ def run_panel(
         "target_seconds": target_seconds,
         "samples": samples,
     }
-    environment = dict(os.environ)
+    environment = {
+        key: value for key, value in os.environ.items() if key not in {"PYTHONHOME", "PYTHONPATH"}
+    }
     if allow_instrumented:
         environment["MSGSPEC_TOON_MEASURE_INSTRUMENTATION"] = "1"
     process = subprocess.run(
-        [str(python), str(WORKER)],
+        [str(python), "-I", str(WORKER)],
         cwd=REPO,
         input=json.dumps(request),
         capture_output=True,
@@ -150,19 +152,22 @@ def validate_ab_raw(evidence: dict[str, Any]) -> None:
     if worker_keys != expected_worker_keys:
         raise ValueError("raw evidence has missing or duplicate build workers")
 
-    identities: dict[str, set[tuple[str, str, str, bool]]] = {
+    identities: dict[str, set[tuple[str, str, str, str, str, bool]]] = {
         "baseline": set(),
         "current": set(),
     }
     for worker in workers:
         extension = worker.get("extension", {})
+        package = worker.get("package", {})
         identity = (
             worker.get("python", ""),
+            package.get("path", ""),
+            package.get("sha256", ""),
             extension.get("path", ""),
             extension.get("sha256", ""),
             extension.get("instrumented", False),
         )
-        if not all(identity[:3]):
+        if not all(identity[:5]):
             raise ValueError("raw evidence lacks a complete worker identity")
         identities[worker["build"]].add(identity)
     if any(len(build_identities) != 1 for build_identities in identities.values()):
@@ -247,7 +252,7 @@ def validate_r_result(
         raise ValueError("R analysis does not match the declared family")
     if result.get("engine") != "R stats":
         raise ValueError("performance inference did not come from R stats")
-    if result.get("adjustment") != "holm":
+    if result.get("adjustment") != "simultaneous Bonferroni intervals across the declared family":
         raise ValueError("R analysis did not use the declared family-wise adjustment")
     if result.get("gate_decision") not in {"PASS", "FAIL", "EXPLORATORY"}:
         raise ValueError("R analysis emitted an invalid gate decision")
@@ -296,13 +301,15 @@ def validate_absolute_raw(evidence: dict[str, Any]) -> None:
     identities = {
         (
             worker.get("python", ""),
+            worker.get("package", {}).get("path", ""),
+            worker.get("package", {}).get("sha256", ""),
             worker.get("extension", {}).get("path", ""),
             worker.get("extension", {}).get("sha256", ""),
             worker.get("extension", {}).get("instrumented", False),
         )
         for worker in workers
     }
-    if len(identities) != 1 or not all(next(iter(identities))[:3]):
+    if len(identities) != 1 or not all(next(iter(identities))[:5]):
         raise ValueError("absolute evidence mixes or omits worker identities")
     for worker in workers:
         if set(worker["cell_order"]) != set(cell_ids):
@@ -372,5 +379,7 @@ def validate_r_report_result(
         raise ValueError("R absolute analysis does not match the analyzer source digest")
     if result.get("engine") != "R stats":
         raise ValueError("absolute performance inference did not come from R stats")
-    if result.get("adjustment") != "holm within each declared gate family":
+    if result.get("adjustment") != (
+        "simultaneous Bonferroni intervals within each declared gate family"
+    ):
         raise ValueError("absolute R analysis did not use the declared adjustment")

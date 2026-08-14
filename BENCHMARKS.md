@@ -55,7 +55,7 @@ Compact JSON appears in every facet. This gives a direct reference for each shap
 - The timing estimator is the arithmetic mean across 10 worker processes.
 - Each worker reports 3 samples after warm-up.
 - The error bars use simultaneous Bonferroni t intervals.
-- Confirmatory families use holm within each declared gate family.
+- Confirmatory classifications use one simultaneous two-sided Bonferroni interval family per declared family.
 - The benchmark never uses the minimum time.
 - Report rows are randomized within each complete process panel.
 - Python records raw timings; R owns aggregation, intervals, and decisions.

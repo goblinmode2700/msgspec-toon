@@ -72,6 +72,8 @@ if (nrow(workers) != design$workers ||
 }
 identities <- paste(
   workers$python,
+  workers$package$path,
+  workers$package$sha256,
   workers$extension$path,
   workers$extension$sha256,
   workers$extension$instrumented,
@@ -238,8 +240,9 @@ analyze_comparison <- function(index) {
   boundary <- log1p(comparison$margin_pct / 100)
   p_meets <- lower_tail(estimate, boundary, standard_error, degrees_freedom)
   p_misses <- 1 - p_meets
+  family_size <- sum(comparisons$family == comparison$family)
   critical <- qt(
-    1 - design$alpha / (2 * nrow(comparisons)),
+    1 - design$alpha / (2 * family_size),
     df = degrees_freedom
   )
   data.frame(
@@ -259,23 +262,12 @@ analyze_comparison <- function(index) {
 }
 
 comparison_results <- do.call(rbind, lapply(seq_len(nrow(comparisons)), analyze_comparison))
-comparison_results$p_meets_floor_adjusted <- NA_real_
-comparison_results$p_misses_floor_adjusted <- NA_real_
-for (family_name in unique(comparison_results$family)) {
-  rows <- which(comparison_results$family == family_name)
-  comparison_results$p_meets_floor_adjusted[rows] <- p.adjust(
-    comparison_results$p_meets_floor[rows], method = "holm"
-  )
-  comparison_results$p_misses_floor_adjusted[rows] <- p.adjust(
-    comparison_results$p_misses_floor[rows], method = "holm"
-  )
-}
 comparison_results$status <- "inconclusive"
 comparison_results$status[
-  comparison_results$p_meets_floor_adjusted < design$alpha
+  comparison_results$simultaneous_ci_upper_pct < comparison_results$margin_pct
 ] <- "meets_floor"
 comparison_results$status[
-  comparison_results$p_misses_floor_adjusted < design$alpha
+  comparison_results$simultaneous_ci_lower_pct > comparison_results$margin_pct
 ] <- "misses_floor"
 
 family_names <- unique(comparison_results$family)
@@ -296,8 +288,11 @@ output <- list(
   analyzer_sha256 = analyzer_sha256,
   run_id = raw$run_id,
   estimator = "arithmetic mean of per-process means",
-  interval = "simultaneous Bonferroni t intervals",
-  adjustment = "holm within each declared gate family",
+  interval = paste(
+    "two-sided Bonferroni t intervals: global for endpoint summaries;",
+    "within each declared gate family for classifications"
+  ),
+  adjustment = "simultaneous Bonferroni intervals within each declared gate family",
   endpoint_summaries = summaries,
   derived_summaries = derived_summaries,
   worker_estimates = worker,

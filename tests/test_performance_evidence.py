@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BENCHES = ROOT / "benches"
 sys.path.insert(0, str(BENCHES))
 
+import _panel
 import _timing
 import _workers
 import ab
@@ -58,6 +59,10 @@ def _valid_manifest_raw(*, pairs: int = 4, samples: int = 2) -> dict[str, Any]:
                     "python": "3.13.7",
                     "platform": "test-platform",
                     "machine": "test-machine",
+                    "package": {
+                        "path": f"/{build}/__init__.py",
+                        "sha256": ("c" if build == "baseline" else "d") * 64,
+                    },
                     "extension": {
                         "path": f"/{build}/_native.so",
                         "sha256": ("a" if build == "baseline" else "b") * 64,
@@ -113,8 +118,8 @@ def test_manifest_expands_stable_historical_grid_and_bounded_families() -> None:
     focused, focused_endpoints = select_family("distinct-key-hotfix", manifest)
     guard, guard_endpoints = select_family("release-guard", manifest)
     exploratory, exploratory_endpoints = select_family("full-exploratory", manifest)
-    assert (focused["pairs"], len(focused_endpoints), focused["gating"]) == (12, 4, True)
-    assert (guard["pairs"], len(guard_endpoints), guard["gating"]) == (20, 22, True)
+    assert (focused["pairs"], len(focused_endpoints), focused["gating"]) == (16, 4, True)
+    assert (guard["pairs"], len(guard_endpoints), guard["gating"]) == (22, 22, True)
     assert (exploratory["pairs"], len(exploratory_endpoints), exploratory["gating"]) == (
         4,
         100,
@@ -136,6 +141,37 @@ def test_absolute_manifest_vectorizes_253_endpoints_into_37_process_rows() -> No
     ]
     assert len(cli_metrics) == 16
     assert {metric["fixed_loops"] for metric in cli_metrics} == {1}
+
+
+def test_panel_workers_ignore_python_path_overrides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = tmp_path / "python"
+    python.touch()
+    observed: dict[str, Any] = {}
+
+    def run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        observed["command"] = command
+        observed["environment"] = kwargs["env"]
+        response = {"mode": "measure", "cells": [{"cell_id": "cell"}]}
+        return subprocess.CompletedProcess(command, 0, json.dumps(response), "")
+
+    monkeypatch.setenv("PYTHONPATH", "/shadow-package")
+    monkeypatch.setenv("PYTHONHOME", "/shadow-runtime")
+    monkeypatch.setattr(_panel.subprocess, "run", run)
+    _panel.run_panel(
+        python,
+        mode="measure",
+        cells=[{"id": "cell"}],
+        loops_by_cell={"cell": {"metric": 1}},
+        target_seconds=0.001,
+        samples=1,
+        allow_instrumented=False,
+    )
+
+    assert observed["command"] == [str(python), "-I", str(_panel.WORKER)]
+    assert "PYTHONPATH" not in observed["environment"]
+    assert "PYTHONHOME" not in observed["environment"]
 
 
 def test_build_and_cell_orders_are_balanced_reproducible_and_paired() -> None:
@@ -300,6 +336,10 @@ def _synthetic_files(
                     "build": build,
                     "period": period,
                     "python": "3.13.7",
+                    "package": {
+                        "path": f"/{build}/__init__.py",
+                        "sha256": ("c" if build == "baseline" else "d") * 64,
+                    },
                     "extension": {
                         "path": f"/{build}/_native.so",
                         "sha256": ("a" if build == "baseline" else "b") * 64,
@@ -405,7 +445,7 @@ def test_r_owns_directional_decisions_order_term_and_insufficient_precision(
     result = _run_r(raw_path, result_path, manifest_path)
     rows = {row["id"]: row for row in result["endpoints"]}
     assert result["engine"] == "R stats"
-    assert result["adjustment"] == "holm"
+    assert result["adjustment"] == ("simultaneous Bonferroni intervals across the declared family")
     assert result["gate_decision"] == "FAIL"
     assert rows["fast"]["status"] == "improved"
     assert rows["safe"]["status"] == "non_inferior"
@@ -416,7 +456,9 @@ def test_r_owns_directional_decisions_order_term_and_insufficient_precision(
     assert "neutral" not in json.dumps(result)
 
 
-def test_holm_blocks_a_nominal_only_improvement(tmp_path: Path) -> None:
+def test_simultaneous_family_interval_blocks_a_nominal_only_improvement(
+    tmp_path: Path,
+) -> None:
     endpoints = [
         {"id": f"endpoint-{index}", "label": f"endpoint {index}", "role": "improvement"}
         for index in range(8)
@@ -434,9 +476,27 @@ def test_holm_blocks_a_nominal_only_improvement(tmp_path: Path) -> None:
     result = _run_r(raw_path, result_path, manifest_path)
     row = result["endpoints"][0]
     assert row["p_improvement"] < 0.05
-    assert row["p_improvement_adjusted"] >= 0.05
+    assert row["simultaneous_ci_upper_pct"] >= -5.0
     assert row["status"] == "inconclusive"
     assert result["gate_decision"] == "FAIL"
+
+
+def test_one_simultaneous_family_spans_mixed_confirmatory_roles(tmp_path: Path) -> None:
+    endpoints = [
+        {"id": "candidate", "label": "candidate", "role": "improvement"},
+        {"id": "control", "label": "control", "role": "non_inferiority"},
+    ]
+    boundary = math.log1p(-0.05)
+    effects = {
+        "candidate": (boundary - 0.012, 0.0, 0.02),
+        "control": (0.0, 0.0, 0.005),
+    }
+    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects)
+    result = _run_r(raw_path, result_path, manifest_path)
+    row = {item["id"]: item for item in result["endpoints"]}["candidate"]
+    assert row["p_improvement"] < 0.05
+    assert row["simultaneous_ci_upper_pct"] >= -5.0
+    assert row["status"] == "inconclusive"
 
 
 def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) -> None:
@@ -467,6 +527,18 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
             "row_id": "slow",
             "metric_slug": "reference",
         },
+        {
+            "id": "borderline-candidate",
+            "panel": "synthetic",
+            "row_id": "borderline",
+            "metric_slug": "candidate",
+        },
+        {
+            "id": "borderline-reference",
+            "panel": "synthetic",
+            "row_id": "borderline",
+            "metric_slug": "reference",
+        },
     ]
     comparisons = [
         {
@@ -485,6 +557,14 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
             "reference_id": "slow-reference",
             "margin_pct": 0.0,
         },
+        {
+            "id": "borderline-floor",
+            "family": "borderline-family",
+            "row_id": "borderline",
+            "candidate_id": "borderline-candidate",
+            "reference_id": "borderline-reference",
+            "margin_pct": 0.0,
+        },
     ]
     observations = []
     values = {
@@ -492,10 +572,16 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
         "fast-reference": 1_000_000,
         "slow-candidate": 2_000_000,
         "slow-reference": 1_000_000,
+        "borderline-reference": 1_000_000,
     }
+    borderline_deviations = (-0.045, -0.03, -0.015, -0.005, 0.005, 0.015, 0.03, 0.045)
     for endpoint in endpoints:
         for worker in range(workers):
             drift = 1 + (worker - workers / 2) * 0.001
+            value = values.get(endpoint["id"])
+            if endpoint["id"] == "borderline-candidate":
+                value = 1_000_000 * math.exp(-0.021 + borderline_deviations[worker])
+            assert value is not None
             for sample in range(samples):
                 observations.append(
                     {
@@ -503,7 +589,7 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
                         "worker": worker,
                         "sample": sample,
                         "loops": 10,
-                        "elapsed_ns": round(values[endpoint["id"]] * drift * 10),
+                        "elapsed_ns": round(value * drift * 10),
                     }
                 )
     raw = {
@@ -523,6 +609,10 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
             {
                 "worker": worker,
                 "python": "3.13.7",
+                "package": {
+                    "path": "/current/__init__.py",
+                    "sha256": "c" * 64,
+                },
                 "extension": {
                     "path": "/current/_native.so",
                     "sha256": "a" * 64,
@@ -567,8 +657,19 @@ def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) ->
     decisions = {row["id"]: row["status"] for row in result["comparisons"]}
     assert result["engine"] == "R stats"
     assert len(result["worker_estimates"]) == len(endpoints) * workers
-    assert gates == {"fast-family": "PASS", "slow-family": "FAIL"}
-    assert decisions == {"fast-floor": "meets_floor", "slow-floor": "misses_floor"}
+    assert gates == {
+        "fast-family": "PASS",
+        "slow-family": "FAIL",
+        "borderline-family": "FAIL",
+    }
+    assert decisions == {
+        "fast-floor": "meets_floor",
+        "slow-floor": "misses_floor",
+        "borderline-floor": "inconclusive",
+    }
+    borderline = {row["id"]: row for row in result["comparisons"]}["borderline-floor"]
+    assert borderline["p_meets_floor"] < 0.05
+    assert borderline["simultaneous_ci_upper_pct"] >= 0.0
     summaries = {row["id"]: row for row in result["endpoint_summaries"]}
     assert summaries["fast-candidate"]["mean_us"] == pytest.approx(499.75, abs=0.01)
 
@@ -607,7 +708,7 @@ def test_r_result_digest_and_engine_fail_closed() -> None:
         "raw_sha256": "abc",
         "analyzer_sha256": "analyzer-abc",
         "family": "focused",
-        "adjustment": "holm",
+        "adjustment": "simultaneous Bonferroni intervals across the declared family",
         "gate_decision": "PASS",
     }
     validate_r_result(
@@ -672,6 +773,10 @@ def _valid_absolute_raw() -> dict[str, Any]:
             {
                 "worker": worker,
                 "python": "3.13.7",
+                "package": {
+                    "path": "/current/__init__.py",
+                    "sha256": "c" * 64,
+                },
                 "extension": {
                     "path": "/current/_native.so",
                     "sha256": "a" * 64,

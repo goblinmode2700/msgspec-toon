@@ -25,6 +25,7 @@ import bench_codecs
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
+import msgspec_toon
 from _panel import file_sha256, validate_ab_raw, validate_r_result
 from _report_evidence import load_report_performance
 from msgspec_toon import _native
@@ -52,6 +53,10 @@ def _extension_sha256() -> str:
     return file_sha256(Path(_native.__file__).resolve())
 
 
+def _package_sha256() -> str:
+    return file_sha256(Path(msgspec_toon.__file__).resolve())
+
+
 def _validate_current_benchmark_identity(raw: dict, *, label: str) -> None:
     if raw.get("source_revision") != _source_revision():
         raise ValueError(f"{label} does not match the source revision")
@@ -62,6 +67,13 @@ def _validate_current_benchmark_identity(raw: dict, *, label: str) -> None:
     }
     if current_hashes != {_extension_sha256()}:
         raise ValueError(f"{label} did not measure the installed candidate extension")
+    package_hashes = {
+        worker.get("package", {}).get("sha256")
+        for worker in raw.get("workers", [])
+        if worker.get("build", "current") == "current"
+    }
+    if package_hashes != {_package_sha256()}:
+        raise ValueError(f"{label} did not measure the installed candidate package")
 
 
 def _validate_release_guard_identity(raw: dict) -> None:
@@ -405,7 +417,7 @@ def main() -> None:
         "timing_methodology": (
             "Python retains raw elapsed nanoseconds and loop counts from complete "
             "process panels; R aggregates process means, fits paired log contrasts, "
-            "and owns intervals, Holm adjustments, classifications, and gates"
+            "and owns simultaneous intervals, classifications, and gates"
         ),
         "evidence_methodology": {
             "inference_engine": "R stats",

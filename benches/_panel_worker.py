@@ -19,16 +19,26 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent))
 
 import _timing
+import msgspec_toon
 from msgspec_toon import _native
 
 
-def _extension_identity() -> dict[str, Any]:
-    path = Path(_native.__file__).resolve()
+def _file_identity(path: Path) -> dict[str, str]:
+    resolved = path.resolve()
     return {
-        "path": str(path),
-        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-        "instrumented": hasattr(_native, "alloc_stats"),
+        "path": str(resolved),
+        "sha256": hashlib.sha256(resolved.read_bytes()).hexdigest(),
     }
+
+
+def _package_identity() -> dict[str, str]:
+    return _file_identity(Path(msgspec_toon.__file__))
+
+
+def _extension_identity() -> dict[str, Any]:
+    identity: dict[str, Any] = _file_identity(Path(_native.__file__))
+    identity["instrumented"] = hasattr(_native, "alloc_stats")
+    return identity
 
 
 def _run_cell(
@@ -160,6 +170,7 @@ def main() -> None:
         "python": sys.version.split()[0],
         "platform": platform.platform(),
         "machine": platform.machine(),
+        "package": _package_identity(),
         "extension": _extension_identity(),
         "panel_wall_ns": time.perf_counter_ns() - started_ns,
         "rows": rows,

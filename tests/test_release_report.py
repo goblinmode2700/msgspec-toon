@@ -211,7 +211,7 @@ def test_release_guard_requires_nested_and_irregular_untyped_shapes(
                 "raw_sha256": report_module.file_sha256(raw_path),
                 "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
                 "family": "release-guard",
-                "adjustment": "holm",
+                "adjustment": "simultaneous Bonferroni intervals across the declared family",
                 "gate_decision": "PASS",
                 "endpoints": [{"id": "untyped-decode@4096"}],
             }
@@ -246,7 +246,7 @@ def test_release_guard_preserves_each_required_untyped_shape(
         "raw_sha256": report_module.file_sha256(raw_path),
         "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
         "family": "release-guard",
-        "adjustment": "holm",
+        "adjustment": "simultaneous Bonferroni intervals across the declared family",
         "gate_decision": "PASS",
         "endpoints": [
             {"id": metric} for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
@@ -286,7 +286,7 @@ def test_release_guard_rejects_an_exploratory_r_decision(
                 "raw_sha256": report_module.file_sha256(raw_path),
                 "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
                 "family": "release-guard",
-                "adjustment": "holm",
+                "adjustment": "simultaneous Bonferroni intervals across the declared family",
                 "gate_decision": "EXPLORATORY",
                 "endpoints": [
                     {"id": metric}
@@ -310,6 +310,7 @@ def test_release_guard_identity_binds_revision_candidate_and_guard_tag(
         "workers": [
             {
                 "build": "current",
+                "package": {"sha256": report_module._package_sha256()},
                 "extension": {"sha256": report_module._extension_sha256()},
             }
         ],
@@ -326,9 +327,21 @@ def test_absolute_report_identity_rejects_another_candidate_extension(
 ) -> None:
     raw = {
         "source_revision": report_module._source_revision(),
-        "workers": [{"extension": {"sha256": "0" * 64}}],
+        "workers": [
+            {
+                "package": {"sha256": report_module._package_sha256()},
+                "extension": {"sha256": "0" * 64},
+            }
+        ],
     }
     with pytest.raises(ValueError, match="installed candidate extension"):
+        report_module._validate_current_benchmark_identity(raw, label="R-owned performance report")
+
+    raw["workers"][0] = {
+        "package": {"sha256": "0" * 64},
+        "extension": {"sha256": report_module._extension_sha256()},
+    }
+    with pytest.raises(ValueError, match="installed candidate package"):
         report_module._validate_current_benchmark_identity(raw, label="R-owned performance report")
 
 
