@@ -9,12 +9,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use pyo3::exceptions::{PyAttributeError, PyBufferError};
+use pyo3::exceptions::PyAttributeError;
 use pyo3::prelude::*;
 use pyo3::sync::critical_section::with_critical_section;
 use pyo3::types::{
-    PyBool, PyByteArray, PyByteArrayMethods, PyBytes, PyBytesMethods, PyDict, PyFloat, PyFrozenSet,
-    PyInt, PyList, PySet, PyString, PyTuple,
+    PyBool, PyBytes, PyBytesMethods, PyDict, PyFloat, PyFrozenSet, PyInt, PyList, PySet, PyString,
+    PyTuple,
 };
 
 use crate::limits::{MAX_NESTING_DEPTH, reserve_bytes};
@@ -301,11 +301,6 @@ fn classify_fallback<'py>(
 ) -> PyResult<Val<'py>> {
     if exact_type(obj) == std::ptr::addr_of_mut!(pyo3::ffi::PyBytes_Type) {
         let encoded = checked_base64(ctx, py, obj.cast::<PyBytes>()?.as_bytes())?;
-        let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
-        return Ok(Val::Str(PyString::new(py, text)));
-    }
-    if let Some(bytes) = exact_buffer_bytes(ctx, py, obj)? {
-        let encoded = checked_base64(ctx, py, &bytes)?;
         let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
         return Ok(Val::Str(PyString::new(py, text)));
     }
@@ -1266,36 +1261,6 @@ fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
     unsafe { pyo3::ffi::Py_TYPE(obj.as_ptr()) }
 }
 
-/// Copy the two exact buffer-backed types that msgspec projects as binary
-/// values. Exact-type dispatch intentionally keeps `bytes` and `bytearray`
-/// subclasses on the hook/refusal path. msgspec accepts only C-contiguous
-/// memoryviews, so check that boundary before copying through `tobytes`.
-#[cold]
-#[inline(never)]
-fn exact_buffer_bytes(
-    ctx: &EncodeContext,
-    py: Python<'_>,
-    obj: &Bound<'_, PyAny>,
-) -> PyResult<Option<Vec<u8>>> {
-    let type_ptr = exact_type(obj);
-    if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyByteArray_Type) {
-        let value = obj.cast::<PyByteArray>()?;
-        check_binary_len(ctx, py, value.len())?;
-        return Ok(Some(value.to_vec()));
-    }
-    if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyMemoryView_Type) {
-        if !obj.getattr("c_contiguous")?.extract::<bool>()? {
-            return Err(PyBufferError::new_err(
-                "memoryview: underlying buffer is not C-contiguous",
-            ));
-        }
-        check_binary_len(ctx, py, obj.getattr("nbytes")?.extract::<usize>()?)?;
-        let copied = obj.call_method0("tobytes")?;
-        return Ok(Some(copied.cast::<PyBytes>()?.as_bytes().to_vec()));
-    }
-    Ok(None)
-}
-
 #[cold]
 #[inline(never)]
 fn raw_scalar<'py>(
@@ -1390,9 +1355,6 @@ fn write_scalar_fallback<'py>(
     let type_ptr = exact_type(obj);
     if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyBytes_Type) {
         return write_bytes_scalar(ctx, py, writer, obj.cast::<PyBytes>()?);
-    }
-    if let Some(bytes) = exact_buffer_bytes(ctx, py, obj)? {
-        return write_binary_scalar(ctx, py, writer, &bytes);
     }
     // Subclass slow path.
     if obj.is_instance_of::<PyBool>() {
@@ -1500,19 +1462,14 @@ fn base64_encode(input: &[u8]) -> Vec<u8> {
 #[cold]
 #[inline(never)]
 fn checked_base64(ctx: &EncodeContext, py: Python<'_>, input: &[u8]) -> PyResult<Vec<u8>> {
-    check_binary_len(ctx, py, input.len())?;
-    Ok(base64_encode(input))
-}
-
-fn check_binary_len(ctx: &EncodeContext, py: Python<'_>, len: usize) -> PyResult<()> {
-    if len > u32::MAX as usize {
+    if input.len() > u32::MAX as usize {
         return Err(encode_err(
             ctx,
             py,
             "bytes objects longer than 2**32 - 1 are not encodable",
         ));
     }
-    Ok(())
+    Ok(base64_encode(input))
 }
 
 #[cold]
@@ -1523,18 +1480,7 @@ fn write_bytes_scalar(
     writer: &mut Writer,
     value: &Bound<'_, PyBytes>,
 ) -> PyResult<()> {
-    write_binary_scalar(ctx, py, writer, value.as_bytes())
-}
-
-#[cold]
-#[inline(never)]
-fn write_binary_scalar(
-    ctx: &EncodeContext,
-    py: Python<'_>,
-    writer: &mut Writer,
-    value: &[u8],
-) -> PyResult<()> {
-    let encoded = checked_base64(ctx, py, value)?;
+    let encoded = checked_base64(ctx, py, value.as_bytes())?;
     let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
     if needs_quote(text, ctx.delimiter) {
         write_quoted(writer, text);

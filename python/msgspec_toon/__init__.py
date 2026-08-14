@@ -84,6 +84,17 @@ class _EncodeHook:
         raise msgspec.EncodeError(f"unsupported type: {type(value).__name__}")
 
     def _normalize(self, value: Any) -> Any:
+        value_type = type(value)
+        if value_type is bytearray:
+            if len(value) > 2**32 - 1:
+                raise msgspec.EncodeError("bytes objects longer than 2**32 - 1 are not encodable")
+            return bytes(value)
+        if value_type is memoryview:
+            if not value.c_contiguous:
+                raise BufferError("memoryview: underlying buffer is not C-contiguous")
+            if value.nbytes > 2**32 - 1:
+                raise msgspec.EncodeError("bytes objects longer than 2**32 - 1 are not encodable")
+            return value.tobytes()
         if isinstance(
             value,
             (datetime.datetime, datetime.date, datetime.time, datetime.timedelta),
