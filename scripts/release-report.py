@@ -43,6 +43,8 @@ REQUIRED_UNTYPED_GUARD_METRICS = {
 }
 REPORT_PERFORMANCE_RAW = ROOT / "benches" / "report-performance-raw.json"
 REPORT_PERFORMANCE_RESULT = ROOT / "benches" / "report-performance.json"
+RELEASE_GUARD_RAW = ROOT / "benches" / "ab-guard-raw.json"
+RELEASE_GUARD_RESULT = ROOT / "benches" / "ab-guard-r.json"
 GUARD_TAG_FILE = ROOT / "benches" / "GUARD_TAG"
 
 
@@ -96,8 +98,8 @@ def allocation_proof() -> dict:
 def release_guard(path: Path | None = None, raw_path: Path | None = None) -> dict:
     """Load the paired raw guard and its R-owned decision."""
 
-    result_path = path or ROOT / "benches" / "ab-guard-r.json"
-    paired_raw_path = raw_path or ROOT / "benches" / "ab-guard-raw.json"
+    result_path = path or RELEASE_GUARD_RESULT
+    paired_raw_path = raw_path or RELEASE_GUARD_RAW
     if not result_path.is_file() or not paired_raw_path.is_file():
         if REQUIRE_RELEASE_EVIDENCE:
             raise SystemExit(f"missing release guard evidence: {paired_raw_path}, {result_path}")
@@ -155,6 +157,20 @@ def performance_report(
     except ValueError as error:
         raise SystemExit(str(error)) from error
     return performance
+
+
+def check_performance_evidence() -> None:
+    required = (
+        RELEASE_GUARD_RAW,
+        RELEASE_GUARD_RESULT,
+        REPORT_PERFORMANCE_RAW,
+        REPORT_PERFORMANCE_RESULT,
+    )
+    missing = [str(path) for path in required if not path.is_file()]
+    if missing:
+        raise SystemExit(f"missing release performance evidence: {', '.join(missing)}")
+    release_guard()
+    performance_report()
 
 
 def _efficiency_lock() -> dict:
@@ -339,6 +355,9 @@ def check_changelog_compatibility(delta: dict) -> None:
 
 
 def main() -> None:
+    if sys.argv[1:] == ["--check-performance-evidence"]:
+        check_performance_evidence()
+        return
     if sys.argv[1:] == ["--check-changelog"]:
         efficiency = _efficiency_lock()
         delta = compatibility_delta(support_matrix_report(), efficiency)

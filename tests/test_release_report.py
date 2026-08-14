@@ -168,6 +168,28 @@ def test_release_mode_rejects_missing_component_evidence(
         )
 
 
+def test_performance_evidence_check_requires_and_validates_all_four_outputs(
+    report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths = [tmp_path / name for name in ("guard-raw", "guard-r", "report-raw", "report-r")]
+    for path in paths:
+        path.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(report_module, "RELEASE_GUARD_RAW", paths[0])
+    monkeypatch.setattr(report_module, "RELEASE_GUARD_RESULT", paths[1])
+    monkeypatch.setattr(report_module, "REPORT_PERFORMANCE_RAW", paths[2])
+    monkeypatch.setattr(report_module, "REPORT_PERFORMANCE_RESULT", paths[3])
+    validated: list[str] = []
+    monkeypatch.setattr(report_module, "release_guard", lambda: validated.append("guard"))
+    monkeypatch.setattr(report_module, "performance_report", lambda: validated.append("report"))
+
+    report_module.check_performance_evidence()
+    assert validated == ["guard", "report"]
+
+    paths[2].unlink()
+    with pytest.raises(SystemExit, match="missing release performance evidence"):
+        report_module.check_performance_evidence()
+
+
 def test_release_guard_requires_nested_and_irregular_untyped_shapes(
     report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

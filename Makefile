@@ -29,9 +29,11 @@ QUALIFY_COPY_EVIDENCE ?= cp conformance/conformance-results.json "$(QUALIFICATIO
 QUALIFY_SUMMARY ?= uv run --no-sync python scripts/qualification-summary.py --junit "$(QUALIFICATION_DIR)/pytest.xml" --output "$(QUALIFICATION_DIR)/summary.json"
 RELEASE_BENCH_VENV ?= .venv-release
 RELEASE_BENCH_PYTHON := $(RELEASE_BENCH_VENV)/bin/python
+RELEASE_PERF_VERIFY ?= $(RELEASE_BENCH_PYTHON) -I scripts/release_artifacts.py verify-release-wheel --directory release/dist --manifest release/verified-release.json --python-abi cp313-abi3 --output release/benchmark-wheel.verified.json
 RELEASE_PERF_GUARD ?= UV_PROJECT_ENVIRONMENT=$(RELEASE_BENCH_VENV) $(MAKE) guard
 RELEASE_PERF_AB ?= $(RELEASE_BENCH_PYTHON) -I benches/ab.py --current-venv $(RELEASE_BENCH_VENV)
 RELEASE_PERF_REPORT ?= $(RELEASE_BENCH_PYTHON) -I benches/collect_report.py --python $(RELEASE_BENCH_PYTHON)
+RELEASE_PERF_CHECK ?= $(RELEASE_BENCH_PYTHON) -I scripts/release-report.py --check-performance-evidence
 
 # Opt-in build against the proposed msgspec Struct C API. The normal project
 # environment and dependency pin stay untouched; this profile owns a separate
@@ -131,9 +133,11 @@ public-report: report
 # The GitHub release workflow invokes this exact target against its verified wheel.
 release-performance:
 	@test -x "$(RELEASE_BENCH_PYTHON)"
+	$(RELEASE_PERF_VERIFY)
 	$(RELEASE_PERF_GUARD)
 	$(RELEASE_PERF_AB)
 	$(RELEASE_PERF_REPORT)
+	$(RELEASE_PERF_CHECK)
 
 # Reproduce the upstream capsule experiment without changing `.venv` or the
 # publishable `msgspec==0.21.1` dependency. The source is hash-pinned, the patch

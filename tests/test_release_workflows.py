@@ -6,8 +6,10 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 VALIDATE = ROOT / ".github" / "workflows" / "validate.yml"
@@ -28,125 +30,122 @@ QUALIFICATION_COMPONENTS = (
     ("summary", "QUALIFY_SUMMARY"),
 )
 RELEASE_PERFORMANCE_COMPONENTS = (
+    ("wheel-identity", "RELEASE_PERF_VERIFY"),
     ("guard", "RELEASE_PERF_GUARD"),
     ("paired-r-guard", "RELEASE_PERF_AB"),
     ("absolute-r-report", "RELEASE_PERF_REPORT"),
+    ("evidence-contract", "RELEASE_PERF_CHECK"),
+)
+
+_YAML_BOOLEAN_TAG = "tag:yaml.org,2002:bool"
+
+
+class _WorkflowLoader(yaml.SafeLoader):
+    pass
+
+
+_WorkflowLoader.yaml_implicit_resolvers = {
+    first: [(tag, pattern) for tag, pattern in resolvers if tag != _YAML_BOOLEAN_TAG]
+    for first, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
+}
+_WorkflowLoader.add_implicit_resolver(
+    _YAML_BOOLEAN_TAG,
+    re.compile(r"^(?:true|false)$", re.IGNORECASE),
+    list("tTfF"),
 )
 
 
-def _workflow_steps(text: str) -> dict[str, dict[str, dict[str, str]]]:
-    """Normalize the jobs/steps subset consumed by these workflow tests."""
-
-    jobs: dict[str, dict[str, dict[str, str]]] = {}
-    current_job: str | None = None
-    lines = text.splitlines()
-    index = 0
-    while index < len(lines):
-        line = lines[index]
-        job = re.fullmatch(r"  ([a-z][a-z0-9-]*):", line)
-        if job:
-            current_job = job.group(1)
-            jobs[current_job] = {}
-            index += 1
-            continue
-        step = re.fullmatch(r"      - name: (.+)", line)
-        if current_job is None or step is None:
-            index += 1
-            continue
-        name = step.group(1)
-        fields: dict[str, str] = {}
-        index += 1
-        while index < len(lines):
-            candidate = lines[index]
-            if re.fullmatch(r"      - name: .+", candidate) or re.fullmatch(
-                r"  [a-z][a-z0-9-]*:", candidate
-            ):
-                break
-            scalar = re.fullmatch(r"        (uses|if): (.+)", candidate)
-            if scalar:
-                fields[scalar.group(1)] = scalar.group(2)
-            run = re.fullmatch(r"        run: (.+)", candidate)
-            if run:
-                if run.group(1) != "|":
-                    fields["run"] = run.group(1)
-                else:
-                    block: list[str] = []
-                    index += 1
-                    while index < len(lines) and (
-                        lines[index].startswith("          ") or not lines[index]
-                    ):
-                        block.append(lines[index][10:] if lines[index] else "")
-                        index += 1
-                    fields["run"] = "\n".join(block).rstrip()
-                    continue
-            index += 1
-        jobs[current_job][name] = fields
-    return jobs
+def _workflow(path: Path) -> dict[str, Any]:
+    parsed = yaml.load(path.read_text(encoding="utf-8"), Loader=_WorkflowLoader)
+    assert isinstance(parsed, dict)
+    assert isinstance(parsed.get("jobs"), dict)
+    return parsed
 
 
-def _job_dependencies(text: str) -> dict[str, set[str]]:
-    jobs: dict[str, set[str]] = {}
-    current: str | None = None
-    in_jobs = False
-    for line in text.splitlines():
-        if line == "jobs:":
-            in_jobs = True
-            continue
-        if not in_jobs:
-            continue
-        job = re.fullmatch(r"  ([a-z][a-z0-9-]*):", line)
-        if job:
-            current = job.group(1)
-            jobs[current] = set()
-            continue
-        needs = re.fullmatch(r"    needs: (.+)", line)
-        if current is None or needs is None:
-            continue
-        value = needs.group(1).strip()
-        if value.startswith("[") and value.endswith("]"):
-            value = value[1:-1]
-        jobs[current] = {item.strip() for item in value.split(",")}
-    return jobs
+def _steps(workflow: dict[str, Any], job: str) -> dict[str, dict[str, Any]]:
+    sequence = workflow["jobs"][job]["steps"]
+    named = {step["name"]: step for step in sequence if "name" in step}
+    assert len(named) == len([step for step in sequence if "name" in step])
+    return named
+
+
+def _needs(job: dict[str, Any]) -> set[str]:
+    value = job.get("needs", [])
+    return {value} if isinstance(value, str) else set(value)
 
 
 def test_validation_is_reusable_and_canonical() -> None:
-    text = VALIDATE.read_text()
-    steps = _workflow_steps(text)
-    assert "workflow_call:" in text
-    assert "pull_request:" in text
-    assert "branches: [main]" in text
-    assert steps["qualification"]["Run canonical qualification"]["run"] == "make qualify"
-    assert steps["qualification"]["Set up R inference runtime"]["uses"].startswith(
-        "r-lib/actions/setup-r@"
-    )
+    workflow = _workflow(VALIDATE)
+    triggers = workflow["on"]
+    steps = _steps(workflow, "qualification")
+    assert {"workflow_call", "pull_request"} <= set(triggers)
+    assert triggers["push"]["branches"] == ["main"]
+    assert steps["Run canonical qualification"]["run"] == "make qualify"
+    assert steps["Set up R inference runtime"]["uses"].startswith("r-lib/actions/setup-r@")
 
 
 def test_publication_depends_on_verified_artifacts_and_canonical_validation() -> None:
-    text = RELEASE.read_text()
-    assert "uses: ./.github/workflows/validate.yml" in text
-    assert "needs: [collect, evidence]" in text
-    assert "verified-release" in text
-    assert "release_artifacts.py collect" in text
-    assert "PYPI_API_KEY" not in text
-    assert "UV_PUBLISH_TOKEN" not in text
+    workflow = _workflow(RELEASE)
+    jobs = workflow["jobs"]
+    assert jobs["validate"]["uses"] == "./.github/workflows/validate.yml"
+    assert _needs(jobs["publish"]) == {"collect", "evidence"}
+    collect_steps = _steps(workflow, "collect")
+    assert collect_steps["Upload verified release set"]["with"]["name"] == "verified-release"
+    publish_steps = _steps(workflow, "publish")
+    assert publish_steps["Download verified release set"]["with"]["name"] == "verified-release"
+    env_mappings = [
+        mapping
+        for mapping in (
+            workflow.get("env", {}),
+            *(job.get("env", {}) for job in jobs.values()),
+            *(step.get("env", {}) for job in jobs.values() for step in job.get("steps", [])),
+        )
+        if isinstance(mapping, dict)
+    ]
+    assert all("PYPI_API_KEY" not in mapping for mapping in env_mappings)
+    assert all("UV_PUBLISH_TOKEN" not in mapping for mapping in env_mappings)
 
 
 def test_trusted_publishing_identity_is_job_scoped() -> None:
-    text = RELEASE.read_text()
-    assert "environment: pypi" in text
-    assert "id-token: write" in text
-    assert "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33" in text
-    assert text.count("id-token: write") == 1
+    workflow = _workflow(RELEASE)
+    publish = workflow["jobs"]["publish"]
+    assert publish["environment"] == "pypi"
+    assert publish["permissions"] == {"id-token": "write"}
+    publish_steps = _steps(workflow, "publish")
+    assert publish_steps["Publish package distributions with attestations"]["uses"] == (
+        "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
+    )
+    assert all(
+        job == "publish" or details.get("permissions", {}).get("id-token") != "write"
+        for job, details in workflow["jobs"].items()
+    )
 
 
 def test_github_release_commands_have_explicit_repository_context() -> None:
-    text = RELEASE.read_text(encoding="utf-8")
-    assert "GH_REPO: ${{ github.repository }}" in text
+    steps = _steps(_workflow(RELEASE), "github-release")
+    assert steps["Attach evidence to the GitHub release"]["env"]["GH_REPO"] == (
+        "${{ github.repository }}"
+    )
 
 
 def test_github_release_is_created_as_a_prerelease() -> None:
-    text = RELEASE.read_text(encoding="utf-8")
-    assert 'gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --prerelease' in text
+    steps = _steps(_workflow(RELEASE), "github-release")
+    commands = [
+        shlex.split(line.removesuffix(" || \\"))
+        for line in steps["Attach evidence to the GitHub release"]["run"].splitlines()
+        if line.strip().startswith("gh release create")
+    ]
+    assert commands == [
+        [
+            "gh",
+            "release",
+            "create",
+            "$GITHUB_REF_NAME",
+            "--verify-tag",
+            "--generate-notes",
+            "--prerelease",
+        ]
+    ]
 
 
 @pytest.mark.parametrize(
@@ -248,36 +247,73 @@ if component == os.environ["FAIL_COMPONENT"]:
     assert log.read_text(encoding="utf-8").splitlines() == ordered[: failure_index + 1]
 
 
+def test_release_performance_executes_identity_collection_and_contract_checks(
+    tmp_path: Path,
+) -> None:
+    log = tmp_path / "release-performance.log"
+    probe = tmp_path / "probe.py"
+    probe.write_text(
+        """import sys
+from pathlib import Path
+
+component, log = sys.argv[1:]
+with Path(log).open("a", encoding="utf-8") as stream:
+    stream.write(component + "\\n")
+""",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    for component, variable in RELEASE_PERFORMANCE_COMPONENTS:
+        env[variable] = " ".join(
+            shlex.quote(value) for value in (sys.executable, str(probe), component, str(log))
+        )
+
+    result = subprocess.run(
+        [
+            "make",
+            "--no-print-directory",
+            f"RELEASE_BENCH_PYTHON={sys.executable}",
+            "release-performance",
+        ],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert log.read_text(encoding="utf-8").splitlines() == [
+        component for component, _ in RELEASE_PERFORMANCE_COMPONENTS
+    ]
+
+
 def test_release_evidence_executes_batched_r_pipeline_on_verified_wheel() -> None:
-    steps = _workflow_steps(RELEASE.read_text(encoding="utf-8"))
-    evidence = steps["evidence"]
+    workflow = _workflow(RELEASE)
+    evidence = _steps(workflow, "evidence")
     assert evidence["Run R-owned release performance evidence"]["run"] == (
         "make release-performance"
     )
     assert evidence["Generate machine-readable release report"]["run"] == (
         ".venv-release/bin/python -I scripts/release-report.py"
     )
-    install = evidence["Install locked benchmark environment and verified wheel"]["run"]
-    assert "uv venv .venv-release --python 3.13" in install
-    assert "uv pip install --python .venv-release/bin/python --no-deps" in install
     assert evidence["Set up R inference runtime"]["uses"].startswith("r-lib/actions/setup-r@")
-    verify_r = steps["verify-wheels"]["Set up R inference runtime"]
+    verify_r = _steps(workflow, "verify-wheels")["Set up R inference runtime"]
     assert verify_r["if"] == "matrix.platform.full_test && matrix.python.label == 'abi3'"
     assert verify_r["uses"].startswith("r-lib/actions/setup-r@")
-
-    attach = steps["github-release"]["Attach evidence to the GitHub release"]["run"]
-    for path in (
-        "evidence/benches/ab-guard-raw.json",
-        "evidence/benches/ab-guard-r.json",
-        "evidence/benches/report-performance-raw.json",
-        "evidence/benches/report-performance.json",
-    ):
-        assert path in attach
+    uploaded = set(evidence["Upload release evidence"]["with"]["path"].splitlines())
+    assert {
+        "benches/ab-guard-raw.json",
+        "benches/ab-guard-r.json",
+        "benches/report-performance-raw.json",
+        "benches/report-performance.json",
+        "release/benchmark-wheel.verified.json",
+    } <= uploaded
 
 
 def test_failed_validation_blocks_every_release_job() -> None:
-    text = RELEASE.read_text(encoding="utf-8")
-    dependencies = _job_dependencies(text)
+    workflow = _workflow(RELEASE)
+    dependencies = {job: _needs(details) for job, details in workflow["jobs"].items()}
     blocked = {"validate"}
     while True:
         newly_blocked = {
@@ -291,4 +327,4 @@ def test_failed_validation_blocks_every_release_job() -> None:
 
     assert blocked == set(dependencies)
     assert {"collect", "evidence", "publish", "github-release"} <= blocked
-    assert "always()" not in text
+    assert all(details.get("if") != "${{ always() }}" for details in workflow["jobs"].values())

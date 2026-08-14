@@ -414,6 +414,7 @@ jobs:
             benches/ab-guard-r.json
             benches/report-performance-raw.json
             benches/report-performance.json
+            release/benchmark-wheel.verified.json
             release/verified-release.json
             qualification/summary.json
           if-no-files-found: error
@@ -467,4 +468,5 @@ jobs:
             evidence/benches/ab-guard-r.json \
             evidence/benches/report-performance-raw.json \
             evidence/benches/report-performance.json \
+            evidence/release/benchmark-wheel.verified.json \
             evidence/release/verified-release.json
