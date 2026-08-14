@@ -317,11 +317,6 @@ def main() -> None:
     )
     parser.add_argument("--baseline-venv", default=DEFAULT_BASELINE_VENV)
     parser.add_argument("--current-venv", default=DEFAULT_CURRENT_VENV)
-    parser.add_argument(
-        "--pairs", type=int, default=None, help="predeclare a different even pair count"
-    )
-    parser.add_argument("--target-ms", type=float, default=None)
-    parser.add_argument("--samples", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--raw-output", type=Path, default=None)
     parser.add_argument("--output", type=Path, default=None)
@@ -335,16 +330,6 @@ def main() -> None:
     if not args.no_gate and "guard" in args.baseline_venv:
         require_current_guard(args.baseline_venv)
     family, endpoints = select_family(args.family, manifest)
-    if args.pairs is not None:
-        family["pairs"] = args.pairs
-    if args.target_ms is not None:
-        if args.target_ms <= 0:
-            raise SystemExit("--target-ms must be positive")
-        family["target_milliseconds"] = args.target_ms
-    if args.samples is not None:
-        if args.samples < 1:
-            raise SystemExit("--samples must be positive")
-        family["samples_per_process"] = args.samples
     seed = args.seed if args.seed is not None else secrets.randbits(63)
 
     baseline_python = REPO / args.baseline_venv / "bin" / "python"

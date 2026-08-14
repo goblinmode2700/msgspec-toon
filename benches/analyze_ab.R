@@ -38,14 +38,16 @@ if (is.null(declared_family)) {
   fail("raw evidence names an undeclared performance family")
 }
 fixed_family_fields <- c(
-  "description", "regression_margin_pct", "improvement_margin_pct", "gating"
+  "description", "pairs", "regression_margin_pct", "improvement_margin_pct", "gating"
 )
 for (field in fixed_family_fields) {
   if (!identical(family[[field]], declared_family[[field]])) {
     fail(sprintf("raw evidence changed declared family field: %s", field))
   }
 }
-for (field in c("alpha", "target_power", "planning_sd_log")) {
+for (field in c(
+  "alpha", "target_power", "planning_sd_log", "samples_per_process", "target_milliseconds"
+)) {
   if (!identical(family[[field]], manifest$defaults[[field]])) {
     fail(sprintf("raw evidence changed declared default field: %s", field))
   }
@@ -168,6 +170,38 @@ lower_tail <- function(estimate, boundary, standard_error, degrees_freedom) {
 
 interval_family_size <- nrow(endpoints)
 
+planned_endpoint_power <- function(pairs, effect_log) {
+  if (pairs < 4 || pairs %% 2 != 0) {
+    return(0)
+  }
+  degrees_freedom <- pairs - 2
+  simultaneous_critical <- qt(
+    1 - family$alpha / (2 * interval_family_size),
+    df = degrees_freedom
+  )
+  pt(
+    -simultaneous_critical,
+    df = degrees_freedom,
+    ncp = -effect_log * sqrt(pairs) / family$planning_sd_log
+  )
+}
+
+planned_family_power <- function(pairs, roles) {
+  powers <- vapply(
+    roles,
+    function(role) {
+      effect_log <- if (role == "non_inferiority") {
+        log1p(family$regression_margin_pct / 100)
+      } else {
+        abs(log1p(-family$improvement_margin_pct / 100))
+      }
+      planned_endpoint_power(pairs, effect_log)
+    },
+    numeric(1)
+  )
+  max(0, 1 - sum(1 - powers))
+}
+
 analyze_cell <- function(cell_id) {
   rows <- worker[worker$cell_id == cell_id, ]
   baseline <- rows[rows$build == "baseline", c("pair", "period", "per_call_ns")]
@@ -224,6 +258,7 @@ results <- merge(endpoints[, c("id", "label", "role")], results, by = "id", sort
 results <- results[match(endpoints$id, results$id), ]
 noninferiority_rows <- which(results$role == "non_inferiority")
 improvement_rows <- which(results$role == "improvement")
+confirmatory_rows <- which(results$role %in% c("non_inferiority", "improvement"))
 
 results$status <- "inconclusive"
 results$status[
@@ -242,25 +277,51 @@ results$status[results$role == "exploratory"] <- "exploratory"
 
 noninferiority_power <- NULL
 if (length(noninferiority_rows)) {
-  noninferiority_power <- power.t.test(
-    n = family$pairs,
-    delta = abs(log1p(family$regression_margin_pct / 100)),
-    sd = family$planning_sd_log,
-    sig.level = family$alpha / (2 * interval_family_size),
-    type = "one.sample",
-    alternative = "one.sided"
-  )$power
+  noninferiority_power <- planned_endpoint_power(
+    family$pairs,
+    log1p(family$regression_margin_pct / 100)
+  )
 }
 improvement_power <- NULL
 if (length(improvement_rows)) {
-  improvement_power <- power.t.test(
-    n = family$pairs,
-    delta = abs(log1p(-family$improvement_margin_pct / 100)),
-    sd = family$planning_sd_log,
-    sig.level = family$alpha / (2 * interval_family_size),
-    type = "one.sample",
-    alternative = "one.sided"
-  )$power
+  improvement_power <- planned_endpoint_power(
+    family$pairs,
+    abs(log1p(-family$improvement_margin_pct / 100))
+  )
+}
+
+family_power_lower_bound <- NULL
+per_endpoint_power_target <- NULL
+minimum_even_pairs <- NULL
+power_qualified <- NULL
+if (length(confirmatory_rows)) {
+  confirmatory_roles <- results$role[confirmatory_rows]
+  per_endpoint_power_target <- 1 - (1 - family$target_power) / length(confirmatory_rows)
+  family_power_lower_bound <- planned_family_power(family$pairs, confirmatory_roles)
+  candidate_pairs <- seq.int(4L, 10000L, by = 2L)
+  qualified <- vapply(
+    candidate_pairs,
+    function(pairs) planned_family_power(pairs, confirmatory_roles) >= family$target_power,
+    logical(1)
+  )
+  if (!any(qualified)) {
+    fail("family power target requires more than 10,000 process pairs")
+  }
+  minimum_even_pairs <- candidate_pairs[which(qualified)[[1]]]
+  power_qualified <- family_power_lower_bound >= family$target_power
+  if (isTRUE(family$gating) && !power_qualified) {
+    fail(sprintf(
+      paste0(
+        "declared pair count is underpowered for the complete family: ",
+        "%d pairs provide a Bonferroni union-bound lower power of %.6f; ",
+        "target %.6f requires at least %d balanced pairs"
+      ),
+      family$pairs,
+      family_power_lower_bound,
+      family$target_power,
+      minimum_even_pairs
+    ))
+  }
 }
 
 if (!isTRUE(family$gating)) {
@@ -294,10 +355,19 @@ output <- list(
   planning = list(
     pairs = family$pairs,
     interval_family_size = interval_family_size,
-    target_power = family$target_power,
+    confirmatory_family_size = length(confirmatory_rows),
+    family_target_power = family$target_power,
+    per_endpoint_power_target = per_endpoint_power_target,
     planning_sd_log = family$planning_sd_log,
-    bonferroni_noninferiority_power = noninferiority_power,
-    bonferroni_improvement_power = improvement_power
+    bonferroni_noninferiority_endpoint_power = noninferiority_power,
+    bonferroni_improvement_endpoint_power = improvement_power,
+    bonferroni_family_power_lower_bound = family_power_lower_bound,
+    minimum_even_pairs = minimum_even_pairs,
+    power_qualified = power_qualified,
+    family_power_method = paste0(
+      "Bonferroni simultaneous-interval endpoint power with df = pairs - 2; ",
+      "union-bound lower probability that every confirmatory endpoint passes"
+    )
   ),
   endpoints = results
 )

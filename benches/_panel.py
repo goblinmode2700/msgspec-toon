@@ -123,12 +123,15 @@ def validate_ab_raw(evidence: dict[str, Any]) -> None:
     fixed_family_keys = {
         "name",
         "description",
+        "pairs",
         "regression_margin_pct",
         "improvement_margin_pct",
         "gating",
         "alpha",
         "target_power",
         "planning_sd_log",
+        "samples_per_process",
+        "target_milliseconds",
     }
     for key in fixed_family_keys:
         if family.get(key) != declared_family.get(key):

@@ -12,7 +12,10 @@ use std::sync::{Arc, Mutex};
 use pyo3::exceptions::PyAttributeError;
 use pyo3::prelude::*;
 use pyo3::sync::critical_section::with_critical_section;
-use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
+use pyo3::types::{
+    PyBool, PyBytes, PyBytesMethods, PyDict, PyFloat, PyFrozenSet, PyInt, PyList, PySet, PyString,
+    PyTuple,
+};
 
 use crate::limits::{MAX_NESTING_DEPTH, reserve_bytes};
 use crate::msgspec_capi::MsgspecCapi;
@@ -286,6 +289,44 @@ fn clone_nodes(py: Python<'_>, nodes: &[ShapeNode]) -> Vec<ShapeNode> {
         .collect()
 }
 
+#[cold]
+#[inline(never)]
+fn classify_fallback<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    obj: &Bound<'py, PyAny>,
+    hook_depth: usize,
+) -> PyResult<Val<'py>> {
+    if exact_type(obj) == std::ptr::addr_of_mut!(pyo3::ffi::PyBytes_Type) {
+        let encoded = checked_base64(ctx, py, obj.cast::<PyBytes>()?.as_bytes())?;
+        let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
+        return Ok(Val::Str(PyString::new(py, text)));
+    }
+    if obj.is_instance_of::<PySet>() || obj.is_instance_of::<PyFrozenSet>() {
+        // Match msgspec's default encoder: a set is an array in its current
+        // interpreter iteration order. Collect owned references, not a Python
+        // list projection. `try_iter` also turns concurrent mutation into a
+        // Python exception instead of the panic used by PyO3's set iterator.
+        let items = obj.try_iter()?.collect::<PyResult<Vec<_>>>()?;
+        return Ok(Val::Seq(items));
+    }
+    if let Some(hook) = ctx.enc_hook.as_ref() {
+        if hook_depth >= MAX_HOOK_DEPTH {
+            return Err(encode_err(ctx, py, "enc_hook recursion limit exceeded"));
+        }
+        let replaced = hook.bind(py).call1((obj,))?;
+        if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
+            return Ok(Val::IntegerOrRaw(raw.into_any()));
+        }
+        return classify(ctx, py, &replaced, hook_depth + 1);
+    }
+    let replaced = default_encode_hook(ctx, py, obj)?;
+    if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
+        return Ok(Val::IntegerOrRaw(raw.into_any()));
+    }
+    classify(ctx, py, &replaced, hook_depth + 1)
+}
+
 fn classify<'py>(
     ctx: &EncodeContext,
     py: Python<'py>,
@@ -329,21 +370,10 @@ fn classify<'py>(
     if let Ok(map) = obj.cast::<PyDict>() {
         return Ok(Val::Dict(map.clone()));
     }
-    if let Some(hook) = ctx.enc_hook.as_ref() {
-        if hook_depth >= MAX_HOOK_DEPTH {
-            return Err(encode_err(ctx, py, "enc_hook recursion limit exceeded"));
-        }
-        let replaced = hook.bind(py).call1((obj,))?;
-        if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
-            return Ok(Val::IntegerOrRaw(raw.into_any()));
-        }
-        return classify(ctx, py, &replaced, hook_depth + 1);
-    }
-    let replaced = default_encode_hook(ctx, py, obj)?;
-    if let Some(raw) = raw_scalar(ctx, py, &replaced)? {
-        return Ok(Val::IntegerOrRaw(raw.into_any()));
-    }
-    classify(ctx, py, &replaced, hook_depth + 1)
+    // Keep native projections and hook dispatch out of the common container
+    // classifier. This fallback is reached only after every native hot type
+    // has returned.
+    classify_fallback(ctx, py, obj, hook_depth)
 }
 
 /// A pending entry key: a wire name borrowed from the plan inside the `Val`,
@@ -1309,6 +1339,21 @@ fn write_scalar_obj<'py>(
         writer.bytes(b"null");
         return Ok(());
     }
+    write_scalar_fallback(ctx, py, writer, obj)
+}
+
+#[cold]
+#[inline(never)]
+fn write_scalar_fallback<'py>(
+    ctx: &EncodeContext,
+    py: Python<'py>,
+    writer: &mut Writer,
+    obj: &Bound<'py, PyAny>,
+) -> PyResult<()> {
+    let type_ptr = exact_type(obj);
+    if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyBytes_Type) {
+        return write_bytes_scalar(ctx, py, writer, obj.cast::<PyBytes>()?);
+    }
     // Subclass slow path.
     if obj.is_instance_of::<PyBool>() {
         writer.bytes(if obj.extract::<bool>()? {
@@ -1371,6 +1416,76 @@ fn write_float(writer: &mut Writer, number: f64) {
         return;
     }
     writer.text(&canonical_float(number));
+}
+
+const BASE64_ALPHABET: &[u8; 64] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/// Encode with msgspec's standard padded base64 value projection. This ports
+/// the pinned msgspec 0.21.1 algorithm locally, without a runtime dependency.
+#[cold]
+#[inline(never)]
+fn base64_encode(input: &[u8]) -> Vec<u8> {
+    let encoded_len = input.len().div_ceil(3) * 4;
+    let mut output = Vec::with_capacity(encoded_len);
+    let mut chunks = input.chunks_exact(3);
+    for chunk in &mut chunks {
+        let bits = (u32::from(chunk[0]) << 16) | (u32::from(chunk[1]) << 8) | u32::from(chunk[2]);
+        output.push(BASE64_ALPHABET[((bits >> 18) & 0x3f) as usize]);
+        output.push(BASE64_ALPHABET[((bits >> 12) & 0x3f) as usize]);
+        output.push(BASE64_ALPHABET[((bits >> 6) & 0x3f) as usize]);
+        output.push(BASE64_ALPHABET[(bits & 0x3f) as usize]);
+    }
+    match chunks.remainder() {
+        [first] => {
+            let bits = u32::from(*first) << 16;
+            output.push(BASE64_ALPHABET[((bits >> 18) & 0x3f) as usize]);
+            output.push(BASE64_ALPHABET[((bits >> 12) & 0x3f) as usize]);
+            output.extend_from_slice(b"==");
+        }
+        [first, second] => {
+            let bits = (u32::from(*first) << 16) | (u32::from(*second) << 8);
+            output.push(BASE64_ALPHABET[((bits >> 18) & 0x3f) as usize]);
+            output.push(BASE64_ALPHABET[((bits >> 12) & 0x3f) as usize]);
+            output.push(BASE64_ALPHABET[((bits >> 6) & 0x3f) as usize]);
+            output.push(b'=');
+        }
+        [] => {}
+        _ => unreachable!("chunks_exact(3) leaves at most two bytes"),
+    }
+    debug_assert_eq!(output.len(), encoded_len);
+    output
+}
+
+#[cold]
+#[inline(never)]
+fn checked_base64(ctx: &EncodeContext, py: Python<'_>, input: &[u8]) -> PyResult<Vec<u8>> {
+    if input.len() > u32::MAX as usize {
+        return Err(encode_err(
+            ctx,
+            py,
+            "bytes objects longer than 2**32 - 1 are not encodable",
+        ));
+    }
+    Ok(base64_encode(input))
+}
+
+#[cold]
+#[inline(never)]
+fn write_bytes_scalar(
+    ctx: &EncodeContext,
+    py: Python<'_>,
+    writer: &mut Writer,
+    value: &Bound<'_, PyBytes>,
+) -> PyResult<()> {
+    let encoded = checked_base64(ctx, py, value.as_bytes())?;
+    let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
+    if needs_quote(text, ctx.delimiter) {
+        write_quoted(writer, text);
+    } else {
+        writer.bytes(&encoded);
+    }
+    Ok(())
 }
 
 const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
@@ -1561,7 +1676,22 @@ fn write_key(writer: &mut Writer, key: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::canonical_float;
+    use super::{base64_encode, canonical_float};
+
+    #[test]
+    fn bytes_use_standard_padded_base64() {
+        for (plain, encoded) in [
+            (b"".as_slice(), b"".as_slice()),
+            (b"f".as_slice(), b"Zg==".as_slice()),
+            (b"fo".as_slice(), b"Zm8=".as_slice()),
+            (b"foo".as_slice(), b"Zm9v".as_slice()),
+            (b"foob".as_slice(), b"Zm9vYg==".as_slice()),
+            (b"fooba".as_slice(), b"Zm9vYmE=".as_slice()),
+            (b"foobar".as_slice(), b"Zm9vYmFy".as_slice()),
+        ] {
+            assert_eq!(base64_encode(plain), encoded);
+        }
+    }
 
     #[test]
     fn floats_are_canonical() {

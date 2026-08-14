@@ -39,10 +39,10 @@ from _panel import (
 )
 
 
-def _valid_manifest_raw(*, pairs: int = 4, samples: int = 2) -> dict[str, Any]:
+def _valid_manifest_raw() -> dict[str, Any]:
     family, endpoints = select_family("distinct-key-hotfix")
-    family["pairs"] = pairs
-    family["samples_per_process"] = samples
+    pairs = family["pairs"]
+    samples = family["samples_per_process"]
     endpoint_ids = [endpoint["id"] for endpoint in endpoints]
     workers: list[dict[str, Any]] = []
     warmups: list[dict[str, Any]] = []
@@ -119,8 +119,8 @@ def test_manifest_expands_stable_historical_grid_and_bounded_families() -> None:
     focused, focused_endpoints = select_family("distinct-key-hotfix", manifest)
     guard, guard_endpoints = select_family("release-guard", manifest)
     exploratory, exploratory_endpoints = select_family("full-exploratory", manifest)
-    assert (focused["pairs"], len(focused_endpoints), focused["gating"]) == (16, 4, True)
-    assert (guard["pairs"], len(guard_endpoints), guard["gating"]) == (22, 22, True)
+    assert (focused["pairs"], len(focused_endpoints), focused["gating"]) == (20, 4, True)
+    assert (guard["pairs"], len(guard_endpoints), guard["gating"]) == (36, 22, True)
     assert (exploratory["pairs"], len(exploratory_endpoints), exploratory["gating"]) == (
         4,
         100,
@@ -257,6 +257,14 @@ def test_timing_retains_calibration_warmup_and_every_raw_sample() -> None:
             "changed the declared endpoint family",
         ),
         (
+            lambda raw: raw["family"].__setitem__("pairs", raw["family"]["pairs"] + 2),
+            "changed declared family field: pairs",
+        ),
+        (
+            lambda raw: raw["family"].__setitem__("target_milliseconds", 50.0),
+            "changed declared family field: target_milliseconds",
+        ),
+        (
             lambda raw: raw["workers"][0].__setitem__(
                 "cell_order", list(reversed(raw["workers"][0]["cell_order"]))
             ),
@@ -296,7 +304,7 @@ def _synthetic_files(
     endpoints: list[dict[str, str]],
     effects: dict[str, tuple[float, float, float]],
     *,
-    pairs: int = 12,
+    pairs: int = 40,
     samples: int = 3,
     gating: bool = True,
 ) -> tuple[Path, Path, str]:
@@ -485,13 +493,15 @@ def test_simultaneous_family_interval_blocks_a_nominal_only_improvement(
         )
         for index, endpoint in enumerate(endpoints)
     }
-    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects)
+    raw_path, result_path, manifest_path = _synthetic_files(
+        tmp_path, endpoints, effects, pairs=12, gating=False
+    )
     result = _run_r(raw_path, result_path, manifest_path)
     row = result["endpoints"][0]
     assert row["p_improvement"] < 0.05
     assert row["simultaneous_ci_upper_pct"] >= -5.0
     assert row["status"] == "inconclusive"
-    assert result["gate_decision"] == "FAIL"
+    assert result["gate_decision"] == "EXPLORATORY"
 
 
 def test_one_simultaneous_family_spans_mixed_confirmatory_roles(tmp_path: Path) -> None:
@@ -504,12 +514,59 @@ def test_one_simultaneous_family_spans_mixed_confirmatory_roles(tmp_path: Path) 
         "candidate": (boundary - 0.012, 0.0, 0.02),
         "control": (0.0, 0.0, 0.005),
     }
-    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects)
+    raw_path, result_path, manifest_path = _synthetic_files(
+        tmp_path, endpoints, effects, pairs=12, gating=False
+    )
     result = _run_r(raw_path, result_path, manifest_path)
     row = {item["id"]: item for item in result["endpoints"]}["candidate"]
     assert row["p_improvement"] < 0.05
     assert row["simultaneous_ci_upper_pct"] >= -5.0
     assert row["status"] == "inconclusive"
+
+
+def test_r_rejects_a_familywise_underpowered_design(tmp_path: Path) -> None:
+    endpoints = [
+        {"id": f"endpoint-{index}", "label": f"endpoint {index}", "role": "non_inferiority"}
+        for index in range(22)
+    ]
+    effects = {endpoint["id"]: (0.0, 0.0, 0.001) for endpoint in endpoints}
+    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects, pairs=22)
+    process = subprocess.run(
+        [
+            "Rscript",
+            str(BENCHES / "analyze_ab.R"),
+            str(raw_path),
+            str(result_path),
+            "synthetic-sha",
+            manifest_path,
+            "synthetic-analyzer-sha",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert process.returncode != 0
+    assert "underpowered for the complete family" in process.stderr
+    assert "requires at least 36 balanced pairs" in process.stderr
+
+
+def test_r_reports_familywise_power_not_single_endpoint_power(tmp_path: Path) -> None:
+    endpoints = [
+        {"id": f"endpoint-{index}", "label": f"endpoint {index}", "role": "non_inferiority"}
+        for index in range(22)
+    ]
+    effects = {endpoint["id"]: (0.0, 0.0, 0.001) for endpoint in endpoints}
+    raw_path, result_path, manifest_path = _synthetic_files(tmp_path, endpoints, effects, pairs=36)
+    result = _run_r(raw_path, result_path, manifest_path)
+    planning = result["planning"]
+    assert planning["confirmatory_family_size"] == 22
+    assert planning["family_target_power"] == 0.8
+    assert planning["per_endpoint_power_target"] == pytest.approx(1 - 0.2 / 22)
+    assert planning["bonferroni_noninferiority_endpoint_power"] > 0.99
+    assert planning["bonferroni_family_power_lower_bound"] > 0.8
+    assert planning["minimum_even_pairs"] == 36
+    assert planning["power_qualified"] is True
 
 
 def test_r_absolute_report_owns_summaries_and_floor_decisions(tmp_path: Path) -> None:

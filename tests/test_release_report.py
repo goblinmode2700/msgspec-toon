@@ -20,7 +20,7 @@ def report_module() -> ModuleType:
     return module
 
 
-def test_current_compatibility_delta_records_native_scalar_support(
+def test_current_compatibility_delta_records_support_changes(
     report_module: ModuleType,
 ) -> None:
     locked = json.loads((ROOT / "conformance" / "efficiency.lock.json").read_text())
@@ -40,10 +40,12 @@ def test_current_compatibility_delta_records_native_scalar_support(
             "before": "unsupported",
             "after": "supported",
         },
+        {"feature": "bytes encode projection", "before": None, "after": "supported"},
         {"feature": "date", "before": None, "after": "supported"},
         {"feature": "datetime", "before": "unsupported", "after": "supported"},
         {"feature": "enum members", "before": "unsupported", "after": None},
         {"feature": "fractional and exponent floats", "before": None, "after": "supported"},
+        {"feature": "frozenset encode projection", "before": None, "after": "supported"},
         {"feature": "integer Enum", "before": None, "after": "supported"},
         {
             "feature": "integer, string, boolean, and null scalars",
@@ -115,6 +117,7 @@ def test_current_compatibility_delta_records_native_scalar_support(
             "before": "supported",
             "after": None,
         },
+        {"feature": "set encode projection", "before": None, "after": "supported"},
         {
             "feature": "strict=False scalar coercion",
             "before": "unsupported",

@@ -135,7 +135,43 @@ decoder = toon.Decoder(float_hook=Decimal)
 assert value == decoder.decode(b"1.25") == Decimal("1.25")
 ```
 
-Typed encode and decode support these msgspec-native values:
+## Native encode types
+
+The encoder handles these Python values without `msgspec.to_builtins` or an `enc_hook`:
+
+- `None`, `bool`, `int`, `float`, and `str`
+- `list`, `tuple`, `set`, and `frozenset`
+- dictionaries with string keys
+- exact `bytes` objects
+- `msgspec.Struct` instances
+- the msgspec-native scalar values in the next section
+
+The three projected types use the same value model as msgspec:
+
+| Python value | Encoded TOON value | Decode boundary |
+|---|---|---|
+| `set` | array | Untyped decode returns `list`. |
+| `frozenset` | array | Untyped decode returns `list`. |
+| exact `bytes` | padded base64 string | Untyped decode returns `str`. |
+
+Set order is the current Python iteration order. This behavior matches the default msgspec encoder.
+The order can change between processes because sets are unordered. When output order must be stable, use a list.
+
+Typed decode does not reconstruct `set`, `frozenset`, or `bytes`. Decode the projected value first.
+Then use `msgspec.convert` when the application needs the original type.
+
+The encoder refuses `bytearray`, `memoryview`, and subclasses of `bytes`. An `enc_hook` can convert each value to exact `bytes`:
+
+```python
+toon.encode(memoryview(b"ab"), enc_hook=lambda value: bytes(value))
+# b'YWI='
+```
+
+The generated support matrix lists all other supported and refused types.
+
+## Native scalar types
+
+The encoder and typed decoder support these msgspec-native values:
 
 - `datetime`, `date`, `time`, and `timedelta`
 - `UUID`
@@ -303,6 +339,8 @@ make public-report                      # evidence, R charts, and BENCHMARKS.md
 
 The benchmark commands use the host `Rscript` and `jsonlite`. `make public-report` also uses
 `ggplot2` and `scales`. The commands do not install R or add R packages to the Python environment.
+Python records raw timings only. R owns all estimates, simultaneous Bonferroni intervals, and
+gate decisions. Confirmatory process counts target power for the complete endpoint family.
 The [release guide](https://github.com/goblinmode2700/msgspec-toon/blob/main/docs/releasing.md)
 documents installed-artifact verification and Trusted Publishing.
 

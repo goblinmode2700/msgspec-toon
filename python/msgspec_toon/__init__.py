@@ -59,7 +59,7 @@ _NOT_NATIVE: Final = object()
 
 
 def _is_native_scalar(value: Any) -> bool:
-    return isinstance(value, _NATIVE_SCALAR_TYPES)
+    return type(value) is bytes or isinstance(value, _NATIVE_SCALAR_TYPES)
 
 
 class _EncodeHook:
