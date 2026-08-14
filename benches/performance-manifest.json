@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "alpha": 0.05,
+    "target_power": 0.8,
+    "planning_sd_log": 0.03,
+    "samples_per_process": 3,
+    "target_milliseconds": 25.0
+  },
+  "record_ladder": [4, 8, 16, 64, 512, 4096],
+  "endpoint_templates": [
+    {"slug": "decoder-construction", "module": "bench_typed", "section": "plan_us", "metric": "decoder_construction_cached", "sampler_metric": "decode.decoder_construction", "label": "decoder construction"},
+    {"slug": "typed-decode", "module": "bench_typed", "section": "decode_us", "metric": "typed_direct", "sampler_metric": "decode.typed_direct", "label": "typed decode"},
+    {"slug": "functional-decode", "module": "bench_typed", "section": "decode_us", "metric": "functional", "sampler_metric": "decode.functional", "label": "functional decode"},
+    {"slug": "typed-encode", "module": "bench_typed", "section": "encode_us", "metric": "typed_direct_whole", "sampler_metric": "encode.typed_direct", "label": "typed encode"},
+    {"slug": "functional-encode", "module": "bench_typed", "section": "encode_us", "metric": "functional", "sampler_metric": "encode.functional", "label": "functional encode"},
+    {"slug": "keyed-decode", "module": "bench_typed", "section": "decode_us", "metric": "keyed_document", "sampler_metric": "decode.keyed_document", "label": "keyed decode"},
+    {"slug": "entry-decode", "module": "bench_typed", "section": "decode_us", "metric": "entry_document", "sampler_metric": "decode.entry_document", "label": "entry decode"},
+    {"slug": "entry-encode", "module": "bench_typed", "section": "encode_us", "metric": "entry_document", "sampler_metric": "encode.entry_document", "label": "entry encode"},
+    {"slug": "wide-dict-encode", "module": "bench_typed", "section": "encode_us", "metric": "wide_dict_document", "sampler_metric": "encode.wide_dict_document", "label": "wide dict encode"},
+    {"slug": "untyped-decode", "module": "bench_codecs", "section": "decode_us", "metric": "msgspec_toon", "sampler_metric": "decode.msgspec_toon", "label": "untyped decode"},
+    {"slug": "untyped-encode", "module": "bench_codecs", "section": "encode_us", "metric": "msgspec_toon", "sampler_metric": "encode.msgspec_toon", "label": "untyped encode"},
+    {"slug": "control-ordinary-decode", "module": "bench_control_patterns", "section": "decode_us", "metric": "ordinary", "sampler_metric": "control.decode.ordinary", "label": "control ordinary decode"},
+    {"slug": "control-tagged-first-decode", "module": "bench_control_patterns", "section": "decode_us", "metric": "tagged_first", "sampler_metric": "control.decode.tagged_first", "label": "control tagged-first decode"},
+    {"slug": "control-tagged-last-decode", "module": "bench_control_patterns", "section": "decode_us", "metric": "tagged_last", "sampler_metric": "control.decode.tagged_last", "label": "control tagged-last decode"},
+    {"slug": "control-nested-tag-decode", "module": "bench_control_patterns", "section": "decode_us", "metric": "nested_concrete", "sampler_metric": "control.decode.nested_concrete", "label": "control nested-tag decode"},
+    {"slug": "control-untyped-decode", "module": "bench_control_patterns", "section": "decode_us", "metric": "untyped_nested", "sampler_metric": "control.decode.untyped_nested", "label": "control untyped decode"}
+  ],
+  "fixed_endpoints": [
+    {"id": "untyped-nested-record-decode@46", "module": "bench_untyped_shapes", "args": [46], "section": "decode_us", "metric": "nested_records", "sampler_metric": "decode.nested_records", "label": "untyped nested-record decode"},
+    {"id": "untyped-irregular-decode@4096", "module": "bench_untyped_shapes", "args": [4096], "section": "decode_us", "metric": "irregular", "sampler_metric": "decode.irregular", "label": "untyped irregular decode"},
+    {"id": "untyped-distinct-32-key-decode@4096", "module": "bench_key_cardinality", "args": [4096], "section": "decode_us", "metric": "distinct_keys_32", "sampler_metric": "decode.distinct_keys_32", "label": "untyped distinct-32-key decode"},
+    {"id": "untyped-distinct-512-key-decode@4096", "module": "bench_key_cardinality", "args": [4096], "section": "decode_us", "metric": "distinct_keys_512", "sampler_metric": "decode.distinct_keys_512", "label": "untyped distinct-512-key decode"}
+  ],
+  "families": {
+    "distinct-key-hotfix": {
+      "description": "Confirm the distinct-key repair while protecting the two ordinary-object controls.",
+      "pairs": 12,
+      "regression_margin_pct": 3.0,
+      "improvement_margin_pct": 5.0,
+      "gating": true,
+      "members": {
+        "untyped-distinct-32-key-decode@4096": "improvement",
+        "untyped-distinct-512-key-decode@4096": "improvement",
+        "untyped-nested-record-decode@46": "non_inferiority",
+        "untyped-irregular-decode@4096": "non_inferiority"
+      }
+    },
+    "release-guard": {
+      "description": "Risk-ranked release regression panel; the complete grid remains exploratory.",
+      "pairs": 20,
+      "regression_margin_pct": 3.0,
+      "improvement_margin_pct": 1.0,
+      "gating": true,
+      "members": {
+        "typed-decode@64": "non_inferiority",
+        "typed-decode@4096": "non_inferiority",
+        "typed-encode@64": "non_inferiority",
+        "typed-encode@4096": "non_inferiority",
+        "functional-decode@16": "non_inferiority",
+        "functional-decode@4096": "non_inferiority",
+        "functional-encode@16": "non_inferiority",
+        "functional-encode@4096": "non_inferiority",
+        "untyped-decode@64": "non_inferiority",
+        "untyped-decode@4096": "non_inferiority",
+        "untyped-encode@64": "non_inferiority",
+        "untyped-encode@4096": "non_inferiority",
+        "keyed-decode@512": "non_inferiority",
+        "entry-decode@512": "non_inferiority",
+        "entry-encode@512": "non_inferiority",
+        "wide-dict-encode@512": "non_inferiority",
+        "control-nested-tag-decode@512": "non_inferiority",
+        "control-untyped-decode@512": "non_inferiority",
+        "untyped-nested-record-decode@46": "non_inferiority",
+        "untyped-irregular-decode@4096": "non_inferiority",
+        "untyped-distinct-32-key-decode@4096": "non_inferiority",
+        "untyped-distinct-512-key-decode@4096": "non_inferiority"
+      }
+    },
+    "full-exploratory": {
+      "description": "All 100 historical guard cells; never a release gate or optimization claim.",
+      "pairs": 4,
+      "regression_margin_pct": 3.0,
+      "improvement_margin_pct": 1.0,
+      "gating": false,
+      "members": "*"
+    }
+  },
+  "absolute_report": {
+    "workers": 10,
+    "samples_per_process": 3,
+    "target_milliseconds": 5.0,
+    "alpha": 0.05,
+    "panels": [
+      {
+        "name": "typed",
+        "module": "bench_typed",
+        "metadata_function": "metadata_run",
+        "axes": {"records": [16, 64, 512, 4096]},
+        "args": ["$records"],
+        "row_id": "typed@$records",
+        "metrics": [
+          {"slug": "decoder-construction", "sampler_metric": "decode.decoder_construction", "result_path": ["plan_us", "decoder_construction_cached"]},
+          {"slug": "typed-decode", "sampler_metric": "decode.typed_direct", "result_path": ["decode_us", "typed_direct"]},
+          {"slug": "functional-decode", "sampler_metric": "decode.functional", "result_path": ["decode_us", "functional"]},
+          {"slug": "untyped-decode", "sampler_metric": "decode.untyped_tree", "result_path": ["decode_us", "untyped_tree"]},
+          {"slug": "keyed-decode", "sampler_metric": "decode.keyed_document", "result_path": ["decode_us", "keyed_document"]},
+          {"slug": "entry-decode", "sampler_metric": "decode.entry_document", "result_path": ["decode_us", "entry_document"]},
+          {"slug": "convert-only", "sampler_metric": "decode.convert_only", "result_path": ["decode_us", "convert_only"]},
+          {"slug": "wrapper-decode", "sampler_metric": "decode.wrapper", "result_path": ["decode_us", "wrapper_tree_plus_convert"]},
+          {"slug": "incumbent-decode", "sampler_metric": "decode.incumbent", "result_path": ["decode_us", "incumbent_pipeline_python_toon_plus_convert"]},
+          {"slug": "json-decode", "sampler_metric": "decode.json_native", "result_path": ["decode_us", "msgspec_json_native"]},
+          {"slug": "typed-encode", "sampler_metric": "encode.typed_direct", "result_path": ["encode_us", "typed_direct_whole"]},
+          {"slug": "functional-encode", "sampler_metric": "encode.functional", "result_path": ["encode_us", "functional"]},
+          {"slug": "entry-encode", "sampler_metric": "encode.entry_document", "result_path": ["encode_us", "entry_document"]},
+          {"slug": "wide-dict-encode", "sampler_metric": "encode.wide_dict_document", "result_path": ["encode_us", "wide_dict_document"]},
+          {"slug": "to-builtins", "sampler_metric": "encode.to_builtins", "result_path": ["encode_us", "to_builtins_alone"]},
+          {"slug": "incumbent-encode", "sampler_metric": "encode.incumbent", "result_path": ["encode_us", "incumbent_pipeline_to_builtins_plus_python_toon"]},
+          {"slug": "json-encode", "sampler_metric": "encode.json_native", "result_path": ["encode_us", "msgspec_json_native"]}
+        ]
+      },
+      {
+        "name": "codecs",
+        "module": "bench_codecs",
+        "metadata_function": "metadata_run",
+        "axes": {
+          "shape": ["uniform-records", "string-heavy", "numeric-heavy", "irregular"],
+          "records": [16, 64, 512, 4096]
+        },
+        "args": ["$records", "$shape"],
+        "row_id": "codecs:$shape@$records",
+        "metrics": [
+          {"slug": "ours-encode", "sampler_metric": "encode.msgspec_toon", "result_path": ["encode_us", "msgspec_toon"]},
+          {"slug": "toons-encode", "sampler_metric": "encode.toons_rust", "result_path": ["encode_us", "toons_rust"]},
+          {"slug": "python-toon-encode", "sampler_metric": "encode.python_toon", "result_path": ["encode_us", "python_toon"]},
+          {"slug": "json-encode", "sampler_metric": "encode.json", "result_path": ["encode_us", "msgspec_json_context"]},
+          {"slug": "ours-decode", "sampler_metric": "decode.msgspec_toon", "result_path": ["decode_us", "msgspec_toon"]},
+          {"slug": "toons-decode", "sampler_metric": "decode.toons_rust", "result_path": ["decode_us", "toons_rust"]},
+          {"slug": "python-toon-decode", "sampler_metric": "decode.python_toon", "result_path": ["decode_us", "python_toon"]},
+          {"slug": "json-decode", "sampler_metric": "decode.json", "result_path": ["decode_us", "msgspec_json_context"]}
+        ]
+      },
+      {
+        "name": "integration",
+        "module": "bench_integration",
+        "metadata_function": "metadata_run",
+        "axes": {
+          "shape": ["uniform-records", "string-heavy", "numeric-heavy", "irregular"],
+          "records": [16, 64, 512, 4096]
+        },
+        "args": ["$records", "$shape"],
+        "row_id": "integration:$shape@$records",
+        "metrics": [
+          {"slug": "ours", "sampler_metric": "integration.msgspec_toon", "result_path": ["roundtrip_us", "msgspec_toon_in_process"]},
+          {"slug": "python-toon", "sampler_metric": "integration.python_toon", "result_path": ["roundtrip_us", "python_toon_in_process"]},
+          {"slug": "python-toon-cli", "sampler_metric": "integration.python_toon_cli", "result_path": ["roundtrip_us", "python_toon_two_process_cli"], "fixed_loops": 1}
+        ]
+      },
+      {
+        "name": "key-cardinality",
+        "module": "bench_key_cardinality",
+        "metadata_function": "metadata_run",
+        "axes": {"records": [4096]},
+        "args": ["$records"],
+        "row_id": "key-cardinality@$records",
+        "metrics": [
+          {"slug": "distinct-4", "sampler_metric": "decode.distinct_keys_4", "result_path": ["decode_us", "distinct_keys_4"]},
+          {"slug": "distinct-8", "sampler_metric": "decode.distinct_keys_8", "result_path": ["decode_us", "distinct_keys_8"]},
+          {"slug": "distinct-16", "sampler_metric": "decode.distinct_keys_16", "result_path": ["decode_us", "distinct_keys_16"]},
+          {"slug": "distinct-32", "sampler_metric": "decode.distinct_keys_32", "result_path": ["decode_us", "distinct_keys_32"]},
+          {"slug": "distinct-64", "sampler_metric": "decode.distinct_keys_64", "result_path": ["decode_us", "distinct_keys_64"]},
+          {"slug": "distinct-128", "sampler_metric": "decode.distinct_keys_128", "result_path": ["decode_us", "distinct_keys_128"]},
+          {"slug": "distinct-256", "sampler_metric": "decode.distinct_keys_256", "result_path": ["decode_us", "distinct_keys_256"]},
+          {"slug": "distinct-512", "sampler_metric": "decode.distinct_keys_512", "result_path": ["decode_us", "distinct_keys_512"]},
+          {"slug": "distinct-1024", "sampler_metric": "decode.distinct_keys_1024", "result_path": ["decode_us", "distinct_keys_1024"]}
+        ]
+      }
+    ],
+    "comparison_templates": [
+      {"family": "G3_typed_decode_beats_wrapper", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "wrapper-decode", "margin_pct": 0.0},
+      {"family": "G4_whole_encode_beats_to_builtins_alone", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "to-builtins", "margin_pct": 0.0},
+      {"family": "typed_beats_incumbent_pipeline_decode", "panel": "typed", "candidate_slug": "typed-decode", "reference_slug": "incumbent-decode", "margin_pct": 0.0},
+      {"family": "typed_beats_incumbent_pipeline_encode", "panel": "typed", "candidate_slug": "typed-encode", "reference_slug": "incumbent-encode", "margin_pct": 0.0},
+      {"family": "G5_encode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-encode", "reference_slug": "toons-encode", "margin_pct": 0.0},
+      {"family": "G5_decode_not_slower_than_toons", "panel": "codecs", "candidate_slug": "ours-decode", "reference_slug": "toons-decode", "margin_pct": 0.0}
+    ]
+  }
+}

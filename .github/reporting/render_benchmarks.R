@@ -53,20 +53,47 @@ save_plot <- function(plot, name, width, height) {
   )
 }
 
-mean_ci <- function(values) {
-  values <- unlist(values, use.names = FALSE)
-  n <- length(values)
-  estimate <- mean(values)
-  half_width <- qt(0.975, df = n - 1) * sd(values) / sqrt(n)
-  c(mean = estimate, lower = max(0, estimate - half_width), upper = estimate + half_width)
+analysis <- report$performance_evidence$analysis
+if (is.null(analysis) || !identical(analysis$engine, "R stats")) {
+  stop("The report lacks validated R-owned performance analysis.")
 }
 
-pareto_flags <- function(tokens, time_us) {
+endpoint_interval <- function(row_id, metric_slug) {
+  matches <- Filter(function(summary) {
+    identical(summary$row_id, row_id) && identical(summary$metric_slug, metric_slug)
+  }, analysis$endpoint_summaries)
+  if (length(matches) != 1) {
+    stop(paste("Missing R endpoint summary:", row_id, metric_slug))
+  }
+  summary <- matches[[1]]
+  c(
+    mean = summary$mean_us,
+    lower = summary$simultaneous_ci_lower_us,
+    upper = summary$simultaneous_ci_upper_us
+  )
+}
+
+total_interval <- function(row_id, codec_id) {
+  matches <- Filter(function(summary) {
+    identical(summary$row_id, row_id) && identical(summary$codec_id, codec_id)
+  }, analysis$derived_summaries)
+  if (length(matches) != 1) {
+    stop(paste("Missing R derived total summary:", row_id, codec_id))
+  }
+  summary <- matches[[1]]
+  c(
+    mean = summary$mean_us,
+    lower = summary$simultaneous_ci_lower_us,
+    upper = summary$simultaneous_ci_upper_us
+  )
+}
+
+uncertainty_aware_pareto <- function(tokens, lower_us, upper_us) {
   vapply(seq_along(tokens), function(index) {
     !any(
       tokens <= tokens[[index]] &
-        time_us <= time_us[[index]] &
-        (tokens < tokens[[index]] | time_us < time_us[[index]])
+        upper_us < lower_us[[index]] &
+        (tokens < tokens[[index]] | upper_us < lower_us[[index]])
     )
   }, logical(1))
 }
@@ -77,19 +104,29 @@ record_levels <- c("16", "64", "512", "4096")
 codec_ids <- c("msgspec_toon", "msgspec_json_context", "toons_rust", "python_toon")
 codec_labels <- c("msgspec-toon", "msgspec JSON", "toons (Rust)", "python-toon")
 phase_ids <- c("encode", "decode", "total")
+codec_encode_slugs <- c(
+  msgspec_toon = "ours-encode",
+  msgspec_json_context = "json-encode",
+  toons_rust = "toons-encode",
+  python_toon = "python-toon-encode"
+)
+codec_decode_slugs <- c(
+  msgspec_toon = "ours-decode",
+  msgspec_json_context = "json-decode",
+  toons_rust = "toons-decode",
+  python_toon = "python-toon-decode"
+)
 
 codec_times <- do.call(rbind, lapply(report$benchmarks_codecs_same_run, function(row) {
-  if (is.null(row$worker_observations)) {
-    stop("The report has no worker observations. Regenerate the report.")
-  }
   do.call(rbind, Map(function(codec_id, codec_label) {
     do.call(rbind, lapply(phase_ids, function(phase) {
-      values <- lapply(row$worker_observations, function(worker) {
-        if (phase == "encode") return(worker$encode_us[[codec_id]])
-        if (phase == "decode") return(worker$decode_us[[codec_id]])
-        worker$encode_us[[codec_id]] + worker$decode_us[[codec_id]]
-      })
-      interval <- mean_ci(values)
+      interval <- if (phase == "encode") {
+        endpoint_interval(row$performance_row_id, codec_encode_slugs[[codec_id]])
+      } else if (phase == "decode") {
+        endpoint_interval(row$performance_row_id, codec_decode_slugs[[codec_id]])
+      } else {
+        total_interval(row$performance_row_id, codec_id)
+      }
       data.frame(
         shape = row$shape,
         records = as.character(row$records),
@@ -127,14 +164,14 @@ p_codec_times <- ggplot(codec_times, aes(mean_us, codec, fill = phase)) +
   scale_x_continuous(labels = label_number(big.mark = ","), expand = expansion(mult = c(0, 0.05))) +
   labs(
     title = "TOON codec time by shape and size",
-    subtitle = "Bars show direct elapsed time. Error bars show 95% confidence intervals.",
+    subtitle = "Bars show R estimates. Error bars are simultaneous family intervals.",
     x = expression(paste("Time (", mu, "s)")),
     y = NULL,
     fill = NULL,
     caption = paste0(
       "Each value is the arithmetic mean across ",
       report$evidence_methodology$workers,
-      " worker processes. Each record-count column has its own linear time scale."
+      " worker processes. Intervals use the R-owned multiplicity contract."
     )
   ) +
   theme_report()
@@ -150,17 +187,19 @@ integration_labels <- c(
   "python-toon API",
   "python-toon CLI (2 processes)"
 )
+integration_slugs <- c(
+  msgspec_toon_in_process = "ours",
+  python_toon_in_process = "python-toon",
+  python_toon_two_process_cli = "python-toon-cli"
+)
 integration_times <- do.call(rbind, lapply(
   report$benchmarks_integration_same_run,
   function(row) {
-    if (is.null(row$worker_observations)) {
-      stop("The integration report has no worker observations. Regenerate the report.")
-    }
     do.call(rbind, Map(function(pipeline_id, pipeline_label) {
-      values <- lapply(row$worker_observations, function(worker) {
-        worker$roundtrip_us[[pipeline_id]]
-      })
-      interval <- mean_ci(values)
+      interval <- endpoint_interval(
+        row$performance_row_id,
+        integration_slugs[[pipeline_id]]
+      )
       data.frame(
         shape = row$shape,
         records = as.character(row$records),
@@ -203,7 +242,7 @@ p_integration_times <- ggplot(integration_times, aes(mean_us, pipeline)) +
     caption = paste0(
       "Each value is the arithmetic mean across ",
       report$evidence_methodology$workers,
-      " worker processes. The logarithmic bars start at 1 microsecond."
+      " worker processes. Intervals use the R-owned multiplicity contract."
     )
   ) +
   theme_report() +
@@ -326,14 +365,16 @@ for (shape_value in pareto_shapes) {
       pareto_metrics$shape == shape_value &
         pareto_metrics$records == record_value
     )
-    pareto_metrics$new_pareto[cell] <- pareto_flags(
+    pareto_metrics$new_pareto[cell] <- uncertainty_aware_pareto(
       pareto_metrics$tokens[cell],
-      pareto_metrics$mean_us[cell]
+      pareto_metrics$lower_us[cell],
+      pareto_metrics$upper_us[cell]
     )
     old_cell <- cell[pareto_metrics$codec[cell] != "msgspec-toon"]
-    pareto_metrics$old_pareto[old_cell] <- pareto_flags(
+    pareto_metrics$old_pareto[old_cell] <- uncertainty_aware_pareto(
       pareto_metrics$tokens[old_cell],
-      pareto_metrics$mean_us[old_cell]
+      pareto_metrics$lower_us[old_cell],
+      pareto_metrics$upper_us[old_cell]
     )
   }
 }
@@ -393,7 +434,7 @@ if (nrow(displacement_arrows)) {
 headline_new <- new_choice[new_choice$records == max(new_choice$records), ]
 headline_new$note <- ifelse(
   headline_new$shape == "numeric-heavy",
-  "same token count\nlower measured time",
+  "same token count\ninterval-separated time",
   "new low-token\nPareto choice"
 )
 headline_new$note_x <- headline_new$tokens * 0.72
@@ -405,7 +446,7 @@ better_note <- do.call(rbind, lapply(
     shape_facet = group$shape_facet[[1]],
     x = min(group$tokens),
     y = max(group$upper_us),
-    label = "better ↙"
+    label = "fewer tokens / less time"
   )
 ))
 
@@ -483,7 +524,7 @@ p_pareto <- ggplot(
       "Old dominated choice" = 4,
       "New dominated choice" = 1
     ),
-    name = "Empirical Pareto status"
+    name = "Conservative Pareto status"
   ) +
   scale_alpha_manual(
     values = c(
@@ -508,18 +549,18 @@ p_pareto <- ggplot(
     )
   ) +
   labs(
-    title = "msgspec-toon changes the empirical speed–token Pareto set",
+    title = "Uncertainty-aware speed-token Pareto set",
     subtitle = paste0(
-      "Numeric-heavy: it displaces the previous low-token Pareto choice.  ",
-      "Uniform records: it adds a new low-token Pareto choice."
+      "A timing dominance edge requires non-overlapping simultaneous intervals; ",
+      "overlap remains unresolved."
     ),
     x = "Tokens (o200k_base; fewer is better, log scale)",
     y = expression(paste("Encode + decode time (", mu, "s; lower is better, log scale)")),
     caption = paste0(
-      "Pareto status is evaluated separately for each payload shape and record count. ",
+      "Pareto status is conservative and evaluated by payload shape and record count. ",
       "Lines connect the same implementation across record counts and show workload scaling only;\n",
       "they are not Pareto frontiers and do not imply unmeasured operating points. ",
-      "Whiskers are two-sided 95% Student t intervals across worker-level total times.\n",
+      "Whiskers are simultaneous R-owned intervals across worker-level total times.\n",
       "Token counts are deterministic for each generated payload."
     )
   ) +
@@ -579,9 +620,9 @@ md <- c(
   "![Empirical speed-token Pareto set](docs/assets/benchmarks/pareto-set-change.png)",
   "",
   paste0(
-    "Pareto status is calculated independently for each payload shape and record count. ",
-    "Lines connect the same implementation across record counts. They show workload scaling, ",
-    "not an unmeasured continuous Pareto curve."
+    "Pareto status is conservative and calculated independently for each payload shape and ",
+    "record count. A speed dominance edge requires non-overlapping simultaneous intervals. ",
+    "Interval overlap is unresolved, not neutral."
   ),
   "",
   "## Codec time",
@@ -626,9 +667,11 @@ md <- c(
     report$evidence_methodology$samples_per_worker,
     " samples after warm-up."
   ),
-  "- The error bars are two-sided 95% Student t confidence intervals across worker means.",
+  paste0("- The error bars use ", report$evidence_methodology$interval, "."),
+  paste0("- Confirmatory families use ", report$evidence_methodology$multiplicity, "."),
   "- The benchmark never uses the minimum time.",
-  "- Codec order is fixed inside each worker. The intervals do not measure order bias.",
+  "- Report rows are randomized within each complete process panel.",
+  "- Python records raw timings; R owns aggregation, intervals, and decisions.",
   "- Token counts are deterministic under the named tokenizer.",
   paste0(
     "- The environment uses Python ", report$environment$python,
@@ -636,7 +679,10 @@ md <- c(
   ),
   "- The build is a release `abi3-py313` build.",
   "- The freshness check rejects stale and instrumented extensions.",
-  "- Raw evidence is in [`conformance/report.json`](conformance/report.json).",
+  paste0(
+    "- R summaries are in [`conformance/report.json`](conformance/report.json). ",
+    "Raw timings are in `benches/report-performance-raw.json`."
+  ),
   "- Reproduce with `uv sync --group bench --locked && make g2 && make public-report`.",
   "",
   "Results depend on the machine, payload, and package versions. Compare values from the same generated run."

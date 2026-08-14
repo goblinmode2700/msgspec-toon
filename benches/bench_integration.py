@@ -33,6 +33,13 @@ SHAPES = COMPARATIVE_SHAPES
 TOON_CLI = Path(sys.prefix) / "bin" / "toon"
 
 
+def metadata_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
+    """Deterministic row metadata collected outside every timed observation."""
+
+    json_bytes = msgspec.json.encode(comparative_tree(shape, records))
+    return {"shape": shape, "records": records, "input_json_bytes": len(json_bytes)}
+
+
 def _msgspec_toon_roundtrip(json_bytes: bytes) -> bytes:
     value = msgspec.json.decode(json_bytes)
     toon_bytes = msgspec_toon.encode(value)

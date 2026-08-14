@@ -171,27 +171,143 @@ def test_release_mode_rejects_missing_component_evidence(
 def test_release_guard_requires_nested_and_irregular_untyped_shapes(
     report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    raw_path = tmp_path / "ab-guard-raw.json"
+    raw_path.write_text(
+        json.dumps(
+            {
+                "family": {"name": "release-guard"},
+                "endpoints": [{"id": "untyped-decode@4096"}],
+            }
+        )
+    )
     path = tmp_path / "ab-guard.json"
-    path.write_text(json.dumps({"results": [{"metric": "untyped decode@4096"}]}))
+    path.write_text(
+        json.dumps(
+            {
+                "analysis_schema_version": 1,
+                "engine": "R stats",
+                "raw_sha256": report_module.file_sha256(raw_path),
+                "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
+                "family": "release-guard",
+                "adjustment": "holm",
+                "gate_decision": "PASS",
+                "endpoints": [{"id": "untyped-decode@4096"}],
+            }
+        )
+    )
+    monkeypatch.setattr(report_module, "validate_ab_raw", lambda raw: None)
+    monkeypatch.setattr(report_module, "_validate_release_guard_identity", lambda raw: None)
     monkeypatch.setattr(report_module, "REQUIRE_RELEASE_EVIDENCE", True)
     with pytest.raises(SystemExit, match="lacks required untyped shapes"):
-        report_module.release_guard(path)
+        report_module.release_guard(path, raw_path)
 
 
 def test_release_guard_preserves_each_required_untyped_shape(
-    report_module: ModuleType, tmp_path: Path
+    report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    rows = [
-        {"metric": metric, "change_pct": -1.0}
-        for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
-    ]
+    raw_path = tmp_path / "ab-guard-raw.json"
+    raw_path.write_text(
+        json.dumps(
+            {
+                "family": {"name": "release-guard"},
+                "endpoints": [
+                    {"id": metric}
+                    for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+                ],
+            }
+        )
+    )
     path = tmp_path / "ab-guard.json"
-    path.write_text(json.dumps({"results": rows}))
-    evidence = report_module.release_guard(path)
-    assert evidence["results"] == rows
+    result = {
+        "analysis_schema_version": 1,
+        "engine": "R stats",
+        "raw_sha256": report_module.file_sha256(raw_path),
+        "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
+        "family": "release-guard",
+        "adjustment": "holm",
+        "gate_decision": "PASS",
+        "endpoints": [
+            {"id": metric} for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+        ],
+    }
+    path.write_text(json.dumps(result))
+    monkeypatch.setattr(report_module, "validate_ab_raw", lambda raw: None)
+    monkeypatch.setattr(report_module, "_validate_release_guard_identity", lambda raw: None)
+    evidence = report_module.release_guard(path, raw_path)
+    assert evidence["analysis"] == result
     assert evidence["required_untyped_shape_metrics"] == sorted(
         report_module.REQUIRED_UNTYPED_GUARD_METRICS
     )
+
+
+def test_release_guard_rejects_an_exploratory_r_decision(
+    report_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw_path = tmp_path / "ab-guard-raw.json"
+    raw_path.write_text(
+        json.dumps(
+            {
+                "family": {"name": "release-guard"},
+                "endpoints": [
+                    {"id": metric}
+                    for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+                ],
+            }
+        )
+    )
+    result_path = tmp_path / "ab-guard-r.json"
+    result_path.write_text(
+        json.dumps(
+            {
+                "analysis_schema_version": 1,
+                "engine": "R stats",
+                "raw_sha256": report_module.file_sha256(raw_path),
+                "analyzer_sha256": report_module.file_sha256(ROOT / "benches" / "analyze_ab.R"),
+                "family": "release-guard",
+                "adjustment": "holm",
+                "gate_decision": "EXPLORATORY",
+                "endpoints": [
+                    {"id": metric}
+                    for metric in sorted(report_module.REQUIRED_UNTYPED_GUARD_METRICS)
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr(report_module, "validate_ab_raw", lambda raw: None)
+    monkeypatch.setattr(report_module, "_validate_release_guard_identity", lambda raw: None)
+    with pytest.raises(SystemExit, match="declared R release decision"):
+        report_module.release_guard(result_path, raw_path)
+
+
+def test_release_guard_identity_binds_revision_candidate_and_guard_tag(
+    report_module: ModuleType,
+) -> None:
+    raw = {
+        "source_revision": report_module._source_revision(),
+        "builds": {"baseline": {"guard_tag": (ROOT / "benches" / "GUARD_TAG").read_text().strip()}},
+        "workers": [
+            {
+                "build": "current",
+                "extension": {"sha256": report_module._extension_sha256()},
+            }
+        ],
+    }
+    report_module._validate_release_guard_identity(raw)
+
+    raw["source_revision"] = "0" * 40
+    with pytest.raises(ValueError, match="source revision"):
+        report_module._validate_release_guard_identity(raw)
+
+
+def test_absolute_report_identity_rejects_another_candidate_extension(
+    report_module: ModuleType,
+) -> None:
+    raw = {
+        "source_revision": report_module._source_revision(),
+        "workers": [{"extension": {"sha256": "0" * 64}}],
+    }
+    with pytest.raises(ValueError, match="installed candidate extension"):
+        report_module._validate_current_benchmark_identity(raw, label="R-owned performance report")
 
 
 def test_verified_manifest_rejects_another_version(

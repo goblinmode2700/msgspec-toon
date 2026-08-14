@@ -27,6 +27,31 @@ def result_key(distinct_keys: int) -> str:
     return f"distinct_keys_{distinct_keys}"
 
 
+def metadata_run(records: int = 4096) -> dict[str, Any]:
+    """Deterministic wire sizes collected outside every timed observation."""
+
+    encoder = msgspec_toon.Encoder()
+    wire_bytes = {
+        result_key(count): len(encoder.encode(distinct_key_records_tree(records, count)))
+        for count in KEY_COUNTS
+    }
+    smallest = result_key(KEY_COUNTS[0])
+    baseline_bytes = wire_bytes[smallest]
+    return {
+        "records": records,
+        "distinct_key_counts": list(KEY_COUNTS),
+        "wire_bytes": wire_bytes,
+        "wire_relative_to_smallest": {
+            result_key(count): round(wire_bytes[result_key(count)] / baseline_bytes, 3)
+            for count in KEY_COUNTS
+        },
+        "cache_policy": (
+            "decoder-local content cache; average O(1) hash lookup; "
+            "unbounded only for one decode call"
+        ),
+    }
+
+
 def sample_run(records: int) -> dict[str, Any]:
     """Measure the cardinality curve in one benchmark worker."""
     only = selected_metric()

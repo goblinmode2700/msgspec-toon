@@ -29,6 +29,26 @@ LADDER = COMPARATIVE_LADDER
 SHAPES = COMPARATIVE_SHAPES
 
 
+def metadata_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
+    """Deterministic byte counts collected outside every timed observation."""
+
+    tree = comparative_tree(shape, records)
+    ours_bytes = msgspec_toon.encode(tree)
+    python_toon_text = python_toon.encode(tree)
+    toons_text = toons_rust.dumps(tree)
+    json_bytes = msgspec.json.encode(tree)
+    return {
+        "shape": shape,
+        "records": records,
+        "output_bytes": {
+            "msgspec_toon_tabular_4_1": len(ours_bytes),
+            "toons_rust_fallback_3_0": len(toons_text.encode()),
+            "python_toon_fallback": len(python_toon_text.encode()),
+            "json_compact": len(json_bytes),
+        },
+    }
+
+
 def sample_run(records: int, shape: str = "uniform-records") -> dict[str, Any]:
     """One worker's measurements; the parent decides the gates from the mean."""
     tree = comparative_tree(shape, records)

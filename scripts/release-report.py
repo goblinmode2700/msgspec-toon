@@ -21,15 +21,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "benches"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "conformance"))
 
-import _timing
 import bench_codecs
-import bench_integration
-import bench_key_cardinality
 import bench_tokens
 import build_freshness  # noqa: F401  (refuses stale or instrumented builds)
 import msgspec
-from _timing import methodology
-from bench_typed import run
+from _panel import file_sha256, validate_ab_raw, validate_r_result
+from _report_evidence import load_report_performance
 from msgspec_toon import _native
 from support_matrix import as_report as support_matrix_report
 
@@ -39,11 +36,41 @@ REQUIRE_RELEASE_EVIDENCE = os.environ.get("MSGSPEC_TOON_REQUIRE_RELEASE_EVIDENCE
 CHANGELOG_COMPATIBILITY_START = "<!-- release-compatibility:start -->"
 CHANGELOG_COMPATIBILITY_END = "<!-- release-compatibility:end -->"
 REQUIRED_UNTYPED_GUARD_METRICS = {
-    "untyped distinct-32-key decode@4096",
-    "untyped distinct-512-key decode@4096",
-    "untyped nested-record decode@46",
-    "untyped irregular decode@4096",
+    "untyped-distinct-32-key-decode@4096",
+    "untyped-distinct-512-key-decode@4096",
+    "untyped-nested-record-decode@46",
+    "untyped-irregular-decode@4096",
 }
+REPORT_PERFORMANCE_RAW = ROOT / "benches" / "report-performance-raw.json"
+REPORT_PERFORMANCE_RESULT = ROOT / "benches" / "report-performance.json"
+GUARD_TAG_FILE = ROOT / "benches" / "GUARD_TAG"
+
+
+def _extension_sha256() -> str:
+    return file_sha256(Path(_native.__file__).resolve())
+
+
+def _validate_current_benchmark_identity(raw: dict, *, label: str) -> None:
+    if raw.get("source_revision") != _source_revision():
+        raise ValueError(f"{label} does not match the source revision")
+    current_hashes = {
+        worker.get("extension", {}).get("sha256")
+        for worker in raw.get("workers", [])
+        if worker.get("build", "current") == "current"
+    }
+    if current_hashes != {_extension_sha256()}:
+        raise ValueError(f"{label} did not measure the installed candidate extension")
+
+
+def _validate_release_guard_identity(raw: dict) -> None:
+    _validate_current_benchmark_identity(raw, label="release guard")
+    expected_guard = GUARD_TAG_FILE.read_text(encoding="utf-8").strip()
+    measured_guard = raw.get("builds", {}).get("baseline", {}).get("guard_tag")
+    if measured_guard != expected_guard:
+        raise ValueError(
+            f"release guard measured {measured_guard or 'an unrecorded baseline'}, "
+            f"expected {expected_guard}"
+        )
 
 
 def allocation_proof() -> dict:
@@ -66,23 +93,68 @@ def allocation_proof() -> dict:
     return proof
 
 
-def release_guard(path: Path | None = None) -> dict:
-    """Load the same-session release A/B and verify its shape coverage."""
-    evidence_path = path or ROOT / "benches" / "ab-guard.json"
-    if not evidence_path.is_file():
+def release_guard(path: Path | None = None, raw_path: Path | None = None) -> dict:
+    """Load the paired raw guard and its R-owned decision."""
+
+    result_path = path or ROOT / "benches" / "ab-guard-r.json"
+    paired_raw_path = raw_path or ROOT / "benches" / "ab-guard-raw.json"
+    if not result_path.is_file() or not paired_raw_path.is_file():
         if REQUIRE_RELEASE_EVIDENCE:
-            raise SystemExit(f"missing release guard evidence: {evidence_path}")
+            raise SystemExit(f"missing release guard evidence: {paired_raw_path}, {result_path}")
         return {"status": "NOT RUN — execute `make guard && make ab`"}
-    evidence = json.loads(evidence_path.read_text())
-    measured = {row["metric"] for row in evidence.get("results", [])}
+
+    raw = json.loads(paired_raw_path.read_text(encoding="utf-8"))
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    try:
+        validate_ab_raw(raw)
+        validate_r_result(
+            result,
+            raw_sha256=file_sha256(paired_raw_path),
+            family="release-guard",
+            endpoint_ids={endpoint["id"] for endpoint in raw["endpoints"]},
+            analyzer_sha256=file_sha256(ROOT / "benches" / "analyze_ab.R"),
+        )
+        _validate_release_guard_identity(raw)
+    except (KeyError, TypeError, ValueError) as error:
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(f"invalid R-owned release guard evidence: {error}") from error
+        return {"status": f"SUPERSEDED OR INVALID — regenerate with make ab: {error}"}
+    if raw["family"]["name"] != "release-guard" or result["gate_decision"] not in {
+        "PASS",
+        "FAIL",
+    }:
+        raise SystemExit("release guard does not contain the declared R release decision")
+    measured = {endpoint["id"] for endpoint in raw["endpoints"]}
     missing = sorted(REQUIRED_UNTYPED_GUARD_METRICS - measured)
     if missing:
         message = f"release guard lacks required untyped shapes: {', '.join(missing)}"
         if REQUIRE_RELEASE_EVIDENCE:
             raise SystemExit(message)
-        evidence["coverage_warning"] = message
-    evidence["required_untyped_shape_metrics"] = sorted(REQUIRED_UNTYPED_GUARD_METRICS)
-    return evidence
+        result["coverage_warning"] = message
+    return {
+        "raw_sha256": file_sha256(paired_raw_path),
+        "analysis": result,
+        "required_untyped_shape_metrics": sorted(REQUIRED_UNTYPED_GUARD_METRICS),
+    }
+
+
+def performance_report(
+    raw_path: Path = REPORT_PERFORMANCE_RAW,
+    result_path: Path = REPORT_PERFORMANCE_RESULT,
+) -> dict | None:
+    if not raw_path.is_file() or not result_path.is_file():
+        if REQUIRE_RELEASE_EVIDENCE:
+            raise SystemExit(f"missing R-owned performance report: {raw_path}, {result_path}")
+        return None
+    try:
+        performance = load_report_performance(raw_path, result_path)
+    except (KeyError, TypeError, ValueError) as error:
+        raise SystemExit(f"invalid R-owned performance report: {error}") from error
+    try:
+        _validate_current_benchmark_identity(performance["raw"], label="R-owned performance report")
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    return performance
 
 
 def _efficiency_lock() -> dict:
@@ -276,17 +348,16 @@ def main() -> None:
     lock = json.loads(
         (Path(__file__).resolve().parent.parent / "conformance" / "fixtures.lock.json").read_text()
     )
-    benchmarks = [run(records) for records in (16, 64, 512, 4096)]
-    codec_benchmarks = [
-        bench_codecs.run(records, shape=shape)
-        for shape in bench_codecs.SHAPES
-        for records in bench_codecs.LADDER
-    ]
-    integration_benchmarks = [
-        bench_integration.run(records, shape=shape)
-        for shape in bench_integration.SHAPES
-        for records in bench_integration.LADDER
-    ]
+    performance = performance_report()
+    benchmarks = performance["typed"] if performance is not None else []
+    codec_benchmarks = performance["codecs"] if performance is not None else []
+    integration_benchmarks = performance["integration"] if performance is not None else []
+    key_cardinality = (
+        performance["key_cardinality"]
+        if performance is not None
+        else {"status": "NOT RUN — execute `python benches/collect_report.py`"}
+    )
+    performance_gates = performance["gates"] if performance is not None else {}
     version = importlib.metadata.version("msgspec-toon")
     revision = _source_revision()
     support = support_matrix_report()
@@ -312,16 +383,40 @@ def main() -> None:
             "machine": platform.machine(),
         },
         "measured_versions": bench_codecs.versions(),
-        "timing_methodology": methodology(),
+        "timing_methodology": (
+            "Python retains raw elapsed nanoseconds and loop counts from complete "
+            "process panels; R aggregates process means, fits paired log contrasts, "
+            "and owns intervals, Holm adjustments, classifications, and gates"
+        ),
         "evidence_methodology": {
-            "estimator": _timing.ESTIMATOR,
-            "workers": _timing.DEFAULT_WORKERS,
-            "samples_per_worker": _timing.SAMPLES_PER_WORKER,
-            "warmup": "each worker discards its own first sample; the calibration worker's samples are discarded entirely",
-            "loop_calibration": "calibrated once and handed to every worker, so all workers measure the same amount of work",
-            "significance_test": "two-sample two-tailed Student t-test at alpha 0.95",
-            "minimum_detectable_effect": "performance changes use the separate same-session A/B gate; a change smaller than its measured resolution is not claimed as a win",
-            "slowdown_confirmation": "a slowdown must reproduce in an independent run before it fails the gate: one test in twenty is wrong and this harness runs 100 metric-size points",
+            "inference_engine": "R stats",
+            "estimator": (
+                performance["analysis"]["estimator"] if performance is not None else "NOT RUN"
+            ),
+            "workers": (performance["raw"]["design"]["workers"] if performance is not None else 0),
+            "samples_per_worker": (
+                performance["raw"]["design"]["samples_per_process"]
+                if performance is not None
+                else 0
+            ),
+            "warmup": (
+                "each worker keeps its timed warmup separate from every post-warmup "
+                "observation; calibration observations do not enter analysis"
+            ),
+            "loop_calibration": (
+                "one vectorized calibration panel chooses per-endpoint loop counts; "
+                "every worker receives the same counts; CLI cold starts use one loop"
+            ),
+            "interval": (
+                performance["analysis"]["interval"] if performance is not None else "NOT RUN"
+            ),
+            "multiplicity": (
+                performance["analysis"]["adjustment"] if performance is not None else "NOT RUN"
+            ),
+            "decision_boundary": (
+                "R emits meets_floor, misses_floor, or inconclusive; failure to reject "
+                "is never called neutral"
+            ),
             "efficiency_lock": "conformance/efficiency.lock.json pins byte and token counts for this codec's output; any difference in either direction fails tests/test_efficiency_lock.py",
         },
         "conformance": conformance_summary(lock),
@@ -329,11 +424,20 @@ def main() -> None:
         "canonical_qualification": qualification,
         "verified_release_artifacts": verified_artifacts,
         "release_guard": release_guard(),
+        "performance_evidence": (
+            {
+                "raw_sha256": file_sha256(REPORT_PERFORMANCE_RAW),
+                "run_id": performance["raw"]["run_id"],
+                "analysis": performance["analysis"],
+            }
+            if performance is not None
+            else {"status": "NOT RUN — execute `python benches/collect_report.py`"}
+        ),
         "support_matrix": support,
         "benchmarks_typed_same_run": benchmarks,
         "benchmarks_codecs_same_run": codec_benchmarks,
         "benchmarks_integration_same_run": integration_benchmarks,
-        "untyped_distinct_key_scaling": bench_key_cardinality.run(),
+        "untyped_distinct_key_scaling": key_cardinality,
         "token_efficiency": bench_tokens.run(),
         "efficiency_lock": efficiency,
         "compatibility_since_previous_release": compatibility_delta(support, efficiency),
@@ -343,22 +447,20 @@ def main() -> None:
                 "zero failures, zero declared divergences"
             ),
             "G2_zero_intermediates": None,  # replaced below from the G2 artifact
-            "G3_typed_decode_beats_wrapper": all(
-                b["gates"]["G3_typed_decode_beats_wrapper"] for b in benchmarks
+            "G3_typed_decode_beats_wrapper": performance_gates.get(
+                "G3_typed_decode_beats_wrapper", "NOT RUN"
             ),
-            "G4_whole_encode_beats_to_builtins_alone": all(
-                b["gates"]["G4_whole_encode_beats_to_builtins_alone"] for b in benchmarks
+            "G4_whole_encode_beats_to_builtins_alone": performance_gates.get(
+                "G4_whole_encode_beats_to_builtins_alone", "NOT RUN"
             ),
-            "G5_codec_floor": all(
-                b["gates"]["G5_encode_not_slower_than_toons"]
-                and b["gates"]["G5_decode_not_slower_than_toons"]
-                for b in codec_benchmarks
-            ),
-            "typed_beats_incumbent_pipeline": all(
-                b["gates"]["typed_beats_incumbent_pipeline_decode"]
-                and b["gates"]["typed_beats_incumbent_pipeline_encode"]
-                for b in benchmarks
-            ),
+            "G5_codec_floor": {
+                "encode": performance_gates.get("G5_encode_not_slower_than_toons", "NOT RUN"),
+                "decode": performance_gates.get("G5_decode_not_slower_than_toons", "NOT RUN"),
+            },
+            "typed_beats_incumbent_pipeline": {
+                "decode": performance_gates.get("typed_beats_incumbent_pipeline_decode", "NOT RUN"),
+                "encode": performance_gates.get("typed_beats_incumbent_pipeline_encode", "NOT RUN"),
+            },
             "G6_wheel_parity": (
                 "measurements taken on the release abi3 extension in the environment "
                 "that actually imports it; benches/build_freshness.py refuses to "
