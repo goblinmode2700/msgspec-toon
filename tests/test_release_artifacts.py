@@ -343,3 +343,31 @@ def test_installed_native_file_must_match_the_verified_wheel_record(
     installed.write_bytes(b"tampered-native-extension")
     with pytest.raises(SystemExit, match="differs from verified wheel"):
         artifacts_module._verify_installed_files(artifact, Distribution())
+
+
+def test_windows_record_path_covers_the_installed_native_extension(
+    artifacts_module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record_relative = r"msgspec_toon\_native.pyd"
+    installed_relative = "msgspec_toon/_native.pyd"
+    content = b"verified-windows-native-extension"
+    digest = base64.urlsafe_b64encode(hashlib.sha256(content).digest()).rstrip(b"=").decode()
+    artifact = tmp_path / "candidate.whl"
+    with zipfile.ZipFile(artifact, "w") as wheel:
+        wheel.writestr(installed_relative, content)
+        wheel.writestr(
+            "msgspec_toon-0.1.0.dist-info/RECORD",
+            f"{record_relative},sha256={digest},{len(content)}\n"
+            "msgspec_toon-0.1.0.dist-info/RECORD,,\n",
+        )
+    prefix = tmp_path / "prefix"
+    installed = prefix / installed_relative
+    installed.parent.mkdir(parents=True)
+    installed.write_bytes(content)
+
+    class Distribution:
+        def locate_file(self, path: str) -> Path:
+            return prefix / path.replace("\\", "/")
+
+    monkeypatch.setattr(artifacts_module.sys, "prefix", str(prefix))
+    artifacts_module._verify_installed_files(artifact, Distribution())
