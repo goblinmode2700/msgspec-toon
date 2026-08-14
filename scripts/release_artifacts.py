@@ -187,7 +187,8 @@ def _verify_installed_files(artifact: Path, distribution: importlib.metadata.Dis
             if encoded_size and len(content) != int(encoded_size):
                 raise SystemExit(f"installed file size differs from verified wheel: {relative}")
             verified_files += 1
-            verified_native |= relative.startswith("msgspec_toon/_native")
+            normalized_relative = relative.replace("\\", "/")
+            verified_native |= normalized_relative.startswith("msgspec_toon/_native")
     if verified_files == 0 or not verified_native:
         raise SystemExit("verified wheel RECORD does not cover the native extension")
 
