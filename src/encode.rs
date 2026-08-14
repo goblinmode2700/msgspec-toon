@@ -304,7 +304,7 @@ fn classify_fallback<'py>(
         let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
         return Ok(Val::Str(PyString::new(py, text)));
     }
-    if let Some(bytes) = exact_buffer_bytes(obj)? {
+    if let Some(bytes) = exact_buffer_bytes(ctx, py, obj)? {
         let encoded = checked_base64(ctx, py, &bytes)?;
         let text = std::str::from_utf8(&encoded).expect("base64 output is ASCII");
         return Ok(Val::Str(PyString::new(py, text)));
@@ -1272,10 +1272,16 @@ fn exact_type(obj: &Bound<'_, PyAny>) -> *mut pyo3::ffi::PyTypeObject {
 /// memoryviews, so check that boundary before copying through `tobytes`.
 #[cold]
 #[inline(never)]
-fn exact_buffer_bytes(obj: &Bound<'_, PyAny>) -> PyResult<Option<Vec<u8>>> {
+fn exact_buffer_bytes(
+    ctx: &EncodeContext,
+    py: Python<'_>,
+    obj: &Bound<'_, PyAny>,
+) -> PyResult<Option<Vec<u8>>> {
     let type_ptr = exact_type(obj);
     if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyByteArray_Type) {
-        return Ok(Some(obj.cast::<PyByteArray>()?.to_vec()));
+        let value = obj.cast::<PyByteArray>()?;
+        check_binary_len(ctx, py, value.len())?;
+        return Ok(Some(value.to_vec()));
     }
     if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyMemoryView_Type) {
         if !obj.getattr("c_contiguous")?.extract::<bool>()? {
@@ -1283,6 +1289,7 @@ fn exact_buffer_bytes(obj: &Bound<'_, PyAny>) -> PyResult<Option<Vec<u8>>> {
                 "memoryview: underlying buffer is not C-contiguous",
             ));
         }
+        check_binary_len(ctx, py, obj.getattr("nbytes")?.extract::<usize>()?)?;
         let copied = obj.call_method0("tobytes")?;
         return Ok(Some(copied.cast::<PyBytes>()?.as_bytes().to_vec()));
     }
@@ -1384,7 +1391,7 @@ fn write_scalar_fallback<'py>(
     if type_ptr == std::ptr::addr_of_mut!(pyo3::ffi::PyBytes_Type) {
         return write_bytes_scalar(ctx, py, writer, obj.cast::<PyBytes>()?);
     }
-    if let Some(bytes) = exact_buffer_bytes(obj)? {
+    if let Some(bytes) = exact_buffer_bytes(ctx, py, obj)? {
         return write_binary_scalar(ctx, py, writer, &bytes);
     }
     // Subclass slow path.
@@ -1493,14 +1500,19 @@ fn base64_encode(input: &[u8]) -> Vec<u8> {
 #[cold]
 #[inline(never)]
 fn checked_base64(ctx: &EncodeContext, py: Python<'_>, input: &[u8]) -> PyResult<Vec<u8>> {
-    if input.len() > u32::MAX as usize {
+    check_binary_len(ctx, py, input.len())?;
+    Ok(base64_encode(input))
+}
+
+fn check_binary_len(ctx: &EncodeContext, py: Python<'_>, len: usize) -> PyResult<()> {
+    if len > u32::MAX as usize {
         return Err(encode_err(
             ctx,
             py,
             "bytes objects longer than 2**32 - 1 are not encodable",
         ));
     }
-    Ok(base64_encode(input))
+    Ok(())
 }
 
 #[cold]
